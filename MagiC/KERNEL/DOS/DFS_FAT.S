@@ -570,18 +570,25 @@ set_disk_clean:
  move.l   a0,a5
 ; Sektor einlesen, noch nicht zum Ändern markieren
 ;move.l   a0,a0                    ; DMD
- bsr      rd_fsinfo
+ bsr      rd_fsinfo                ; -> a1 = Sektorpuffer, a0 = XBCB *
  beq.b    sdc_ok2                  ; ungültig
  bmi.b    sdc_ende                 ; Fehler
 
- move.l   d_nfree_cl(a5),FSI_Free_Count(a1)
+ move.l   d_nfree_cl(a5),d0        ; Anzahl freier Cluster aus dem DMD
+ ror.w #8,d0                       ; umwandeln in little-endian
+ swap d0
+ ror.w #8,d0
+ move.l   d0,FSI_Free_Count(a1)    ; als little-endian in den Sektor schreiben
  moveq    #2,d1
- move.l   d_1stfree_cl(a5),d0
+ move.l   d_1stfree_cl(a5),d0      ; erster freier Cluster aus dem DMD
  cmp.l    d1,d0
  bcc.b    sdc_putnf
  move.l   d1,d0
 sdc_putnf:
- move.l   d0,FSI_Nxt_Free(a1)
+ ror.w    #8,d0                    ; umwandeln in little-endian
+ swap     d0
+ ror.w    #8,d0
+ move.l   d0,FSI_Nxt_Free(a1)      ; als little-endian in den Sektor schreiben
 ; Sektor ändern (nicht verzögert)
  move.w   #1,xb_dirty(a0)          ; Puffer als geändert markieren
 ;move.l   a0,a0                    ; XBCB
@@ -952,8 +959,16 @@ dro_bothroot:
  move.l   a5,a0
  bsr      rd_fsinfo                ; Lesen
  ble.b    do_ok                    ; Fehler oder ungültig
- move.l   FSI_Free_Count(a1),d_nfree_cl(a5)
- move.l   FSI_Nxt_Free(a1),d_1stfree_cl(a5)
+ move.l   FSI_Free_Count(a1),d0    ; Anzahl freier Cluster aus Sektor (little-endian)
+ ror.w    #8,d0                    ; umwandeln in big-endian
+ swap     d0
+ ror.w    #8,d0
+ move.l   d0,d_nfree_cl(a5)        ; abspeichern im Host-Format
+ move.l   FSI_Nxt_Free(a1),d0      ; nächster freier Cluster aus Sektor (little-endian)
+ ror.w    #8,d0                    ; umwandeln in big-endian
+ swap     d0
+ ror.w    #8,d0
+ move.l   d0,d_1stfree_cl(a5)      ; abspeichern im Host-Format
 
 do_ok:
  moveq    #E_OK,d0
