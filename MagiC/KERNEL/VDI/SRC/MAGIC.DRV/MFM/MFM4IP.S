@@ -1,20 +1,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;******************************************************************************;
 ;* 																									*;
-;* 			  4-Plane-Bildschirmtreiber fÅr NVDI 3.0					*;
+;* 			  2-Plane-Bildschirmtreiber fÅr NVDI 3.0					*;
 ;* 																									*;
 ;******************************************************************************;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Labels und Konstanten
 
-VERSION				EQU $0313
+VERSION				EQU $0314
 
 .INCLUDE "..\..\MAGICVDI.2\INCLUDE\LINEA.I"
 .INCLUDE "..\..\MAGICVDI.2\INCLUDE\TOS.I"
 
 .INCLUDE "..\..\MAGICVDI.2\INCLUDE\NVDI_WK.I"
 .INCLUDE "..\..\MAGICVDI.2\INCLUDE\VDI.I"
-PATTERN_LENGTH 	EQU (32*4)					;FÅllmusterlÑnge bei 4 Ebenen
+PATTERN_LENGTH 	EQU (32*2)					;FÅllmusterlÑnge bei 2 Ebenen
 
 .INCLUDE "..\..\MAGICVDI.2\INCLUDE\DRIVER.I"						
 
@@ -194,8 +194,8 @@ get_scrninfo:		movem.l	d0-d1/a0-a1,-(sp)
 
 						move.w	#0,(a0)+ 		;[0] Interleaved Planes
 						move.w	#1,(a0)+ 		;[1] Hardware-CLUT
-						move.w	#4,(a0)+ 		;[2] Anzahl der Ebenen
-						move.l	#16,(a0)+		;[3/4] Farbanzahl
+						move.w	#2,(a0)+ 		;[2] Anzahl der Ebenen
+						move.l	#4,(a0)+			;[3/4] Farbanzahl
 						move.w	BYTES_LIN.w,(a0)+	;[5] Bytes pro Zeile
 						move.l	v_bas_ad.w,(a0)+	;[6/7] Bildschirmadresse
 						move.w	d0,(a0)+ 		;[8]  Bits der Rot-IntensitÑt
@@ -254,7 +254,7 @@ relo_exit:			movem.l	(sp)+,d0-d2/a0-a2
 ;kein Register wird zerstîrt
 init_res:			movem.l	d0-d2/a0-a2,-(sp)
 						movea.l	nvdi_struct(pc),a0
-						movea.l	_nvdi_PixMap_ptr(a0),a0
+						movea.l	_nvdi_vdi_setup_ptr(a0),a0
 
 						move.l	PM_baseAddr(a0),vram
 						move.w	PM_rowBytes(a0),d0
@@ -477,7 +477,7 @@ set_color_rgb:		lea		vdi_palette(pc),a1 ;VDI-Palette
 						movea.l	sp,a0
 						addq.l	#1,a0
 
-						lea		rgb_in_tab,a1	;Tabelle ohne Kalibration
+						lea		rgb_in_tab,a1	;Tabelle ohne Kalibrierung
 
 						move.b	(a1,d0.w),(a0)+	;IntensitÑt der Grundfarbe setzen
 						move.b	(a1,d1.w),(a0)+	;IntensitÑt der Grundfarbe setzen
@@ -562,7 +562,7 @@ dev_name:			DC.B	'Mac 4 Farben interleaved',0
 						BSS
 
 nvdi_struct:		DS.L 1						;Zeiger auf nvdi_struct oder 0
-driver_struct:		DS.L	1
+driver_struct:		DS.L 1
 
 x_res:				DS.W 1						;adressierbare Rasterbreite (von 0 aus)
 y_res:				DS.W 1						;adressierbare Rasterhîhe (von 0 aus)
