@@ -1,0 +1,8 @@
+keyb_dei.prg
+.C[-I..\..\inc_c]
+.C[-I..\..\pc\include]
+=
+minstart.s         ; minimal startup code
+keyb_dei.c
+..\..\pc\lib\pcstdlib.lib
+..\..\pc\lib\pctoslib.lib
