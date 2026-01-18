@@ -5,6 +5,8 @@
 *
 * FÅr die FRA-Tastatur
 *
+* Neue Version mit "dead keys"
+*
 */
 
 #include <tos.h>
@@ -209,6 +211,25 @@ char tab_shalt[128] = {
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 };
 
+#if 1
+
+/* mit dead keys: */
+static const char tab_dead[] = {
+ '∫','`','^',0,
+ 'a','†','e','Ç','E','ê','i','°','o','¢','u','£',0,
+ 'a','Ö','A','∂','e','ä','i','ç','o','ï','u','ó',0,
+ 'a','É','e','à','i','å','o','ì','u','ñ',0,0
+};
+
+#else
+
+/* ohne dead keys: */
+static const char tab_dead[] = {
+  0,0
+};
+
+#endif
+
 
 int main( void )
 {
@@ -251,6 +272,9 @@ int main( void )
 		goto wr_err;
 	ret = Fwrite(hdl, 128L, tab_alt);
 	if	(ret != 128L)
+		goto wr_err;
+	ret = Fwrite(hdl, sizeof(tab_dead), tab_dead);
+	if	(ret != sizeof(tab_dead))
 		goto wr_err;
 
 	Fclose(hdl);
