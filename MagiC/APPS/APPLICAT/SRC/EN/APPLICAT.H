@@ -73,6 +73,7 @@
 #define I_PROGRA         5   /* ICON in Baum T_DEFICN */
 #define I_DATEI          6   /* ICON in Baum T_DEFICN */
 #define I_BTCHDA         7   /* ICON in Baum T_DEFICN */
+#define I_PAR            8   /* ICON in Baum T_DEFICN */
 
 #define T_FOLDRS         4   /* Formular/Dialog */
 #define FL_BK            2   /* IBOX in Baum T_FOLDRS */
@@ -98,16 +99,21 @@
 #define T_SPECIA         5   /* Formular/Dialog */
 #define DF_BK            2   /* IBOX in Baum T_SPECIA */
 #define SPC1             3   /* BOXTEXT in Baum T_SPECIA */
-#define SPC2             4   /* BOX in Baum T_SPECIA */
-#define SPCICON2         5   /* BOXTEXT in Baum T_SPECIA */
-#define SPCICON3         6   /* BOX in Baum T_SPECIA */
-#define SPC4             7   /* BOXTEXT in Baum T_SPECIA */
-#define SPC5             8   /* BOX in Baum T_SPECIA */
-#define SPCICON5         9   /* BOXTEXT in Baum T_SPECIA */
-#define DF_BSL           10  /* BOX in Baum T_SPECIA */
-#define DF_SLID          11  /* BOXTEXT in Baum T_SPECIA */
-#define DF_OK            12  /* BOX in Baum T_SPECIA */
-#define DF_CN            13  /* BOXCHAR in Baum T_SPECIA */
+#define SPCICON1         4   /* BOX in Baum T_SPECIA */
+#define SPC2             5   /* BOXTEXT in Baum T_SPECIA */
+#define SPCICON2         6   /* BOX in Baum T_SPECIA */
+#define SPC3             7   /* BOXTEXT in Baum T_SPECIA */
+#define SPCICON3         8   /* BOX in Baum T_SPECIA */
+#define SPC4             9   /* BOXTEXT in Baum T_SPECIA */
+#define SPCICON4         10  /* BOX in Baum T_SPECIA */
+#define SPC5             11  /* BOXTEXT in Baum T_SPECIA */
+#define SPCICON5         12  /* BOX in Baum T_SPECIA */
+#define DF_UP            13  /* BOXCHAR in Baum T_SPECIA */
+#define DF_BSL           14  /* BOX in Baum T_SPECIA */
+#define DF_SLID          15  /* BOX in Baum T_SPECIA */
+#define DF_DOWN          16  /* BOXCHAR in Baum T_SPECIA */
+#define DF_OK            17  /* BUTTON in Baum T_SPECIA */
+#define DF_CN            18  /* BUTTON in Baum T_SPECIA */
 
 #define T_NEWFLD         6   /* Formular/Dialog */
 #define FLDN_PTH         2   /* FTEXT in Baum T_NEWFLD */
