@@ -8,7 +8,7 @@
 
 #include <mt_aes.h>
 #include "magxdesk.h"
-#include "\pc\source\deskutil\applicat\appldata.h"
+#include "appldata.h"
 #include "av.h"
 
 #define TRUE   1
