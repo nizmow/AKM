@@ -12,6 +12,7 @@
 #include "gemut_mt.h"
 #include "applicat.h"
 #include "appl.h"
+#include "inf.h"
 #include "appldata.h"
 #include "pth_dial.h"
 #include "iconsel.h"
@@ -617,7 +618,7 @@ WORD cdecl hdl_icp( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
 		d_pth = xy_wdlg_init(
  				hdl_pth,
  				adr_newpath,
- 				"PFAD_ANMELDEN",
+ 				IDENT_REGISTER_PATH,
  				1,
  				path,
  				STR_WTIT_DEFPATH);
@@ -653,7 +654,7 @@ WORD cdecl hdl_icp( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
  		d_pth = xy_wdlg_init(
  				hdl_pth,
  				adr_newpath,
- 				"PFAD_ANMELDEN",
+ 				IDENT_REGISTER_PATH,
  				0,
  				pthx + pth,
  				STR_WTIT_DEFPATH);
@@ -726,7 +727,7 @@ WORD cdecl hdl_icp( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
  		d_pth = xy_wdlg_init(
  				hdl_pth,
  				adr_newpath,
- 				"PFAD_ANMELDEN",
+ 				IDENT_REGISTER_PATH,
  				0,
  				NULL,
  				STR_WTIT_DEFPATH);

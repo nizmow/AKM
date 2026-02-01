@@ -1,3 +1,7 @@
+/*
+* global definitions
+*/
+
 #ifndef WORD
 #include <portab.h>
 #endif
@@ -13,6 +17,15 @@
 #define MAX_ICNN 500
 #define MAXWINDEFPOS 10
 
+/* Each window has its identification, that is also stored in APPLICAT.INF */
+
+#define IDENT_APPLICATIONS   "APPLICATIONS"
+#define IDENT_REGISTER_APP   "REGISTER_APPLICATION"  /*"ANW_ANMELDEN"*/
+#define IDENT_PATHS          "PATHS"
+#define IDENT_SPECIAL        "SPECIAL"
+#define IDENT_ICONS          "ICONS"
+#define IDENT_EDIT_FILE_TYPE "EDIT_FILE_TYPE"		/*"DATEITYP_EDIT"*/
+#define IDENT_REGISTER_PATH  "REGISTER_PATH"		/*"PFAD_ANMELDEN"*/
 
 typedef struct {
 	char name[32];				/* SchlÅssel (Fenstername) */
@@ -96,9 +109,6 @@ struct zeile {
 
 extern int is_multiwindow;		/* alle Fenster sind offen */
 
-extern int n_windefpos;
-extern WINDEFPOS windefpos[MAXWINDEFPOS];
-extern WINDEFPOS *def_wind_pos(char *s);
 #ifdef NWINDOWS
 extern WINDOW *mywindow;
 #endif
@@ -118,10 +128,6 @@ extern void save_dialog_xy( DIALOG *d );
 extern long err_alert(long e);
 
 extern int  rsrc_gtree(int gindex, OBJECT **tree );
-extern void load_icons( void );
-extern void load_int_icons( void );
-extern long get_inf( void );
-extern long put_inf( void );
 extern int spcn;
 extern int pthn;
 extern int datn;

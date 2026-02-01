@@ -14,6 +14,7 @@
 #include "applicat.h"
 #include "windows.h"
 #include "appl.h"
+#include "inf.h"
 #include "ica_dial.h"
 #include "appldata.h"
 #include "anw_dial.h"
@@ -1633,7 +1634,7 @@ WORD cdecl hdl_ica( DIALOG *d, EVNT *ev, WORD exitbutton,
 		 		d_typ = xy_wdlg_init(
 		 				hdl_ftypes,
 		 				adr_ftypes,
-		 				"DATEITYP_EDIT",
+		 				IDENT_EDIT_FILE_TYPE,
 		 				2,
 		 				pgmx+cmd_pgm,
 		 				STR_WINTITLE_MTY);
@@ -1650,7 +1651,7 @@ WORD cdecl hdl_ica( DIALOG *d, EVNT *ev, WORD exitbutton,
 		 		d_anw = xy_wdlg_init(
 		 				hdl_anwndg,
 		 				adr_anwndg,
-		 				"ANW_ANMELDEN",
+		 				IDENT_REGISTER_APP,
 		 				0,
 		 				pgmx+cmd_pgm,
 		 				STR_WINTITLE_1AP);
@@ -1661,7 +1662,7 @@ WORD cdecl hdl_ica( DIALOG *d, EVNT *ev, WORD exitbutton,
 		 		d_anw = xy_wdlg_init(
 		 				hdl_anwndg,
 		 				adr_anwndg,
-		 				"ANW_ANMELDEN",
+		 				IDENT_REGISTER_APP,
 		 				1,
 		 				cmd_pgm_path,
 		 				STR_WINTITLE_1AP);
@@ -1707,7 +1708,7 @@ WORD cdecl hdl_ica( DIALOG *d, EVNT *ev, WORD exitbutton,
  		d_anw = xy_wdlg_init(
  				hdl_anwndg,
  				adr_anwndg,
- 				"ANW_ANMELDEN",
+ 				IDENT_REGISTER_APP,
  				0,
  				pgmx + pgm,
  				STR_WINTITLE_1AP);
@@ -1730,7 +1731,7 @@ WORD cdecl hdl_ica( DIALOG *d, EVNT *ev, WORD exitbutton,
  		d_typ = xy_wdlg_init(
  				hdl_ftypes,
  				adr_ftypes,
- 				"DATEITYP_EDIT",
+ 				IDENT_EDIT_FILE_TYPE,
  				1,
  				datx + dat,
  				STR_WINTITLE_MTY);
@@ -1875,7 +1876,7 @@ WORD cdecl hdl_ica( DIALOG *d, EVNT *ev, WORD exitbutton,
  		d_anw = xy_wdlg_init(
  				hdl_anwndg,
  				adr_anwndg,
- 				"ANW_ANMELDEN",
+ 				IDENT_REGISTER_APP,
  				0,
  				NULL,
  				STR_WINTITLE_1AP);
@@ -1921,7 +1922,7 @@ WORD cdecl hdl_ica( DIALOG *d, EVNT *ev, WORD exitbutton,
  		d_typ = xy_wdlg_init(
  				hdl_ftypes,
  				adr_ftypes,
- 				"DATEITYP_EDIT",
+ 				IDENT_EDIT_FILE_TYPE,
  				0,
  				mypgm,
  				STR_WINTITLE_MTY);

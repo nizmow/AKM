@@ -96,6 +96,7 @@
 #include "spc_dial.h"
 
 #include "appl.h"
+#include "inf.h"
 #include "appldata.h"
 #include "iconsel.h"
 
@@ -244,7 +245,7 @@ int main( int argc, char *argv[] )
 		 		d_ica = xy_wdlg_init(
 		 				hdl_ica,
 		 				adr_ica_dialog,
-		 				"APPLICATIONS",
+		 				IDENT_APPLICATIONS,
 		 				0,
 		 				args,
 		 				STR_WINTITLE_APP);
@@ -255,7 +256,7 @@ int main( int argc, char *argv[] )
 		 		d_ica = xy_wdlg_init(
 		 				hdl_ica,
 		 				adr_ica_dialog,
-		 				"APPLICATIONS",
+		 				IDENT_APPLICATIONS,
 		 				1,
 		 				args,
 		 				STR_WINTITLE_APP);
@@ -266,7 +267,7 @@ int main( int argc, char *argv[] )
 		 		d_icp = xy_wdlg_init(
 		 				hdl_icp,
 		 				adr_icp_dialog,
-		 				"PATHS",
+		 				IDENT_PATHS,
 		 				0,
 		 				args,
 		 				STR_WINTITLE_PTH);
@@ -277,7 +278,7 @@ int main( int argc, char *argv[] )
 		 		d_spc = xy_wdlg_init(
 		 				hdl_spc,
 		 				adr_spc_dialog,
-		 				"SPECIAL",
+		 				IDENT_SPECIAL,
 		 				0,
 		 				args,
 		 				STR_WINTITLE_SPC);
@@ -292,7 +293,7 @@ int main( int argc, char *argv[] )
  		d_ica = xy_wdlg_init(
  				hdl_ica,
  				adr_ica_dialog,
- 				"APPLICATIONS",
+ 				IDENT_APPLICATIONS,
  				2,
  				args,
  				STR_WINTITLE_APP);
@@ -306,7 +307,7 @@ int main( int argc, char *argv[] )
  		d_ica = xy_wdlg_init(
  				hdl_ica,
  				adr_ica_dialog,
- 				"APPLICATIONS",
+ 				IDENT_APPLICATIONS,
  				0,
  				args,
  				STR_WINTITLE_APP);
@@ -316,7 +317,7 @@ int main( int argc, char *argv[] )
  		d_icp = xy_wdlg_init(
  				hdl_icp,
  				adr_icp_dialog,
- 				"PATHS",
+ 				IDENT_PATHS,
  				0,
  				args,
  				STR_WINTITLE_PTH);
@@ -326,7 +327,7 @@ int main( int argc, char *argv[] )
  		d_spc = xy_wdlg_init(
  				hdl_spc,
  				adr_spc_dialog,
- 				"SPECIAL",
+ 				IDENT_SPECIAL,
  				0,
  				args,
  				STR_WINTITLE_SPC);

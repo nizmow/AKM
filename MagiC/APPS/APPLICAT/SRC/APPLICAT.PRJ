@@ -5,19 +5,19 @@ applicat.app
 .L[-S=$2000]   ; Stackgrîûe auf 8 KByte setzen
 =              ; list of modules follows...
 import\pcmxstrt.o     ; startup code mit ARGV und Quoting
-applicat       (applicat.h,appl.h)	[-P]
-iconsel		(applicat.h,appl.h) [-P]
+applicat       (applicat.h,appl.h,inf.h)	[-P]
+iconsel		(applicat.h,appl.h,inf.h) [-P]
 
 ica_dial  (applicat.h,appl.h)  [-P]     ; Icons fÅr APPs
 anw_dial  (applicat.h,appldata.h,appl.h)       ; Anwendung anmelden
 typ_dial  (applicat.h,appl.h)       ; Dateityp eintragen
 
-icp_dial  (applicat.h,appl.h)       ; Icons fÅr Ordner/Disks
+icp_dial  (applicat.h,appl.h,inf.h)       ; Icons fÅr Ordner/Disks
 pth_dial  (applicat.h,appl.h)       ; Pfad-Disk eintragen
 
-spc_dial  (applicat.h,appl.h)       ; Icons fÅr Spezialobjekte
+spc_dial  (applicat.h,appl.h,inf.h)       ; Icons fÅr Spezialobjekte
 
-inf       (appl.h,appldata.h) [-P]
+inf       (appl.h,inf.h,appldata.h) [-P]
 windows	(windows.h)
 import\gemut_mt		(import\gemut_mt.h)
 import\pcstdlib.lib   ; standard lib

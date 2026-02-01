@@ -14,6 +14,7 @@
 #include "applicat.h"
 #include "windows.h"
 #include "appl.h"
+#include "inf.h"
 #include "appldata.h"
 #include "iconsel.h"
 #include "ica_dial.h"
@@ -240,7 +241,7 @@ void init_iconsel( void )
 {
 	WINDEFPOS *w;
 
-	w = def_wind_pos("ICONS");
+	w = def_wind_pos(IDENT_ICONS);
 	if	(w)
 		{
 		iconwindow.out = w->g;
@@ -263,7 +264,7 @@ static void close_iconsel( WINDOW *w, int kstate )
 	WINDEFPOS *wd;
 	WINDOW **sw;
 
-	wd = def_wind_pos("ICONS");
+	wd = def_wind_pos(IDENT_ICONS);
 	if	(wd)
 		wd->g = iconwindow.out;
 

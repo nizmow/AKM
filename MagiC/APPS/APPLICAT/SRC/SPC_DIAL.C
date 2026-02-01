@@ -12,6 +12,7 @@
 #include "gemut_mt.h"
 #include "applicat.h"
 #include "appl.h"
+#include "inf.h"
 #include "appldata.h"
 #include "iconsel.h"
 #include "spc_dial.h"
@@ -463,7 +464,7 @@ WORD cdecl hdl_spc( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
 	if	(exitbutton == DF_OK)			/* OK */
 		{
 		save_dialog_xy(d);
-		if	(put_inf())
+		if (put_inf())
 			goto ende;				/* Fehler bei INF */
 		goto close_dialog;
 		}

@@ -763,7 +763,7 @@ extern WORD MT_xfrm_popup(
 				void	cdecl (*init)(OBJECT *tree, WORD scrollpos,
 								WORD nlines, void *param),
 				void *param, WORD *lastscrlpos, WORD *global );		/* MagiC 5.03 */
-extern WORD MT_form_xerr( long errcode, char *errfile, WORD *global );        /* MAG!X       */
+extern WORD MT_form_xerr( long errcode, const char *errfile, WORD *global );        /* MAG!X       */
 
 #define	form_do( a, b ) \
 			MT_form_do( a, b, 0L )
