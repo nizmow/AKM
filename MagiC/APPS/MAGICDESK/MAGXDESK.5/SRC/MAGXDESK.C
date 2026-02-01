@@ -16,36 +16,20 @@
 #include "pattern.h"
 
 
-WINDOW		fenster0;		/* fr den Desktop-Hintergrund */
-WINDOW 		*fenster[ANZFENSTER+1];
-GRECT		fensterg[ANZFENSTER+1];
-ICON   		*icon;
-char			*gmemptr = NULL;
-int			n_deskicons;
-MENUPROGRAM	menuprograms[ANZPROGRAMS];
+/*
+* global variables
+*/
 
-char *kachel_1;			/* Kachel 1 Plane (monochrom) */
-char *kachel_4;			/* Kachel 4 Planes (16 Farben) */
-char *kachel_8;			/* Kachel 8 Planes (256 Farben) */
-char *kachel_m;			/* Kachel > 256 Farben */
-MENUPROGRAM	**kachel_path;
-char *desk_col;
-char *desk_patt;
+char *pgm_ver = "5.03";	/* may not exceed four characters, due to .RSC file */
 
-char ext_bat[4];			/* Dateityp .BAT */
-char ext_btp[4];			/* Dateityp .BTP */
-
-char 	dirty_drives	[ANZDRIVES];
-DISKINFO 	dinfo		[ANZDRIVES];
-
-char	*pgm_ver = "5.02";
-
-/* int message[16]; */
-int work_out[57],work_in [12];	 /* VDI- Felder fr v_opnvwk() */
-int text_attrib[10];			 /* Default- Textattribute */
+char *gmemptr = NULL;
+WINDOW *fenster[ANZFENSTER+1];
+ICON  *icon;
+MENUPROGRAM menuprograms[ANZPROGRAMS];
 
 int ap_id;
 int *aes_global;
+int work_out[57], work_in [12];	 /* VDI- Felder fr v_opnvwk() */
 int isfirst;					/* MAGXDESK gebootet */
 int is_primary_shell;			/* Haupt-Shell */
 
@@ -57,6 +41,33 @@ GRECT desk_g,screen_g;				/* Maže fr Hintergrund */
 int	char_w,char_h;
 int	spaltenabstand;				/* Fr Textausgabe */
 int	dirty_applicat_dat;
+
+char *kachel_1;			/* Kachel 1 Plane (monochrom) */
+char *kachel_4;			/* Kachel 4 Planes (16 Farben) */
+char *kachel_8;			/* Kachel 8 Planes (256 Farben) */
+char *kachel_m;			/* Kachel > 256 Farben */
+MENUPROGRAM **kachel_path;
+
+char *desk_col;
+char *desk_patt;
+
+char ext_bat[4];			/* Dateityp .BAT */
+char ext_btp[4];			/* Dateityp .BTP */
+
+GRECT fensterg[ANZFENSTER+1];
+int n_deskicons;
+
+char dirty_drives[ANZDRIVES];
+DISKINFO dinfo[ANZDRIVES];
+
+/*
+* local variables
+*/
+
+static WINDOW fenster0;		/* fr den Desktop-Hintergrund */
+
+/* int message[16]; */
+static int text_attrib[10];			 /* Default- Textattribute */
 
 /* Einstellungen */
 
@@ -480,15 +491,24 @@ void main()
 		/* Abfrage auf Bet„tigung eines Mausknopfs */
 		/* --------------------------------------- */
 
-		if	(w_ev.mwhich & MU_BUTTON)
+		if (w_ev.mwhich & MU_BUTTON)
+		{
+			if(status.rtbutt_dclick && (w_ev.mbutton == 2))
 			{
-			if	(status.rtbutt_dclick && (w_ev.mbutton == 2))
-				{
 				w_ev.mclicks = 2;
 				w_ev.mbutton = 1;		/* Doppelklick simulieren */
-				}
-			mausknopf(w_ev.mclicks, (EVNTDATA*) &(w_ev.mx));
 			}
+
+			mausknopf(w_ev.mclicks, (EVNTDATA *) &(w_ev.mx));
+
+			/* poll mouse and keyboard state */
+			graf_mkstate((EVNTDATA *) &(w_ev.mx));
+			if (w_ev.mbutton & 1)
+			{
+				/* left button still pressed, wait for release */
+				evnt_button(1, 1, 0, (EVNTDATA *) &(w_ev.mx));
+			}
+		}
 
 
 
@@ -1581,7 +1601,7 @@ void get_rsc(void)
 		 (image->ob_y > 0))
 		image->ob_y--;
 
-	strcpy ((adr_about + ABOU_VER)->ob_spec.tedinfo->te_ptext+11, pgm_ver);
+	strcpy((adr_about + ABOU_VER)->ob_spec.tedinfo->te_ptext + 11, pgm_ver);
 	(adr_about + ABOU_OS)->ob_spec.free_string = os_ver_s;
 	i = adr_about->ob_width;
 	i -= (int) strlen(os_ver_s) * gl_hwchar;
