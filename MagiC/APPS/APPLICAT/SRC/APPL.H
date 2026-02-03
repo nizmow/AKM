@@ -27,6 +27,16 @@
 #define IDENT_EDIT_FILE_TYPE "EDIT_FILE_TYPE"		/*"DATEITYP_EDIT"*/
 #define IDENT_REGISTER_PATH  "REGISTER_PATH"		/*"PFAD_ANMELDEN"*/
 
+/* Section names */
+
+#define SECTION_PATHS        "<Paths>"				/*"[<Pfade>]"*/
+#define SECTION_SPECIAL      "<Special>"			/*"[<Spezial>]"*/
+
+/* other */
+
+#define RSC_FNAME_INTERN     "<internal>"			/*"<intern>"*/
+#define APP_NAME_FREE        "<free>"				/*"<frei>"*/
+
 typedef struct {
 	char name[32];				/* SchlÅssel (Fenstername) */
 	GRECT g;					/* Position */

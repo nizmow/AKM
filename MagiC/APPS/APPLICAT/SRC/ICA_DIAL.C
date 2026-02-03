@@ -1580,7 +1580,7 @@ WORD cdecl hdl_ica( DIALOG *d, EVNT *ev, WORD exitbutton,
 			if	(clicks == 1)	/* Icon fÅr Datei */
 				{
 				if	(cmd_pgm_path[0] == '<')	/* nicht angem. */
-					cmd_pgm_path = "<frei>";
+					cmd_pgm_path = APP_NAME_FREE;
 				}
 			cmd_pgm = scroll_win_app( NULL, cmd_pgm_path);
 			if	(cmd_pgm >= 0)

@@ -165,22 +165,32 @@ static void get_wind_pos(const char *s)
 
 /*********************************************************************
 *
-* Gibt das <n>-te Icon der Datei fname zurÅck
+* Gibt das <n>-te Icon der Datei fname zurÅck, d.h. dessen ID
+* -1 bei Fehler
 *
 *********************************************************************/
 
-static int get_icon( char *fname, int n )
+static int get_icon(const char *fname, int n)
 {
 	register int i;
 
+	/* backward compatibility */
+	if (!strcmp(fname, "<intern>"))
+	{
+		fname = RSC_FNAME_INTERN;
+	}
+
 	for (i = 0; i < rscn; i++)
+	{
 		if (!stricmp(rscx[i].fname, fname))
-			{
+		{
 			if (n >= rscx[i].nicons)
-				return(-1);		/* Fehler ! */
+				return -1;		/* Fehler ! */
 			return(rscx[i].firsticon + n);
-			}
-	return(-1);
+		}
+	}
+
+	return -1;
 }
 
 
@@ -216,10 +226,10 @@ void load_icons( void )
 
 	save_rscdata( systemglobal );		/* System-RSC merken */
 
-	strcpy(rscx[0].fname, "<intern>");
+	strcpy(rscx[0].fname, RSC_FNAME_INTERN);
 	rscx[0].nicons = 7;
 	rscx[0].firsticon = 1;
-	
+
 	ic = icnx;
 	ic->rscfile = 0;		/* internes Icon */
 	ic->objnr = I_FLPDSK;
@@ -800,7 +810,7 @@ long get_inf(void)
 	readline();
 	if (getgroup(group) || (1 != sscanf(group, "APPLICAT Header V %d", &ver)))
 	{
-		char s[512];
+		char s[148];
 
 		/* Fehler im Header */
 		error(STR_ERR_HEAD_INF);
@@ -816,52 +826,61 @@ long get_inf(void)
 		return 1;
 	}
 
+	/* check for file version number */
 	if (ver != 0)
-		{
+	{
 		error(STR_ERR_VERSION);
 		goto err;
-		}
+	}
 
+	/* old_w/h is the screen size when the .INF file was written */
 	old_w = scrg.g_w;
 	old_h = scrg.g_h;
 	rreadline();
 	if (!strncmp(line, "SCREENSIZE ",11))
-		{
+	{
 		sscanf(line, "SCREENSIZE %d,%d", &old_w, &old_h);
 		rreadline();
-		}
+	}
 
+	/* read all stored window positions */
 	while (!strncmp(line, "WINDOW ", 7))
 	{
 		get_wind_pos(line);
 		rreadline();
 	}
 
+	/*
+	* Main loop. Reads the remaining of the .INF file
+	*/
+
 	while (strncmp(line, "[End]", 5))
-		{
+	{
+		/* skip blank lines */
 		if (!line[0])
-			{
+		{
 			readline();
 			continue;
-			}
+		}
 
+		/* we expect a section like "[bla]", otherwise error */
 		if (getgroup(group))
-			{
+		{
 			erri:
 			error(STR_ERR_FORMAT);
 			goto err;
-			}
+		}
 
-		if (!strcmp(group, "<Pfade>"))
-			{
+		/* section: directories with registered icons */
+		if (!strcmp(group, SECTION_PATHS) || !strcmp(group, "<Pfade>"))
+		{
+			/* loop until next section */
 			readline();
 			while (line[0] != '[')
-				{
-				if (scanpath(&lpos, pthx[pthn].path,
-							MAX_PATHLEN))
+			{
+				if (scanpath(&lpos, pthx[pthn].path, MAX_PATHLEN))
 					goto erri;
-				if (scanpath(&lpos, pthx[pthn].rscname,
-							MAX_NAMELEN))
+				if (scanpath(&lpos, pthx[pthn].rscname,	MAX_NAMELEN))
 					goto erri;
 				if (scanint(&lpos, &pthx[pthn].rscindex))
 					goto erri;
@@ -869,23 +888,22 @@ long get_inf(void)
 					goto erri;
 				readline();
 				pthn++;
-				}
-			continue;
 			}
+			continue;
+		}
 
-		if (!strcmp(group, "<Spezial>"))
-			{
+		/* section: icons for batch file, printer, dustbin etc. */
+		if (!strcmp(group, SECTION_SPECIAL) || !strcmp(group, "<Spezial>"))
+		{
+			/* loop until next section */
 			readline();
 			while (line[0] != '[')
-				{
-				if (scanpath(&lpos, (char *) &(spcx[spcn].key),
-							4))
+			{
+				if (scanpath(&lpos, (char *) &(spcx[spcn].key),	4))
 					goto erri;
-				if (scanpath(&lpos, spcx[spcn].name,
-							MAX_NAMELEN))
+				if (scanpath(&lpos, spcx[spcn].name, MAX_NAMELEN))
 					goto erri;
-				if (scanpath(&lpos, spcx[spcn].rscname,
-							MAX_NAMELEN))
+				if (scanpath(&lpos, spcx[spcn].rscname, MAX_NAMELEN))
 					goto erri;
 				if (scanint(&lpos, &spcx[spcn].rscindex))
 					goto erri;
@@ -893,55 +911,65 @@ long get_inf(void)
 					goto erri;
 				readline();
 				spcn++;
-				}
-			continue;
 			}
+			continue;
+		}
 
-		/* Applikation */
-		/* ----------- */
+		/* All other sections must be applications */
+		/* --------------------------------------- */
 
+		/* backward compatibility */
+		if (!strcmp(group, "<frei>"))
+		{
+			strcpy(group, APP_NAME_FREE);
+		}
 		strcpy(pgmx[pgmn].name, group);
 		readline();
+		/* The first line defines the icon */
 		if (line[0])
-			{
-			if (scanpath(&lpos, pgmx[pgmn].rscname,
-						MAX_NAMELEN))
+		{
+			if (scanpath(&lpos, pgmx[pgmn].rscname,	MAX_NAMELEN))
 				goto erri;
 			if (scanint(&lpos, &pgmx[pgmn].rscindex))
 				goto erri;
 			if (scanpath(&lpos, iconname, 128))
 				goto erri;
-			}
+		}
 		readline();
 
+		/* The second line defines the program path */
 		if (scanpath(&lpos, pgmx[pgmn].path, 128))
 			goto erri;
 
-/*		strcpy(pgmx[pgmn].path, line);	*/
+		/* The third line is an integer value, a bitmask */
 		readline();
 		if (scanint(&lpos, &pgmx[pgmn].config))
-			{
+		{
 			error(STR_ERR_FORMAT);
 			goto err;
-			}
+		}
+
+		/* This LIMITMEM line is optional */
 		rreadline();
 		if (!strncmp(line, "LIMITMEM=", 9))
-			{
+		{
 			pgmx[pgmn].memlimit = atol(line+9);
 			rreadline();
-			}
+		}
+
+		/* loop through all associated file types for this application */
+		/* loop ends not before next section */
+
 		pgmx[pgmn].types = -1;	/* Ende der Verkettung */
 		pgmx[pgmn].ntypes = 0;	/* Anzahl Dateitypen */
 		while (line[0] != '[')
-			{
+		{
 			/* Dateityp suchen */
 			register int i;
 
-			if (scanpath(&lpos, datx[datn].name,
-						MAX_NAMELEN))
+			if (scanpath(&lpos, datx[datn].name, MAX_NAMELEN))
 				goto erri;
-			if (scanpath(&lpos, datx[datn].rscname,
-						MAX_NAMELEN))
+			if (scanpath(&lpos, datx[datn].rscname, MAX_NAMELEN))
 				goto erri;
 			if (scanint(&lpos, &datx[datn].rscindex))
 				goto erri;
@@ -949,14 +977,15 @@ long get_inf(void)
 				goto erri;
 
 			for (i = 0; i < datn; i++)
-				{
+			{
 				if (!strcmp(datx[datn].name, datx[i].name))
-					{
+				{
 					error(STR_ERR_MULTITYP);
 					goto err;	/* schon verkettet */
-					}
-				break;
 				}
+				break;
+			}
+
 			/* vorn einketten */
 			datx[datn].next = pgmx[pgmn].types;
 			datx[datn].pgm = pgmn;
@@ -972,17 +1001,18 @@ long get_inf(void)
 			pgmx[pgmn].ntypes++;
 
 			rreadline();
-			}
+		} /* while */
 
+		/* special case: no file types associated */
 		if (pgmx[pgmn].ntypes == 0)
-			{
+		{
 			linx[linn].pgmnr = pgmn;
 			linx[linn].reldatnr = -1;
 			linx[linn].datnr = -1;
 			linn++;
-			}
-		pgmn++;
 		}
+		pgmn++;
+	}
 
 	Mfree(inf_buf);
 	return 0;
@@ -1778,7 +1808,7 @@ long put_inf(void)
 	/* Pfade erstellen */
 	/* --------------- */
 
-	ret = iwrite(hdl, wbuf, &wlen, "[<Pfade>]\r\n");
+	ret = iwrite(hdl, wbuf, &wlen, "[" SECTION_PATHS "]" "\r\n");
 	if (ret)
 		goto err;
 	for (i = 0; i < pthn; i++)
@@ -1796,10 +1826,10 @@ long put_inf(void)
 		}
 
 
-	/* Defaulticons */
-	/* ------------ */
+	/* Default-Icons */
+	/* ------------- */
 
-	ret = iwrite(hdl, wbuf, &wlen, "[<Spezial>]\r\n");
+	ret = iwrite(hdl, wbuf, &wlen, "[" SECTION_SPECIAL "]" "\r\n");
 	if (ret)
 		goto err;
 	for (i = 0; i < spcn; i++)
