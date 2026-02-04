@@ -17,6 +17,7 @@ pth_dial  (applicat.h,appl.h)       ; Pfad-Disk eintragen
 
 spc_dial  (applicat.h,appl.h,inf.h)       ; Icons fÅr Spezialobjekte
 
+read_inf  (appl.h,read_inf.h,applicat.h,appldata.h) [-P]
 inf       (appl.h,inf.h,appldata.h) [-P]
 windows	(windows.h)
 import\gemut_mt		(import\gemut_mt.h)

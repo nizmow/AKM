@@ -243,12 +243,13 @@ void init_iconsel( void )
 
 	w = def_wind_pos(IDENT_ICONS);
 	if	(w)
-		{
+	{
 		iconwindow.out = w->g;
-		}
-	else	{
+	}
+	else
+	{
 		iconwindow.out = scrg;
-		}
+	}
 }
 
 

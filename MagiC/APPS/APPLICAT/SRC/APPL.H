@@ -156,3 +156,7 @@ extern struct zeile		linx[MAX_LINN];
 extern struct iconfile	rscx[MAX_RSCN];
 
 extern int is_3d;
+
+extern void error(int id);
+extern char buf512[512];
+

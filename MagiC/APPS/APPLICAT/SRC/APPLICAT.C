@@ -97,6 +97,7 @@
 
 #include "appl.h"
 #include "inf.h"
+#include "read_inf.h"
 #include "appldata.h"
 #include "iconsel.h"
 
@@ -696,4 +697,16 @@ int get_deficonnr(long key)
 		if	(spc_file->key == key)
 			return(spc_file->iconnr);
 	return(0);
+}
+
+
+/****************************************************************
+*
+* Fehler-Alert ohne variablen Text
+*
+****************************************************************/
+
+void error(int id)
+{
+	form_alert(1, Rgetstring(id, NULL));
 }
