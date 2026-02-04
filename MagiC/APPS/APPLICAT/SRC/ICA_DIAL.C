@@ -1,7 +1,7 @@
 /*
 *
 * EnthÑlt die spezifischen Routinen fÅr den Dialog
-* "Anwendungen/Dateitypen auswÑhlen"
+* "Anwendungen/Dateitypen auswÑhlen" bzw. "Registrierte Programme"
 *
 */
 
@@ -42,7 +42,7 @@ struct spd_file {
 	int	datnr;
 };
 
-/* Die 4 "Fenster" */
+/* Die vier "Fenster" */
 
 /*
  PDFLS:	Ist aktiv, wenn keine Applikation ausgewÑhlt ist.
@@ -72,15 +72,13 @@ static int visible_datlen = -1;
 
 static int showindex_to_pgmicnobj(int index)
 {
-	static int icons[] =
-		{PICON1,PICON2,PICON3,PICON4,PICON5};
+	static const int icons[] = {PICON1,PICON2,PICON3,PICON4,PICON5};
 
 	return(icons[index]);
 }
 static int showindex_to_daticnobj(int index)
 {
-	static int icons[] =
-		{DICON1,DICON2,DICON3,DICON4,DICON5};
+	static const int icons[] = {DICON1,DICON2,DICON3,DICON4,DICON5};
 
 	return(icons[index]);
 }
@@ -567,17 +565,22 @@ void ica_dial_init_rsc( void )
 	sc = cat_lines();
 
 	if	(!is_3d)
-		{
+	{
 		for	(i = 1; i < 5; i++)
+		{
 			adr_ica_dialog[ctrl_objs1[i]].ob_spec.obspec.framesize =
 			adr_ica_dialog[ctrl_objs2[i]].ob_spec.obspec.framesize = 1;
+		}
+
 		adr_ica_dialog[ctrl_objs1[3]].ob_spec.obspec.fillpattern =
 		adr_ica_dialog[ctrl_objs2[3]].ob_spec.obspec.fillpattern = 1;
-		}
+	}
 
 	adr_ica_dialog[DEL_PGM].ob_state |= DISABLED;
 	adr_ica_dialog[NEU_DAT].ob_state |= DISABLED;
 	adr_ica_dialog[DEL_DAT].ob_state |= DISABLED;
+	
+	adr_ica_dialog[BUT_VERSION].ob_spec.free_string = PROGRAM_VERSION_STR;
 
 	enable_scroll(NULL, ctrl_objs1);
 	disable_scroll(NULL, ctrl_objs2);
@@ -1520,7 +1523,7 @@ static void dat_was_selected(DIALOG *d, int dat)
 
 /*********************************************************************
 *
-* Behandelt die Exit- Objekte des Icondialogs
+* Behandelt die Exit-Objekte des Icondialogs
 * Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angewÑhlt.
 *
 * objnr = -1:	Initialisierung.

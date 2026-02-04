@@ -6,6 +6,8 @@
 #include <portab.h>
 #endif
 
+#define PROGRAM_VERSION_STR "v1.01"
+
 #define MAX_NAMELEN 34
 #define MAX_PATHLEN 128
 #define MAX_PGMN 300

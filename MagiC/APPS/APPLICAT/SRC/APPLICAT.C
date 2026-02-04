@@ -154,7 +154,7 @@ OBJECT *adr_ftypes;
 * Hauptprogramm
 ********************************************/
 
-int main( int argc, char *argv[] )
+int main(int argc, char *argv[])
 {
 	EVNT w_ev;
 	int	whdl;
@@ -166,8 +166,11 @@ int main( int argc, char *argv[] )
 
 
 	Pdomain(PDOM_MINT);
-	if   ((ap_id = appl_init()) < 0)
+	if ((ap_id = appl_init()) < 0)
+	{
 		Pterm(-1);
+	}
+
 	Mrsrc_load("applicat.rsc", NULL);
 	objc_sysvar(0, MX_ENABLE3D, 0, 0, &is_3d, &dummy);
 	wind_get_grect(SCREEN, WF_WORKXYWH, &scrg);
@@ -212,10 +215,15 @@ int main( int argc, char *argv[] )
 		goto fehler;
 		}
 
+	/* Dialog "Registrierte Programme" */
 	rsrc_gtree(T_APPS, &adr_ica_dialog);
 	ica_dial_init_rsc();
+
+	/* Dialog "Registrierte Pfade */
 	rsrc_gtree(T_FOLDRS, &adr_icp_dialog);
 	icp_dial_init_rsc();
+
+	/* Dialog "Default-Icons" */
 	rsrc_gtree(T_SPECIA, &adr_spc_dialog);
 	spc_dial_init_rsc();
 

@@ -37,6 +37,7 @@
 #define DEL_PGM          36  /* BUTTON in Baum T_APPS */
 #define NEU_DAT          37  /* BUTTON in Baum T_APPS */
 #define DEL_DAT          38  /* BUTTON in Baum T_APPS */
+#define BUT_VERSION      39  /* STRING in Baum T_APPS */
 
 #define T_ANWNDG         1   /* Formular/Dialog */
 #define ANWNDG_T         2   /* FTEXT in Baum T_ANWNDG */
