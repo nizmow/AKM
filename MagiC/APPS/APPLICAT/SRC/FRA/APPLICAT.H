@@ -194,3 +194,21 @@
 #define STR_ERR_MULTITYP 34  /* Freier String */
 
 #define STR_CHOOSE_PATH  35  /* Freier String */
+
+#define STR_APPS         36  /* Freier String */
+
+#define STR_DATS         37  /* Freier String */
+
+#define STR_BTCH         38  /* Freier String */
+
+#define STR_DEVC         39  /* Freier String */
+
+#define STR_ALIS         40  /* Freier String */
+
+#define STR_FLDR         41  /* Freier String */
+
+#define STR_DRVS         42  /* Freier String */
+
+#define STR_TRSH         43  /* Freier String */
+
+#define STR_PRNT         44  /* Freier String */
