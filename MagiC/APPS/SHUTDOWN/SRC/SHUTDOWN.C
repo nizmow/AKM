@@ -85,6 +85,7 @@ int	ap_id;
 int	nappl;
 int	unappl;
 unsigned long timeout = TIMEOUT;
+int language = COUNTRY_UK;
 
 APPLINF applx[NAPPL];
 APPLSPEC uncrit[UNAPPL];
@@ -103,7 +104,7 @@ APPLSPEC uncrit[UNAPPL];
 long Dxreaddir(int len, long dirhandle,
 			char *buf, XATTR *xattr, long *xr)
 {
-	return(gemdos(0x142, len, dirhandle, buf, xattr, xr));
+	return gemdos(0x142, len, dirhandle, buf, xattr, xr);
 }
 
 
@@ -114,7 +115,7 @@ long Dxreaddir(int len, long dirhandle,
 *
 ****************************************************************/
 
-static void exec_pgm_path( char *path )
+static void exec_pgm_path(char *path)
 {
 	long dir;
 	long ret,err_xr;
@@ -125,50 +126,54 @@ static void exec_pgm_path( char *path )
 
 
 	dir = Dopendir(path, 0);		/* Modus: lange Namen */
-	if	(dir < E_OK)
+	if (dir < E_OK)
 		return;				/* Fehler */
-	do	{
+	do
+	{
 
 		/* Name einlesen */
 		/* ------------- */
 
 		ret = Dxreaddir(70, dir, fname, &xa, &err_xr);
 
-		if	(ret || err_xr)
+		if (ret || err_xr)
 			continue;
-		if	((xa.mode & S_IFMT) == S_IFLNK)
-			{
+		if ((xa.mode & S_IFMT) == S_IFLNK)
+		{
 			strcpy(p, path);
 			strcat(p, fname+4);
 			err_xr = Fxattr(0, p, &xa);	/* folge SymLink */
-			if	(err_xr)
+			if (err_xr)
 				continue;
-			}
-		if	((xa.mode & S_IFMT) != S_IFREG)
+		}
+
+		if ((xa.mode & S_IFMT) != S_IFREG)
 			continue;
 		s = strrchr(fname+4, '.');
-		if	(!s)
+		if (!s)
 			continue;
-		if	(!stricmp(s, ".PRG"))
-			{
+
+		if (!stricmp(s, ".PRG"))
+		{
 			strcpy(p, path);
 			strcat(p, fname+4);
 			Pexec(EXE_LDEX, p, "\0", NULL);
-			}
 		}
-	while(!ret && !err_xr);
+	}
+	while (!ret && !err_xr);
+
 	Dclosedir(dir);
 }
 
 
 /****************************************************************
 *
-* Lenkt alle BIOS-Devicehandles auf u:\dev\null um (Handle -4)
+* Lenkt alle BIOS-Device-Handles auf u:\dev\null um (Handle -4)
 * und lîscht alle Devices
 *
 ****************************************************************/
 
-static void shutdown_devices( char *path )
+static void shutdown_devices(char *path)
 {
 	long dir;
 	long ret,err_xr;
@@ -181,55 +186,57 @@ static void shutdown_devices( char *path )
 	Fforce(HDL_AUX, HDL_NUL);
 	Fforce(HDL_PRN, HDL_NUL);
 	dir = Dopendir(path, 0);		/* Modus: lange Namen */
-	if	(dir < E_OK)
+	if (dir < E_OK)
 		return;				/* Fehler */
-	do	{
+	do
+	{
 
 		/* Name einlesen */
 		/* ------------- */
 
 		ret = Dxreaddir(70, dir, fname, &xa, &err_xr);
 
-		if	(ret || err_xr)
+		if (ret || err_xr)
 			continue;
 		strcpy(p, path);
 		strcat(p, fname+4);
-		if	((xa.mode & S_IFMT) == S_IFLNK)
-			{
+		if ((xa.mode & S_IFMT) == S_IFLNK)
+		{
 			err_xr = Fxattr(0, p, &xa);	/* folge SymLink */
-			if	(err_xr)
+			if (err_xr)
 				continue;
-			}
-		if	((xa.mode & S_IFMT) != S_IFCHR)	/* Devices! */
+		}
+		if ((xa.mode & S_IFMT) != S_IFCHR)	/* Devices! */
 			continue;
+
 		Fdelete(p);
 /*
 		Cconws("FDELETE ");
 		Cconws(p);
 		printf(" => %ld\n", );
 */
-		}
-	while(!ret && !err_xr);
+	}
+	while (!ret && !err_xr);
 	Dclosedir(dir);
 }
 
 
 /****************************************************************
 *
-* Entfernt rechtsbÅndige Leerstellen aus <string>
+* Entfernt rechtsbÅndige Leerstellen aus <s>
 *
 ****************************************************************/
 
-static void trim( char *s )
+static void trim(char *s)
 {
 	register char *t;
 
 	t = s + strlen(s) - 1;
-	while((t >= s) && isspace(*t))
-		{
+	while ((t >= s) && isspace(*t))
+	{
 		*t = EOS;
 		t--;
-		}
+	}
 }
 
 
@@ -239,7 +246,7 @@ static void trim( char *s )
 *
 ****************************************************************/
 
-static int readline( int hdl, char *line )
+static int readline(int hdl, char *line)
 {
 	register char *s;
 	long ret;
@@ -247,36 +254,38 @@ static int readline( int hdl, char *line )
 	again:
 	s = line;
 	*s = '\0';
-	do	{
+	do{
 		ret = Fread(hdl, 1L, s);
-		if	(ret < E_OK)
-			{
+		if (ret < E_OK)
+		{
 			/* error("Lesefehler"); */
-			return(0);
-			}
-		if	(ret != 1L)
-			{
+			return 0;
+		}
+		if (ret != 1L)
+		{
 			/* error("Dateiende"); */
 			*s = EOS;
 			trim(line);
-			return((s == line) ? 0 : 1);
-			}
-		if	(*s == '\r')
-			continue;		/* CR Åberlesen */
-		if	(*s != '\n')
-			s++;
-		if	((s - line) > (LBUFLEN - 2))
-			{
-			/* error("ZeilenÅberlauf"); */
-			return(0);
-			}
+			return (s == line) ? 0 : 1;
 		}
-	while(*s != '\n');
+		if (*s == '\r')
+			continue;		/* CR Åberlesen */
+		if (*s != '\n')
+			s++;
+		if ((s - line) > (LBUFLEN - 2))
+		{
+			/* error("ZeilenÅberlauf"); */
+			return 0;
+		}
+	}
+	while (*s != '\n');
+
 	*s = EOS;
 	trim(line);
-	if	(line[0] == ';')
+	if (line[0] == ';')
 		goto again;		/* Kommentar */
-	return(1);
+
+	return 1;
 }
 
 
@@ -286,7 +295,7 @@ static int readline( int hdl, char *line )
 *
 ****************************************************************/
 
-void load_defaults( void )
+void load_defaults(void)
 {
 	char path[128] = "shutdown.inf";
 	int hdl;
@@ -299,83 +308,95 @@ void load_defaults( void )
 		Cconws("Suche INF-Datei\r\n");
 #endif
 
-	if	(!shel_find(path))
+	if (!shel_find(path))
 		return;
 
 	hdl = (int) Fopen(path, RMODE_RD);
-	if	(hdl <= 0)
+	if (hdl <= 0)
 		return;
+
 	unappl = 0;
-	while(readline(hdl, path) && unappl < UNAPPL)
-		{
+	while (readline(hdl, path) && unappl < UNAPPL)
+	{
 		s = path;
-		while(*s == ' ')	/* fÅhrende ' ' entfernen */
+		while (*s == ' ')	/* fÅhrende ' ' entfernen */
 			s++;
-		if	(!*s)
+		if (!*s)
 			continue;		/* Leerzeile entfernen */
-		if	(*s == '#')
+		if (*s == '#')
 			continue;		/* Kommentarzeilen */
 
-		if	(!strnicmp(s, "TIMEOUT ", 8))
-			{
+		if (!strnicmp(s, "TIMEOUT ", 8))
+		{
 			uncrit[unappl].typ = 'T';
 			s += 8;
-			while(*s == ' ')	/* fÅhrende ' ' entfernen */
+			while (*s == ' ')	/* fÅhrende ' ' entfernen */
 				s++;
-			if	(!*s)
+			if (!*s)
 				continue;		/* Leerzeile entfernen */
 			t = strtoul(s, &endptr, 10);
-			if	(s == endptr)
+			if (s == endptr)
 				goto err;
 			timeout = t;
-			}
+		}
 		else
-		if	(!strnicmp(s, "TERMINATE ", 10))
-			{
+		if (!strnicmp(s, "TERMINATE ", 10))
+		{
 			uncrit[unappl].typ = 'T';
 			s += 10;
-			}
+		}
 		else
-		if	(!strnicmp(s, "IGNORE ", 7))
-			{
+		if (!strnicmp(s, "IGNORE ", 7))
+		{
 			uncrit[unappl].typ = 'I';
 			s += 7;
-			}
-		else	{
+		}
+		else
+		{
 			char s[60];
 			char t[256];
 
 			err:
 			strncpy(s, path, 59);
 			s[59] = EOS;
-			#if		COUNTRY==FRG
-			strcpy(t, "[3][SHUTDOWN:|Fehler in SHUTDOWN.INF. Zeile| |");
-			strcat(t, s);
-			strcat(t, "][Weiter]");
-			#elif	COUNTRY==USA
-			strcpy(t, "[3][SHUTDOWN:|Error in SHUTDOWN.INF. Line| |");
-			strcat(t, s);
-			strcat(t, "][Continue]");
-			#elif	COUNTRY==FRA
-			strcpy(t, "[3][SHUTDOWN:|Erreur dans SHUTDOWN.INF. Ligne| |");
-			strcat(t, s);
-			strcat(t, "][Suite]");
-			#endif
+			
+			strcpy(t, "[3][SHUTDOWN:|");
+			if (language == COUNTRY_DE)
+			{
+				strcat(t, "Fehler in SHUTDOWN.INF. Zeile| |");
+				strcat(t, s);
+				strcat(t, "][Weiter]");
+			}
+			else
+			if (language == COUNTRY_FR)
+			{
+				strcat(t, "Erreur dans SHUTDOWN.INF. Ligne| |");
+				strcat(t, s);
+				strcat(t, "][Suite]");
+			}
+			else
+			{
+				strcat(t, "Error in SHUTDOWN.INF. Line| |");
+				strcat(t, s);
+				strcat(t, "][Continue]");
+			}
+			
 			form_alert(1, t);
 			continue;
-			}
+		}
 		
-		while(*s == ' ')	/* fÅhrende ' ' entfernen */
+		while (*s == ' ')	/* fÅhrende ' ' entfernen */
 			s++;
-		if	(!*s)
+		if (!*s)
 			continue;		/* Leerzeile entfernen */
 
 		strncpy(uncrit[unappl].name, s, 9);
 		unappl++;
-		}
+	}
+
 	Fclose(hdl);
 #if DEBUG
-		Cconws("INF-Datei verarbeitet\r\n");
+	Cconws("INF-Datei verarbeitet\r\n");
 #endif
 }
 
@@ -387,9 +408,9 @@ void load_defaults( void )
 *
 ****************************************************************/
 
-void get_all_apps( void )
+void get_all_apps(void)
 {
-	int i,j;
+	int i, j;
 	char apname[16];
  	int aptyp, apid;
 
@@ -397,28 +418,31 @@ void get_all_apps( void )
 	/* sfirst */
 	nappl = 0;
 	i = appl_search(0, apname, &aptyp, &apid);
-	while(i && nappl < NAPPL)
-		{
+
+	while (i && nappl < NAPPL)
+	{
 		trim(apname);
-		if	((apid != ap_id) && (aptyp == AP_APPLICATION))
-			{
+		if ((apid != ap_id) && (aptyp == AP_APPLICATION))
+		{
 			for	(j = 0; j < unappl; j++)
-				{
-				if	(uncrit[j].typ != 'I')
+			{
+				if (uncrit[j].typ != 'I')
 					continue;
-				if	(!stricmp(uncrit[j].name, apname))
+				if (!stricmp(uncrit[j].name, apname))
 					goto weiter;
-				}
+			}
+
 			strcpy(applx[nappl].name, apname);
 			applx[nappl].typ = aptyp;
 			applx[nappl].id = apid;
 			nappl++;
 			weiter:
 			;
-			}
+		}
+
 		/* snext */
 		i = appl_search(1, apname, &aptyp, &apid);
-		}
+	}
 }
 
 
@@ -434,7 +458,7 @@ void get_all_apps( void )
 *
 ******************************************************************/
 
-void remove_app( int apid, char *name )
+void remove_app(int apid, char *name)
 {
 	int pid;
 	char path[256];
@@ -443,8 +467,8 @@ void remove_app( int apid, char *name )
 
 	val = 0xfffe0000L | apid;
 	pid = appl_find((char *) val);	/* apid -> pid */
-	if	(pid >= 0)
-		{
+	if (pid >= 0)
+	{
 		sprintf(path, "u:\\proc\\*.%03d", pid);
 		Fdelete(path);
 
@@ -455,7 +479,7 @@ void remove_app( int apid, char *name )
 			(val < 100) && (appl_find(name) >= 0);
 			val++)
 			evnt_timer(10);	/* 10ms */
-		}
+	}
 }
 
 
@@ -474,23 +498,28 @@ void remove_app( int apid, char *name )
 * 
 ******************************************************************/
 
-void remove_apps( char type )
+void remove_apps(char type)
 {
-	register int i,apid;
+	register int i, apid;
 	char name[9];
 
 
 	for	(i = 0; i < unappl; i++)
-		{
-		if	(uncrit[i].typ != type)
+	{
+		if (uncrit[i].typ != type)
 			continue;
 		strcpy(name, uncrit[i].name);
-		while(strlen(name) < 8)
+
+		while (strlen(name) < 8)
 			strcat(name, " ");
+
 		apid = appl_find(name);
-		if	(apid >= 0)				/* Programm lÑuft */
-			remove_app( apid, name );
+		if (apid >= 0)
+		{
+			/* Programm lÑuft */
+			remove_app(apid, name);
 		}
+	}
 }
 
 
@@ -500,7 +529,7 @@ void remove_apps( char type )
 *
 ****************************************************************/
 
-void remove_accs( void )
+void remove_accs(void)
 {
 	int i;
 	char apname[16];
@@ -510,17 +539,18 @@ void remove_accs( void )
 	/* sfirst */
 	nappl = 0;
 	i = appl_search(0, apname, &aptyp, &apid);
-	while(i && nappl < NAPPL)
-		{
+
+	while (i && nappl < NAPPL)
+	{
 		trim(apname);
-		if	((apid != ap_id) && (aptyp == AP_ACCESSORY))
-			{
+		if ((apid != ap_id) && (aptyp == AP_ACCESSORY))
+		{
 			remove_app(apid, apname);
 			nappl++;
-			}
+		}
 		/* snext */
 		i = appl_search(1, apname, &aptyp, &apid);
-		}
+	}
 }
 
 
@@ -530,13 +560,13 @@ void remove_accs( void )
 *
 * Erwartet ein bis vier Parameter:
 *
-* arg1 =	[-w|-c] Warm- bzw. Kaltstart ohne RÅckfrage
-* arg2 =	GerÑtenummer (dev), Default: -1
-*		wenn -1: Shutdown, kein Auflîsungswechsel
+* arg1 = [-w|-c] Warm- bzw. Kaltstart ohne RÅckfrage
+* arg2 = GerÑtenummer (dev), Default: -1
+*		  wenn -1: Shutdown, kein Auflîsungswechsel
 *
-* arg3 =  Texthîhe. Default: 0 (d.h. nicht setzen)
+* arg3 = Texthîhe. Default: 0 (d.h. nicht setzen)
 *
-* arg4 = 	Falcon- Auflîsungsmodus.
+* arg4 = Falcon-Auflîsungsmodus.
 *
 ******************************************************************/
 
@@ -558,52 +588,64 @@ int main(int argc, char *argv[])
 
 	ap_id = appl_init();
 
+	/* get AES language, sub-function 3 */
+	(void) appl_getinfo(3, &language, NULL, NULL, NULL);
+	/* reduce to supported languages: EN,DE,FR */
+	if ((language == COUNTRY_US) || (language > COUNTRY_UK))
+	{
+		language = COUNTRY_UK;
+	}
+
 	/* -w oder -c */
 
-	if	((argc >= 2) && (argv[1][0] == '-'))
-		{
+	if ((argc >= 2) && (argv[1][0] == '-'))
+	{
 		c = toupper(argv[1][1]);
-		if	(c == 'C')
+		if (c == 'C')
 			bootmode = coldboot;
 		else
-		if	(c == 'W')
+		if (c == 'W')
 			bootmode = warmboot;
 		argv++;
 		argc--;
-		}
+	}
 
-	if	(argc >= 2)
+	if (argc >= 2)
 		dev = atoi(argv[1]);
-	else	dev = -1;
+	else
+		dev = -1;
 
-	if	(argc >= 3)
+	if (argc >= 3)
 		txt = atoi(argv[2]);
-	else	txt = 0;
+	else
+		txt = 0;
 
-	if	(argc >= 4)			/* Falcon-Modus */
-		{
+	if (argc >= 4)			/* Falcon-Modus */
+	{
 		xdv = atoi(argv[3]);
 		isfalcon = TRUE;
-		}
-	else	{
+	}
+	else
+	{
 		xdv = 0;
 		isfalcon = FALSE;
-		}
+	}
 
 	load_defaults();
-	if	(dev < 0)
-		{
+	if (dev < 0)
+	{
 		doex = SHW_SHUTDOWN;
 		isgr = TRUE;
 		isover = 0;
-		}
-	else	{
+	}
+	else
+	{
 		doex = SHW_RESCHNG;
 		isgr = (isfalcon) ? xdv : dev;
 		isover = (txt << 8) + isfalcon;
-		if	((isfalcon) && (dev != 5))
+		if ((isfalcon) && (dev != 5))
 			isover += (dev << 1);
-		}
+	}
 
 	msgtyp = (dev < 0) ? SHUT_COMPLETED : RESCH_COMPLETED;
 
@@ -614,7 +656,7 @@ int main(int argc, char *argv[])
 	/* ---------------------------------------------- */
 
 	for	(iteration = 0; iteration < 2; iteration++)
-		{
+	{
 
 #if DEBUG
 		Cconws("initiiere SHUTDOWN beim AES\r\n");
@@ -632,30 +674,40 @@ int main(int argc, char *argv[])
 		Cconws("\r\n");
 #endif
 
-		if	(!shel_write(doex, isgr, isover, NULL, NULL))
+		if (!shel_write(doex, isgr, isover, NULL, NULL))
+		{
+			const char *t;
+
+			if (language == COUNTRY_DE)
 			{
-			#if		COUNTRY==FRG
-			form_alert(1, 	"[3][SHUTDOWN:| |"
+				t = "[3][SHUTDOWN:| |"
 						"Prozeû ist gesperrt.]"
-						"[Abbruch]");
-			#elif	COUNTRY==USA
-			form_alert(1, 	"[3][SHUTDOWN:| |"
-						"Process ist currently locked.]"
-						"[Cancel]");
-			#elif	COUNTRY==FRA
-			form_alert(1,  "[3][SHUTDOWN:| |"
-						"Processus bloquÇ.]"
-						"[Abandon]");
-			#endif
-			appl_exit();
-			return(1);
+						"[Abbruch]";
 			}
+			else
+			if (language == COUNTRY_FR)
+			{
+				t = "[3][SHUTDOWN:| |"
+						"Processus bloquÇ.]"
+						"[Abandon]";
+			}
+			else
+			{
+				t = "[3][SHUTDOWN:| |"
+						"Process ist currently locked.]"
+						"[Cancel]";
+			}
+
+			form_alert(1, t);
+			appl_exit();
+			return 1;
+		}
 	
 #if DEBUG
 		Cconws("entferne kritische Programme\r\n");
 #endif
 
-		remove_apps( 'T' );		/* "schlechte" APPs entfernen */
+		remove_apps('T');		/* "schlechte" APPs entfernen */
 
 		/* Wir warten auf SHUT/RESCH_COMPLETED oder	*/
 		/* auf einen Timeout.					*/
@@ -665,8 +717,8 @@ int main(int argc, char *argv[])
 		Cconws("warte auf SHUT/RESCH_COMPLETED\r\n");
 #endif
 
-		do	{
-			ev = evnt_multi( (timeout) ? MU_MESAG+MU_TIMER : MU_MESAG,
+		do{
+			ev = evnt_multi((timeout) ? MU_MESAG+MU_TIMER : MU_MESAG,
 							0,0,0,				/* keine Mausklicks */
 							0,NULL,				/* kein 1. Rechteck */
 							0,NULL,				/* kein 2. Rechteck */
@@ -679,27 +731,38 @@ int main(int argc, char *argv[])
 			/* Timeout.							*/
 			/* ----------------------------------------- */
 
-			if	(ev & MU_TIMER)
+			if (ev & MU_TIMER)
+			{
+				const char *t;
+
+				if (language == COUNTRY_DE)
 				{
-				#if		COUNTRY==FRG
-				form_alert(1, 	"[3][SHUTDOWN:| |"
+					t = "[3][SHUTDOWN:| |"
 							"ZeitÅberschreitung.]"
-							"[Abbruch]");
-				#elif	COUNTRY==USA
-				form_alert(1, 	"[3][SHUTDOWN:| |"
-							"Timeout.]"
-							"[Cancel]");
-				#elif   COUNTRY==FRA
-				form_alert(1,   "[3][SHUTDOWN:| |"
+							"[Abbruch]";
+				}
+				else
+				if (language == COUNTRY_FR)
+				{
+					t = "[3][SHUTDOWN:| |"
 							 "DÇbordement temps.]"
-							 "[Abandon]");
-				#endif
+							 "[Abandon]";
+				}
+				else
+				{
+					t = "[3][SHUTDOWN:| |"
+							"Timeout.]"
+							"[Cancel]";
+				}
+
+				form_alert(1, t);
+
 				shel_write(SHW_SHUTDOWN, FALSE, 0, NULL, NULL);
 				appl_exit();
-				return(3);
-				}
+				return 3;
 			}
-		while((!(ev & MU_MESAG)) || (buf[0] != msgtyp));
+		}
+		while ((!(ev & MU_MESAG)) || (buf[0] != msgtyp));
 
 #if DEBUG
 		Cconws("SHUT_COMPLETED eingetroffen => ");
@@ -709,8 +772,9 @@ int main(int argc, char *argv[])
 		/* SHUT/RESCH_COMPLETED eingetroffen	*/
 		/* ------------------------------------ */
 
-		if	(!buf[3] && (buf[4] >= 0))
-			{
+		if (!buf[3] && (buf[4] >= 0))
+		{
+			char *template;
 
 			/* Eine Applikation hat den Prozeû per AP_TFAIL   */
 			/* verweigert.								*/
@@ -720,34 +784,40 @@ int main(int argc, char *argv[])
 			apname[0] = '?';
 			apname[1] = '\0';
 			apname[2] = (int) buf[4];
-			if	(!appl_find(apname))
+			if (!appl_find(apname))
+			{
 				strcpy(apname, "<Unbekannt>");
+			}
 
-			sprintf(s,
-			#if		COUNTRY==FRG
-					"[3][SHUTDOWN:| |"
+			if (language == COUNTRY_DE)
+			{
+				template = "[3][SHUTDOWN:| |"
 					"Shutdown- Prozeû nicht mîglich.|"
 					"%s lieferte Fehlercode %d.]"
-					"[Abbruch]",
-					apname, buf[5]);
-			#elif	COUNTRY==USA
-					"[3][SHUTDOWN:| |"
-					"Shutdown process failed.|"
-					"%s has sent error code %d.]"
-					"[Cancel]",
-					apname, buf[5]);
-			#elif	COUNTRY==FRA
-					"[3][SHUTDOWN:| |"
+					"[Abbruch]";
+			}
+			else
+			if (language == COUNTRY_FR)
+			{
+				template = "[3][SHUTDOWN:| |"
 					"Processus Shutdown impossible. |"
 					"%s retourne erreur %d.]"
-					"[Abandon]",
-					apname, buf[5]);
-			#endif
+					"[Abandon]";
+			}
+			else
+			{
+				template = "[3][SHUTDOWN:| |"
+					"Shutdown process failed.|"
+					"%s has sent error code %d.]"
+					"[Cancel]";
+			}
+
+			sprintf(s, template, apname, buf[5]);
 
 			form_alert(1, s);
 			appl_exit();
-			return(2);
-			}
+			return 2;
+		}
 
 		/*
 		Cconws("Shutdown- Prozeû ist OK.\r\n");
@@ -763,76 +833,88 @@ int main(int argc, char *argv[])
 		/*		"Shutdown erfolgreich beendet"		*/
 		/* ---------------------------------------------- */
 
-		if	(buf[3])
+		if (buf[3])
+		{
 			nappl = 0;
-		else	{
+		}
+		else
+		{
 			/* Test auf "alte" Programme					*/
 			/* ---------------------------------------------- */
 	
 			i = 0;
-			do	{
+			do
+			{
 				get_all_apps();
-				if	(nappl)
+				if (nappl)
 					evnt_timer(100);	/* 0,1s warten */
 				i++;
-				}
-			while(nappl && i < 50);		/* ges.: 5s warten */
+			}
+			while (nappl && i < 50);		/* ges.: 5s warten */
 	
 			for	(ev = 0; ev < nappl; ev++)
+			{
+				const char *template;
+
+				if (language == COUNTRY_DE)
 				{
-				sprintf(s,
-				#if		COUNTRY==FRG
-						"[3][SHUTDOWN:| |"
+					template = "[3][SHUTDOWN:| |"
 						"%s ist noch aktiv.|"
 						"Bitte manuell beenden!]"
-						"[Abbruch]",
-				#elif	COUNTRY==USA
-						"[3][SHUTDOWN:| |"
-						"%s is still running.|"
-						"Please terminate manually!]"
-						"[Cancel]",
-				#elif	COUNTRY==FRA
-						"[3][SHUTDOWN:| |"
+						"[Abbruch]";
+				}
+				else
+				if (language == COUNTRY_FR)
+				{
+					template = "[3][SHUTDOWN:| |"
 						"%s encore actif.|"
 						"Quittez manuellement !]"
-						"[Abandon]",
-				#endif
-						applx[ev].name);
-				form_alert(1, s);
+						"[Abandon]";
 				}
+				else
+				{
+					template = "[3][SHUTDOWN:| |"
+						"%s is still running.|"
+						"Please terminate manually!]"
+						"[Cancel]";
+				}
+
+				sprintf(s, template, applx[ev].name);
+				form_alert(1, s);
 			}
+		}
 
 		/* Wenn noch Programme laufen, die nicht ignoriert	*/
 		/* werden dÅrfen, wird der Shutdown-Prozeû hier		*/
 		/* abgebrochen.								*/
 		/* --------------------------------------------------- */
 
-		if	(nappl)
-			{
+		if (nappl)
+		{
 #if DEBUG
-		Cconws("Es laufen noch Programme.\r\n");
+			Cconws("Es laufen noch Programme.\r\n");
 #endif
 
 			/* unnîtig, buf[3] ist sowieso 0, d.h. kein Shutdown:
 			shel_write(SHW_SHUTDOWN, FALSE, 0, NULL, NULL);
 			*/
 			break;
-			}
+		}
 
-		/* Wenn nur noch Programme laufen, die ignoriert		*/
-		/* werden dÅrfen, hat das AES aber den Shutdown-Prozeû	*/
-		/* schon abgebrochen. D.h. wir mÅssen diese Programme	*/
-		/* entfernen und starten einen 2. Versuch.			*/
+		/* Wenn nur noch Programme laufen, die ignoriert       */
+		/* werden dÅrfen, hat das AES aber den Shutdown-Prozeû */
+		/* schon abgebrochen. D.h. wir mÅssen diese Programme  */
+		/* entfernen und starten einen zweiten Versuch.        */
 		/* --------------------------------------------------- */
 
-		if	(!buf[3])
-			{
+		if (!buf[3])
+		{
 #if DEBUG
 			Cconws("Es laufen nur unwichtige Programme.\r\n");
 #endif
-			remove_apps( 'I' );
+			remove_apps('I');
 			continue;
-			}
+		}
 
 #if DEBUG
 		Cconws("SHUTDOWN wird ausgefÅhrt.\r\n");
@@ -842,66 +924,80 @@ int main(int argc, char *argv[])
 		/* Modus, wir kînnen zuschlagen					*/
 		/* --------------------------------------------------- */
 
-		remove_accs( );
+		remove_accs();
 
 /* beim Auflîsungswechsel nicht ausfÅhren
-		exec_pgm_path( "\\GEMSYS\\MAGIC\\STOP\\" );
-		shutdown_devices( "U:\\DEV\\" );
+		exec_pgm_path("\\GEMSYS\\MAGIC\\STOP\\");
+		shutdown_devices("U:\\DEV\\");
 */
 
 		/* Shutdown */
 		/* -------- */
 
-		if	(dev < 0)
-			{
+		if (dev < 0)
+		{
 #if DEBUG
 			Bconin(2);
 #endif
-			exec_pgm_path( "\\GEMSYS\\MAGIC\\STOP\\" );
+			exec_pgm_path("\\GEMSYS\\MAGIC\\STOP\\");
 #if DEBUG
 			Bconin(2);
 #endif
-			shutdown_devices( "U:\\DEV\\" );
+			shutdown_devices("U:\\DEV\\");
 #if DEBUG
 			Bconin(2);
 #endif
 			xbios(39, 'AnKr', 0);	/* Beendet MagicMac */
 
-			if	(bootmode == ask)
+			if (bootmode == ask)
+			{
+				const char *t;
+
+				if (language == COUNTRY_DE)
 				{
-				#if		COUNTRY==FRG
-				dev = form_alert(1, 	"[3][SHUTDOWN:| |"
+					t = "[3][SHUTDOWN:| |"
 							"Shutdown war erfolgreich.|"
 							"Rechner jetzt abschalten!]"
-							"[Neustart|Kaltstart]");
-				#elif	COUNTRY==USA
-				dev = form_alert(1, 	"[3][SHUTDOWN:| |"
-							"Shutdown was successful.|"
-							"Shut off computer now!]"
-							"[Restart|Cold Boot]");
-				#elif	COUNTRY==FRA
-				dev = form_alert(1,     "[3][SHUTDOWN:| |"
+							"[Neustart|Kaltstart]";
+				}
+				else
+				if (language == COUNTRY_FR)
+				{
+					t = "[3][SHUTDOWN:| |"
 							"Shutdown rÇussi.|"
 							"Eteignez l'ordinateur!]"
-							"[RedÇmarrer|Reset Ö froid]");
-				#endif
-/*				shel_write(SHW_SHUTDOWN, FALSE, 0, NULL, NULL);	*/
-				if	(dev == 1)
-					bootmode = warmboot;
-				else	bootmode = coldboot;
+							"[RedÇmarrer|Reset Ö froid]";
 				}
-			xbios(39, 'AnKr', bootmode);	/* warm/cold boot */
+				else
+				{
+					t = "[3][SHUTDOWN:| |"
+							"Shutdown was successful.|"
+							"Shut off computer now!]"
+							"[Restart|Cold Boot]";
+				}
+
+				dev = form_alert(1, t);
+
+/*				shel_write(SHW_SHUTDOWN, FALSE, 0, NULL, NULL);	*/
+
+				if (dev == 1)
+					bootmode = warmboot;
+				else
+					bootmode = coldboot;
 			}
+
+			xbios(39, 'AnKr', bootmode);	/* warm/cold boot */
+		}
 
 		/* Auflîsungswechsel: ausfÅhren */
 		/* ---------------------------- */
 
 		break;
-		}
+	}
 
 	/* Alles OK. Wir terminieren und machen Aufl.wechsel/Neustart */
 	/* ---------------------------------------------------------- */
 
 	appl_exit();
-	return(0);
+	return 0;
 }
