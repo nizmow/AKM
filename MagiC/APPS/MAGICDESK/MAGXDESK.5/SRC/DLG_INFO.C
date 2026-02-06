@@ -9,6 +9,7 @@
 #include "k.h"
 #include <stdlib.h>
 #include <string.h>
+#include "ll.h"
 
 #define INFO_FILE_NOBJS (FI_SIZER+1)
 #define ALIAS_MAXLEN 255
@@ -366,7 +367,6 @@ static int init_info_file_tree( INFO_FILE_DATA *ifd, int weiter )
 		{
 		DISKINFO frei;
 		int lw;
-		extern void ullmul( ULONG m1, ULONG m2, ULONG erg[2]);
 		int offs;
 
 

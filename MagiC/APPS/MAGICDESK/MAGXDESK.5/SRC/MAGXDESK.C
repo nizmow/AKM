@@ -20,7 +20,7 @@
 * global variables
 */
 
-char *pgm_ver = "5.03";	/* may not exceed four characters, due to .RSC file */
+char *pgm_ver = "5.04";	/* may not exceed four characters, due to .RSC file */
 
 char *gmemptr = NULL;
 WINDOW *fenster[ANZFENSTER+1];

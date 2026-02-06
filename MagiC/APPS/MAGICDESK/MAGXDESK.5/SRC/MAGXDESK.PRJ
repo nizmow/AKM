@@ -3,8 +3,8 @@ MAGXDESK.APP
 .C[-Iimport]	; .h search path
 .L[-S=$800]		; stack size
 =
-import\tcmstart.o
-;MINSTART.S							; minimaler Startup-Code
+;import\tcmstart.o
+MINSTART.S							; minimaler Startup-Code
 MAGXDESK	(k.h,magxdesk.h)	[-P -W-stv]	; RAHMENPROGRAMM, REDRAWS
 DMENU	(k.h,magxdesk.h)	[-P -W-stv]	; Menue
 DEFAULTS	(k.h,magxdesk.h)	[-P -W-stv]	; LADEN/ABSPEICHERN DER EINSTELLUNGEN

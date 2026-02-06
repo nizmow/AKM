@@ -44,7 +44,7 @@ void allg_init( void )
 void top_all_my_windows( void )
 {
 	wind_set_int(0, 22367, ap_id);
-	if	(menu_bar(NULL, -1) != ap_id)
+	if (menu_bar(NULL, -1) != ap_id)
 		menu_bar(adr_hauptmen, TRUE);
 }
 
@@ -63,7 +63,7 @@ void xgrf_rbox( GRECT *clip, GRECT *box )
 	*((GRECT *) (d.intin)) = *clip;
 	*((GRECT *) (d.intin+4)) = *box;
 
-	_mt_aes( &d, c, NULL );
+	_mt_aes(&d, c, NULL);
 }
 
 
@@ -77,11 +77,11 @@ int top_whdl( void )
 {
 	int whdl;
 
-	if	(!wind_get_int(0, WF_TOP, &whdl))
-		return(-1);
-	if	(whdl < 0)
-		return(-1);
-	return(whdl);
+	if (!wind_get_int(0, WF_TOP, &whdl))
+		return -1;
+	if (whdl < 0)
+		return -1;
+	return whdl;
 }
 
 
@@ -103,7 +103,7 @@ int rc_intersect(GRECT *p1, GRECT *p2)
 	p2->g_y = ty;
 	p2->g_w = tw - tx;
 	p2->g_h = th - ty;
-	return( (tw > tx) && (th > ty) );
+	return (tw > tx) && (th > ty);
 }
 
 
@@ -120,20 +120,20 @@ void objc_grect(OBJECT *tree, int objn, GRECT *g)
 	g -> g_w = tree -> ob_width;
 	g -> g_h = tree -> ob_height;
 /*
-	if	(tree->ob_type == G_FTEXT)
-		{
+	if (tree->ob_type == G_FTEXT)
+	{
 		int thickness;
 
 		thickness = tree->ob_spec.tedinfo->te_thickness;
-		if	(thickness < 0)
-			{
+		if (thickness < 0)
+		{
 			g -> g_x += thickness;
 			g -> g_y += thickness;
 			thickness <<= 1;
 			g -> g_w -= thickness;
 			g -> g_h -= thickness;
-			}
 		}
+	}
 */
 }
 
@@ -151,9 +151,9 @@ void objc_visgrect(OBJECT *tree, int objn, GRECT *g)
 
 	o = tree + objn;
 	objc_offset(tree, objn, &nx, &ny);
-	if	(((o -> ob_type == G_BUTTON) || (o -> ob_type == G_FTEXT)) &&
+	if (((o -> ob_type == G_BUTTON) || (o -> ob_type == G_FTEXT)) &&
 		 (o-> ob_flags & FL3DMASK))
-		{
+	{
 		x = o->ob_x;
 		y = o->ob_y;
 		form_center(o, g);
@@ -161,13 +161,13 @@ void objc_visgrect(OBJECT *tree, int objn, GRECT *g)
 		g->g_y += ny - o->ob_y;
 		o->ob_x = x;
 		o->ob_y = y;
-		}
-	else	{
+	}
+	else{
 		g -> g_x = nx;
 		g -> g_y = ny;
 		g -> g_w = o -> ob_width;
 		g -> g_h = o -> ob_height;
-		}
+	}
 }
 
 
@@ -218,10 +218,11 @@ void subobj_draw(OBJECT *tree, int obj, int n, char *s)
 
 
 	z = (tree+obj)->ob_spec.free_string;
-	if	(s)
+	if (s)
 		strcpy(z,s);
-	else if	(n >= 0)
-			ultoa(n, z, 10);
+	else
+	if (n >= 0)
+		ultoa(n, z, 10);
 	objc_grect(tree, obj, &g);
 	objc_draw (tree, 0, MAX_DEPTH, &g);
 }
@@ -243,45 +244,46 @@ int find_obj(OBJECT *tree, int x, int y)
 	int end;
 
 
-	if	((i = (tree -> ob_head)) < 0)
+	if ((i = (tree -> ob_head)) < 0)
 		return(0);
-	if	((tree -> ob_flags) & HIDETREE)
+	if ((tree -> ob_flags) & HIDETREE)
 		return(-1);			/* etwa inaktiver Hintergrund */
 	end = tree -> ob_tail;
 	x -= tree -> ob_x;			/* Position der Root abziehen */
 	y -= tree -> ob_y;
 	for	(; i <= end; i++)
-		{
+	{
 		tree++;
-		if	((tree->ob_flags) & HIDETREE)
+		if ((tree->ob_flags) & HIDETREE)
 			continue;
 		/* 1. Fall: ICON */
-		if	((tree -> ob_type == G_ICON) || (tree -> ob_type == G_CICON))
-			{
+		if ((tree -> ob_type == G_ICON) || (tree -> ob_type == G_CICON))
+		{
 			icn = tree->ob_spec.iconblk;
 			/* 1. Fall: Icon selbst */
 			obx = tree->ob_x + icn->ib_xicon;
 			oby = tree->ob_y + icn->ib_yicon;
 			obw = icn->ib_wicon;
 			obh = icn->ib_hicon;
-			if	(x >= obx && x < obx+obw && y >= oby && y < oby+obh)
+			if (x >= obx && x < obx+obw && y >= oby && y < oby+obh)
 				return(i);
 			/* 2. Fall: Unterschrift */
 			obx = tree->ob_x + icn->ib_xtext;
 			oby = tree->ob_y + icn->ib_ytext;
 			obw = icn->ib_wtext;
 			obh = icn->ib_htext;
-			if	(x >= obx && x < obx+obw && y >= oby && y < oby+obh)
+			if (x >= obx && x < obx+obw && y >= oby && y < oby+obh)
 				return(i);
-			}
+		}
 		/* 2. Fall: sonst (STRING bzw. G_USERDEF) */
 		else {
-			if	(x >= tree->ob_x && x < tree->ob_x+tree->ob_width &&
+			if (x >= tree->ob_x && x < tree->ob_x+tree->ob_width &&
 				 y >= tree->ob_y && y < tree->ob_y+tree->ob_height)
 				return(i);
-			}
 		}
-	return(0);
+	}
+
+	return 0;
 }
 
 
@@ -293,13 +295,14 @@ void objs_hide(OBJECT *tree, ...)
 	int	objnr;
 
 	va_start(argpoint, tree);
-	do	{
+	do
+	{
 		objnr = va_arg(argpoint, int);
-		if	(objnr == 0)
+		if (objnr == 0)
 			break;
 		(tree+objnr)->ob_flags |= HIDETREE;
-		}
-	while(TRUE);
+	}
+	while (TRUE);
 	va_end(argpoint);
 }
 
@@ -311,13 +314,13 @@ void objs_unhide(OBJECT *tree, ...)
 	int	objnr;
 
 	va_start(argpoint, tree);
-	do	{
+	do{
 		objnr = va_arg(argpoint, int);
-		if	(objnr == 0)
+		if (objnr == 0)
 			break;
 		(tree+objnr)->ob_flags &= ~HIDETREE;
-		}
-	while(TRUE);
+	}
+	while (TRUE);
 	va_end(argpoint);
 }
 
@@ -330,12 +333,12 @@ void objs_editable(OBJECT *tree, ...)
 
 	va_start(argpoint, tree);
 	for	(;;)
-		{
+	{
 		objnr = va_arg(argpoint, int);
-		if	(objnr == 0)
+		if (objnr == 0)
 			break;
 		(tree+objnr)->ob_flags |= EDITABLE;
-		}
+	}
 	va_end(argpoint);
 }
 
@@ -348,12 +351,12 @@ void objs_uneditable(OBJECT *tree, ...)
 
 	va_start(argpoint, tree);
 	for	(;;)
-		{
+	{
 		objnr = va_arg(argpoint, int);
-		if	(objnr == 0)
+		if (objnr == 0)
 			break;
 		(tree+objnr)->ob_flags &= ~EDITABLE;
-		}
+	}
 	va_end(argpoint);
 }
 
@@ -368,21 +371,21 @@ void objs_disable(OBJECT *tree, ...)
 
 	va_start(argpoint, tree);
 	for	(;;)
-		{
+	{
 		objnr = va_arg(argpoint, int);
-		if	(objnr == 0)
+		if (objnr == 0)
 			break;
 		t = tree + objnr;
 		/* mind. 16 Farben: G_TEXT Dunkelgrau auf Hellgrau */
-		if	((t->ob_type == G_FTEXT) && (aes_global[10] >= 4))
-			{
+		if ((t->ob_type == G_FTEXT) && (aes_global[10] >= 4))
+		{
 			bft = &(t->ob_spec.tedinfo->te_ucolor.te_colspec);
 			bft->textcol = LBLACK;
 			bft->interiorcol = LWHITE;
 			bft->textmode = TEXT_TRANSPARENT;
-			}
-		else	t->ob_state |= DISABLED;
 		}
+		else	t->ob_state |= DISABLED;
+	}
 	va_end(argpoint);
 }
 
@@ -404,9 +407,10 @@ void ob_dsel(OBJECT *tree, int which)
 void ob_sel_dsel(OBJECT *tree, int which, int sel)
 
 {
-	if	(sel)
+	if (sel)
 		(tree+which)->ob_state |=  SELECTED;
-	else (tree+which)->ob_state &= ~SELECTED;
+	else
+		(tree+which)->ob_state &= ~SELECTED;
 }
 
 /***** Objekt selektieren **************/
@@ -435,7 +439,8 @@ int do_dialog(OBJECT *dialog)
 	exitbutton = 0x7f & form_xdo(dialog, 0, &dummy, NULL, flyinf);
 	form_xdial(FMD_FINISH, NULL, &cg, p_flyinf);
 	ob_dsel(dialog, exitbutton);
-	return(exitbutton);
+
+	return exitbutton;
 }
 
 int do_exdialog(OBJECT *dialog,
@@ -455,17 +460,19 @@ int do_exdialog(OBJECT *dialog,
 	form_xdial(FMD_START, NULL, &cg, p_flyinf);
 	objc_draw(dialog, ROOT, MAX_DEPTH, &cg);
 	for	(;;)
-		{
+	{
 		exitbutton = 0x7f & form_xdo(dialog, 0, &dummy, NULL, flyinf);
 		ob_dsel(dialog, exitbutton);
-		if	((*check)(dialog, exitbutton))
+		if ((*check)(dialog, exitbutton))
 			break;
 		objc_draw(dialog, exitbutton, 1, &cg);
-		}
+	}
+
 	form_xdial(FMD_FINISH, NULL, &cg, p_flyinf);
-	if	(was_redraw != NULL)
+	if (was_redraw != NULL)
 		*was_redraw = (flyinf == NULL);	/* RÅckgabe: Bildschirm zerstîrt */
-	return(exitbutton);
+
+	return exitbutton;
 }
 
 
@@ -481,7 +488,7 @@ long err_alert(long e)
 {
 	form_xerr(e, err_file);
 	err_file = NULL;
-	return(e);
+	return e;
 }
 
 
@@ -496,7 +503,7 @@ char *Rgetstring( WORD string_id )
 	char *alert;
 
 	rsrc_gaddr(R_STRING, string_id, &alert);
-	return(alert);
+	return alert;
 }
 
 
@@ -508,7 +515,7 @@ char *Rgetstring( WORD string_id )
 
 WORD Rform_alert( WORD defbutton, WORD alert_id )
 {
-	return(form_alert(defbutton, Rgetstring(alert_id)));
+	return form_alert(defbutton, Rgetstring(alert_id));
 }
 
 
@@ -529,30 +536,30 @@ WORD Rxform_alert( WORD defbutton, WORD alert_id,
 
 	alert = Rgetstring(alert_id);
 	t = buf;
-	while(*alert)
+	while (*alert)
+	{
+		if (*alert == '%')
 		{
-		if	(*alert == '%')
-			{
 			alert++;
-			if	(*alert == 'c')
-				{
+			if (*alert == 'c')
+			{
 				*t++ = drv;
 				alert++;
 				continue;
-				}
-			if	(*alert == 's')
-				{
-				while(*path)
+			}
+			if (*alert == 's')
+			{
+				while (*path)
 					*t++ = *path++;
 				alert++;
 				continue;
-				}
 			}
-		*t++ = *alert++;
 		}
+		*t++ = *alert++;
+	}
 	*t = EOS;
 
-	return(form_alert(defbutton, buf));
+	return form_alert(defbutton, buf);
 }
 
 #if 0
@@ -581,11 +588,11 @@ long Dxreaddir(int len, long dirhandle,
 
 long Dreadlabel(char *path, char *buf, int len)
 {
-	return(gemdos(0x152, path, buf, len));
+	return gemdos(0x152, path, buf, len);
 }
 long Dwritelabel(char *path, char *name)
 {
-	return(gemdos(0x153, path, name));
+	return gemdos(0x153, path, name);
 }
 #endif
 
@@ -601,13 +608,14 @@ char *get_name(char *path)
 	register char *n;
 
 	n = strrchr(path, '\\');
-	if	(!n)
-		{
-		if	((*path) && (path[1] == ':'))
+	if (!n)
+	{
+		if ((*path) && (path[1] == ':'))
 			path += 2;
 		return(path);
-		}
-	return(n + 1);
+	}
+
+	return (n + 1);
 }
 
 
@@ -626,11 +634,11 @@ void get_app_name(char *path, char apname[9])
 	name = get_name(path);
 	apnamp = apname;
 	for	(i = 0; i < 8; i++)
-		{
-		if	(*name == '.' || *name == EOS)
+	{
+		if (*name == '.' || *name == EOS)
 			*apnamp++ = ' ';
 		else *apnamp++ = toupper(*name++);
-		}
+	}
 	*apnamp = EOS;
 }
 
@@ -652,14 +660,14 @@ void abbrev_path(char *dst, char *src, int len )
 	register char *t,*u;
 	int l;
 
-	if	((l = (int) strlen(src)) < len)
-		{
+	if ((l = (int) strlen(src)) < len)
+	{
 		strcpy(dst, src);
 		return;
-		}
+	}
 	
 	u = t = src + l - len + 6;
-	while((*t) && (*t != '\\'))
+	while ((*t) && (*t != '\\'))
 		t++;
 	*dst++ = *src++;	/* "X:\" */
 	*dst++ = *src++;
@@ -667,9 +675,10 @@ void abbrev_path(char *dst, char *src, int len )
 	*dst++ = '.';
 	*dst++ = '.';
 	*dst++ = '.';
-	if	(!(*t) || !(t[1]))
+	if (!(*t) || !(t[1]))
 		strcpy(dst, u);
-	else	strcpy(dst, t);
+	else
+		strcpy(dst, t);
 }
 
 
@@ -679,14 +688,14 @@ void abbrev_path(char *dst, char *src, int len )
 *
 *********************************************************************/
 
-void  Mgraf_mouse(int type)
+void Mgraf_mouse(int type)
 {
 	static int last = ARROW;
 
-	if	(type == 0x1000)
+	if (type == 0x1000)
 		type = last;
 	graf_mouse(ABS(type), NULL);
-	if	(type >= 0 && type != 0x1000 && type != M_ON && type != M_OFF)
+	if (type >= 0 && type != 0x1000 && type != M_ON && type != M_OFF)
 		last = type;
 }
 
@@ -737,22 +746,22 @@ void time_to_str(char *s, unsigned int time)
 
 void drv_to_str(char *s, char c)
 {
-	while(*s)
+	while (*s)
+	{
+		if (s[1] == ':')		/* nÑchstes Zeichen ist ':' */
 		{
-		if	(s[1] == ':')		/* nÑchstes Zeichen ist ':' */
-			{
 			*s = c;
 			break;
-			}
-		s++;
 		}
+		s++;
+	}
 }
 
 
 /*********************************************************************
 *
-* Wandelt "unsigned long" dezimal in ASCII mit Tausenderkomma.
-* Setzt Zeiger hinter den String;
+* Wandelt 32-bit unsigned dezimal in Text, mit Tausender-Trenner.
+* Setzt Zeiger hinter die Zeichenkette.
 *
 *********************************************************************/
 
@@ -760,28 +769,29 @@ char *print_ul(unsigned long z, char *p)
 {
 	register char *s;
 	register int len;
-	char	hilfs[20];
+	char hilfs[20];
 
 
 	ultoa(z, hilfs, 10);
 	s = hilfs;
 	*p++ = *s++;
 	len = (int) strlen(s);
-	while(len > 0)
-		{
-		if	(len % 3 == 0)
+	while (len > 0)
+	{
+		if (len % 3 == 0)
 			*p++ = kilosep;
 		*p++ = *s++;
 		len--;
-		}
+	}
+
 	*p = '\0';
-	return(p);
+	return p;
 }
 
 
 /*********************************************************************
 *
-* Wandelt "unsigned long long" dezimal in ASCII mit Tausenderkomma.
+* Wandelt 64-bit unsigned dezimal in Text mit Tausender-Trenner.
 * FÅgt ggf. ein "k" dahinter, d.h. geht bis 4096 GB.
 * '#' bei öberlauf.
 *
@@ -795,87 +805,132 @@ char *print_ull(unsigned long z[2], char *p)
 /*
 	printf("%08lx %08lx\n", z[0], z[1]);
 */
-	if	(z[0])		/* Zahl > 32 Bit */
+	if (z[0])		/* Zahl > 32 Bit */
+	{
+		if (z[0] >= 1024L)
 		{
-		if	(z[0] >= 1024L)
-			{
 			c = '#';		/* öberlauf */
 			goto err;
-			}
+		}
+
 		l >>= 10L;			/* durch 1024 teilen */
 		l |= (z[0] << 22L);		/* obere 10 Bit ODERn */
 		c = 'k';
-		}
+	}
+
 	p = print_ul(l, p);
+
 	err:
-	if	(c)
-		{
+	if (c)
+	{
 		*p++ = c;
 		*p++ = '\0';
-		}
-	return(p);
+	}
+
+	return p;
 }
+
+
+#define STR_END(p) \
+    while(*p) (p)++;
 
 
 /*********************************************************************
 *
-* Wandelt "unsigned long" dezimal in ASCII, und zwar fÅr groûe
+* Wandelt "64-bit unsigned" dezimal in Text, und zwar fÅr groûe
 * Festplatten-KapazitÑten.
 *
 * z >= 1 G	=> n,m G
 * 
-* Setzt Zeiger hinter den String;
+* Setzt Zeiger hinter die Zeichenkette
 *
 *********************************************************************/
 
-char *print_big_bytes(unsigned long z, char *p)
+char *print_big_bytes(unsigned long z[2], char *p)
 {
-	if	(z >= 0x40000000L)
-		{
-		*p++ = '0' + (z >> 30L);	/* G = 2^30 */
-		*p++ = ',';
-		z &= 0x3fffffffL;
-		*p++ = '0' + (z / (100L * 0x100000L));
-		*p++ = 'G';
-		}
+	/*
+	 * z[1] ist ausreichend fÅr 4 Gbyte, bei grîûeren
+	 * Zahlen wird z[0] benîtigt
+	 */
+
+	register long zh = z[0];
+	register long zl = z[1];
+
+	char suffix = '\0';
+
+	if (zh >= 0x40000000l)
+	{
+		/* overflow more than 62 bits */
+		*p++ = '#';
+	}
 	else
-	if	(z >= 0xa00000L)
-		{
-		z >>= 20L;			/* M = 2^20 */
-		ultoa(z, p, 10);
-		while(*p)
-			p++;
-		*p++ = 'M';
-		}
-	else	
-	if	(z >= 0x100000L)
-		{
-		*p++ = '0' + (z >> 20L);	/* G = 2^20 */
-		*p++ = ',';
-		z &= 0x7ffffL;
-		*p++ = '0' + (z / (100L * 0x400L));
-		*p++ = 'M';
-		}
+	if (zh >= 0x40000l)
+	{
+		/* one petabyte or more, 2^50  */
+		/* get terabytes, i.e. 2^40 bits */
+		zl = zh >> 8;
+		ultoa(zl >> 10, p, 10);
+		zl &= 0x3ff;     /* remove P */
+		suffix = 'P';
+	}
 	else
-		{
-		z >>= 10L;			/* K = 2^10 */
-		ultoa(z, p, 10);
-		while(*p)
-			p++;
-		*p++ = 'K';
-		}
-
-	/* Korrektur fÅr öberlauf */
-
-	if	((p[-3] == ',') && (p[-2] > '9'))
-		{
-		p[-2] = '0';
-		p[-4]++;
-		}
-
-	*p++ = 'B';
+	if (zh >= 0x100l)
+	{
+		/* one terabyte or more, 2^40  */
+		/* get gigabytes, i.e. 2^30 bits */
+		zl >>= 30;
+		ultoa(zh >> 8, p, 10);
+		zh &= 0xff;     /* remove T */
+		zl |= (zh << 2);
+		suffix = 'T';
+	}
+	else
+	if ((zh > 0) || zl >= 0x40000000l)
+	{
+		/* one gigabyte or more, 2^30  */
+		/* get megabytes, i.e. 2^20 bits */
+		zl >>= 20;
+		zl |= (zh << 12);
+		ultoa(zl >> 10, p, 10);
+		zl &= 0x3ff;     /* remove G */
+		suffix = 'G';
+	}
+	else
+	if (zl >= 0x00100000l)
+	{
+		/* one megabyte or more, 2^20  */
+		/* get kilobytes, i.e. 2^10 bits */
+		zl >>= 10;
+		ultoa(zl >> 10, p, 10);
+		zl &= 0x3ff;     /* remove M */
+		suffix = 'M';
+	}
+	else
+	if (zl >= 0x00000400l)
+	{
+		/* one kilobyte or more, 2^10  */
+		/* get bytes, i.e. 2^0 bits */
+		ultoa(zl >> 10, p, 10);
+		zl &= 0x3ff;     /* remove k */
+		suffix = 'k';
+	}
+	else
+	{
+		ultoa(zl, p, 10);
+		suffix = 'B';
+	}
+	
+	STR_END(p);
+	if (zl >= 102)
+	{
+		*p++ = ',';
+		ultoa((zl * 10) >> 10, p, 10);
+		STR_END(p);
+	}
+	*p++ = suffix;
 	*p = '\0';
-	return(p);
+	
+	return p;
 }
 
 
@@ -889,17 +944,17 @@ void fname_int(char *s, char *d)
 {
 	register char *p = d;
 
-	while(*s && *s != '.')			/* Name */
+	while (*s && *s != '.')			/* Name */
 		*p++ = *s++;
-	if	(*s)						/* Punkt */
+	if (*s)						/* Punkt */
 		s++;
-	if	(*s)						/* Extension */
-		{
-		while(p < d+8)
+	if (*s)						/* Extension */
+	{
+		while (p < d+8)
 			*p++ = ' ';
-		while(*s)
+		while (*s)
 			*p++ = *s++;
-		}
+	}
 	*p = '\0';
 }
 
@@ -907,15 +962,16 @@ void fname_ext(char *s, char *d)
 {
 	register char *p = s;
 
-	while(*p && p < s+8)
-		{
-		if	(*p != ' ')
+	while (*p && p < s+8)
+	{
+		if (*p != ' ')
 			*d++ = *p++;
 		else p++;
-		}
-	if	(*p)
+	}
+
+	if (*p)
 		*d++ = '.';
-	while(*p)
+	while (*p)
 		*d++ = *p++;
 	*d = '\0';
 }
@@ -939,27 +995,27 @@ int suffixtyp(char *s)
 	char ext[4];
 
 	s = strrchr(s, '.');
-	if	(s)
-		{
+	if (s)
+	{
 		s++;
 		ext[0] = (*s++ & 0x5f);
 		ext[1] = (*s++ & 0x5f);
 		ext[2] = (*s++ & 0x5f);
 		ext[3] = '\0';
-		if	(!strcmp(ext, "PRG") || !strcmp(ext, "APP"))
+		if (!strcmp(ext, "PRG") || !strcmp(ext, "APP"))
 			return(PGMT_ISGEM);
-		if	(!strcmp(ext, "TOS"))
+		if (!strcmp(ext, "TOS"))
 			return(0);
-		if	(!strcmp(ext, "TTP"))
+		if (!strcmp(ext, "TTP"))
 			return(PGMT_TP);
-		if	(!strcmp(ext, ext_bat))
+		if (!strcmp(ext, ext_bat))
 			return(PGMT_BATCH);
-		if	(!strcmp(ext, ext_btp))
+		if (!strcmp(ext, ext_btp))
 			return(PGMT_BATCH+PGMT_TP);
-		if	((!strcmp(ext, "ACC")) || (!strcmp(ext, "ACX")))
+		if ((!strcmp(ext, "ACC")) || (!strcmp(ext, "ACX")))
 			return(PGMT_ACC+PGMT_ISGEM);
-		}
-	return(PGMT_NOEXE);
+	}
+	return PGMT_NOEXE;
 }
 
 
@@ -970,33 +1026,36 @@ int suffixtyp(char *s)
 *
 *********************************************************************/
 /*
-int  fname_match(char *fname, char *fmask)
+int fname_match(char *fname, char *fmask)
 {
-	if	(fmask[0] == '*' && fmask[1] == '.' && fmask[2] == '*')
+	if (fmask[0] == '*' && fmask[1] == '.' && fmask[2] == '*')
 		return(1);
-	while(*fmask && *fname)
+
+	while (*fmask && *fname)
+	{
+		if (*fmask == '?')
 		{
-		if	(*fmask == '?')
-			{
 			fmask++;
-			if	(*fname != '.')
+			if (*fname != '.')
 				fname++;
 			continue;
-			}
-		if	(*fmask == '*')
-			{
+		}
+		if (*fmask == '*')
+		{
 			fmask++;
-			while(*fmask && *fmask != '.')
+			while (*fmask && *fmask != '.')
 				fmask++;
-			while(*fname && *fname != '.')
+			while (*fname && *fname != '.')
 				fname++;
 			continue;
-			}
-		if	(*fmask != *fname)
-			return(0);
+		}
+
+		if (*fmask != *fname)
+			return 0;
 		fmask++;
 		fname++;
-		}
-	return(*fmask == *fname);
+	}
+
+	return (*fmask == *fname);
 }
 */
