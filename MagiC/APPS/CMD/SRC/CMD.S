@@ -1,3 +1,5 @@
+* Wenn MAGIX auf 1 gesetzt ist, muû TOS auch auf 1 sein!
+
 KAOS           EQU  1
 BOOT           EQU  1
 MAGIX          EQU  1
@@ -48,7 +50,7 @@ _base     EQU  *-$100
 ***** Speicher zurÅckgeben ************************
 
 
- IFF      ACC
+	IFF ACC					; Wir laufen NICHT als .ACC
 
  movea.l  4(sp),a1
  lea      d+stack(pc),sp
@@ -67,200 +69,13 @@ _base     EQU  *-$100
  xbios    Supexec
  addq.l   #6,sp
 
- ENDIF
+	ENDIF					; IFF ACC
 
- IF       ACC
 
- INCLUDE  "AESBIND.INC"
+	IF ACC					; Wir laufen als .ACC
+ INCLUDE "ACC_INIT.S"
+	ENDIF					; IF ACC
 
-ZEILEN    EQU  19                  * soviele Bildschirmzeilen retten
-
-* ssp retten
- lea      d+stack(pc),sp
- clr.l    -(sp)
- gemdos   Super
- addq.l   #6,sp
- move.l   sp,usp                   * USP restaurieren
- lea      d+alt_ssp(pc),a0
- move.l   d0,(a0)
- move.l   d0,sp                    * SSP restaurieren
- lea      d+c_sysbase(pc),a0
- move.l   _sysbase,a1
- move.l   a1,(a0)+                 * Zeiger auf Beginn des Betriebssystems
- move.l   phystop,(a0)
- andi.w   #$dfff,sr                * User mode
-
- move.w   os_version(a1),d1
- cmpi.w   #$0102,d1                * TOS - Version >= 1.2 ?
- bcs.b    tos_10
- move.l   os_run(a1),d0
- lea      _run(pc),a0
- move.l   d0,(a0)
-tos_10:
-* Default-Interrupt-SSP feststellen
- lea      intssp(pc),a0
- cmpi.w   #$0104,d1                * TOS - Version > 1.4 ?
- bhi.b    unknown
- andi.w   #6,d1
- move.w   0(a0,d1.w),(a0)          * ssp holen und in <intssp> merken
-unknown:
-
- lea      aespb(pc),a0
- lea      _base(pc),a1
- moveq    #6-1,d0
-ini_53:
- move.l   (a0),d1
- add.l    a1,d1
- move.l   d1,(a0)+
- dbra     d0,ini_53
-* noch leeres Environment anmelden (vorher haben ACCs kein Environment)
- lea      _base+$2c(pc),a0
- lea      d+environment(pc),a1
- move.l   a1,(a0)
- clr.b    (a1)+
- clr.b    (a1)
-
-** ap_id = appl_init();
-** if (ap_id < 0) Pterm0();
- M_appl_init
- bmi      exit
- lea      d+ap_id(pc),a0
- move.w   d0,(a0)
- lea      d+global+2(pc),a0        ; ap_count
- cmpi.w   #1,(a0)
- lea      d+isxaes(pc),a0
- shi.b    (a0)                     ; merken, wenn XAES
-
-** menu_id=menu_register(gl_apid,"  CMD");
-** if     (menu_id == -1) Pterm0();
- lea      d+intin(pc),a0
- move.w   d0,(a0)
- lea      d+addrin(pc),a0
- lea      pgmname(pc),a1
- move.l   a1,(a0)
- M_menu_register
- bmi      exit
- lea      d+menu_id(pc),a0
- move.w   d0,(a0)
-
-** wind_get(0, WF_WORKXYWH, &xdesk, &ydesk, &wdesk, &hdesk);
- lea      d+intin(pc),a0
- move.l   #$00000004,(a0)
- M_wind_get
- bmi      exit
- lea      d+intout+2(pc),a0
- lea      d+xdesk(pc),a1
- move.l   (a0)+,(a1)+
- move.l   (a0),(a1)
-
-* Zeiger auf Ur- Prozeû merken
- move.b   d+isxaes(pc),d0
- bne.b    ini_xaes_nopd
- move.l   _run(pc),a0
- move.l   (a0),d0
-ini_parent:
- move.l   d0,a0
- adda.w   #$24,a0
- move.l   (a0),d0                  * Elter- Prozeû
- bne.b    ini_parent
- lea      d+pnt_of_boot(pc),a1
- move.l   a0,(a1)
-ini_xaes_nopd:
-
-again:
- lea      d+stack(pc),sp
-* ssp und usp rÅcksetzen
- clr.l    -(sp)
- gemdos   Super
- addq.l   #6,sp
- move.l   sp,usp                   * USP restaurieren
- move.l   d+alt_ssp(pc),sp         * SSP restaurieren
- andi.w   #$dfff,sr                * User mode
-
-* Prozeû umschalten (vor den Ur- PD einhÑngen), wenn nicht XAES
- move.b   d+isxaes(pc),d0
- bne.b    ini_isxaes
- move.l   d+pnt_of_boot(pc),a0
- lea      _base(pc),a1
- move.l   a1,(a0)                  * ACC als Elter des Ur- PD anmelden
-ini_isxaes:
-
-** evnt_mesag(ev_mgpbuff);
-ini_waitmesag:
- lea      d+addrin(pc),a0
- lea      d+ev_mgpbuff(pc),a1
- move.l   a1,(a0)
- M_evnt_mesag
- move.w   d+ev_mgpbuff(pc),d0
- cmpi.w   #AC_OPEN,d0
- bne.b    ini_waitmesag
-
-* Die folgenden Befehle klappen nicht unter Atari- MistGEM
-* move.w   d+menu_id(pc),d0
-* cmp.w    d+ev_mgpbuff+3*2(pc),d0
-* bne.b    init_waitmesag
-
-* Die Nachricht ist angekommen, daû wir aufgerufen werden.
-
-* Oberste Interrupt- Stack- Werte retten
-* (AES - Fehler korrigieren)
- move.b   d+isxaes(pc),d0
- bne.b    ini_isxaes2
- move.w   intssp(pc),a1
- moveq    #20-1,d0
- lea      d+evnt_ret(pc),a0
-ini_stkrett:
- move.l   -(a1),(a0)+
- dbra     d0,ini_stkrett
-
-* Wir melden uns als aktuellen Prozeû an.
- move.l   d+pnt_of_boot(pc),a0
- clr.l    (a0)                     * als Elter des Ur-PD abmelden
- move.l   _run(pc),a0
- lea      _base+$24(pc),a1
- move.l   (a0),(a1)                * Hauptapp als unser Elter
- lea      _base(pc),a1
- move.l   a1,(a0)                  * Wir als aktueller Prozeû
-ini_isxaes2:
-
-* Mauszeiger abschalten
- DC.W     A_HIDE_MOUSE
-
-** wind_update(TRUE);
- lea      d+intin(pc),a0
- move.w   #1,(a0)
- M_wind_update
- beq      again
-
-** whdl = wind_create(0,xdesk,ydesk,wdesk,hdesk);
-** if   (whdl < 0) goto err;
- lea      d+intin(pc),a0
- clr.w    (a0)+
- move.l   d+xdesk(pc),(a0)+
- move.l   d+wdesk(pc),(a0)+
- M_wind_create
- bmi      err
- lea      d+whdl(pc),a0
- move.w   d0,(a0)
-
-** wind_open(whdl,xdesk,ydesk,wdesk,hdesk);
- lea      d+intin(pc),a0
- move.w   d0,(a0)+
- move.l   d+xdesk(pc),(a0)+
- move.l   d+wdesk(pc),(a0)+
- M_wind_open
- bmi      err1
-
-* Bildschirmspeicher (MenÅleiste) sichern
- xbios    Physbase
- addq.l   #2,sp
- move.l   d0,a0
- lea      d+screenbuf(pc),a1
- move.w   #ZEILEN*20-1,d0
-ini_52:
- move.l   (a0)+,(a1)+
- dbra     d0,ini_52
- ENDIF
 
 * DOS- Vektoren auf CMD lenken
 
@@ -280,14 +95,14 @@ ini_52:
  addq.l   #8,sp
 no_kaos:
 
-     IFEQ MAGIX
+	IFEQ MAGIX				; Wir laufen NICHT unter MagiC: aktiviere unseren etc-critic-Handler
  pea      etv_critic_neu(pc)
  move.w   #$101,-(sp)    * etv_critic
  bios     Setexc
  addq.l   #8,sp
  lea      d+etvcritic_alt(pc),a0
  move.l   d0,(a0)
-     ENDIF
+	ENDIF
 
  pea      etv_term_neu(pc)
  move.w   #$102,-(sp)    * etv_term
@@ -303,19 +118,22 @@ no_kaos:
 * von TC gestartet, Befehl "sh" ignorieren
  clr.b    (a5)
 not_from_tc:
- IF       ACC
+	IF ACC
  clr.b    (a5)
- ENDIF
+	ENDIF
  move.b   (a5)+,d7
  ext.w    d7                       * LÑnge der Kommandozeile
  clr.b    0(a5,d7.w)               * Kommandozeile mit EOS abschlieûen
 
- IFF      ACC
-* Environment- Behandlung
+	IFF ACC					; Wir laufen NICHT als .ACC
+
+* Environment-Behandlung
  lea      _base+$2c(pc),a2
- move.l   (a2),a0                  * Zeiger auf Environment- String
+ move.l   (a2),a0                  * Zeiger auf altes Environment
  lea      d+environment(pc),a1
  move.l   a1,(a2)                  * Zeiger in Basepage auf neues Environment setzen
+ move.l	a0,d0				* altes Environment NULL (unwahrscheinlich)?
+ beq.b	ini_22				* ja, nix kopieren
 * Environment kopieren
  move.w   #env_ende-environment-2,d1
 ini_23:
@@ -328,14 +146,15 @@ ini_23:
 ini_22:
  clr.b    (a1)+                    * Kopie mit zwei Nullbytes abschlieûen
  clr.b    (a1)
- ENDIF
+
+	ENDIF					; IFF ACC
 
 * Maus aus, Cursor ein, Bildschirm lîschen, Titelmeldung
 
  bsr      cursor                   * Cursor ein/Maus aus
 
      IFEQ BOOT
- bsr      cls_com
+ bsr      cls_com				; Bildschirm lîschen und VT52 initialisieren
      ENDIF
 
  lea      titels(pc),a0            * Titelmeldung
@@ -344,19 +163,21 @@ ini_22:
 * AUTOEXEC.BAT, BOOT.BAT oder Kommandozeile ausfÅhren
  tst.w    d7                       * LÑnge der Kommandozeile
  bne.b    ini_setjmp               ; Kommandozeile existiert
- IF       ACC
+
+	IF ACC
  lea      acc_init(pc),a0
  tst.w    (a0)                     ; AUTOEXEC schon einmal ausgefÅhrt ?
  bne.b    ini_nocmd                ; ja, nichts tun
  st       (a0)
- ENDC
+	ENDIF					; IF ACC
+
  lea      autoexec1s(pc),a5
- IFF      ACC
+	IFF ACC
  DC.W     A_INIT
  tst.l    8(a0)                    * GEM initialisiert ?
  bne.b    ini_srchauto
  lea      bootbats(pc),a5          * GEM nicht init., also "boot.bat"
- ENDC
+	ENDIF					; IFF ACC
 ini_srchauto:
  clr.w    d0
  move.l   a5,a0
@@ -391,22 +212,21 @@ ini_mainloop:
 
 
 
- IFF      ACC
+	IFF ACC
 * void get_sysvars
 *  MUû IM SUPERVISOR-MODUS AUSGEFöHRT WERDEN
 *
-
 get_sysvars:
  lea      d+c_sysbase(pc),a0
  move.l   _sysbase,(a0)+           * Zeiger auf Beginn des Betriebssystems
  move.l   phystop,(a0)
  rts
- ENDC
+	ENDIF ; IFF ACC
 
 
 * AES Handler fÅr den Betrieb als Accessory
 
- IF       ACC
+	IF ACC
 _aes:
  lea      d+control(pc),a0
  clr.l    (a0)
@@ -420,10 +240,10 @@ _aes:
  trap     #2
  move.w   d+intout(pc),d0
  rts
- ENDC
+	ENDIF					; IF ACC
 
 
-* Alle etv- Vektoren wieder zurÅcksetzen und exit()
+* Alle etv-Vektoren wieder zurÅcksetzen und exit()
 
 restore_etv:
  move.l   d+config_alt(pc),-(sp)
@@ -431,79 +251,24 @@ restore_etv:
  gemdos   Sconfig
  addq.l   #8,sp
 
-     IFEQ MAGIX
+     IFEQ MAGIX				; Wir laufen NICHT mit MagiC
  move.l   d+etvcritic_alt(pc),-(sp)
  move.w   #$101,-(sp)              * etv_critic
  bios     Setexc
  addq.l   #8,sp
-     ENDIF
+     ENDIF ; IFEQ MAGIX
 
  move.l   etv_term_neu-4(pc),-(sp)
  move.w   #$102,-(sp)
  bios     Setexc                   * etv_term
  addq.l   #8,sp
 exit:
- IF       ACC
-* Zuallererst Cursor ausschalten
- clr.w    -(sp)
- xbios    Cursconf
- addq.l   #4,sp
-* Oberste Interrupt- Stack- Werte rÅcksetzen
-* (AES - Fehler korrigieren)
- move.b   d+isxaes(pc),d0
- bne.b    ini_isxaes3
- move.w   intssp(pc),a1
- moveq    #20-1,d0
- lea      d+evnt_ret(pc),a0
-ini_menurett:
- move.l   (a0)+,-(a1)
- dbra     d0,ini_menurett
-* Bildschirmspeicher (MenÅleiste) restaurieren
-ini_isxaes3:
-err3:
- xbios    Physbase
- addq.l   #2,sp
- move.l   d0,a0
- lea      d+screenbuf(pc),a1
- move.w   #ZEILEN*20-1,d0
-ini_menurst:
- move.l   (a1)+,(a0)+
- dbra     d0,ini_menurst
+	IF ACC					; Wir laufen als .ACC
+ INCLUDE "ACC_EXIT.S"
+	ENDIF ; IF ACC
 
-
-** wind_close(whdl);
-err2:
- lea      d+intin(pc),a0
- move.w   d+whdl(pc),(a0)
- M_wind_close
-
-** wind_delete(whdl);
-err1:
- lea      d+intin(pc),a0
- move.w   d+whdl(pc),(a0)
- M_wind_delete
-
-** wind_update(FALSE);
-err:
- lea      d+intin(pc),a0
- clr.w    (a0)
- M_wind_update
-
-* Maus einschalten
- bsr      mouse
-
-* Wir melden uns als aktueller Prozeû wieder ab
- move.b   d+isxaes(pc),d0
- bne.b    ini_isxaes4
- move.l   _run(pc),a0
- lea      _base+$24(pc),a1
- move.l   (a1),(a0)                * Hauptapp als aktueller Prozeû
- clr.l    (a1)                     * kein Elter
-ini_isxaes4:
- bra      again
- ENDC
- IFF      ACC
- IFF      BOOT
+	IFF ACC
+	IFF BOOT
  bsr      mouse
  clr.w    -(sp)
  move.b   is_kaos(pc),d0
@@ -511,11 +276,11 @@ ini_isxaes4:
  move.w   #EBREAK,(sp)             ; fÅr MagiX Bildschirm aufrÑumen
 ini_exnk:
  gemdos   Pterm
- ENDC
- IF       BOOT
+	ENDIF ; IFF BOOT
+	IF BOOT
  gemdos   Pterm0
- ENDC
- ENDC
+	ENDIF ; IF BOOT
+	ENDIF ; IFF ACC
 
 * void setjmp()
 *  Setzt die RÅcksprungadresse fÅr alle Unterbrechungen und
@@ -745,7 +510,7 @@ memavail:
 
 
 * void rwrite_long(d0 = unsigned long zahl, d1 = int len)
-* Schreibt eine Langzahl linksbÅndig
+* Schreibt eine Langzahl rechtsbÅndig
 
 rwrite_long:
  moveq    #' ',d2
@@ -766,24 +531,29 @@ lwrite_long:
 *  Das Feld wird links mit <fill_char> aufgefÅllt.
 
 
-PUFFER    SET  -20
+STRBUFSIZE    SET  12
 
 write_long:
- link     a6,#PUFFER
+ link     a6,#-STRBUFSIZE
  movem.l  d6/d7,-(sp)
  move.w   d1,d7                    * len
  move.b   d2,d6                    * leader
- lea      PUFFER(a6),a0
+ lea      -STRBUFSIZE(a6),a0
 ;move.l   d0,d0                    * zahl
- bsr      long_to_str
- sub.w    d0,d7                    * d0 ist tatsÑchliche LÑnge
+ bsr      long_to_str			; gibt d0 und a0 zurÅck
+ sub.w    d0,d7                    * d0 ist tatsÑchliche LÑnge, a0 ist wichtig
+ ble.b	wl_nofill
+ tst.b	d6
+ beq.b	wl_nofill
+ move.l   a0,-(sp)
  bra.b    wl_put
 wl_loop:
  move.b   d6,d0
  bsr      putchar
 wl_put:
  dbra     d7,wl_loop
- lea      PUFFER(a6),a0
+ move.l	(sp)+,a0
+wl_nofill:
  bsr      strstdout                * Zahl ausgeben
  movem.l  (sp)+,d6/d7
  unlk     a6
@@ -793,42 +563,70 @@ wl_put:
 * int long_to_str(d0 = unsigned long zahl, a0 = char string[])
 *  Rechnet eine Zahl dezimal in einen String um, dessen LÑnge zurÅckgegeben
 *  wird.
-
-*    DATA
-deztab:   DC.L 10000000,1000000,100000,10000,1000,100,10,1,0
-*    TEXT
+* Auûerdem wird a0 zurÅckgegeben und ist wichtig.
 
 long_to_str:
- move.l   d7,-(sp)
- move.l   d0,d7
- move.l   a0,a1
- st       d2             * Flag fÅr fÅhrende Null setzen
- lea      deztab(pc),a2
+ lea		STRBUFSIZE(a0),a1
+ clr.b	-(a1)
+ move.l	a1,a0
 lts_loop:
- move.l   (a2)+,d1       * Divisor
- beq.b    its_10
- moveq    #-1,d0         * ZÑhler
-lts_loop2:
- addq.w   #1,d0
- sub.l    d1,d7
- bcc.b    lts_loop2
- add.l    d1,d7
- tst.w    d0
- bne.b    its_3          * Ziffer > 0
- cmpi.w   #1,d1
- beq.b    its_3          * letzte Ziffer muû gedruckt werden
- tst.w    d2
- bne.b    lts_loop       * fÅhrende Nullen unterdrÅcken
-its_3:
- addi.w   #'0',d0
- move.b   d0,(a1)+       * Zahl abspeichern
- clr.w    d2             * Flag fÅr fÅhrende Null lîschen
- bra.b    lts_loop       * NÑchste Ziffer
-its_10:
- clr.b    (a1)
- suba.l   a0,a1          * Stringanfang abziehen
- move.l   a1,d0          * StringlÑnge zurÅckgeben
- move.l   (sp)+,d7
+ bsr		_uldiv10
+ tst.l	d0
+ bne.b	lts_loop
+ suba.l	a0,a1          * Zeichenketten-Anfang abziehen
+ move.l	a1,d0          * ZeichenkettenlÑnge zurÅckgeben
+ rts
+
+
+_uldiv10:
+ move.l	d0,d2
+ swap	d2
+ tst.w	d2
+ bne.b	_uldiv1
+ divu	#10,d0
+ swap	d0
+ add.b	#'0',d0
+ move.b	d0,-(a0)
+ clr.w	d0
+ swap	d0
+ rts
+_uldiv1:
+ clr.w	d0
+ swap	d0
+ swap	d2
+ divu	#10,d0
+ move.w	d0,d1
+ move.w	d2,d0
+ divu	#10,d0
+ swap	d0
+ add.b	#'0',d0
+ move.b	d0,-(a0)
+ move.w	d1,d0
+ swap	d0
+ rts
+
+_ulmul:
+ move.l	d0,d2
+ swap	d2
+ tst.w	d2
+ bne.b	_ulmul2
+ move.l	d1,d2
+ swap	d2
+ tst.w	d2
+ bne.b	_ulmul1
+ mulu	d1,d0
+ rts
+_ulmul1:
+ mulu	d0,d2
+ swap	d2
+ mulu	d1,d0
+ add.l	d2,d0
+ rts
+_ulmul2:
+ mulu	d1,d2
+ swap	d2
+ mulu	d1,d0
+ add.l	d2,d0
  rts
 
 
@@ -1056,7 +854,7 @@ ustr100:
 *  sonst: Fehlermeldung und Erhîhung des errorlevel, RÅckgabe -1
 *  Falls alles ok:
 *  PrÅft, ob die Diskette des in <path> spezifizierten Laufwerks
-*  gewechselt wurde und veranlaût, wenn ja, GEMDOS zur Neuinitialisierung
+*  gewechselt wurde, und veranlaût, wenn ja, GEMDOS zur Neuinitialisierung
 *  seiner internen Pfadpuffer.
 
 isdrive:
@@ -1477,7 +1275,7 @@ mouse:
  clr.w    (a1)                     ; intin[0] = 0
  DC.W     A_SHOW_MOUSE
 mo_no:
-     ENDIF
+     ENDIF ; IFEQ BOOT
  rts
 
 * Erst Mauszeiger aus-, dann Cursor einschalten
@@ -1493,7 +1291,7 @@ cursor:
 
 
 *    DATA
-clss:  DC.B  ESC,'E',ESC,'v',ESC,'q',0    * Csr/CLS/WRAP/Normal
+clss:  DC.B  ESC,'E',ESC,'v',ESC,'q',0    * clear screen/wrap ON/inverse OFF
 *    TEXT
      EVEN
 
@@ -2476,7 +2274,7 @@ free_bpb:
 
 
 *    DATA
-bytesinsg_s:  DC.B  '  Bytes insgesamt verfÅgbar',$d,$a,0
+kbinsg_s:     DC.B  '  kB insgesamt verfÅgbar',$d,$a,0
 bytes_in_s:   DC.B  '  Bytes in ',0
 hauptsp_s:    DC.B  '  Bytes Hauptspeicher',$d,$a,0
 nbytesvers:   DC.B  ' versteckten/System- Datei(en)',$d,$a,0
@@ -2501,7 +2299,7 @@ ck_com:
 ck_tree_free:
  link     a6,#DFREE_BUFFER
  movem.l  d6/d7/a5,-(sp)
- move     d0,d6               * 0 fÅr TREE, 1 fÅr CK
+ move     d0,d6               * 0 fÅr TREE, 1 fÅr CK, 2 fÅr FREE
  lea      d+normal_no(pc),a0
  clr.l    (a0)+
  clr.w    (a0)+
@@ -2554,7 +2352,7 @@ ctf_1:
  move.l   (sp)+,hdv_bpb
  gemdos   Super          * in User Mode
  addq.l   #6,sp
- bra      ctf_end
+ bra      ctf_32
 ctf_31:
  move.w   d7,d0
  bsr      label_to_stdout
@@ -2571,18 +2369,20 @@ ctf_30:
  beq      ctf_end           * TREE
  bsr      crlf_stdout
  bsr      crlf_stdout
+ctf_32:
  lea      DFREE_BUFFER(a6),a0
-* Multiplikation geht in die Hose, wenn Zahlen > 16 Bit!
- move.l   $c(a0),d0                     * Sektoren/Cluster
+ move.l   12(a0),d0                     * Sektoren/Cluster
  move.l   8(a0),d1                      * Bytes/Sektor
- mulu     d1,d0                         * d0 = Bytes/Cluster
+ bsr      _ulmul                        * d0 = Bytes/Cluster
+ lsr.l    #8,d0
+ lsr.l    #2,d0
  move.l   4(a0),d1                      * Cluster
- mulu     d1,d0                         * d0 = Bytes
+ bsr      _ulmul                        * d0 = Bytes
 * Gesamtplatz auf Disk
  moveq    #10,d1         * Feld 10 Zeichen lang
 * move.l   d0,d0
  bsr      rwrite_long
- lea      bytesinsg_s(pc),a0
+ lea      kbinsg_s(pc),a0
  bsr      strstdout
  move.w   d+hid_sys_no(pc),d0
  beq.b    ctf_2
@@ -2599,6 +2399,8 @@ ctf_30:
  bsr      strstdout
 ctf_2:
 * Gesamtgrîûe und Anzahl der Benutzerdateien
+ cmpi.w	#2,d6
+ beq.b	ctf_3
  moveq    #10,d1         * Feld 10 Zeichen lang
  move.l   d+normal_len(pc),d0
  bsr      rwrite_long
@@ -2618,7 +2420,6 @@ ctf_2:
  lea      nverzeichns(pc),a0
  bsr      strstdout
 ctf_3:
- moveq    #10,d0
  lea      DFREE_BUFFER(a6),a0
  bsr      print_free
 * Jetzt Grîûe des Hauptspeichers ermitteln
@@ -2644,27 +2445,27 @@ ctf_end:
  rts
 
 
-* void print_free(a0 = long *dfree_buffer, d0 = int outp_len)
+* void print_free(a0 = long *dfree_buffer)
 *  Druckt die Grîûe des freien Diskettenplatzes
 *  mit Ausgabebreite <outp_len>
 
 *    DATA
 nbytesfreis:  DC.B  '  Bytes frei',$d,$a,0
+nkbfree:      DC.B  '  kB frei',$d,$a,0
 *    TEXT
      EVEN
 
 print_free:
- move.w   d0,d1
-* Multiplikation geht in die Hose, wenn Zahlen > 16 Bit!
- move.l   $c(a0),d0                     * Sektoren/Cluster
- move.l   8(a0),d2                      * Bytes/Sektor
- mulu     d2,d0                         * d0 = Bytes/Cluster
- move.l   (a0),d2                       * Cluster
- mulu     d2,d0                         * d0 = Bytes
-* move.w   d1,d1
-* move.l   d0,d0
+ move.l   12(a0),d0                     * Sektoren/Cluster
+ move.l   8(a0),d1                      * Bytes/Sektor
+ bsr      _ulmul                        * d0 = Bytes/Cluster
+ lsr.l    #8,d0
+ lsr.l    #2,d0
+ move.l   (a0),d1                       * Cluster
+ bsr      _ulmul                        * d0 = Bytes
+ moveq    #10,d1
  bsr      rwrite_long
- lea      nbytesfreis(pc),a0
+ lea      nkbfree(pc),a0
  bsr      strstdout
  rts
 
@@ -3193,9 +2994,8 @@ cr_11:
  move.l   a4,a0
  ext.l    d6
  move.l   d6,d0
- bsr      long_to_str
- move.l   a4,a0
- bsr      strcon
+ bsr      long_to_str		; gibt d0 und a0 zurÅck
+ bsr      strcon			; nimmt a0
  lea      ndateiens(pc),a0
  bsr      strcon
 cr_end:
@@ -4105,7 +3905,6 @@ dir_8:
  bsr      crlf_stdout
  tst.b    q_flag-w_flag(a3)
  bne.b    dir_11
- moveq    #8,d0
  lea      DFREE_BUFFER(a6),a0
  bsr      print_free
 dir_11:
@@ -4530,9 +4329,9 @@ kaos_s:     DC.B  LF,'KAOS v',0
      ENDIF
 tos_s:      DC.B  LF,'TOS v',0
 gemdos_s:   DC.B  ',  GEMDOS v',0
- IF       ACC
+	IF ACC
 aes_s:      DC.B  'AES v',0
- ENDC
+	ENDIF
      EVEN
 *    TEXT
 
@@ -4563,27 +4362,27 @@ ver_1:
  ror.w    #8,d0                    * Low/High - Byte vertauschen
  bsr.b    print_ver
  bsr      crlf_stdout
- IFF      ACC
+	IFF ACC
  lea      titels(pc),a0
- IFNE     MAGIX
- clr.b    17(a0)
- ELSE
- clr.b    19(a0)
- ENDIF
+	IFNE MAGIX
+ clr.b    17(a0)				; Variante for MagiC
+	ELSE
+ clr.b    19(a0)				; Variante fÅr KAOS und TOS
+	ENDIF					; IFNE MAGIX
  bsr      strstdout
- ENDC
- IF       ACC
+	ENDIF					; IFF ACC
+	IF ACC
  lea      aes_s(pc),a0
  bsr      strstdout
  move.w   d+global(pc),d0
  bsr.b    print_ver
- ENDC
+	ENDIF					; IF ACC
  bra      crlf_stdout
 
 print_ver:
  move.w   d0,-(sp)
  lsr.w    #8,d0
- bsr.b    prv_1                       * oberste Ziffer ausgeben
+ bsr.b    prv_1                    * oberste Ziffer ausgeben
  moveq    #'.',d0                  * '.' ausgeben
  bsr      putchar
  move.w   (sp)+,d0                 * unterste Ziffer ausgeben
@@ -5354,359 +5153,9 @@ for_end:
  rts
 
 
- IFF      KAOS
-
-* int input(string,len)
-* char *string;
-* int  len;
-*            Register a3 ist global in diesem Modul
-
-* lokal  akt_len d6
-*        zeiger  d7
-*        x       d4
-*        string  a5
-*        maxlen  d5
-*        Ftaste  a4
-*            Register a3 ist global in diesem Modul
-
-input:
- link     a6,#0
- movem.l  a5/a4/a3/d7/d6/d5/d4,-(sp)
- DC.W     A_INIT
- move.l   a0,a3               * a3 = Zeiger auf LineA
- move.l   8(a6),a5
- move.w   $c(a6),d5
- bsr      cursor              * Cursor einschalten
- lea      d+home_ypos(pc),a0
- move.w   v_cur_cx(a3),d4     * Cursorspalte
- move.w   v_cur_cy(a3),(a0)   * home_ypos,  Cursorzeile
- clr.w    d7
- clr.w    d6
- suba.l   a4,a4
-inp_1:
- move.w   d4,-(sp)
- add.w    d7,(sp)
- bsr      gotox               * gotox(x+zeiger)
- addq.l   #2,sp
- move.l   a4,d0
- beq.b    inp_15
- move.b   (a4),d0
- beq.b    inp_15
- addq.l   #1,a4
- cmpi.b   #LF,d0
- beq      inp_end
- cmpi.b   #CR,d0
- beq      inp_end
- bra      inp_20
-inp_15:
- gemdos   Cnecin
- addq.l   #2,sp
- andi.l   #$00ffffff,d0       * evtl. Shiftstatus lîschen
- cmpi.l   #K_CTRL_C,d0        * CTRL-C bewirkt Warmstart
- bne.b    inp_80
- gemdos   Pterm0
-inp_80:
- cmpi.l   #CR,d0              * CR Åberlesen, wenn Tastaturcode 0
- beq.b    inp_1
- cmpi.l   #LF,d0              * LF schlieût ab, wenn Tastaturcode 0
- beq      inp_end
- cmpi.l   #K_RETURN,d0
- beq      inp_90
- cmpi.l   #K_ENTER,d0
- beq      inp_end                * RETURN und ENTER beenden die Eingabe
- cmpi.l   #K_BS,d0
- bne.b    inp_2
- tst.w    d7
- beq.b    inp_1                  * Zeiger ist auf Feldanfang
- subq.w   #1,d7
-inp_3:
- bsr      str_del             * Zeichen vor Cursorposition lîschen
- bsr      string_at
- moveq    #' ',d0
- bsr      putch
- bra      inp_1                  * weiter
-inp_2:
- cmpi.l   #K_DEL,d0
- beq.b    inp_3                  * analog zu BACKSPACE
- cmpi.l   #K_TAB,d0
- bne.b    inp_4
- cmp.w    d6,d7               * zeiger am Feldende ?
- bcs.b    inp_5
- clr.w    d7                  * zeiger nach Feldanfang
- bra      inp_1
-inp_5:
- move.w   d6,d7               * zeiger nach Feldende
- bra      inp_1
-inp_4:
- cmpi.l   #K_LTARROW,d0
- bne.b    inp_6
- tst.w    d7
- beq      inp_1
- subq.w   #1,d7
- bra      inp_1
-inp_6:
- cmpi.l   #K_RTARROW,d0
- bne.b    inp_7
- cmp.w    d6,d7
- bcc      inp_1
- addq.w   #1,d7
- bra      inp_1
-inp_7:
- cmpi.l   #K_INSERT,d0
- bne.b    inp_8
- lea      ovwr_flag(pc),a0
- not.w    (a0)
- bra      inp_1
-inp_8:
- cmpi.l   #K_CLR,d0
- bne.b    inp_9
- move.w   d6,-(sp)
- move.w   d4,-(sp)
- bsr      spacestr_at
- addq.l   #4,sp
- clr.w    d6
- clr.w    d7
- bra      inp_1
-inp_9:
- cmpi.l   #K_UNDO,d0
- bne.b    inp_10
- lea      d+laststring(pc),a4
- bra      inp_1
-inp_10:
- cmpi.l   #K_F1,d0
- blt      inp_20
- cmpi.l   #K_F10,d0
- bgt      inp_20
- swap     d0
- addi.b   #'0'-$3b+1,d0
- cmpi.b   #'9',d0
- ble.b    inp_11
- move.b   #'0',d0             * F10 als F0 darstellen
-inp_11:
- lea      func_s(pc),a0
- move.b   d0,1(a0)
-* move.l   a0,a0
- bsr      getenv
- tst.l    d0
- beq      inp_1                  * Funktionstaste nicht belegt
- move.l   d0,a4
- bra      inp_1
-* Jetzt kommen die druckbaren Zeichen:
-inp_20:
- clr.w    d2
- move.b   d0,d2                    * obere 8 Bit lîschen
- beq      inp_1
- cmp.w    d5,d7                    * Eingabefeld voll ?
- bge      inp_1
- move.w   ovwr_flag(pc),d0
- beq.b    inp_21
- bsr      str_del
-inp_21:
- bsr      str_ins
- bsr      string_at
- addq.w   #1,d7
- bra      inp_1
-inp_90:
- move.w   d6,d0
- subq.w   #1,d0
- bcs.b    inp_end                * Leerstring eingegeben
- move.l   a5,a1
- lea      d+laststring(pc),a0
- cmpi.w   #128,d0
- bls.b    inp_91
- move.w   #128,d0
-inp_91:
- move.b   (a1)+,(a0)+
- dbra     d0,inp_91
- clr.b    (a0)
-inp_end:
- clr.b    0(a5,d6.w)          * Erzeuge EOS am Ende
- move.l   a5,-(sp)
- bsr      str_adjust
- addq.l   #4,sp
- moveq    #CR,d0
- bsr      putch
- movem.l  (sp)+,a5/a4/a3/d7/d6/d5/d4
- unlk     a6
- rts
-
-
-
-* void gotox(x)
-* int x;
-
-
-gotox:
- moveq    #$1b,d0
- bsr      putch
- moveq    #'Y',d0
- bsr      putch
- moveq    #32,d0
- add.w    d+home_ypos(pc),d0
- clr.l    d1
- move.w   4(sp),d1
- move.w   v_cel_mx(a3),d2
- addq.w   #1,d2
- divu     d2,d1
- add.w    d1,d0
- swap     d1
- move.w   d1,-(sp)
- bsr      putch
- moveq    #32,d0
- add.w    (sp)+,d0
- bsr      putch
- rts
-
-
-**********************************************************************
-*
-* void str_at()
-*
-*  Schreibt den String <char a5[]>, der eine LÑnge von <int d6> hat,
-*  ab Position <int d7> nach Bildschirm- Position <int d4>
-*
-
-string_at:
- movem.l  d3/a4,-(sp)
- move.w   d4,-(sp)
- add.w    d7,(sp)
- bsr.b    gotox
- addq.l   #2,sp
- move.l   a5,a4
- adda.w   d7,a4                    ; a4 = ab hier ausgeben
- move.w   d6,d3
- sub.w    d7,d3                    ; d3 = Anzahl auszugebender Zeichen
- bra.b    strat_2
-strat_1:
- move.w   v_cur_cy(a3),-(sp)
- clr.w    d0
- move.b   (a4)+,d0
- move.w   d0,-(sp)
- move.w   #5,-(sp)
- bios     Bconout
- addq.l   #6,sp
- move.w   (sp)+,d0
-
-* Falls sich der Cursor nach der Ausgabe links befindet und er vorher
-* auf der letzten Zeile stand, muû der Bildschirm gescrollt haben.
-* Folglich wandert unsere Home- Position nach oben
-
- tst.w    v_cur_cx(a3)
- bne.b    strat_2
- cmp.w    v_cel_my(a3),d0
- bcs.b    strat_2
- lea      d+home_ypos(pc),a0
- subq.w   #1,(a0)
-strat_2:
- dbra     d3,strat_1
- movem.l  (sp)+,d3/a4
- rts
-
-
-* void spacestr_at(x,len)
-* int x,len;
-
-spacestr_at:
- link     a6,#0
- move.w   8(a6),-(sp)
- bsr      gotox
- addq.l   #2,sp
-sstrat_1:
- subq.w   #1,$a(a6)
- bcs.b    sstrat_end
- moveq    #' ',d0
- bsr      putch
- bra.b    sstrat_1
-sstrat_end:
- unlk     a6
- rts
-
-
-**************************************************************
-*
-* fÅgt in einen String <char a5[]> der MaximallÑnge <int d5>
-* an Position <int d7> das Zeichen <char d2> ein.
-* akt_len (d6) wird entsprechend erhîht
-*
-**************************************************************
-
-* void str_ins()
-
-str_ins:
- move.l   a5,a1
- adda.w   d7,a1                    ; a0 = EinfÅgeposition
- move.l   a5,a0
- add.w    d6,a0                    ; a0 = String- Ende
- cmp.w    d5,d6
- beq.b    strins_90                ; akt_len == max_len
- bra.b    strins_1
-strins_2:
- move.b   (a0),1(a0)
-strins_1:
- subq.l   #1,a0
- cmpa.l   a1,a0
- bcc.b    strins_2
- addq.w   #1,d6
-strins_90:
- move.b   d2,(a1)
- rts
-
-
-**************************************************************
-*
-* nimmt aus einem <char a5[]> der LÑnge <int d6> an Position
-* <int d7> ein Zeichen heraus.
-* Die LÑnge wird entsprechend korrigiert
-*
-**************************************************************
-
-* void str_del()
-
-str_del:
- move.l   a5,a0
- adda.w   d7,a0                    ; a0 = string + pos
- move.w   d6,d0
- sub.w    d7,d0                    ; d1 = len - pos
- beq.b    sd100
- bra.b    sd3
-sd2:
- move.b   1(a0),(a0)+
-sd3:
- dbra     d0,sd2
- subq.w   #1,d6                    ; len = len - 1
-sd100:
- rts
-
-
-**************************************************************
-*
-* Entfernt aus einem <string> die rechtsbÅndigen Leerstellen.
-* Wenn <string> nur aus Leerstellen besteht, bekommt <string>
-* die LÑnge 0.
-*
-**************************************************************
-
-* void str_adjust(string)
-* char string[];
-
-str_adjust:
- move.l   4(sp),a0
- move.l   a0,a1
-stradj_1:
- tst.b    (a0)+
- bne.b    stradj_1
- subq.l   #1,a0
-stradj_2:
- cmpa.l   a0,a1
- bcc.b    stradj_end
- cmpi.b   #' ',-(a0)
- beq.b    stradj_2
- addq.l   #1,a0
-stradj_end:
- clr.b    (a0)
- rts
-
- ENDIF
+	IFF KAOS				; Wir laufen unter TOS, also weder KAOS noch MagiC
+ INCLUDE "INPUT.S"			; TOS hat keinen Zeilen-Editor, wir benutzen deshalb einen eigenen
+	ENDIF
 
 
 * int read_str(d0 = int handle, a0 = char *string)
@@ -6585,8 +6034,8 @@ lep_2:
  bsr      mouse                * GEM- Programme (*.app, *.prg) mit Maus
      IFEQ MAGIX
  move.l   d+etvcritic_alt(pc),-(sp)  * Diskettenfehler vom Desktop korrigieren
-     ENDIF
  bra.b    lep_3                   *  lassen (per Alert- Box)
+     ENDIF
 lep_1:
      IFEQ MAGIX
  pea      etv_critic_neu(pc)
@@ -6693,12 +6142,12 @@ cpty_2:
  bne.b    cpty_2
  subq.l   #1,a4               ; a4 auf Ende des Dateinamens
 
- IFF      ACC
+	IFF ACC
  moveq    #ANZ_SUFFIX-1,d7
- ENDC
- IF       ACC
+	ENDIF
+	IF ACC
  moveq    #ANZ_SUFFIX-2-1,d7  ; im ACC nicht nach APP/PRG suchen
- ENDC
+	ENDIF
 
 cpty_3:
  move.l   a3,a1
@@ -6940,28 +6389,30 @@ mpi_end:
 
 *       DATA
 
+* TODO: Localisation
+
 autoexec1s: DC.B  'C:\AUTOEXEC.BAT',0
 autoexec2s: DC.B  '\AUTOEXEC.BAT',0
 
- IFF      ACC
+	IFF ACC
 bootbats:     DC.B  '\BOOT.BAT',0
- ENDC
+	ENDIF
 
- IFF      KAOS
+	IFF KAOS
 func_s:       DC.B  'F0=',0
 titels:       DC.B  'GEMDOSø SHELL v2.62 Ω ''90 Andreas Kromke',$d,$a
- ENDC
- IF       KAOS
- IFNE     MAGIX
-titels:       DC.B  'MagiC SHELL v2.66 Ω ''93 Andreas Kromke',$d,$a
- ELSE
+	ENDIF
+	IF KAOS
+	IFNE MAGIX
+titels:       DC.B  'MagiC SHELL v2.67 Ω ''93/''26 Andreas Kromke',$d,$a
+	ELSE
 titels:       DC.B  'KAOSø   SHELL v2.62 Ω ''90 Andreas Kromke',$d,$a
- ENDIF
- ENDC
+	ENDIF
+	ENDIF ; IF KAOS
 
- IF       ACC
+	IF ACC
               DC.B  'Accessory- Version',CR,LF
- ENDC
+	ENDIF
               DC.B  $a,0
 nach_art_s:   DC.B  ' nach Art',0
 nach_dat_s:   DC.B  ' nach Datum',0
@@ -7024,16 +6475,16 @@ is_echo:       DC.B    0
 is_kaos:       DC.B    0
           EVEN
 tpa_base:      DC.L    0
-     IFF  KAOS
-ovwr_flag:     DC.W    0
-     ENDC
+	IFF KAOS
+ovwr_flag:     DC.W    0			; fÅr den Zeilen-Editor, den wir nur unter TOS brauchen
+	ENDIF
 for_flag:      DC.W    0
 for_hdl:       DC.W    0
 for_pos:       DC.L    0
 errorlevel:    DC.W    0
 batchlevel:    DC.W    0
 
-     IF   ACC
+	IF ACC
 _run:          DC.L    os10_run
 acc_init:      DC.W    0
 * Default-SSP fÅr jeden neuen Prozeû (von GEMDOS- Pexec() festgesetzt)
@@ -7048,7 +6499,7 @@ aespb:    DC.L      (d+control)-_base
           DC.L      (d+addrin)-_base
           DC.L      (d+addrout)-_base
 pgmname:  DC.B      '  CMD',0
-     ENDC
+	ENDIF ; IF ACC
 
 ************ BEGINN DES BSS ***********
 
@@ -7079,7 +6530,7 @@ s_flag:        DS.B      1              * Bei DIR
 attrminus      EQU       s_flag         * Bei ATTRIB
 
      IFEQ MAGIX
-etvcritic_alt: DS.L      1
+etvcritic_alt: DS.L      1			; unter TOS und KAOS verwenden wir einen eigenen etv_critic-Handler
      ENDIF
 
 config_alt:    DS.L      1
@@ -7095,11 +6546,11 @@ zeiger_adr     EQU       hid_sys_len    * Bei DIR
 
 jmp_env:       DS.L      4
 
- IFF      KAOS
-laststring:    DS.B      130            * UNDO- Puffer
-home_ypos:     DS.W      1              * FÅr Editor
- ENDC
- IF       ACC
+	IFF KAOS
+laststring:    DS.B      130            * UNDO- Puffer fÅr den Zeilen-Editor (nur TOS)
+home_ypos:     DS.W      1              * fÅr den Zeilen-Editor (nur TOS)
+	ENDIF
+	IF ACC
 screenbuf:     DS.L      ZEILEN*20
 pnt_of_boot:   DS.L      1
 ap_id:         DS.W      1
@@ -7119,7 +6570,7 @@ addrout:       DS.L      1
 ev_mgpbuff:    DS.W      8
 alt_ssp:       DS.L      1
 evnt_ret:      DS.L      20        * oberste Langworte des ssp hier sichern
-     ENDC
+	ENDIF ; IF ACC
 
 bsslen:
 

@@ -1,0 +1,1 @@
+aln -o mcmd.tos cmd
