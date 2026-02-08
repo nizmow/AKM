@@ -5,9 +5,29 @@ BOOT           EQU  1
 MAGIX          EQU  1
 ACC            EQU  0
 
+ 
      SUPER
      INCLUDE "OSBIND.INC"
 
+
+	IF COUNTRY=USA
+		COUNTRY=UK
+	ENDIF
+
+	*
+	* localised strings insert positions
+	*
+	IF COUNTRY=FRG
+		change_s_POS EQU 11
+		diskerr_s_POS EQU 15
+		disk_in_lw_s_POS EQU 20
+	ELSE
+		change_s_POS EQU 12
+		diskerr_s_POS EQU 11
+		disk_in_lw_s_POS EQU 17
+	ENDIF
+
+ANZ_SUFFIX     EQU  6	; siehe unten!
 
 
 **********************************************************************
@@ -1038,63 +1058,6 @@ fat_end:
 * int errno;
 *  Schreibt den zum DOS- Fehlercode <errno> gehîrenden Fehlertext nach CON:
 *
-*    DATA
-errcodes: DC.B  -1,-2,-3,-4,-5,-6,-7,-8,-9,-10,-11,-13,-14,-15,-16,-17
-          DC.B  -32,-33,-34,-35,-36,-37,-39,-40,-46,-48,-49,-64,-65,-66
-          DC.B  -67,-69,0
-
-     EVEN
-errstrs:
-*                BIOS- Fehler
- DC.W     err_1s-errstrs,err_02s-errstrs,err_03s-errstrs
- DC.W    err_04s-errstrs,err_05s-errstrs,err_06s-errstrs
- DC.W    err_07s-errstrs,err_08s-errstrs,err_09s-errstrs
- DC.W    err_10s-errstrs,err_11s-errstrs
- DC.W    err_13s-errstrs,err_14s-errstrs,err_15s-errstrs
- DC.W    err_16s-errstrs,err_17s-errstrs
-*                GEMDOS- Fehler
- DC.W    err_32s-errstrs,err_33s-errstrs,err_34s-errstrs
- DC.W    err_35s-errstrs,err_36s-errstrs,err_37s-errstrs
- DC.W    err_39s-errstrs,err_40s-errstrs,err_46s-errstrs,err_48s-errstrs
- DC.W    err_49s-errstrs,err_64s-errstrs,err_65s-errstrs
- DC.W    err_66s-errstrs,err_67s-errstrs,err_69s-errstrs
-
-err_1s:  DC.B  'Allgemeiner Fehler',0
-err_02s: DC.B  'Laufwerk nicht bereit',0
-err_03s: DC.B  'Unbekanntes Kommando',0
-err_04s: DC.B  'CRC- Fehler',0
-err_05s: DC.B  'Kommando falsch',0
-err_06s: DC.B  'Spur nicht gefunden',0
-err_07s: DC.B  'Unbekanntes Medium',0
-err_08s: DC.B  'Sektor nicht gefunden',0
-err_09s: DC.B  'Kein Papier',0
-err_10s: DC.B  'Schreibfehler',0
-err_11s: DC.B  'Lesefehler',0
-err_13s: DC.B  'Disk schreibgeschÅtzt',0
-err_14s: DC.B  'Unerlaubter Diskwechsel',0
-err_15s: DC.B  'Unbekanntes GerÑt',0
-err_16s: DC.B  'Defekte Sektoren',0
-err_17s: DC.B  'Andere Disk einlegen!',0
-
-err_32s: DC.B  'UngÅltige Funktionsnummer',0
-err_33s: DC.B  'Datei nicht gefunden',0
-err_34s: DC.B  'Pfad nicht gefunden',0
-err_35s: DC.B  'Zuviele geîffnete Dateien',0
-err_36s: DC.B  'Zugriff unmîglich',0
-err_37s: DC.B  'UngÅltiges Handle',0
-err_39s: DC.B  'Zuwenig Speicher',0
-err_40s: DC.B  'UngÅltiger Speicherblock',0
-err_46s: DC.B  'UngÅltiges Laufwerk',0
-err_48s: DC.B  'Nicht dasselbe Laufwerk',0
-err_49s: DC.B  'Keine weiteren Dateien',0
-err_64s: DC.B  'Falscher Bereich',0
-err_65s: DC.B  'Interner Fehler',0
-err_66s: DC.B  'Datei nicht ausfÅhrbar',0
-err_67s: DC.B  'Mshrink- Fehler',0
-err_69s: DC.B  '68000 Exception',0           * KAOS
-toserrs: DC.B  'TOS Fehler',0
-*    TEXT
-     EVEN
 
 print_err:
  lea      errcodes(pc),a0
@@ -1322,11 +1285,6 @@ cursor:
  rts
 
 
-*    DATA
-clss:  DC.B  ESC,'E',ESC,'v',ESC,'q',0    * clear screen/wrap ON/inverse OFF
-*    TEXT
-     EVEN
-
 cls_com:
  lea      clss(pc),a0
 
@@ -1415,20 +1373,13 @@ strstdout:
 *                        Wiederh. $10000
 *                        Ignor.   0
 
-*         DATA
-change_s:  DC.B  'Bitte Disk X: in Laufwerk A: einlegen!',0
-diskerr_s: DC.B  '  auf Laufwerk X:',$d,$a
-           DC.B  '[A]bbruch, [W]iederholen, [I]gnorieren ?',0
-*         TEXT
-          EVEN
-
 etv_critic_neu:
  lea      diskerr_s(pc),a0
  lea      change_s(pc),a1
  moveq    #'A',d0
  add.w    6(sp),d0                 * Laufwerknummer
- move.b   d0,15(a0)
- move.b   d0,11(a1)
+ move.b   d0,diskerr_s_POS(a0)
+ move.b   d0,change_s_POS(a1)
  bsr      crlf_con
  lea      change_s(pc),a0
  cmpi.w   #EOTHER,4(sp)
@@ -1442,7 +1393,7 @@ etc_getkey:
  move.w   #2,-(sp)
  bios     Bconin
  addq.l   #4,sp
- cmpi.b   #3,d0
+ cmpi.b   #3,d0				* ^C
  bne.b    etc_nobreak
  move.w   #EBREAK,-(sp)
  gemdos   Pterm
@@ -1451,23 +1402,28 @@ etc_nobreak:
  cmpi.w   #EOTHER,4(sp)
  beq.b    etc_6
  bsr      d0_upper
- cmpi.b   #'A',d0   * Abbruch
+ cmpi.b   #'A',d0   			* A: "Abbruch" oder "Abort"
  bne.b    etc_2
+	* Abort
  move.w   4(sp),d1
  ext.l    d1
  bra.b    etc_11
 etc_6:
  move.b   #' ',d0
- bra.b    etc_5
+ bra.b    etc_retry
 etc_2:
+ cmpi.b	#'R',d0
+ beq.b	etc_retry				* R: "Retry"
  cmpi.b   #'W',d0   * Wiederh.
  bne.b    etc_3
-etc_5:
+ 	* Retry
+etc_retry:
  move.l   #$10000,d1
  bra.b    etc_11
 etc_3:
- cmpi.b   #'I',d0   * Ignor.
+ cmpi.b   #'I',d0			* I: "Ignore" oder "Ignorieren"
  bne.b    etc_getkey
+ 	* Ignore
  clr.l    d1
 etc_11:
  move.l   d1,-(sp)  * RÅckgabewert auf Stapel retten
@@ -1524,16 +1480,12 @@ getenv_end:
  rts
 
 
+*
 * int env_set(a0 = char *zuweisung)
 *  Setzt eine Variable im Environment. RÅckgabe: 0 = OK
 *                                                1 = Syntaxfehler
 *                                                2 = Environment voll
-
-*    DATA
-out_of_envs:   DC.B  $d,$a,'Environment voll',$d,$a,0
-*    TEXT
-     EVEN
-
+*
 env_set:
  movem.l  d7/a5/a4,-(sp)
  move.l   a0,a5
@@ -1604,11 +1556,9 @@ envset_end:
  rts
 
 
-*    DATA
-syntaxfehlers: DC.B  $d,$a,'Syntax: SET [var=[wert]]',$d,$a,0
-*    TEXT
-     EVEN
-
+*
+*
+*
 set_com:
  subq.w   #2,SP_ARGC(sp)
  bge.b    setcom_4
@@ -1735,21 +1685,14 @@ dtd_end:
 
 * void label_to_stdout(d0 = int nr)
 *  Gibt den Diskettennamen, falls vorhanden, nach stdout
-
-*    DATA
-disk_in_lw_s: DC.B  $d,$a,' Disk in Laufwerk A ',0
-keinname_s:   DC.B  'hat keinen Namen',0
-ist_s:        DC.B  'ist ',0
-*    TEXT
-     EVEN
-
+*
 label_to_stdout:
  link     a6,#-$30
  lea      croots(pc),a1
  move.b   d0,(a1)
  addi.b   #'A',(a1)
  lea      disk_in_lw_s(pc),a0
- move.b   (a1),20(a0)
+ move.b   (a1),disk_in_lw_s_POS(a0)	* Laufwerkbuchtaben einfÅgen
  bsr      strstdout                * a0[] ausdrucken
 
  lea      -$2c(a6),a1              * DTA
@@ -1793,24 +1736,6 @@ isoo_end:
 
 * void prompt_to_con( void )
 
-*    DATA
-prompt_zeichen:
- DC.B     p_unterstr-p_t,'_'
- DC.B     p_b-p_t,'b'
- DC.B     p_d-p_t,'d'
- DC.B     p_e-p_t,'e'
- DC.B     p_g-p_t,'g'
- DC.B     p_h-p_t,'h'
- DC.B     p_l-p_t,'l'
- DC.B     p_n-p_t,'n'
- DC.B     p_p-p_t,'p'
- DC.B     p_q-p_t,'q'
- DC.B     p_t-p_t,'t'
- DC.B     p_d7next-p_t,0
-
-def_prompt: DC.B    '$n$g',0       * Default- Prompt
-     EVEN
-*    TEXT
 
 STRING    SET  -250
 
@@ -1981,7 +1906,7 @@ STRING    SET   -8
 
 *void print_attr(d0 = char attr)
 * Rechnet Attribut in vierstelligen String um (RSHA) und schreibt nach stdout
-* Dahinter werden 2 Leerstellen geschrieben
+* Dahinter werden zwei Leerstellen geschrieben
 
 print_attr:
  link     a6,#STRING
@@ -2054,11 +1979,9 @@ attr_99:
  rts
 
 
-*    DATA
-syntaxattrs:  DC.B  'Syntax: ATTRIB [[+|-]{rash}] datei(en)',CR,LF,0
-*    TEXT
-     EVEN
-
+*
+*
+*
 attrib_com:
  move.l   a5,-(sp)
  bsr      crlf_con
@@ -2202,12 +2125,7 @@ search_whole_tree:
 *  <is_ck> wie oben.
 *  global: a5 (Pfad), a7 (is_ck)
 *  Jeder Aufruf schreibt 48 Bytes auf den Stapel
-
-*    DATA
-pfadzutiefs: DC.B  $d,$a,'Pfad zu tief',$d,$a,0
-pfads:       DC.B  $d,$a,'Pfad: ',0
-*    TEXT
-     EVEN
+*
 
 DTA       SET  -44                 * char DTA[44]
 
@@ -2311,15 +2229,6 @@ free_bpb:
  rts
 
 
-*    DATA
-kbinsg_s:     DC.B  '  kB insgesamt verfÅgbar',$d,$a,0
-bytes_in_s:   DC.B  '  Bytes in ',0
-hauptsp_s:    DC.B  '  Bytes Hauptspeicher',$d,$a,0
-nbytesvers:   DC.B  ' versteckten/System- Datei(en)',$d,$a,0
-nbytesbens:   DC.B  ' Benutzerdatei(en)',$d,$a,0
-nverzeichns:  DC.B  '  Verzeichnis(sse)',$d,$a,0
-*    TEXT
-     EVEN
 
 DFREE_BUFFER   SET   -16
 
@@ -2491,12 +2400,6 @@ ctf_end:
 *
 * Wird benutzt von DIR, CK, TREE und FREE.
 *
-*    DATA
-nbytesfreis:  DC.B  '  Bytes frei',$d,$a,0
-nkbfree:      DC.B  '  kB frei',$d,$a,0
-nmbfree:      DC.B  '  MB frei',$d,$a,0
-*    TEXT
-     EVEN
 
 print_free:
  move.l	d0,-(sp)					; Ausgabebreite merken
@@ -2535,14 +2438,6 @@ prf_print:
 
 * int isdevice(a0 = char dateiname[])
 *  Stellt fest, ob ein Dateiname ein Device 'CON:', 'AUX:', 'PRN:' ist.
-
-*    DATA
-device_s:  DC.B  'CON'
-           DC.B  'AUX'
-           DC.B  'PRN'
-           DC.B  'NUL'
-*    TEXT
-     EVEN
 
 isdevice:
  movem.l  d7/a4,-(sp)
@@ -2585,12 +2480,7 @@ isdv_5:
 * int fileren(alt_name,neu_name)
 *  verschiebt eine Datei
 *  RÅckgabewert 0, wenn alles in Ordnung
-
-*    DATA
-rens:      DC.B  'MV ',0
-err_rens:  DC.B  ' => Fehler : ',0
-*    TEXT
-     EVEN
+*
 
 ALT_NAME  SET  8
 NEU_NAME  SET  $c
@@ -2629,14 +2519,7 @@ renf_end:
 * int filecopy(quell_dateiname,ziel_dateiname)
 *  kopiert eine Datei
 *  RÅckgabewert 0, wenn alles in Ordnung
-
-*    DATA
-isidents:  DC.B  ' Quelle und Ziel identisch',$d,$a,0
-copys:     DC.B  'COPY ',0
-auf_s:     DC.B  ' auf ',0
-zielvolls: DC.B  ' Zieldisk voll',$d,$a,0
-     EVEN
-*    TEXT
+*
 
 DTA_ZIEL       SET  -44
 DTA_QUELL      SET  DTA_ZIEL-44
@@ -2846,15 +2729,6 @@ fc_90:
  unlk     a6
  rts
 
-
-*    DATA
-syntaxrens:   DC.B  'Syntax: MV Quelle Ziel',$d,$a,0
-syntaxcopys:  DC.B  'Syntax: COPY [-t] Quelle Ziel',$d,$a,0
-unerlcopy_s:  DC.B  'UngÅltiges COPY',$d,$a,0
-unerlren_s:   DC.B  'UngÅltiges MV',$d,$a,0
-ndateiens:    DC.B  ' Datei(en) kopiert',$d,$a,0
-*    TEXT
-     EVEN
 
 DTA        SET  -44            * char DTA[44]
 ZIELPFAD   SET  DTA-150        * char ZIELPFAD[150]
@@ -3146,15 +3020,6 @@ numa5_5:
  rts
 
 
-*    DATA
-akt_date_is:     DC.B  $d,$a,'Aktuelles Datum ist ',0
-give_dates:      DC.B  $d,$a,'Neues Datum (tt/mm/jj) : ',0
-akt_time_is:     DC.B  $d,$a,'Aktuelle Zeit ist ',0
-give_times:      DC.B  $d,$a,'Neue Zeit (hh:mm:ss) : ',0
-falsches_forms:  DC.B  $d,$a,'Falsches Format',$d,$a,0
-*    TEXT
-     EVEN
-
 STRING         SET  -140
 
 time_com:
@@ -3285,17 +3150,6 @@ dati_20:
 *  Ist query_flag != 0, wird vorher die Sicherheitsfrage gestellt
 *  RÅckgabe 1, wenn Fehler aufgetreten
 
-*    DATA
-loesch_s:  DC.B  $d,$a,'Lîsche ',0
-auswahl_s: DC.B  ' (J/N/G/A) ? ',0
-global_s:  DC.B  'Global',0
-nein_s:    DC.B  'Nein',0
-ja_s:      DC.B  'Ja',0
-quit_s:    DC.B  'Abbruch',0
-dels:      DC.B  $d,$a,'DEL ',0
-*    TEXT
-     EVEN
-
 unlink:
  link     a6,#-4
  move.b   d+query_flag(pc),d0
@@ -3316,17 +3170,17 @@ unl_9:
  beq.b    unl_2
  ENDC
 
- cmpi.b   #'G',d0
+ cmpi.b   #'G',d0				* "Global"
  beq.b    unl_3
- cmpi.b   #'A',d0
+ cmpi.b   #'A',d0				* "Abort"?
  beq.b    unl_4
- cmpi.b   #'Q',d0
+ cmpi.b   #'Q',d0				* "Quit"?
  beq.b    unl_4
- cmpi.b   #'J',d0
+ cmpi.b   #'J',d0				* "Ja"
  beq.b    unl_5
- cmpi.b   #'Y',d0
+ cmpi.b   #'Y',d0				* "Yes"
  beq.b    unl_5
- cmpi.b   #'N',d0
+ cmpi.b   #'N',d0				* "Nein" oder "No"
  bne.b    unl_9
  lea      nein_s(pc),a0            * Nein
  bsr      strcon
@@ -3381,11 +3235,6 @@ unl_7:
  unlk     a6
  rts
 
-
-*    DATA
-syntax_dels: DC.B  $d,$a,'Syntax: DEL [-n] datei1 ...',$d,$a,0
-*    TEXT
-     EVEN
 
 STRING1   SET  -150                * char *STRING1[150]
 STRING2   SET  STRING1-150         * char *STRING2[150]
@@ -3484,12 +3333,6 @@ dire_end:
 * DTA  *eintrag;
 *  Druckt einen Directory- Eintrag (DTA-Struktur)
 *  Er wird mit CR/LF abgeschlossen, wenn das w-Flag NICHT gesetzt war
-
-*    DATA
-space3_s:        DC.B  '   ',0
-dir_zeichens:    DC.B  '   <DIR>',0
-*    TEXT
-     EVEN
 
 dir_entry_print:
  link     a6,#0
@@ -3674,17 +3517,17 @@ dep_11:
 
 * int cmp_dta(a0 = char *eintrag1, a1 = char *eintrag2)
 *  Vergleicht zwei Directory- EintrÑge (ab Byte 21)
-*  sort_mode : 'A'    nach Art (Extension)
-*              'G'    nach Grîûe
-*              'D'    nach Datum/Zeit
+*  sort_mode : 'A' nach Art (type)
+*              'G' nach Grîûe (size)
+*              'D' nach Datum/Zeit
 *              sonst: nach Namen
 
 cmp_dta:
  move.b   sort_mode(pc),d2
- btst     #4,21-20(a0)   * Attribut = Subdir ?
+ btst     #4,21-20(a0)   	* Attribut = Subdir ?
  beq.b    cmpd_1             * nein
  btst     #4,21-20(a1)
- bne.b    cmpd_2             * Beides Subdirs => sortiere nach Namen
+ bne.b    cmpd_2             * Beides Verzeichnisse => sortiere nach Namen
 * Jetzt ist e1 subdir, e2 nicht => e2 > e1
  moveq    #-1,d0
  bra      cmpd_end
@@ -3695,8 +3538,11 @@ cmpd_1:
  moveq    #1,d0
  bra      cmpd_end
 cmpd_3:
- cmpi.w   #'G',d2
+;cmpi.b   #'S',d2			* "Size"
+;beq.b	cmpd_size
+ cmpi.b   #'G',d2			* "Grîûe"
  bne.b    cmpd_6
+cmpd_size:
  move.l   26-20(a1),d1   * nach Grîûe sortieren
  sub.l    26-20(a0),d1
 cmpd_12:
@@ -3709,8 +3555,11 @@ cmpd_12:
 cmpd_5:
  bra.b    cmpd_end
 cmpd_6:
- cmpi.w   #'A',d2
+; cmpi.b	#'T',d2			* "Type"
+; beq.b	cmpd_type
+ cmpi.w   #'A',d2			* "Art"
  bne.b    cmpd_10
+cmpd_type:
  movem.l  a0/a1,-(sp)
  adda.w   #30-20,a0      * Zeiger auf den Namen
  adda.w   #30-20,a1
@@ -3732,7 +3581,7 @@ cmpd_9:
  bne.b    cmpd_end
  bra.b    cmpd_2             * Typ gleich => Namensvergleich
 cmpd_10:
- cmpi.w   #'D',d2
+ cmpi.b   #'D',d2			* "Datum" oder "Date"
  beq.b    cmpd_13
 cmpd_2:
  lea      30-20(a1),a1   * Namen vergleichen
@@ -3752,13 +3601,6 @@ cmpd_11:
 cmpd_end:
  rts
 
-
-*    DATA
-verzchn_vons:   DC.B  ' Verzeichnis von ',0
-n_dbytes:       DC.B  '  Bytes in',0
-n_dateiens:     DC.B  ' Datei(en)',0
-*    TEXT
-     EVEN
 
 STRING         SET  -(16+150+200)       * char STRING[200]
 DUMMYSTRING    SET  -(16+150)           * char DUMMYSTRING[150]
@@ -3871,29 +3713,33 @@ dir_14:
  lea      STRING(a6),a0
  bsr      strstdout
  lea      sort_mode(pc),a0
- move.l   a4,d0                    * Speicher da ?
- bne.b    dir_31
+ move.l   a4,d0                    * Speicher vorhanden ?
+ bne.b    dir_31				* ja
  move.b   #'U',(a0)                * kein Speicher => nicht sortieren
 dir_31:
  move.b   (a0),d0
- lea      nach_art_s(pc),a0
+ lea      nach_art_s(pc),a0		* "nach Art" oder "by type"
  cmpi.b   #'A',d0
- beq.b    dir_16
- lea      nach_grs_s(pc),a0
+ beq.b    dir_print_sort
+;cmpi.b   #'T',d0
+;beq.b    dir_print_sort
+ lea      nach_grs_s(pc),a0		* "nach Grîûe"
  cmpi.b   #'G',d0
- beq.b    dir_16
- lea      nach_dat_s(pc),a0
+ beq.b    dir_print_sort
+;cmpi.b   #'S',d0				* "Size"
+;beq.b    dir_print_sort
+ lea      nach_dat_s(pc),a0		* "nach Datum" oder "by date"
  cmpi.b   #'D',d0
- beq.b    dir_16
- lea      nach_nix_s(pc),a0
+ beq.b    dir_print_sort
+ lea      nach_nix_s(pc),a0		* "unsorted" oder "unsortiert"
  cmpi.b   #'U',d0
- bne.b    dir_15
-dir_16:
+ bne.b    dir_skip_sort_output
+dir_print_sort:
  bsr      strstdout
-dir_15:
+dir_skip_sort_output:
  bsr      crlf_stdout
  bsr      crlf_stdout
-* Jetzt wird das komplette Verzeichnis in den Puffer geschrieben
+* Jetzt wird das gesamte Verzeichnis in den Puffer geschrieben
 * oder gleich ausgedruckt, falls <sort_mode> = 'U'(nsortiert)
  move.l   a4,zeiger_adr-w_flag(a3)
  lea      4*MAXDIR(a4),a0
@@ -3901,7 +3747,7 @@ dir_15:
  clr.w    dir_zeilen-w_flag(a3)
  lea      dir_entry(pc),a1
  lea      sort_mode(pc),a0
- cmpi.b   #'U',(a0)
+ cmpi.b   #'U',(a0)				* "unsorted"
  bne.b    dir_27
  lea      dir_entry_print(pc),a1
 dir_27:
@@ -3915,19 +3761,19 @@ dir_12:
  lea      keine_dateiens(pc),a0
  beq.b    dir_8
  lea      sort_mode(pc),a0
- cmpi.b   #'U',(a0)
+ cmpi.b   #'U',(a0)				* "unsorted"
  beq.b    dir_28
 *
 * Das Verzeichnis wird jetzt sortiert, falls <sort_mode> <> 'U'
 *
- move.l   a4,-(sp)
+ move.l   a4,-(sp)				* Zeigertabelle
  lea      d+dir_zeilen(pc),a0
  move.w   (a0),d7
  clr.w    (a0)
  ext.l    d7
- move.l   d7,-(sp)
- pea      cmp_dta(pc)        * Vergleichs- Routine
- bsr      sortiere
+ move.l   d7,-(sp)				* Anzahl Elemente
+ pea      cmp_dta(pc)        		* Vergleichs- Routine
+ bsr      shellsort
  adda.w   #12,sp
 * Das Verzeichnis wird ausgegeben
  subq.w   #1,d7
@@ -4020,11 +3866,6 @@ pause_4:
  rts
 
 
-*    DATA
-echo_ists:  DC.B  $d,$a,'ECHO ist ',0
-*    TEXT
-     EVEN
-
 echo_com:
  movem.l  d7/a5,-(sp)
  sf       d7
@@ -4085,11 +3926,6 @@ echo_8:
  rts
 
 
-*    DATA
-rmd_syntaxs: DC.B  $d,$a,'Syntax: MD/RD Verzeichnis',$d,$a,0
-*    TEXT
-     EVEN
-
 rd_com:
  moveq    #Ddelete,d0
  bra.b    rmd_com
@@ -4115,11 +3951,6 @@ rmd_50:
 rmd_end:
  rts
 
-
-*    DATA
-ren_syntaxs: DC.B  $d,$a,'Syntax: REN Quelle Name',$d,$a,0
-*    TEXT
-     EVEN
 
 DEST      SET  -128
 
@@ -4184,11 +4015,6 @@ ren_end:
  unlk     a6
  rts
 
-
-*    DATA
-kein_pfads: DC.B  'Kein Pfad',0
-*    TEXT
-     EVEN
 
 STRING    SET       -150        * char STRING[150]
 DUMMY     SET       -(4+150)
@@ -4279,13 +4105,6 @@ tf_50:
  rts
 
 
-*    DATA
-datei_s:      DC.B  $d,$a,'Datei: ',0
-kann_s:       DC.B  $d,$a,'Kann ',0
-nicht_offn_s: DC.B  ' nicht îffnen',$d,$a,0
-*    TEXT
-     EVEN
-
 type_file:
  link     a6,#0
  movem.l  d6/d7/a5/a4,-(sp)
@@ -4344,11 +4163,6 @@ tyf_50:
  rts
 
 
-*    DATA
-syntax_ts:  DC.B  $d,$a,'Syntax: TYPE|TOUCH Dateiname(n)',$d,$a,0
-*    TEXT
-     EVEN
-
 touch_com:
  lea      touch_file(pc),a1
  bra.b    t_com
@@ -4384,20 +4198,6 @@ toty_end:
  movem.l  (sp)+,a5/a4
  rts
 
-
-*    DATA
-     IFNE MAGIX
-kaos_s:     DC.B  LF,'MagiC v',0
-     ELSE
-kaos_s:     DC.B  LF,'KAOS v',0
-     ENDIF
-tos_s:      DC.B  LF,'TOS v',0
-gemdos_s:   DC.B  ',  GEMDOS v',0
-	IF ACC
-aes_s:      DC.B  'AES v',0
-	ENDIF
-     EVEN
-*    TEXT
 
 ver_com:
  lea      kaos_s(pc),a0
@@ -4454,13 +4254,6 @@ prv_1:
  andi.l   #$ff,d0
  bsr      lwrite_long
  rts
-
-
-*    DATA
-status_s:      DC.B  $d,$a,'Flag ist ',0
-error_verifys: DC.B  'UngÅltiger Zustand',$d,$a,0
-*    TEXT
-     EVEN
 
 
 break_com:
@@ -4574,13 +4367,13 @@ cpms_end:
  rts
 
 
-* void sortiere(vergleich, anzahl, pointerfeld)
+* void shellsort(vergleich, anzahl, pointerfeld)
 * int (*vergleich)(a0 = void *s1, a1 = void *s2);
 * unsigned long anzahl;
 * char *pointerfeld[];
 *  Sortiert mit Shellsort
 
-sortiere:
+shellsort:
  link     a6,#0
  movem.l  d5/d6/d7/a5/a4,-(sp)
  move.l   $c(a6),d7
@@ -4627,13 +4420,6 @@ sor_7:
  unlk     a6
  rts
 
-
-*    DATA
-syntax_sorts:   DC.B  $d,$a,'Syntax: SORT -C -R -n',$d,$a,0
-sort_memerrs:   DC.B  $d,$a,'SORT: Zuwenig Speicher',$d,$a,0
-sort_zielvolls: DC.B  'SORT: Zieldisk voll',$d,$a,0
-*    TEXT
-     EVEN
 
 sort_com:
  link     a6,#0
@@ -4731,9 +4517,9 @@ sort_18:
 sort_21:
  clr.b    (a5)
  move.l   a3,-(sp)                 * Adresse des Pointerfeldes
- move.l   d7,-(sp)                 * Anzahl gelesener Strings = LÑnge desselben
+ move.l   d7,-(sp)                 * Anzahl gelesener Zeichenketten = LÑnge desselben
  pea      cmps(pc)                 * Vergleichsfunktion
- bsr      sortiere
+ bsr      shellsort
  adda.w   #12,sp
  tst.l    d7
  beq.b    sort_25                      * Anzahl ist Null
@@ -4795,11 +4581,6 @@ cnt_end:
  rts
 
 
-*    DATA
-syntax_finds:  DC.B  $d,$a,'Syntax: FIND string',$d,$a,0
-*    TEXT
-     EVEN
-
 STRING    SET  -200
 
 find_com:
@@ -4856,11 +4637,6 @@ find_end:
  unlk     a6
  rts
 
-
-*    DATA
-mehrs:  DC.B  $d,'--Mehr--',0
-*    TEXT
-     EVEN
 
 more_com:
  movem.l  d7/a5,-(sp)
@@ -4924,16 +4700,6 @@ cat_strings:
  clr.b    (a0)
  rts
 
-
-*    DATA
-syntax_ifs:   DC.B  $d,$a,'Fehler in IF- Ausdruck',$d,$a,0
-not_s:        DC.B  'NOT',0
-errorlevel_s: DC.B  'ERRORLEVEL',0
-exist_s:      DC.B  'EXIST',0
-equal_s:      DC.B  '='
-gleich_s:     DC.B  '=',0
-*    TEXT
-     EVEN
 
 if_com:
  link     a6,#-$80
@@ -5032,11 +4798,6 @@ i100:
  rts
 
 
-*    DATA
-syntax_shifts:    DC.B  $d,$a,'SHIFT: Operand fehlt',$d,$a,0
-*    TEXT
-     EVEN
-
 shift_com:
  tst.w    SP_BATCH(sp)             * checken, ob im Batch- Modus
  beq.b    shf_end
@@ -5054,11 +4815,6 @@ shf_1:
 shf_end:
  rts
 
-
-*    DATA
-lbl_not_found_s: DC.B  $d,$a,'GOTO: Label nicht gefunden',$d,$a,0
-*    TEXT
-     EVEN
 
 goto_com:
  link     a6,#-130
@@ -5116,11 +4872,6 @@ end_com:
 end_end:
  rts
 
-
-*    DATA
-for_error_s:     DC.B  $d,$a,'FOR: Syntaxfehler oder Schachtelung',$d,$a,0
-*    TEXT
-     EVEN
 
 for_com:
  link     a6,#-$80
@@ -5372,11 +5123,6 @@ inc_errlv:
 *  ein_str wird unter Expansion nach aus_str kopiert
 *  Es werden nur die Parameter %n und %var% eingesetzt
 
-*    DATA
-zeile_gekuerzt_s:  DC.B  $d,$a,'Kommandozeile gekÅrzt',$d,$a,0
-*    TEXT
-     EVEN
-
 expand_macro:
  movem.l  d4/d6/d7/a3/a4/a5,-(sp)
  move.l   a1,a3          * Eingabe
@@ -5562,14 +5308,6 @@ rstd_3:
 *  Schreiben geîffnet (falls vorhanden), andernfalls gleich create()
 *  RÅckgabewert 1, falls ok; sonst 0
 
-*    DATA
-pipe_errs:   DC.B  CR,LF,' Pipe- Fehler',0
-redir_errs:  DC.B  CR,LF,' Fehler beim Umlenken von STD',0
-stdx_namtab: DC.B  'IN ',0,'OUT',0,'AUX',0
-             DC.B  'PRN',0,'ERR',0,'XTRA',0
-*    TEXT
-     EVEN
-
 redirect_stdx:
  movem.l  d5/d6/d7/a5,-(sp)
  move.w   d0,d5
@@ -5685,11 +5423,6 @@ cmde_1:
 * int  handle;
 * int  anzahl_param;
 * char *parameter[];
-
-*    DATA
-batch_errs:  DC.B  $d,$a,'BATCH zu tief verschachtelt',$d,$a,0
-*    TEXT
-     EVEN
 
 batch_exec:
  link     a6,#-130
@@ -6055,12 +5788,6 @@ cle_end:
 
 * load_exec_pgm(a0 = char filename[], a1 = char commandline[])
 
-*    DATA
-exec_fehler1_s:  DC.B  $d,$a,'EXEC Fehler =>',0
-exec_fehler2_s:  DC.B  '<=',$d,$a,0
-*    TEXT
-     EVEN
-
 load_exec_pgm:
  movem.l  d7/a3/a4/a5,-(sp)
  move.l   a0,a5                    * Kommando
@@ -6158,20 +5885,6 @@ lep_end:
 *  *handlepointer   0  = normale Programmdatei
 *                sonst = Handle der Batchdatei
 
-*    DATA
-pgm_typ_tab:
-bat_s:    DC.B  '.BAT',0           ; Batch
-btp_s:    DC.B  '.BTP',0           ; Batch takes parameter (NeoDesk)
-          DC.B  '.TTP',0
-          DC.B  '.TOS',0
-prg_s:    DC.B  '.PRG',0
-app_s:    DC.B  '.APP',0
-acc_s:    DC.B  '.ACC',0
-ANZ_SUFFIX     EQU  6
-
-*    TEXT
-     EVEN
-
 check_pgm_type:
  movem.l  d7/a6/a5/a4/a3,-(sp)
  move.l   a0,a5
@@ -6256,12 +5969,6 @@ cpty_end:
 
 
 * void extern_cmd_exec(d0 = int argc, a0 = char *argv[])
-
-*    DATA
-pfad_ueberl_s:   DC.B  $d,$a,'PfadÅberlauf',0
-kmd_nicht_gef_s: DC.B  $d,$a,'Kommando nicht gefunden',$d,$a,0
-*    TEXT
-     EVEN
 
 parameter_len   EQU      _base+$80
 parameter       EQU      _base+$80+1
@@ -6397,12 +6104,6 @@ clpi_1:
 *  is_out > 0  :  Ausgabedatei pipen.o
 *  is_out < 0  :  global       pipe?.?
 
-*    DATA
-pipe_path: DC.B  'TMPDIR=',0
-pipe_nams: DC.B  '\$$pipe?.?',0
-*    TEXT
-     EVEN
-
 make_pipename:
  move.l   a5,-(sp)
  move.l   a0,a5
@@ -6451,9 +6152,7 @@ mpi_end:
  rts
 
 
-*       DATA
-
-* TODO: Localisation
+*    DATA
 
 autoexec1s: DC.B  'C:\AUTOEXEC.BAT',0
 autoexec2s: DC.B  '\AUTOEXEC.BAT',0
@@ -6464,25 +6163,29 @@ bootbats:     DC.B  '\BOOT.BAT',0
 
 	IFF KAOS
 func_s:       DC.B  'F0=',0
-titels:       DC.B  'GEMDOSø SHELL v2.62 Ω ''90 Andreas Kromke',$d,$a
+titels:       DC.B  'GEMDOSø SHELL v2.62 Ω ''90 Andreas Kromke',CR,LF,LF,0
 	ENDIF
 	IF KAOS
 	IFNE MAGIX
-titels:       DC.B  'MagiC SHELL v2.67 Ω ''93/''26 Andreas Kromke',$d,$a
+titels:       DC.B  'MagiC SHELL v2.67 Ω ''93/''26 Andreas Kromke',CR,LF,LF,0
 	ELSE
-titels:       DC.B  'KAOSø   SHELL v2.62 Ω ''90 Andreas Kromke',$d,$a
+titels:       DC.B  'KAOSø   SHELL v2.62 Ω ''90 Andreas Kromke',CR,LF,LF,0
 	ENDIF
 	ENDIF ; IF KAOS
-
 	IF ACC
-              DC.B  'Accessory- Version',CR,LF
+              DC.B  'Accessory- Version',CR,LF,LF,0
 	ENDIF
-              DC.B  $a,0
-nach_art_s:   DC.B  ' nach Art',0
-nach_dat_s:   DC.B  ' nach Datum',0
-nach_grs_s:   DC.B  ' nach Grîûe',0
-nach_nix_s:   DC.B  ' unsortiert',0
-bytes_free_s: DC.B  ' Bytes frei',$d,$a,$a,0
+
+     IFNE MAGIX
+kaos_s:     DC.B  LF,'MagiC v',0
+     ELSE
+kaos_s:     DC.B  LF,'KAOS v',0
+     ENDIF
+tos_s:      DC.B  LF,'TOS v',0
+gemdos_s:   DC.B  ',  GEMDOS v',0
+	IF ACC
+aes_s:      DC.B  'AES v',0
+	ENDIF
 
 croots:       DC.B  'A:'
 allroots:     DC.B  '\'
@@ -6494,10 +6197,80 @@ spaces:       DC.B  ' '
 leers:        DC.B  0
 promptis:     DC.B  'PROMPT=',0
 pathis:       DC.B  'PATH=',0
-taste_drueckens: DC.B  'Taste drÅcken ',0
-not_founds:      DC.B  '  nicht gefunden'
 crlfs:        DC.B  $d,$a,0
-keine_dateiens:  DC.B  $d,$a,' Keine Dateien',0
+
+not_s:        DC.B  'NOT',0
+errorlevel_s: DC.B  'ERRORLEVEL',0
+exist_s:      DC.B  'EXIST',0
+equal_s:      DC.B  '='
+gleich_s:     DC.B  '=',0
+
+stdx_namtab: DC.B  'IN ',0,'OUT',0,'AUX',0
+             DC.B  'PRN',0,'ERR',0,'XTRA',0
+
+pipe_path: DC.B  'TMPDIR=',0
+pipe_nams: DC.B  '\$$pipe?.?',0
+
+clss:  DC.B  ESC,'E',ESC,'v',ESC,'q',0    * clear screen/wrap ON/inverse OFF
+
+device_s:  DC.B  'CON'
+           DC.B  'AUX'
+           DC.B  'PRN'
+           DC.B  'NUL'
+
+pgm_typ_tab:
+bat_s:    DC.B  '.BAT',0           ; Batch
+btp_s:    DC.B  '.BTP',0           ; Batch takes parameter (NeoDesk)
+          DC.B  '.TTP',0
+          DC.B  '.TOS',0
+prg_s:    DC.B  '.PRG',0
+app_s:    DC.B  '.APP',0
+acc_s:    DC.B  '.ACC',0
+* ANZ_SUFFIX     EQU  6 siehe oben!
+
+prompt_zeichen:
+ DC.B     p_unterstr-p_t,'_'
+ DC.B     p_b-p_t,'b'
+ DC.B     p_d-p_t,'d'
+ DC.B     p_e-p_t,'e'
+ DC.B     p_g-p_t,'g'
+ DC.B     p_h-p_t,'h'
+ DC.B     p_l-p_t,'l'
+ DC.B     p_n-p_t,'n'
+ DC.B     p_p-p_t,'p'
+ DC.B     p_q-p_t,'q'
+ DC.B     p_t-p_t,'t'
+ DC.B     p_d7next-p_t,0
+
+def_prompt: DC.B    '$n$g',0       * Default- Prompt
+
+errcodes: DC.B  -1,-2,-3,-4,-5,-6,-7,-8,-9,-10,-11,-13,-14,-15,-16,-17
+          DC.B  -32,-33,-34,-35,-36,-37,-39,-40,-46,-48,-49,-64,-65,-66
+          DC.B  -67,-69,0
+
+     EVEN
+errstrs:
+*                BIOS- Fehler
+ DC.W     err_1s-errstrs,err_02s-errstrs,err_03s-errstrs
+ DC.W    err_04s-errstrs,err_05s-errstrs,err_06s-errstrs
+ DC.W    err_07s-errstrs,err_08s-errstrs,err_09s-errstrs
+ DC.W    err_10s-errstrs,err_11s-errstrs
+ DC.W    err_13s-errstrs,err_14s-errstrs,err_15s-errstrs
+ DC.W    err_16s-errstrs,err_17s-errstrs
+*                GEMDOS- Fehler
+ DC.W    err_32s-errstrs,err_33s-errstrs,err_34s-errstrs
+ DC.W    err_35s-errstrs,err_36s-errstrs,err_37s-errstrs
+ DC.W    err_39s-errstrs,err_40s-errstrs,err_46s-errstrs,err_48s-errstrs
+ DC.W    err_49s-errstrs,err_64s-errstrs,err_65s-errstrs
+ DC.W    err_66s-errstrs,err_67s-errstrs,err_69s-errstrs
+
+     EVEN
+
+ IF COUNTRY=FRG
+	INCLUDE "DE.S"
+ ELSE
+	INCLUDE "EN.S"
+ ENDIF
 
 attrib_s: DC.B  'attrib',0
 break_s:  DC.B  'break',0
