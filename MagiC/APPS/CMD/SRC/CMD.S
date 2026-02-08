@@ -1,4 +1,4 @@
-* Wenn MAGIX auf 1 gesetzt ist, muû TOS auch auf 1 sein!
+* Wenn MAGIX auf 1 gesetzt ist, muû KAOS auch auf 1 sein!
 
 KAOS           EQU  1
 BOOT           EQU  1
@@ -12,7 +12,7 @@ ACC            EQU  0
 
 **********************************************************************
 *
-* CMD, letzte énderung 28.5.92
+* CMD, letzte énderung 28.5.92, dann 8.2.2026
 *
 * Switches:                   CMD.PRG
 *           KAOS              KCMD.PRG
@@ -541,10 +541,10 @@ write_long:
  lea      -STRBUFSIZE(a6),a0
 ;move.l   d0,d0                    * zahl
  bsr      long_to_str			; gibt d0 und a0 zurÅck
- sub.w    d0,d7                    * d0 ist tatsÑchliche LÑnge, a0 ist wichtig
- ble.b	wl_nofill
- tst.b	d6
- beq.b	wl_nofill
+ sub.w    d0,d7                    * d0 ist tatsÑchliche LÑnge, a0 der Anfang
+ ble.b	wl_nofill				; alles belegt, nicht auffÅllen
+ tst.b	d6					; Åberhaupt auffÅllen?
+ beq.b	wl_nofill				; nein
  move.l   a0,-(sp)
  bra.b    wl_put
 wl_loop:
@@ -560,35 +560,55 @@ wl_nofill:
  rts
 
 
-* int long_to_str(d0 = unsigned long zahl, a0 = char string[])
-*  Rechnet eine Zahl dezimal in einen String um, dessen LÑnge zurÅckgegeben
-*  wird.
-* Auûerdem wird a0 zurÅckgegeben und ist wichtig.
-
+*
+* d0/a0 = long_to_str(d0 = unsigned long zahl, a0 = char string[])
+*  Wandelt eine Zahl dezimal in eine Zeichenkette um.
+* In d0 wird die LÑnge zurÅckgegeben.
+* In a0 wird der Zeiger auf das erste Zeichen zurÅckgegeben.
+*
+* d0,d1,d2,a0,a1 werden zerstîrt.
+*
 long_to_str:
- lea		STRBUFSIZE(a0),a1
- clr.b	-(a1)
+ lea		STRBUFSIZE(a0),a1	; wir fangen rechts an ...
+ clr.b	-(a1)			; ... und schreiben erstmal das Null-Byte
  move.l	a1,a0
 lts_loop:
- bsr		_uldiv10
- tst.l	d0
- bne.b	lts_loop
+ bsr		_uldiv10		; niedrigstwertige Dezimalziffer nach -(a0)
+ tst.l	d0			; verbleibender Quotient?
+ bne.b	lts_loop		; ja, weitere Ziffern folgen
  suba.l	a0,a1          * Zeichenketten-Anfang abziehen
  move.l	a1,d0          * ZeichenkettenlÑnge zurÅckgeben
  rts
 
 
+*
+* Teile d0.l durch 10 und wandle den Divisionsrest in eine
+* Dezimalziffer um, die nach -(a0) geschrieben wird.
+* Gib den Quotienten in d0.l zurÅck.
+* d1 und d2 werden zerstîrt, a0 um 1 verringert.
+*
+
+*
+* Der Befehl "divu" des 68000 teilt 32 Bit durch 16 Bit, aber
+* Qutient und Rest dÅrfen nur je 16 Bit groû sein.
+* Teile ich 1048576 durch 10, dann ist das 104857 mit Rest 6,
+* d.h. der Quotient ist 0x19999 und paût nicht in 16 Bit.
+*
+* TODO: Statt die oberen 16 Bit des Dividenden abfragen, also
+*       dividend > 65535, dann besser abfragen, ob
+*       dividend > 655350
+*
 _uldiv10:
  move.l	d0,d2
  swap	d2
- tst.w	d2
- bne.b	_uldiv1
- divu	#10,d0
- swap	d0
- add.b	#'0',d0
- move.b	d0,-(a0)
+ tst.w	d2			; obere 16 Bit
+ bne.b	_uldiv1		; sind ungleich Null, komplizierte Methode
+ divu	#10,d0		; Durch 10 teilen
+ swap	d0			; Rest in den unteren 16 Bit
+ add.b	#'0',d0		; in Dezimalziffer wandeln
+ move.b	d0,-(a0)		; Ziffer abspeichern
  clr.w	d0
- swap	d0
+ swap	d0			; d0.l = Quotient
  rts
 _uldiv1:
  clr.w	d0
@@ -605,6 +625,10 @@ _uldiv1:
  swap	d0
  rts
 
+*
+* d0 = d0 * d1
+* Zerstîrt d0/d2
+*
 _ulmul:
  move.l	d0,d2
  swap	d2
@@ -994,11 +1018,12 @@ std_end:
  rts
 
 
+*
 * void fatal(d0 = errno)
 * int errno;
 *  Falls <errno> < 0, wird der Fehlercode ausgedruckt und CMD
 *  neu gestartet (break)
-
+*
 fatal:
  tst      d0
  bge.b    fat_end
@@ -1008,10 +1033,11 @@ fat_end:
  rts
 
 
+*
 * void print_err(d0 = errno)
 * int errno;
-*  Schreibt den zum DOS- Fehlercode <errno> gehîrenden Fehlerstring nach CON:
-
+*  Schreibt den zum DOS- Fehlercode <errno> gehîrenden Fehlertext nach CON:
+*
 *    DATA
 errcodes: DC.B  -1,-2,-3,-4,-5,-6,-7,-8,-9,-10,-11,-13,-14,-15,-16,-17
           DC.B  -32,-33,-34,-35,-36,-37,-39,-40,-46,-48,-49,-64,-65,-66
@@ -1086,10 +1112,11 @@ pre_print:
  rts
 
 
+*
 * int crprint_err(d0 = int errcode)
 *  wie print_err, gibt vorher und nachher cr/lf nach CON
 *  Gibt Fehlercode wieder in d0 zurÅck
-
+*
 crprint_err:
  move.w   d0,-(sp)
  bsr      crlf_con
@@ -1122,11 +1149,11 @@ checkpath:
  addq.w   #1,d0          * korrekte Laufwerksnummer wie "x:" ?
  bge.b    chp_end        * ja => return(>0), Fehler => return(0)
 
- IFF      KAOS
+	IFF KAOS
  move.l   a5,a0
  bsr      str_to_drive   * Diskwechsel prÅfen
  bmi.b    chp_end        * Fehler => return(<0)
- ENDC
+	ENDIF
 
  move.l   a5,a0
  bsr      strlen
@@ -1160,6 +1187,7 @@ chp_end:
  rts
 
 
+*
 * int split_path(a0 = string1, a1 = string2, a2 = string3)
 *  strcpy(string3,string1)
 *  strcpy(string2,string1)
@@ -1182,7 +1210,7 @@ chp_end:
 *                                     return(1)
 *                            2. Fall: string1 ist korrekte Datei
 *                                     goto LABEL
-
+*
 split_path:
  movem.l  d7/a3/a4/a5,-(sp)
  movea.l  a0,a3
@@ -1261,8 +1289,10 @@ splp_20:
  movem.l   (sp)+,d7/a3/a4/a5
  rts
 
-* Erst Cursor aus-, dann Mauszeiger einschalten
 
+*
+* Erst Cursor aus-, dann Mauszeiger einschalten
+*
 mouse:
      IFEQ BOOT
  clr.w    -(sp)
@@ -1278,8 +1308,10 @@ mo_no:
      ENDIF ; IFEQ BOOT
  rts
 
-* Erst Mauszeiger aus-, dann Cursor einschalten
 
+*
+* Erst Mauszeiger aus-, dann Cursor einschalten
+*
 cursor:
      IFEQ BOOT
  DC.W     A_HIDE_MOUSE
@@ -1299,10 +1331,11 @@ cls_com:
  lea      clss(pc),a0
 
 
+*
 * void strcon(string)
 * a0 = char *string;
-*  gibt einen String an die Konsole CON:
-
+*  gibt eine Zeichenkette an die Konsole CON:
+*
 strcon:
  move.l   a5,-(sp)
  move.l   a0,a5                    * string in a5[]
@@ -1316,17 +1349,19 @@ strc_end:
  rts
 
 
+*
 * void crlf_con()
-
+*
 crlf_con:
  moveq    #CR,d0
  bsr.b    putch
  moveq    #LF,d0
 
 
+*
 * void putch()
 *  Druckt das Zeichen in d0 nach Device 2 (CON)
-
+*
 putch:
  move.w   d0,-(sp)
  move.w   #2,-(sp)
@@ -1335,17 +1370,19 @@ putch:
  rts
 
 
+*
 * void crlf_stdout()
-
+*
 crlf_stdout:
  moveq    #CR,d0
  bsr.b    putchar
  moveq    #LF,d0
 
 
+*
 * long putchar()
 *  Druckt das Zeichen in d0 nach stdout
-
+*
 putchar:
  move.w   d0,-(sp)
  lea      1(sp),a0
@@ -1356,11 +1393,12 @@ putchar:
  rts
 
 
+*
 * void strstdout(a0 = string)
 * a0 = char *string;
 *  Ersatz fÅr fehlerhafte Funktion gemdos Cconws(), deren Ausgabe man nicht
 *  auf den Drucker lenken kann.
-
+*
 strstdout:
  move.l   a0,-(sp)                 * string retten
  bsr      strlen
@@ -2420,6 +2458,7 @@ ctf_2:
  lea      nverzeichns(pc),a0
  bsr      strstdout
 ctf_3:
+ moveq    #10,d0		* Feld 10 Zeichen breit
  lea      DFREE_BUFFER(a6),a0
  bsr      print_free
 * Jetzt Grîûe des Hauptspeichers ermitteln
@@ -2438,34 +2477,58 @@ ctf_3:
  bsr      strstdout
  bra.b    ctf_end
 ctf_50:
- bsr      inc_errlv
+ bsr      inc_errlv			; es ist ein Fehler aufgetreten
 ctf_end:
  movem.l  (sp)+,a5/d7/d6
  unlk     a6
  rts
 
 
-* void print_free(a0 = long *dfree_buffer)
+*
+* void print_free(a0 = long *dfree_buffer, d0 = output_width)
 *  Druckt die Grîûe des freien Diskettenplatzes
 *  mit Ausgabebreite <outp_len>
-
+*
+* Wird benutzt von DIR, CK, TREE und FREE.
+*
 *    DATA
 nbytesfreis:  DC.B  '  Bytes frei',$d,$a,0
 nkbfree:      DC.B  '  kB frei',$d,$a,0
+nmbfree:      DC.B  '  MB frei',$d,$a,0
 *    TEXT
      EVEN
 
 print_free:
+ move.l	d0,-(sp)					; Ausgabebreite merken
  move.l   12(a0),d0                     * Sektoren/Cluster
  move.l   8(a0),d1                      * Bytes/Sektor
  bsr      _ulmul                        * d0 = Bytes/Cluster
- lsr.l    #8,d0
+ cmpi.l	#1024,d0
+ bcs.b	prf_1					; Cluster < 1 kB
+ lsr.l    #8,d0					; Bytes -> kBytes
  lsr.l    #2,d0
- move.l   (a0),d1                       * Cluster
+ move.l   (a0),d1                       * Anzahl Cluster
+ bsr      _ulmul                        * d0 = kBytes
+ bra.b	prf_kb
+prf_1:
+ move.l   (a0),d1                       * Anzahl Cluster
  bsr      _ulmul                        * d0 = Bytes
- moveq    #10,d1
- bsr      rwrite_long
- lea      nkbfree(pc),a0
+ lea      nbytesfreis(pc),a2			; in Bytes?
+ cmpi.l	#$100000,d0				* unter 1 MB?
+ bcs.b	prf_print					* ja, drucke Bytes
+ lsr.l    #8,d0					; Bytes -> kBytes
+ lsr.l    #2,d0
+prf_kb:
+ lea      nkbfree(pc),a2				; in kBbytes
+ cmpi.l	#$100000,d0				* unter 1 GB?
+ bcs.b	prf_print					* ja, drucke kB
+ lsr.l    #8,d0					; kBytes -> MBytes
+ lsr.l    #2,d0
+ lea      nmbfree(pc),a2				; in MBbytes
+prf_print:
+ move.l	(sp)+,d1					; Ausgabebreite
+ bsr      rwrite_long				; rechtsbÅndig
+ move.l	a2,a0					; in B/kB/MB
  bsr      strstdout
  rts
 
@@ -3905,6 +3968,7 @@ dir_8:
  bsr      crlf_stdout
  tst.b    q_flag-w_flag(a3)
  bne.b    dir_11
+ moveq    #8,d0			* Feld 8 Zeichen breit
  lea      DFREE_BUFFER(a6),a0
  bsr      print_free
 dir_11:
