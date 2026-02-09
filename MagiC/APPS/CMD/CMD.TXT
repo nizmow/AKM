@@ -423,7 +423,7 @@ die  nur  aus  CTRL-Z besteht.  Nach jeder  eingelesenen  Zeile  wird  die
 Zeichenfolge CR/LF ergänzt.
 
 Eine  Datei  kann nicht in sich selbst kopiert werden;  CMD  fängt  diesen 
-Fehler geschickt ab.Ç KAOS tut dies selbst.
+Fehler geschickt ab. KAOS tut dies selbst.
 
 Sind weniger als 10kB Speicher frei,  wird der gesamte freie Speicher  als 
 Kopierpuffer benutzt,  sonst wird nur die Hälfte verwendet.  So kann  sich 
@@ -560,7 +560,7 @@ Syntax: ECHO
 Zweck:  Zeichenketten ausgeben oder ECHO- Modus setzen/anzeigen
 ECHO  ohne Parameter zeigt den ECHO- Modus für den  Batchbetrieb  an.  Per 
 Default  ist  ECHO  immer OFF (d.h.  die  ausgeführten  Zeilen  werden  im 
-Batchbetrieb ünicht angezeigt).
+Batchbetrieb _nicht_ angezeigt).
 ECHO ON oder ECHO OFF setzt den ECHO- Modus.
 ECHO <string> gibt <string> und dann einen Zeilenvorschub nach stdout aus, 
 mit der Option -n wird dieser Zeilenvorschub unterdrückt.
@@ -592,7 +592,7 @@ stdout. Man muß also stdin auf die zu durchsuchende Datei umlenken.
 FIND unterscheidet nicht zwischen Groß- und Kleinschreibung.
 Bemerkung: Falls <string> Leerstellen enthält, muß <string> in Anführungs-
            zeichen gesetzt werden.
-           CTRL-Z wird als Dateiende erkannt
+           CTRL-Z wird als Dateiende erkannt.
 
 1.14 FOR
 --------
@@ -690,7 +690,7 @@ Das Verschieben ist immer nur auf demselben Laufwerk möglich.  Die  Angabe
 von Geräten (CON:,AUX:,PRN:) ist unzulässig.  Ebenso darf keine Datei  mit 
 dem neuen Namen schon existieren.
 MV  gibt bei Fehlernummern den vom DOS erhaltenen Fehlercode  im  Klartext 
-aus.Ç  Leider hat dieser nur bei KAOS unmittelbar etwas mit dem tatsächlich 
+aus.  Leider hat dieser nur bei KAOS unmittelbar etwas mit dem tatsächlich 
 aufgetretenen Fehler zu tun.
 Wenn  man nicht unter KAOS arbeitet,  ist der MV- Befehl mit  Vorsicht  zu 
 genießen.   Schwierigkeiten  gibt  es  beispielsweise  bei  vollem   Root- 
@@ -784,11 +784,11 @@ Syntax: REN alter_pfadname neuer_dateiname
 Zweck:  Eine Datei oder einen Ordner umbenennen
 Der  Befehl  REN  entspricht völlig seinem  Pendent  in  COMMAND.COM.  Der 
 Parameter  <alter_pfadname>  enthält Pfad und  Namen  der  umzubenennenden 
-Datei, der Parameter <neuer_dateiname> enthält den neuen Namen üohne Pfad.
+Datei, der Parameter <neuer_dateiname> enthält den neuen Namen - ohne Pfad.
 Mit  diesem Befehl kann eine Datei im selben Verzeichnis  umbenannt,  also 
-nicht  verschoben werden (siehe MV).  Außerdem wird immer nur  üeine  Datei 
+nicht  verschoben werden (siehe MV).  Außerdem wird immer nur  _eine_  Datei 
 behandelt, die Parameter dürfen beide keine Wildcards ('?','*') enthalten.
-üAb  TOS 1.4 können mit diesem Befehl auch Ordner  umbenannt  werden.  Dazu 
+Ab  TOS 1.4 können mit diesem Befehl auch Ordner  umbenannt  werden.  Dazu 
 wird der Ordner wie eine Datei ohne abschließendes '\' spezifiziert.
 1. Beispiel:
   ren c:\compiler\turbo\tc.prg tc.ttp
@@ -796,7 +796,7 @@ ist äquivalent zu
   mv  c:\compiler\turbo\tc.prg c:\compiler\turbo\tc.ttp
 2. Beispiel (ab TOS 1.4):
   ren folder ordner
-Benennt  üden Ordner "folder" in "ordner" um.  Ein äquivalenter MV-  Befehl 
+Benennt den Ordner "folder" in "ordner" um.  Ein äquivalenter MV-  Befehl 
 ist  nicht  möglich,  da dieser alle Dateien aus dem  Ordner  "folder"  zu 
 verschieben versuchte.  Das Verschieben von Ordnern ist auch unter TOS 1.4 
 nicht möglich,  so daß der MV- Befehl beim Behandeln von Ordnern überhaupt 
