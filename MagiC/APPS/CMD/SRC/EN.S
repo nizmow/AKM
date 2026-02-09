@@ -117,7 +117,7 @@ pfad_ueberl_s:		DC.B  $d,$a,'Path overflow',0
 kmd_nicht_gef_s:	DC.B  $d,$a,'Command not found',$d,$a,0
 
 nach_art_s:		DC.B  ' by type',0
-nach_dat_s:		DC.B  ' by date/timn',0
+nach_dat_s:		DC.B  ' by date/time',0
 nach_grs_s:		DC.B  ' by size',0
 nach_nix_s:		DC.B  ' unsorted',0
 bytes_free_s:		DC.B  ' bytes free',$d,$a,$a,0

@@ -22,9 +22,15 @@ ACC            EQU  0
 		diskerr_s_POS EQU 15
 		disk_in_lw_s_POS EQU 20
 	ELSE
+	IF COUNTRY=FRA
+		change_s_POS EQU 27
+		diskerr_s_POS EQU 16
+		disk_in_lw_s_POS EQU 28
+	ELSE
 		change_s_POS EQU 12
 		diskerr_s_POS EQU 11
 		disk_in_lw_s_POS EQU 17
+	ENDIF
 	ENDIF
 
 ANZ_SUFFIX     EQU  6	; siehe unten!
@@ -3160,7 +3166,7 @@ unlink:
  bsr      strcon
  lea      auswahl_s(pc),a0
  bsr      strcon
-unl_9:
+unl_ask_again:
  gemdos   Cnecin
  addq.l   #2,sp
  bsr      d0_upper
@@ -3171,38 +3177,40 @@ unl_9:
  ENDC
 
  cmpi.b   #'G',d0				* "Global"
- beq.b    unl_3
+ beq.b    unl_global
  cmpi.b   #'A',d0				* "Abort"?
- beq.b    unl_4
+ beq.b    unl_abort
  cmpi.b   #'Q',d0				* "Quit"?
- beq.b    unl_4
+ beq.b    unl_abort
  cmpi.b   #'J',d0				* "Ja"
- beq.b    unl_5
+ beq.b    unl_yes
  cmpi.b   #'Y',d0				* "Yes"
- beq.b    unl_5
- cmpi.b   #'N',d0				* "Nein" oder "No"
- bne.b    unl_9
+ beq.b    unl_yes
+ cmpi.b   #'O',d0				* "Oui"
+ beq.b    unl_yes
+ cmpi.b   #'N',d0				* "Nein", "Non, "No"
+ bne.b    unl_ask_again
  lea      nein_s(pc),a0            * Nein
  bsr      strcon
  clr.w    d0
- bra.b    unl_7
+ bra.b    unl_ret_d0
 
  IFF      KAOS
 unl_2:
  bra      break     * CTRL-C
  ENDC
 
-unl_3:
+unl_global:
  lea      d+query_flag(pc),a0
  clr.b    (a0)                     * Global: Flag fÅr Sicherheitsfrage lîschen
  lea      global_s(pc),a0
  bra.b    unl_1
-unl_4:
+unl_abort:
  lea      quit_s(pc),a0            * Quit
  bsr      strcon
  moveq    #1,d0
- bra.b    unl_7
-unl_5:
+ bra.b    unl_ret_d0
+unl_yes:
  lea      ja_s(pc),a0              * Ja
 unl_1:
  bsr      strcon
@@ -3231,7 +3239,7 @@ unl_8:
  bsr      strcon
 unl_10:
  clr.w    d0
-unl_7:
+unl_ret_d0:
  unlk     a6
  rts
 
@@ -6269,7 +6277,11 @@ errstrs:
  IF COUNTRY=FRG
 	INCLUDE "DE.S"
  ELSE
+ IF COUNTRY=FRA
+	INCLUDE "FR.S"
+ ELSE
 	INCLUDE "EN.S"
+ ENDIF
  ENDIF
 
 attrib_s: DC.B  'attrib',0
