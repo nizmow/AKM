@@ -20,14 +20,14 @@ CMD.DOC is the original documentation (only German) in WORDPLUS format.
 CMD.TXT has been converted to UTF-8.
 
 
-2026-02-08
+2026-02-11
 ==========
 
 Overhauled version that is capable of displaying large numbers for free volume space.
-Also now localised for German and English.
+Also now localised for German, French and English.
 Only the MCMD version has been built and basically tested!
 
 Regarding EN version:
 
 Due to conflicts, the DIR sort modes remain 'A' for type and 'G' for size.
-In other cases you can either press "J"/"Y" for YES resp. "W"/"R" for RETRY etc..
+In other cases you can either press "J"/"O"/"Y" for Ja/Oui/Yes resp. "W"/"R" for RETRY etc..
