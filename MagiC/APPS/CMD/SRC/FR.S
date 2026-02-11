@@ -77,7 +77,7 @@ akt_time_is:		DC.B  $d,$a,'L',$27,'heure actuelle est ',0
 give_times:		DC.B  $d,$a,'Nouvelle heure (hh:mm:ss) : ',0
 falsches_forms:	DC.B  $d,$a,'Format incorrect',$d,$a,0
 loesch_s:			DC.B  $d,$a,'Effacer ',0
-auswahl_s:		DC.B  ' (Y/N/G/A) ? ',0		* TODO: would by (O/N/G/A), accept O for J and Y!
+auswahl_s:		DC.B  ' (O/N/G/A) ? ',0
 global_s:			DC.B  'Global',0
 nein_s:			DC.B  'Non',0
 ja_s:			DC.B  'Oui',0
