@@ -4,7 +4,7 @@ Syntax: DIR pfad1 pfad2 ...
         DIR -P pfad1 -W pfad2 -W -D pfad3 ...
 Zweck:  Inhaltsverzeichnis anzeigen
 
--W (wide) gibt eine "platzsparendes" Liste aus.
+-W (wide) gibt eine "platzsparende" Liste aus.
 -P (page) h„lt die Ausgabe nach jeder Seite an.
 -Q (quick) verzichtet auf Laufwerknamen und freien Speicher.
 -S (system) listet alle Dateien mit Attributen.
