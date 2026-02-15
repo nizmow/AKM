@@ -94,7 +94,8 @@ kein_pfads:		DC.B  'Kein Pfad',0
 datei_s:			DC.B  $d,$a,'Datei: ',0
 kann_s:			DC.B  $d,$a,'Kann ',0
 nicht_offn_s:		DC.B  ' nicht îffnen',$d,$a,0
-syntax_ts:		DC.B  $d,$a,'Syntax: TYPE|TOUCH datei1 ...',$d,$a,0
+syntax_touch:		DC.B  $d,$a,'Syntax: TOUCH datei1 ...',$d,$a,0
+syntax_type:		DC.B  $d,$a,'Syntax: TYPE datei1 ...',$d,$a,0
 status_s:			DC.B  $d,$a,'Flag ist ',0
 error_verifys:		DC.B  'UngÅltiger Zustand',$d,$a,0
 syntax_sorts:		DC.B  $d,$a,'Syntax: SORT -C -R -n',$d,$a,0

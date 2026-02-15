@@ -2693,10 +2693,10 @@ scc_end:
 * char **pointer_to_parameter[*pointer_to_anz_par];
 
 
-BATCH_HDL      SET  8
-COMMAND        SET  $a
-P_ANZPAR       SET  $e
-PP_PAR         SET  $12
+BATCH_HDL      SET  8		* Datei-Handle fÅr die aktuelle Batch-Datei, wenn im Batch-Betrieb
+COMMAND        SET  $a		* Kommando
+P_ANZPAR       SET  $e		* Anzahl Parameter in PP_PAR
+PP_PAR         SET  $12		* Zeiger auf Parameter %0,%1,..,%9 fÅr Batch-AusfÅhrung
 ARGV_TAB       SET  -$50      * char *par_tab[20]
 EXPAND_BUF     SET  -$d0      * char expand_buf[128]
 STDX_TAB       SET  -$e8      * int  stdx_tab[6*2]
@@ -3606,6 +3606,8 @@ q_flag:        DS.B      1              * Bei DIR
 attrplus       EQU       q_flag         * Bei ATTRIB
 s_flag:        DS.B      1              * Bei DIR
 attrminus      EQU       s_flag         * Bei ATTRIB
+	EVEN
+switch_bits:	DS.L		1			* -abcde...
 
      IFEQ MAGIX
 etvcritic_alt: DS.L      1			; unter TOS und KAOS verwenden wir einen eigenen etv_critic-Handler
