@@ -39,7 +39,9 @@ change_s:			DC.B  'Bitte Disk %: in Laufwerk A: einlegen!',0
 diskerr_s:		DC.B  '  auf Laufwerk %:',$d,$a
 				DC.B  '[A]bbruch, [W]iederholen, [I]gnorieren ?',0
 	ENDIF
-
+	
+syntax_echo_s:		DC.B  'Syntax: ECHO [ON|OFF]',CR,LF
+				DC.B  '        ECHO [-n] [...]',CR,LF,0
 out_of_envs:		DC.B  $d,$a,'Environment voll',$d,$a,0
 syntaxfehlers:		DC.B  $d,$a,'Syntax: SET [var=[wert]]',$d,$a,0
 disk_in_lw_s:		DC.B  $d,$a,' Disk in Laufwerk % ',0
@@ -94,8 +96,8 @@ kein_pfads:		DC.B  'Kein Pfad',0
 datei_s:			DC.B  $d,$a,'Datei: ',0
 kann_s:			DC.B  $d,$a,'Kann ',0
 nicht_offn_s:		DC.B  ' nicht îffnen',$d,$a,0
-syntax_touch:		DC.B  $d,$a,'Syntax: TOUCH datei1 ...',$d,$a,0
-syntax_type:		DC.B  $d,$a,'Syntax: TYPE datei1 ...',$d,$a,0
+syntax_touch:		DC.B  $d,$a,'Syntax: TOUCH [-s] datei1 ...',$d,$a,0
+syntax_type:		DC.B  $d,$a,'Syntax: TYPE [-s] datei1 ...',$d,$a,0
 status_s:			DC.B  $d,$a,'Flag ist ',0
 error_verifys:		DC.B  'UngÅltiger Zustand',$d,$a,0
 syntax_sorts:		DC.B  $d,$a,'Syntax: SORT -C -R -n',$d,$a,0

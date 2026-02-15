@@ -1,12 +1,12 @@
 Syntax: ECHO
-        ECHO [-n] zeichenkette1 zeichenkette2 ...
+        ECHO [-n] text1 text2 ...
         ECHO ON
         ECHO OFF
-Zweck:  Zeichenketten ausgeben oder ECHO- Modus setzen/anzeigen
+Zweck:  Zeichenketten ausgeben oder ECHO-Modus setzen/anzeigen
 
-ECHO ohne Parameter zeigt den ECHO- Modus fr den Batchbetrieb an.
-Standardm„áig ist ECHO immer OFF (d.h. die ausgefhrten Zeilen werden im
+ECHO ohne Parameter zeigt den ECHO-Modus fr den Batchbetrieb an.
+Standardm„ig ist ECHO immer OFF (d.h. die ausgefhrten Zeilen werden im
 Batchbetrieb nicht angezeigt).
-ECHO ON oder ECHO OFF setzt den ECHO- Modus.
-ECHO <zeichenkette> gibt den Text und dann einen Zeilenvorschub nach
+ECHO ON oder ECHO OFF setzt den ECHO-Modus.
+ECHO <text> gibt den Text und dann einen Zeilenvorschub nach
 stdout aus, mit der Option -n wird dieser Zeilenvorschub unterdrckt.

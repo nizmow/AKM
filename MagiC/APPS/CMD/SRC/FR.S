@@ -96,8 +96,8 @@ kein_pfads:		DC.B  'Aucun chemin',0
 datei_s:			DC.B  $d,$a,'Fichier: ',0
 kann_s:			DC.B  $d,$a,'Ouverture de ',0
 nicht_offn_s:		DC.B  ' impossible',$d,$a,0
-syntax_touch:		DC.B  $d,$a,'Syntaxe: TOUCH fichier(s)',$d,$a,0
-syntax_type:		DC.B  $d,$a,'Syntaxe: TYPE fichier(s)',$d,$a,0
+syntax_touch:		DC.B  $d,$a,'Syntaxe: TOUCH [-s] fichier(s)',$d,$a,0
+syntax_type:		DC.B  $d,$a,'Syntaxe: TYPE [-s] fichier(s)',$d,$a,0
 status_s:			DC.B  $d,$a,'Le Flag est ',0
 error_verifys:		DC.B  'Etat invalide',$d,$a,0
 syntax_sorts:		DC.B  $d,$a,'Syntaxe: SORT -C -R -n',$d,$a,0

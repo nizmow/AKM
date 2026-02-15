@@ -96,8 +96,8 @@ kein_pfads:		DC.B  'No path',0
 datei_s:			DC.B  $d,$a,'file: ',0
 kann_s:			DC.B  $d,$a,'Cannot open ',0
 nicht_offn_s:		DC.B  ' ',$d,$a,0
-syntax_touch:		DC.B  $d,$a,'Syntax: TOUCH filename(s)',$d,$a,0
-syntax_type:		DC.B  $d,$a,'Syntax: TYPE filename(s)',$d,$a,0
+syntax_touch:		DC.B  $d,$a,'Syntax: TOUCH [-s] filename(s)',$d,$a,0
+syntax_type:		DC.B  $d,$a,'Syntax: TYPE [-s] filename(s)',$d,$a,0
 status_s:			DC.B  $d,$a,'Flag is ',0
 error_verifys:		DC.B  'Invalid state',$d,$a,0
 syntax_sorts:		DC.B  $d,$a,'Syntax: SORT -C -R -n',$d,$a,0

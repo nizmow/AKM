@@ -1563,7 +1563,7 @@ envset_end:
  movem.l  (sp)+,d7/a5/a4
  rts
 
-
+	INCLUDE "MINUS.S"		* evaluate command line switches
 	INCLUDE "INTERN\SET.S"
 
 
