@@ -20,7 +20,7 @@
 * global variables
 */
 
-char *pgm_ver = "5.04";	/* may not exceed four characters, due to .RSC file */
+char *pgm_ver = "5.05";	/* may not exceed four characters, due to .RSC file */
 
 char *gmemptr = NULL;
 WINDOW *fenster[ANZFENSTER+1];
@@ -93,9 +93,8 @@ void main()
 	EVNT w_ev;
 	int button_waitclicks;
 /*	EVNTDATA ev;	*/
-	int  /* ev_mwhich, butt_nclicks, keycode, */ ascii,
-		mbuttons;
-	int	waitfor,mbmask,drv,client;
+	int  /* ev_mwhich, butt_nclicks, keycode, */ ascii,	mbuttons;
+	int	waitfor, mbmask, drv, client;
 	register int i;
 	WINDOW **pw;
 	WINDOW *w;
@@ -104,39 +103,41 @@ void main()
 
 	anfang();
 	Mgraf_mouse(ARROW);
-	for  (;;)
-		{
+
+	for (;;)
+	{
 		upd_drives();
 		upd_infos();
 		modify_menu();
 
-		/* Wenn ein Laufwerk mit Tastatur selektiert wurde, wird 200ms	*/
-		/* lang auf den zweiten Klick gewartet						*/
-		/* ------------------------------------------------------------- */
+		/* Wenn ein Laufwerk mit Tastatur selektiert wurde, wird 200 ms	*/
+		/* lang auf den zweiten Klick gewartet							*/
+		/* ------------------------------------------------------------ */
 
-		waitfor = MU_KEYBD+MU_BUTTON+MU_MESAG+MU_TIMER;
+		waitfor = MU_KEYBD + MU_BUTTON + MU_MESAG + MU_TIMER;
 
-		if	(status.rtbutt_dclick)
-			{
+		if (status.rtbutt_dclick)
+		{
 			button_waitclicks = 0x102;	/* NOT und Doppelklicks */
 			mbuttons = 0;		/* keine Maustaste gedrckt */
 			mbmask = 3;		/* beide Maustasten */
-			}
-		else	{
+		}
+		else
+		{
 			button_waitclicks = 2; /* Doppelklicks erkennen 	*/
 			mbuttons = 1;		/* linke Maustaste gedrckt	*/
 			mbmask = 1;		/* nur linke Maustaste		*/
-			}
+		}
 		
 		w_ev.mwhich = evnt_multi(waitfor,
 						  button_waitclicks,
 						  mbmask,			
 						  mbuttons,
-						  0,NULL,		/* kein 1. Rechteck			*/
-						  0,NULL,		/* kein 2. Rechteck			*/
+						  0,NULL,		/* kein 1. Rechteck */
+						  0,NULL,		/* kein 2. Rechteck */
 						  w_ev.msg,
 						  AUTOUPDATE_MS,	/* ms */
-						  (EVNTDATA*) &(w_ev.mx),
+						  (EVNTDATA *) &(w_ev.mx),
 						  &w_ev.key,
 						  &w_ev.mclicks
 						  );
@@ -144,110 +145,114 @@ void main()
 		/* Fensterdialoge */
 		/* -------------- */
 
-		do_info_file_dialogs( &w_ev );
+		do_info_file_dialogs(&w_ev);
 
 		/* Timer-Ereignis */
 		/* -------------- */
 
-		if	(w_ev.mwhich & MU_TIMER)
+		if (w_ev.mwhich & MU_TIMER)
+		{
+			/* alternatively, we could omit the TIMER when auto-reload is deactivated. */
+			if (status.auto_reload)
 			{
-			dirwindow_autoupdate();
+				dirwindow_autoupdate();
 			}
+		}
 
 		/* Abfrage auf Bet„tigung einer Taste */
 		/* ---------------------------------- */
 
-		if	(w_ev.mwhich & MU_KEYBD)
-			{
+		if (w_ev.mwhich & MU_KEYBD)
+		{
 			register int i, scancode;
 			int title, entry;
 
 
 		 do_key:
 
-			scancode	= (w_ev.key >> 8) & 0xff;
-			if	(w_ev.kstate & K_ALT)
+			scancode = (w_ev.key >> 8) & 0xff;
+			if (w_ev.kstate & K_ALT)
 				ascii = alt_keycode_2_ascii(w_ev.key);
 			else ascii = w_ev.key & 0xff;
-			if	(w_ev.kstate & (K_RSHIFT + K_LSHIFT))
-				{
+			if (w_ev.kstate & (K_RSHIFT + K_LSHIFT))
+			{
 				w_ev.kstate |= K_LSHIFT;
-				}
-			w_ev.kstate &= (K_LSHIFT+K_CTRL+K_ALT);
+			}
+			w_ev.kstate &= (K_LSHIFT + K_CTRL + K_ALT);
 
 			/* 1. Fall: Alt-Shift-[A..Z] (Fenster ”ffnen) */
 			/* ----------------------------------------- */
 
-			if	(w_ev.kstate == (K_ALT+K_LSHIFT))
-				{
+			if (w_ev.kstate == (K_ALT + K_LSHIFT))
+			{
 				drv = toupper(ascii);
-				if	((drv >= 'A') && (drv <= 'Z'))
-					{
-					if	(0 > (i = drv_to_icn(drv)))
+				if ((drv >= 'A') && (drv <= 'Z'))
+				{
+					if (0 > (i = drv_to_icn(drv)))
 						goto weiter_mesag;	/* Taste verarbeitet */
 
 					/* gefunden: Doppelklick simulieren */
 
 					wind_update(BEG_UPDATE);
 					dsel_all();
-					ob_sel(fenster[0]->pobj, i+1);	/* ??? */
-					obj_malen(fenster[0], i+1);
-					dclick(fenster[0], i+1, 0);
+					ob_sel(fenster[0]->pobj, i + 1);	/* ??? */
+					obj_malen(fenster[0], i + 1);
+					dclick(fenster[0], i + 1, 0);
 					wind_update(END_UPDATE);
 					goto weiter_mesag;	/* Taste verarbeitet */
-					}
 				}
+			}
 
 			/* 2. Fall: Alt-1 .. Alt-9 (Aufl”sungswechsel) */
 			/* ------------------------------------------- */
 /*
-			if	((ev.kstate & K_ALT) &&
+			if ((ev.kstate & K_ALT) &&
 				 !(ev.kstate & (K_LSHIFT+K_RSHIFT+K_CTRL)) &&
 				 (unsigned int) keycode >= 0x7800 &&
 				 (unsigned int) keycode <= 0x8100)
-				{
+			{
 				i = scancode - 0x77;
-				if	(i != vdi_device);
+				if (i != vdi_device);
 					shutdown(i, 0);
 				goto weiter_mesag;	/* Taste verarbeitet */
-				}
+			}
 */
 
 			/* 3. Fall: Ctrl-Fn (Menprogramm ausfhren) */
 			/* ----------------------------------------- */
 
-			if	((w_ev.kstate & K_CTRL) &&
+			if ((w_ev.kstate & K_CTRL) &&
 					w_ev.key >= 0x3b00 &&
 					w_ev.key <= 0x4600)
-				{
+			{
 				wind_update(BEG_UPDATE);
 				start_path(menuprograms[scancode - 0x3b + INDEX_USER].path,
 							NULL, w_ev.kstate & K_ALT);
 				wind_update(END_UPDATE);
 				goto weiter_mesag;	/* Taste verarbeitet */
-				}
+			}
 
 			/* 4. Fall: Meneintrag ber Tastatur angew„hlt */
 			/* -------------------------------------------- */
 
-			if	(key_2_menu( w_ev.key, w_ev.kstate, &title, &entry ))
-				{
-				if	((title >= 0) && 
+			if (key_2_menu( w_ev.key, w_ev.kstate, &title, &entry ))
+			{
+				if ((title >= 0) && 
 					 !(((adr_hauptmen + entry) -> ob_state) & DISABLED)
 					)
-					{
+				{
 					wind_update(BEG_UPDATE);
 					menu_tnormal(adr_hauptmen, title, FALSE);
 					do_menu(title, entry, 0);
 					wind_update(END_UPDATE);
-					}
-				goto weiter_mesag;	/* Taste verarbeitet */
 				}
+				goto weiter_mesag;	/* Taste verarbeitet */
+			}
 
 			/* 5. Fall: Aktion durchfhren */
 			/* --------------------------- */
 
-			if	(key_2_action( w_ev.key, ascii, w_ev.kstate))
+			if (key_2_action( w_ev.key, ascii, w_ev.kstate))
 				goto weiter_mesag;	/* Taste verarbeitet */
 
 
@@ -255,14 +260,14 @@ void main()
 			/* ----------------------------------------------- */
 
 			w = top_window();
-			if	(w)
-				{
+			if (w)
+			{
 				wind_update(BEG_UPDATE);
 				w->key(w, w_ev.kstate, w_ev.key);
 				wind_update(END_UPDATE);
-				}
-
 			}
+
+		}
 
 
 		weiter_mesag:
@@ -270,47 +275,50 @@ void main()
 		/* Abfrage auf Nachricht im Nachrichtenpuffer */
 		/* ------------------------------------------ */
 
-		if	(w_ev.mwhich & MU_MESAG)
-			{
+		if (w_ev.mwhich & MU_MESAG)
+		{
 			wind_update(BEG_UPDATE);
 
-			if	(w_ev.msg[0] == MN_SELECTED)
+			if (w_ev.msg[0] == MN_SELECTED)
+			{
 				do_menu(w_ev.msg[3], w_ev.msg[4], w_ev.kstate);
-			else {
+			}
+			else
+			{
 				switch(w_ev.msg[0])
-					{
+				{
 					case 'AK':
 						switch(w_ev.msg[3])
-							{
+						{
 						 case 0:
 							re_read_icons(*(char **)(w_ev.msg+6));
 							break;
 						 case 1:
 						 	status.mode_ovwr = w_ev.msg[4];
 							break;
-							}
+						}
 						break;
 					case AV_PATH_UPDATE:
-						w_ev.msg[3] = (**(char **)(w_ev.msg+3))-'A';
+						w_ev.msg[3] = (**(char **)(w_ev.msg+3)) - 'A';
 				     case SH_WDRAW:
-				     	if	((w_ev.msg[3] >= 0) &&
+				     	if ((w_ev.msg[3] >= 0) &&
 				     		 (w_ev.msg[3] < ANZDRIVES))
-				     		{
+				     	{
 							dirty_drives[w_ev.msg[3]] = TRUE;
 							for	(i = 1,pw = fenster+1;
 								i <= ANZFENSTER;
 								i++,pw++)
-								{
+							{
 								w = *pw;
-								if	((w) && (w->path[0] -'A' == w_ev.msg[3]))
+								if ((w) && (w->path[0] -'A' == w_ev.msg[3]))
 									dirty_drives[w->real_drive] = TRUE;
-								}
 							}
-						else	{
-
+						}
+						else
+						{
 							for	(i = 0; i < ANZDRIVES; i++)
 								dirty_drives[i] = TRUE;
-							}
+						}
 						break;
 
 					case AV_PROTOKOLL:
@@ -345,16 +353,17 @@ void main()
 					case AV_WHAT_IZIT:						client = w_ev.msg[1];
 						w = whdl2window(wind_find(w_ev.msg[3],
 											w_ev.msg[4]));
-						if	(w)
+						if (w)
+						{
+							if (w->handle)
 							{
-							if	(w->handle)
-								{
 								w_ev.msg[4] = VA_OB_WINDOW;
-								}
-							else {
+							}
+							else
+							{
 								/* hier erweitern! */
 								w_ev.msg[4] = VA_OB_UNKNOWN;
-								}
+							}
 
 							w_ev.msg[0] = VA_THAT_IZIT;
 							w_ev.msg[1] = ap_id;
@@ -362,7 +371,7 @@ void main()
 							w_ev.msg[7] = 0;
 							w_ev.msg[3] = ap_id;							(*(char **)(w_ev.msg+5)) = NULL;
 							appl_write(client, 16, w_ev.msg);
-							}						break;
+						}						break;
 					case AV_DRAG_ON_WINDOW:						client = w_ev.msg[1];
 						w_ev.msg[0] = VA_DRAG_COMPLETE;
 						w_ev.msg[1] = ap_id;
@@ -389,13 +398,14 @@ void main()
 						w_ev.msg[5] = w_ev.msg[6] = 0;
 						w_ev.msg[3] = i;
 						appl_write(client, 16, w_ev.msg);
-						if	(i == -1)
+						if (i == -1)
 							res_exec();
 						break;
+
 					case AV_OPENWIND:
 						w_ev.msg[7] = 0;
 					case AV_XOPENWIND:
-						if	(w_ev.msg[7] & 2)
+						if (w_ev.msg[7] & 2)
 							open_window(*(char **)(w_ev.msg+3),	/* path */
 									  "*",				/* mask */
 									  *(char **)(w_ev.msg+5),	/* selmask */
@@ -416,20 +426,20 @@ void main()
 						break;
 
 					case AP_DRAGDROP:
-						{
+					{
 						char *s;
 
 						s = "U:\\PIPE\\DRAGDROP.AA";
 						s[17] = ((char *) (w_ev.msg+7))[0];
 						s[18] = ((char *) (w_ev.msg+7))[1];
 						i = (int) Fopen(s, RMODE_WR);
-						if	(i >= 0)
-							{
+						if (i >= 0)
+						{
 							s[17] = DD_NAK;
 							Fwrite(i, 1L, &s[17]);
 							Fclose(i);
-							}
 						}
+					}
 						break;
 
 					case AP_TERM:
@@ -440,9 +450,9 @@ void main()
 
 					default:
 						w = whdl2window(w_ev.msg[3]);
-						if	(w)
+						if (w)
 							switch(w_ev.msg[0])
-								{
+							{
 							 case WM_REDRAW:
 									redraw(w, (GRECT *) (w_ev.msg+4));
 									break;
@@ -452,11 +462,11 @@ void main()
 							 	   	w->closed(w, w_ev.kstate);break;
 							 case WM_ALLICONIFY:
 									for	(i = 1,pw = fenster+1; i <= ANZFENSTER; i++,pw++)
-										{
+									{
 										w2 = *pw;
-										if	((w2) && (w2->handle > 0) && (w2 != w))
+										if ((w2) && (w2->handle > 0) && (w2 != w))
 											w2->iconified(w2, NULL, ICONIFIED_MODE_HIDE);
-										}
+									}
 									w->iconified(w, (GRECT *) (w_ev.msg+4), ICONIFIED_MODE_ALL);
 									break;
 							 case WM_ICONIFY:
@@ -464,12 +474,12 @@ void main()
 							 	    break;
 							 case WM_UNICONIFY:
 									for	(i = 1,pw = fenster+1; i <= ANZFENSTER; i++,pw++)
-										{
+									{
 										w2 = *pw;
-										if	((w2) && (w2->path[0]) && (w2->handle < 0) && (w2 != w) && (w2->flags & WFLAG_ALLICONIFIED))
+										if ((w2) && (w2->path[0]) && (w2->handle < 0) && (w2 != w) && (w2->flags & WFLAG_ALLICONIFIED))
 											w2->uniconified(w2, NULL, TRUE);
-										}
-							 		if	(w->flags & WFLAG_ALLICONIFIED)
+									}
+							 		if (w->flags & WFLAG_ALLICONIFIED)
 								 		w->topped(w);
 							 		w->uniconified(w, (GRECT *) (w_ev.msg+4), FALSE);
 							 		break;
@@ -481,12 +491,12 @@ void main()
 							 case WM_MOVED:		w->moved(w, (GRECT *) (w_ev.msg+4));break;
 						      case WM_NEWTOP:
 							 case WM_UNTOPPED:	w->message(w, w_ev.kstate, w_ev.msg);break;
-						     	}
+						     }
 						break;
-					}
 				}
-			wind_update(END_UPDATE);
 			}
+			wind_update(END_UPDATE);
+		}
 
 		/* Abfrage auf Bet„tigung eines Mausknopfs */
 		/* --------------------------------------- */
@@ -508,11 +518,11 @@ void main()
 				/* left button still pressed, wait for release */
 				evnt_button(1, 1, 0, (EVNTDATA *) &(w_ev.mx));
 			}
-		}
+	}
 
 
 
-		} /* END FOREVER */
+	} /* END FOREVER */
 }
 
 
@@ -524,101 +534,106 @@ void main()
 *
 ****************************************************************/
 
-static int key_2_action( int key, char ascii, int kstate )
+static int key_2_action(int key, char ascii, int kstate)
 {
 	WINDOW *w;
 
 /*
 /* SH-INS	*/
-	if	(key == 0x5230)
-		{
+	if (key == 0x5230)
+	{
 		status.resident = TRUE;
-		return(1);
-		}
+		return 1;
+	}
 
 /* SH-DEL	*/
-	if	(key == 0x537f)
-		{
+	if (key == 0x537f)
+	{
 		status.resident = FALSE;
-		return(1);
-		}
+		return 1;
+	}
 */
 
-	if	((kstate == K_LSHIFT+K_ALT) && (ascii == '<'))
-		{
-		int  dst_apid;
+	if ((kstate == K_LSHIFT+K_ALT) && (ascii == '<'))
+	{
+		int dst_apid;
 		int	msg[8];
 
 		dst_apid = appl_find("START   ");
-		if	(dst_apid >= 0)
-			{
+		if (dst_apid >= 0)
+		{
 			msg[0] = VA_START;
 			msg[1] = ap_id;
 			msg[2] = msg[3]=msg[4]=msg[5]=msg[6]=msg[7]=0;
 			appl_write(dst_apid, 16, msg);
-			}
-		return(1);
 		}
+		return 1;
+	}
 
-	if	(kstate & (K_LSHIFT + K_RSHIFT + K_ALT))
-		return(0);
+	if (kstate & (K_LSHIFT + K_RSHIFT + K_ALT))
+		return 0;
 
 /* SPACE	*/
 
-	if	(key == 0x3920)
-		{
+	if (key == 0x3920)
+	{
 		w = whdl2window(top_whdl());
-		if	((w) && (w->sel_maske[0]))
+		if ((w) && (w->sel_maske[0]))
 			return(0);	/* sonst -> Auswahl */
-		}
+	}
 
 	wind_update(BEG_UPDATE);
 	switch(key)
-		{
+	{
 
 /* SPACE  */
-		case 0x3920:	dsel_all();
-					break;
+		case 0x3920:
+			dsel_all();
+			break;
 
 /* Ctrl-B */
-		case 0x3002:	start_path(menuprograms[INDEX_CMD].path,
-					NULL, 0);
-					break;
+		case 0x3002:
+			start_path(menuprograms[INDEX_CMD].path, NULL, 0);
+			break;
 
 /* Ctrl-E */
-		case 0x1205:	start_path(menuprograms[INDEX_EDIT].path,
-					NULL, 0);
-					break;
+		case 0x1205:
+			start_path(menuprograms[INDEX_EDIT].path, NULL, 0);
+			break;
 
 /* Ctrl-W */
-		case 0x1117:	{
-					WINDOW *tw;
-					int i;
+		case 0x1117:
+		{
+			WINDOW *tw;
+			int i;
 
-					tw = top_window();
-					if	((!tw) || (!tw->handle))
-						break;
-					i = tw->wnr;
-					do	{
-						i++;
-						if	(i > ANZFENSTER)
-							i = 1;
-						w = fenster[i];
-						if	(w)
-							{
-							w->topped(w);
-							break;
-							}
-						}
-					while(i != tw->wnr);
-					}
+			tw = top_window();
+			if ((!tw) || (!tw->handle))
+				break;
+			i = tw->wnr;
+			do
+			{
+				i++;
+				if (i > ANZFENSTER)
+					i = 1;
+				w = fenster[i];
+				if (w)
+				{
+					w->topped(w);
 					break;
-
-		default: 	wind_update(END_UPDATE);
-						return(0);
+				}
+			}
+			while (i != tw->wnr);
 		}
+		break;
+
+		default:
+		 	wind_update(END_UPDATE);
+			return 0;
+	}
+
 	wind_update(END_UPDATE);
-	return(1);
+	return 1;
 }
 
 
@@ -656,22 +671,22 @@ int walk_sel(WINDOW *w, int (*tue)(WINDOW *w, int obj, void *par), void *par)
 	register OBJECT *tree = w->pobj;
 
 
-	if	((i = (tree -> ob_head)) <= 0)
+	if ((i = (tree -> ob_head)) <= 0)
 		return(0);
 	tail = (tree++ -> ob_tail);
 	ret = 0;
 	for	(; i <= tail; i++,tree++)
-		{
-		if	(!(SELECTED&(tree->ob_state)) || (HIDETREE&(tree->ob_flags)))
+	{
+		if (!(SELECTED&(tree->ob_state)) || (HIDETREE&(tree->ob_flags)))
 			continue;
-		if	(tue)
-			{
+		if (tue)
+		{
 			ret = (*tue)(w, i, par);
-			if	(ret < 0)
+			if (ret < 0)
 				return(ret);
-			}
-		else	ret++;
 		}
+		else	ret++;
+	}
 	return(ret);
 }
 
@@ -696,28 +711,28 @@ void tree_sel_grect(OBJECT *tree, GRECT *g)
 	mx = my = INT_MAX;		/* Ecke links oben */
 	mrx = mry = -INT_MAX;	/* Ecke rechts unten (aužerhalb) */
 
-	if	((i = (tree -> ob_head)) > 0)
-		{
+	if ((i = (tree -> ob_head)) > 0)
+	{
 		tail = (tree++ -> ob_tail);
 		for	(; i <= tail; i++,tree++)
+		{
+			if ((SELECTED&(tree->ob_state)) && !(HIDETREE&(tree->ob_flags)))
 			{
-			if	((SELECTED&(tree->ob_state)) && !(HIDETREE&(tree->ob_flags)))
-				{
 				rx = tree->ob_x;
 				ry = tree->ob_y;
-				if	(rx < mx)
+				if (rx < mx)
 					mx = rx;
-				if	(ry < my)
+				if (ry < my)
 					my = ry;
 				rx += tree->ob_width;
 				ry += tree->ob_height;
-				if	(rx > mrx)
+				if (rx > mrx)
 					mrx = rx;
-				if	(ry > mry)
+				if (ry > mry)
 					mry = ry;
-				}
 			}
 		}
+	}
 	g -> g_x = mx + ox;
 	g -> g_y = my + oy;
 	g -> g_w = mrx - mx;
@@ -780,9 +795,9 @@ static WORD	vqt_xfntinfo( WORD handle, WORD flags, WORD id, WORD index, XFNT_INF
 	contrl[5] = 0;
 	contrl[6] = handle;
 
-	vdi( &pb );
+	vdi(&pb);
 
-	return( intout[1] );
+	return intout[1];
 }
 
 
@@ -846,7 +861,7 @@ void set_char_dim( void )
 	int out[8];
 
 
-	if	(vq_gdos())
+	if (vq_gdos())
 		vst_font(vdi_handle, status.fontID);
 	vst_point(vdi_handle, status.fontH, &dummy, &dummy,
 			&char_w, &char_h);
@@ -857,21 +872,22 @@ void set_char_dim( void )
 	vqt_extent(vdi_handle, "M", out);
 	spaltenabstand = out[2] - out[0];
 
-	if	(char_h >= 24)
-		{
+	if (char_h >= 24)
+	{
 		folder_index = I_ORD24;
 		parentfolder_index = I_PAR24;
-		}
+	}
 	else
-	if	(char_h >= 16)
-		{
+	if (char_h >= 16)
+	{
 		folder_index = I_ORD16;
 		parentfolder_index = I_PAR16;
-		}
-	else	{
+	}
+	else
+	{
 		folder_index = I_ORD08;
 		parentfolder_index = I_PAR08;
-		}
+	}
 
 	folder_image = (adr_icons + folder_index)->ob_spec.bitblk;
 	parentfolder_image = (adr_icons + parentfolder_index)->ob_spec.bitblk;
@@ -903,7 +919,7 @@ void set_char_dim( void )
 
 void redraw( WINDOW *w, GRECT *neu)
 {
-	if	(w->handle > 0 && !w->path[0])
+	if (w->handle > 0 && !w->path[0])
 		return;						/* Fenster geschlossen */
 	objc_wdraw( w->pobj, 0, 1, neu, w->handle);
 }
@@ -934,27 +950,27 @@ int icsel(WINDOW **rw, int *objn)
 
 	*rw = NULL;
 	for	(wnr = 0,pw = fenster; wnr <= ANZFENSTER; wnr++,pw++)
-		{
+	{
 		w = *pw;
-		if	(!w)
+		if (!w)
 			continue;				/* Fenster unbenutzt */
-		if	(!w->pobj)
+		if (!w->pobj)
 			continue;				/* auch unbenutzt */
 		tree = w->pobj;
-		if	((i = (tree -> ob_head)) > 0)
-			{
+		if ((i = (tree -> ob_head)) > 0)
+		{
 			for	(; i <= (tree -> ob_tail); i++)
+			{
+				if (!((tree+i)->ob_flags & HIDETREE) && selected(tree, i))
 				{
-				if	(!((tree+i)->ob_flags & HIDETREE) && selected(tree, i))
-					{
-					if	(*rw)	/* noch einer ! */
+					if (*rw)	/* noch einer ! */
 						return(-1);
 					*rw = w;		/* erster gefundener */
 					*objn = i;
-					}
 				}
 			}
 		}
+	}
 	return(*rw != NULL);		/* nix gefunden */
 }
 
@@ -970,9 +986,9 @@ int drv_to_icn(int drv)
 	register int i;
 
 	for	(i = 0; i < n_deskicons; i++)
-		if	(icon[i].isdisk == drv)
+		if (icon[i].isdisk == drv)
 			return(i);
-	return(-1);
+	return -1;
 }
 
 
@@ -989,12 +1005,12 @@ WINDOW *whdl2window(int whdl)
 
 
 	for	(i = 0,pw = fenster; i <= ANZFENSTER; i++,pw++)
-		{
+	{
 		w = *pw;
-		if	((w) && ((w)->handle == whdl))
+		if ((w) && ((w)->handle == whdl))
 			return(w);
-		}
-	return(NULL);
+	}
+	return NULL;
 }
 
 
@@ -1030,7 +1046,7 @@ int is_dest(WINDOW *w, int objnr)
 /*
 void zeichne( WINDOW *w, int gx, int gy, int gw, int gh)
 {
-		objc_draw(w->pobj,0,1,gx,gy,gw,gh);
+	objc_draw(w->pobj,0,1,gx,gy,gw,gh);
 }
 */
 
@@ -1062,11 +1078,11 @@ int cdecl draw_userdef(PARMBLK *p)
 
 
 	for	(wnr = 0,pw = fenster; wnr <= ANZFENSTER; wnr++,pw++)
-		{
+	{
 		w = *pw;
-		if	((w) && (w->pobj == p->pb_tree))
+		if ((w) && (w->pobj == p->pb_tree))
 			goto found;
-		}
+	}
 	return(0);
 	found:
 	pxy[0] = p->pb_xc;
@@ -1074,24 +1090,24 @@ int cdecl draw_userdef(PARMBLK *p)
 	pxy[2] = pxy[0] + p->pb_wc - 1;
 	pxy[3] = pxy[1] + p->pb_hc - 1;
 	m = (w->pmydta)[p->pb_obj - 1];
-	if	(pxy[0] != clip_rect[0] || pxy[1] != clip_rect[1] ||
+	if (pxy[0] != clip_rect[0] || pxy[1] != clip_rect[1] ||
 		 pxy[2] != clip_rect[2] || pxy[3] != clip_rect[3])
-		{
+	{
 		clip_rect[0] = pxy[0];
 		clip_rect[1] = pxy[1];
 		clip_rect[2] = pxy[2];
 		clip_rect[3] = pxy[3];
 		vs_clip(vdi_handle, TRUE, pxy);
-		}
+	}
 	fname = m -> filename;
 	isdir = ((m -> attrib) & F_SUBDIR);
 	isparentdir = (isdir) && (!strcmp(fname, ".."));
 	isalias = (int) m->is_alias;
-	if	(isalias != last_cursive)
-		{
+	if (isalias != last_cursive)
+	{
 		vst_effects(vdi_handle, isalias << 2);	/* kursiv! */
 		last_cursive = isalias;
-		}
+	}
 
 	pos = p->pb_x;
 
@@ -1100,8 +1116,8 @@ int cdecl draw_userdef(PARMBLK *p)
 	/* -------------------------------------------------------- */
 
 	offs = 0;
-	if	((status.fontID != 1) && (isdir))
-		{	/* G_IMAGE fr Ordner ausgeben */
+	if ((status.fontID != 1) && (isdir))
+	{	/* G_IMAGE fr Ordner ausgeben */
 		int col[2] = {BLACK,WHITE};
 		MFDB mfdb_scr;
 		MFDB *mfdb_ic;
@@ -1122,110 +1138,113 @@ int cdecl draw_userdef(PARMBLK *p)
 
 		vrt_cpyfm(vdi_handle, MD_TRANS, pxy,
 				mfdb_ic, &mfdb_scr, col);
-		if	(!status.font_is_prop)
-			{
+		if (!status.font_is_prop)
+		{
 			pos += 3 * char_w;
 			offs = 3;
-			}
 		}
+	}
 
 	/* 1. Fall: proportionaler Font			*/
 	/* Die Ausgabe erfolgt einzeln in Spalten	*/
 	/* ----------------------------------------- */
 
-	if	(status.font_is_prop)
-		{
+	if (status.font_is_prop)
+	{
 		pos += folder_w + 4;
 
-		if	(w->dos_mode && status.show_8p3 && (!isparentdir))
-			{
+		if (w->dos_mode && status.show_8p3 && (!isparentdir))
+		{
 			t = strchr(fname, '.');
-			if	(t)
+			if (t)
 				*t = EOS;
 			v_gtext(vdi_handle, pos, p->pb_y, fname);
 			pos += 8 + w->xtab_namelen;
-			if	(t)
-				{
+			if (t)
+			{
 				*t++ = '.';
 				v_gtext(vdi_handle, pos, p->pb_y, t);
-				}
-			pos += spaltenabstand + w->xtab_typelen;
 			}
-		else	{
+			pos += spaltenabstand + w->xtab_typelen;
+		}
+		else
+		{
 			v_gtext(vdi_handle, pos, p->pb_y, fname);
 			pos += 8 + w->xtab_namelen;
-			}
+		}
 
-		if	(isparentdir)
+		if (isparentdir)
 			goto ende;		/* keine weitere Ausgabe */
 
-		if	(status.is_groesse)
-			{
+		if (status.is_groesse)
+		{
 			pos += w->xtab_sizelen;
-			if	(!isdir)
+			if (!isdir)
+			{
+				if (m->filesize > 9999999L)
 				{
-				if	(m->filesize > 9999999L)
-					{
 					ultoa((m -> filesize) >> 10L, buf, 10);
 					strcat(buf, "k");
-					}
+				}
 				else	ultoa(m -> filesize, buf, 10);
 				/* Ausrichtung rechts */
 				vst_alignment(vdi_handle, 2, 5, &dummy, &dummy);
 				v_gtext(vdi_handle, pos,	p->pb_y, buf);
 				vst_alignment(vdi_handle, 0, 5, &dummy, &dummy);
-				}
-			pos += spaltenabstand;
 			}
+			pos += spaltenabstand;
+		}
 
-		if	(status.is_datum)
-			{
+		if (status.is_datum)
+		{
 			date_to_str(buf, m -> date);
 			v_gtext(vdi_handle, pos,	p->pb_y, buf);
 			pos += spaltenabstand + w->xtab_datelen;
-			}
+		}
 
-		if	(status.is_zeit)
-			{
+		if (status.is_zeit)
+		{
 			time_to_str(buf, m -> time);
 			buf[5] = EOS;
 			v_gtext(vdi_handle, pos,	p->pb_y, buf);
-			}
 		}
+	}
 
 	/* 2. Fall: nichtproportionaler Font		*/
 	/* Die Ausgabe erfolgt in einem Rutsch		*/
 	/* ----------------------------------------- */
 
-	else	{
+	else
+	{
 		s = t = buf;
 
 		*s++ = ' ';
-		if	((m -> icontyp == ITYP_ORDNER) && (status.fontID == 1))
+		if ((m -> icontyp == ITYP_ORDNER) && (status.fontID == 1))
 			*s++ = '\7';		/* Zeichen fr Ordner */
-		else if	(m->icontyp == ITYP_PROGRA)
+		else if (m->icontyp == ITYP_PROGRA)
 				*s++ = '.';
 			else *s++ = ' ';
 		*s++ = ' ';
-		if	(w->dos_mode && status.show_8p3 && (!isparentdir))
-			{
-			if	(*fname == '.' && fname[1] == EOS)
+		if (w->dos_mode && status.show_8p3 && (!isparentdir))
+		{
+			if (*fname == '.' && fname[1] == EOS)
 				*s++ = *fname++;
 			else while(*fname != '.' && *fname != EOS)
 					*s++ = *fname++;
-			if	(*fname == '.')
+			if (*fname == '.')
 				fname++;
 			t += 12;
 			while(s < t)
 				*s++ = ' ';
 			t += 3;
-			}
-		else	{
+		}
+		else
+		{
 			strcpy(s, fname);
 			t += 3+w->max_fname;
-			}
+		}
 
-		if	(isparentdir)
+		if (isparentdir)
 			goto gtext;		/* keine weitere Ausgabe */
 
 		while(*fname)
@@ -1233,44 +1252,44 @@ int cdecl draw_userdef(PARMBLK *p)
 		while(s < t)
 			*s++ = ' ';
 
-		if	(status.is_groesse)
-			{
+		if (status.is_groesse)
+		{
 			char gr[10],*g;
 
-			if	(isdir)
+			if (isdir)
 				gr[0] = EOS;
 			else {
-				if	(m->filesize > 9999999L)
-					{
+				if (m->filesize > 9999999L)
+				{
 					ultoa((m -> filesize) >> 10L, gr, 10);
 					strcat(gr, "k");
-					}
-				else	ultoa(m -> filesize, gr, 10);
 				}
+				else	ultoa(m -> filesize, gr, 10);
+			}
 			for	(wnr = 8 - (int) strlen(gr); wnr > 0; wnr--)
 				*s++ = ' ';
 			g = gr;
 			while(*g)
 				*s++ = *g++;
-			}
-		if	(status.is_datum)
-			{
+		}
+		if (status.is_datum)
+		{
 			*s++ = ' ';
 			*s++ = ' ';
 			date_to_str(s, m -> date);
 			s += 8;
-			}
-		if	(status.is_zeit)
-			{
+		}
+		if (status.is_zeit)
+		{
 			*s++ = ' ';
 			*s++ = ' ';
 			time_to_str(s, m -> time);
 			s += 5;
-			}
+		}
 		*s = EOS;
 	    gtext:
 		v_gtext(vdi_handle, pos, p->pb_y, buf+offs);
-		}
+	}
     ende:
 	return(p -> pb_currstate);
 }
@@ -1280,11 +1299,11 @@ USERBLK userblk = {draw_userdef, 0L};
 
 /****************************************************************
 *
-* Setzt den Clippingbereich auf die Bildschirmgr”že.
+* Setzt den Clipping-Bereich auf die Bildschirmgr”že.
 *
 ****************************************************************/
 
-void set_deflt_clip( void )
+void set_deflt_clip(void)
 {
 	clip_rect[0] = desk_g.g_x;
 	clip_rect[1] = desk_g.g_y;
@@ -1306,16 +1325,16 @@ void open_work(void)
 	register int i;
 
 
-	for  (i = 0; i < 10; work_in[i++] = 1)
+	for (i = 0; i < 10; work_in[i++] = 1)
 		;
-	work_in[10]=2;                     /* Rasterkoordinaten */
+	work_in[10] = 2;                     /* Rasterkoordinaten */
 	v_opnvwk(work_in, &vdi_handle, work_out);
 	vswr_mode(vdi_handle,MD_REPLACE);      /* Replace- Modus */
 	vsf_color(vdi_handle,WHITE);           /* Fllfarbe weiž */
 	vsf_interior(vdi_handle,SOLID);        /* komplett ausfllen */
 	vqt_attributes(vdi_handle, text_attrib);
 	Cursconf(0,0);
-	if	(vq_gdos())
+	if (vq_gdos())
 		vst_load_fonts(vdi_handle, 0);
 	/* set_char_dim(); */
 }
@@ -1332,7 +1351,7 @@ void open_work(void)
 
 int deflt_topwnr = -1;
 
-void close_all_wind( void )
+void close_all_wind(void)
 {
 	register int i;
 	register WINDOW **pw,*w;
@@ -1347,22 +1366,22 @@ void close_all_wind( void )
 	deflt_topwnr = (w) ? w->wnr : -1;
 	menu_bar(adr_hauptmen, FALSE);
 	wind_set_ptr_int(SCREEN, WF_NEWDESK, NULL, 0);	/* Desktop- Hintergrund */
-	for	(i = 1,pw=fenster+1; i <= ANZFENSTER; i++,pw++)
-		{
+	for	(i = 1, pw = fenster + 1; i <= ANZFENSTER; i++,pw++)
+	{
 		w = *pw;
-		if	(w)         /* wenn Fenster existiert... */
+		if (w)         /* wenn Fenster existiert... */
+		{
+			if (w->flags & WFLAG_ICONIFIED)
 			{
-			if	(w->flags & WFLAG_ICONIFIED)
-				{
 				wind_get_grect(w->handle, WF_UNICONIFY, &w->out);
-				}
+			}
 			wind_close(w->handle);  /* ...dann schliežen */
 			wind_delete(w->handle); /* ...und immer l”schen!  */
 			fensterg[i] = w->out;
 			Mfree(w);
 			*pw = NULL;
-			}
 		}
+	}
 }
 
 
@@ -1380,26 +1399,26 @@ void close_all_wind( void )
 ****************************************************************/
 
 #pragma warn -par
-void shutdown( int dev, int txt )
+void shutdown(int dev, int txt)
 {
 	char shutdown_prg[128];
 
 
-	if	(is_primary_shell)
-		{
+	if (is_primary_shell)
+	{
 		strcpy(shutdown_prg, desk_path);
-		if	(dev >= 0)
+		if (dev >= 0)
 			strcat(shutdown_prg, "chgres.prg");
 /*
-			{
+		{
 #if			COUNTRY==FRG
-			if	(1 != form_alert(1, "[2][Aufl”sungswechsel ?][ OK | Abbruch ]"))
+			if (1 != form_alert(1, "[2][Aufl”sungswechsel ?][ OK | Abbruch ]"))
 				return;
 #elif		COUNTRY==USA
-			if	(1 != form_alert(1, "[2][Change resolution ?][ OK | Cancel ]"))
+			if (1 != form_alert(1, "[2][Change resolution ?][ OK | Cancel ]"))
 				return;
 #endif
-			}
+		}
 		itoa(dev, tail+1, 10);
 		strcat(tail+1, " ");
 		itoa(txt, tail+1+strlen(tail+1), 10);
@@ -1407,11 +1426,11 @@ void shutdown( int dev, int txt )
 */
 		else	strcat(shutdown_prg, "shutdown.prg");
 
-		if	(status.save_on_exit)
+		if (status.save_on_exit)
 			save_status(TRUE);		/* VOR close_all_wind() */
 
 		close_all_wind();
-		if	(vq_gdos())
+		if (vq_gdos())
 			vst_unload_fonts(vdi_handle, 0);
 		v_clsvwk(vdi_handle);
 		/* Pfade an den Parent weiterreichen: */
@@ -1421,9 +1440,9 @@ void shutdown( int dev, int txt )
 		/* und Programm aufrufen */
 		shel_write(TRUE, TRUE, SHW_CHAIN, shutdown_prg,
 			(dev == -2) ? "\1""1" : "");
-		}
+	}
 	else
-	if	(status.save_on_exit)
+	if (status.save_on_exit)
 		save_status(TRUE);
 
 	rsrc_free();
@@ -1441,13 +1460,13 @@ void shutdown( int dev, int txt )
 ****************************************************************/
 
 #pragma warn -par
-static void wind0_keyed( WINDOW *w, int kstate, int key )
+static void wind0_keyed(WINDOW *w, int kstate, int key)
 {
 }
-static void wind0_fulled( WINDOW *w )
+static void wind0_fulled(WINDOW *w)
 {
 }
-static void wind0_closed( WINDOW *w, int kstate )
+static void wind0_closed(WINDOW *w, int kstate)
 {
 }
 #pragma warn +par
@@ -1459,7 +1478,7 @@ static void wind0_closed( WINDOW *w, int kstate )
 *
 ****************************************************************/
 
-void open_all_wind( void )
+void open_all_wind(void)
 {
 	register int i,j,set;
 	long ret;
@@ -1467,7 +1486,9 @@ void open_all_wind( void )
 
 	Mgraf_mouse(HOURGLASS);
 	for	(i = 0; i < ANZDRIVES; i++)
+	{
 		dinfo[i].b_clsiz = 0L;		/* ungltig */
+	}
 
 	/* Menzeile auf den Bildschirm */
 	/* ---------------------------- */
@@ -1492,29 +1513,29 @@ void open_all_wind( void )
 
 /*
 	for	(i = 1; i <= ANZFENSTER; i++)
-		{
+	{
 		fenster[i].handle = -1;			/* unbenutzt			*/
 		fenster[i].memblk = NULL; 		/* kein allozierter Speicher */
-		}
+	}
 */
 	for	(set = FALSE,i = 1; i <= ANZFENSTER; i++)
-		{
+	{
 		j = i;
-		if	(i == deflt_topwnr)
-			{
+		if (i == deflt_topwnr)
+		{
 			j = ANZFENSTER;
 			set = TRUE;
-			}
-		if	(set && i == ANZFENSTER)
+		}
+		if (set && i == ANZFENSTER)
 			j = deflt_topwnr;
-		if	(fenster[j])
-			{
+		if (fenster[j])
+		{
 			ret = opn_wnd(fenster[j], TRUE);
-			if	(ret == ENOWND)
+			if (ret == ENOWND)
 				ret = ENSMEM;
 			err_alert(ret);
-			}
 		}
+	}
 	set_deflt_clip();
 	Mgraf_mouse(ARROW);
 }
@@ -1522,18 +1543,18 @@ void open_all_wind( void )
 
 /****************************************************************
 *
-* Laden und Initialisieren der Ressource- Datei.
+* Laden und Initialisieren der Ressource-Datei.
 *
 ****************************************************************/
 
-static void _rsrc_load( char *fname )
+static void _rsrc_load(char *fname)
 {
-	if	(!rsrc_load(fname))
-		{
+	if (!rsrc_load(fname))
+	{
 		form_xerr(EFILNF, fname);
 		appl_exit();
 		Pterm((int) EFILNF);
-		}
+	}
 }
 
 void get_rsc(void)
@@ -1546,41 +1567,44 @@ void get_rsc(void)
 	lowres = (desk_g.g_w/gl_hwchar < 60) ||
 				 (K_CTRL+K_ALT == (K_CTRL+K_ALT & Kbshift(-1)));
 	isfirst = (*((void **) (aes_global+7)) == NULL);
-	if	(isfirst)								/* erster Start */
-		{
+	if (isfirst)								/* erster Start */
+	{
 
 		desk_path[0] = Dgetdrv() + 'A';
 		desk_path[1] = ':';
 		Dgetpath(desk_path+2, 0);
 		strcat(desk_path, "\\");
 
-		if	(lowres)
-			{
+		if (lowres)
+		{
 			_rsrc_load("magxdesl.rsc");
 			rsrc_gaddr(0, HAUPTMEN, &adr_hauptmen);
-			}
-		else adr_hauptmen = NULL;
+		}
+		else
+		 adr_hauptmen = NULL;
+
 		_rsrc_load("magxdesk.rsc");
-		if	(!adr_hauptmen)
+		if (!adr_hauptmen)
 			rsrc_gaddr(0, HAUPTMEN, &adr_hauptmen);
+
 		rsrc_gaddr(0, T_ICONS,  &adr_icons);
 		rsrc_gaddr(0, T_EINST, &adr_einst);
 		rsrc_gaddr(0, T_TTPPAR, &adr_ttppar);
 		rsrc_gaddr(0, T_ABOUT,  &adr_about);
 		rsrc_gaddr(0, T_DATINF, &adr_datinf);
 		load_app_icons();
-		}
+	}
 
 	/* Icongr”žen fr Aufl”sungen korrigieren */
 /*
 	for	(i = I_FLPDSK; i <= I_BTCHDA; i++)
-		{
+	{
 		(adr_icons+i) -> ob_width  = 72;
 		(adr_icons+i) -> ob_height = 36;
-		}
+	}
 */
 
-	if	(!isfirst)
+	if (!isfirst)
 		return;
 	/* Gruppenrahmen anpassen */
 /*
@@ -1606,7 +1630,7 @@ void get_rsc(void)
 	i = adr_about->ob_width;
 	i -= (int) strlen(os_ver_s) * gl_hwchar;
 	i /= 2;
-	if	(i < 0)
+	if (i < 0)
 		i = 0;
 	(adr_about + ABOU_OS)->ob_x = i;
 
@@ -1660,13 +1684,13 @@ void anfang(void)
 	is_primary_shell = FALSE;
 	isfirst = FALSE;
 
-	if	(!srcmd[0])	/* Name muž leer sein */
-		{
+	if (!srcmd[0])	/* Name muž leer sein */
+	{
 		sht = (SHELTAIL *) srtail;
-		if	(sht->dummy == 0 && sht->magic == 'SHEL')
+		if (sht->dummy == 0 && sht->magic == 'SHEL')
 			is_primary_shell = TRUE;
 		isfirst = sht->isfirst;
-		}
+	}
 
 	get_rsc();
 
@@ -1689,26 +1713,27 @@ void anfang(void)
 	/* ----------------------------- */
 
 	kachel_1 = kachel_4 = kachel_8 = kachel_m = NULL;
-	if	(aes_global[10] < 4)	/* 2,4 oder 8 Farben */
-		{
+	if (aes_global[10] < 4)	/* 2,4 oder 8 Farben */
+	{
 		kachel_path = (MENUPROGRAM **) (&kachel_1);
 		desk_col = &(status.desk_col_1);
 		desk_patt = &(status.desk_patt_1);
-		}
-	else	{
+	}
+	else
+	{
 		desk_col = &(status.desk_col_4);
 		desk_patt = &(status.desk_patt_4);
-		if	(aes_global[10] < 8)	/* 16 Farben */
+		if (aes_global[10] < 8)	/* 16 Farben */
 			kachel_path = (MENUPROGRAM **) (&kachel_4);
 		else
-		if	(aes_global[10] == 8)	/* 256 Farben */
+		if (aes_global[10] == 8)	/* 256 Farben */
 			kachel_path = (MENUPROGRAM **) (&kachel_8);
 		else	kachel_path = (MENUPROGRAM **) (&kachel_m);
-		}
+	}
 	
 
-	/* INF- Datei laden oder Defaults setzen */
-	/* ------------------------------------- */
+	/* INF-Datei laden oder Defaults setzen */
+	/* ------------------------------------ */
 
 	load_status(0);
 	load_status(1);
@@ -1719,10 +1744,10 @@ void anfang(void)
 	/* ------------------------------------------------ */
 
 	for	(i = 0; i < n_deskicons; i++)
-		{
-		if	(icon[i].isdisk)
+	{
+		if (icon[i].isdisk)
 			goto disk_found;
-		}
+	}
 
 	dial_laufwe();		/* Laufwerke anmelden */
 	disk_found:
@@ -1730,32 +1755,32 @@ void anfang(void)
 	/* ggf. Disknamen initialisieren */
 	/* ----------------------------- */
 
-	if	(status.dnam_init)
-		{
+	if (status.dnam_init)
+	{
 		for	(i = 0; i < n_deskicons; i++)
-			{
+		{
 			register int j;
 			int  drv;
 			static char *pth = "X:\\";
 			char name[65];
 	
-			if	(!icon[i].isdisk)
+			if (!icon[i].isdisk)
 				nexticn:
 				continue;
 			drv = icon[i].isdisk;
 			for	(j = 1; j <= ANZFENSTER; j++)
-				{
-				if	((fenster[j]) && (fenster[j]->path[0] == drv))
+			{
+				if ((fenster[j]) && (fenster[j]->path[0] == drv))
 					goto nexticn;
-				}
-			if	(drv < 'C')		/* nicht fr A: und B: */
+			}
+			if (drv < 'C')		/* nicht fr A: und B: */
 				continue;
 			name[0] = EOS;
 			pth[0] = drv;
 			Dreadlabel(pth, name, 65);
 			set_dname(drv-'A', name);
-			}
 		}
+	}
 
 	wind_update(END_UPDATE);
 
@@ -1763,10 +1788,10 @@ void anfang(void)
 	/* APPLICAT.DAT neu aufgebaut werden		*/
 	/* ----------------------------------------- */
 
-	if	(dirty_applicat_dat)
-		{
+	if (dirty_applicat_dat)
+	{
 		starte_dienstpgm("APPLICAT.APP", FALSE, FALSE,
 						"-c", NULL, NULL );
 		dirty_applicat_dat = FALSE;
-		}
+	}
 }

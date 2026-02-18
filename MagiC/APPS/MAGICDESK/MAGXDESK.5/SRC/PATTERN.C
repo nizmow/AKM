@@ -6,10 +6,10 @@
 
 #include <string.h>
 
-#define TRUE   1
-#define FALSE  0
-#define EOS    '\0'
-#define NULL        ( ( void * ) 0L )
+#define TRUE  1
+#define FALSE 0
+#define EOS   '\0'
+#define NULL  ((void *) 0L)
 
 
 /*********************************************************************
@@ -19,19 +19,19 @@
 *********************************************************************/
 
 #pragma warn -pia
-char toupper( unsigned char c )
+char toupper(unsigned char c)
 {
 	register char *s;
 	static char lower_s[] = "„”‚…†‡‘¤°±³´À";
 	static char upper_s[] = "™š¶€’¥·¸²µÁ";
 
-	if	(c < 'a')
-		return(c);
-	if	(c <= 'z')
-		return(c & 0x5f);
-	if	(!(s = strchr(lower_s, c)))
-		return(c);
-	return(upper_s[s - lower_s]);
+	if (c < 'a')
+		return c;
+	if (c <= 'z')
+		return c & 0x5f;
+	if (!(s = strchr(lower_s, c)))
+		return c;
+	return upper_s[s - lower_s];
 }
 #pragma warn +pia
 
@@ -42,9 +42,9 @@ char toupper( unsigned char c )
 *
 *********************************************************************/
 
-void upperstring( char *s )
+void upperstring(char *s)
 {
-	while(*s)
+	while (*s)
 		*s++ = toupper(*s);
 }
 
@@ -60,38 +60,40 @@ int pattern_match(char *pattern, char *fname)
 {
 	/* solange beide Zeichenketten nicht leer sind */
 
-	while((*pattern) && (*fname))
+	while ((*pattern) && (*fname))
+	{
+		if (*pattern == '*')
 		{
-		if	(*pattern == '*')
-			{
 			/* erst unwahrscheinlicheren Fall als Rekursion */
 			if	(pattern_match(pattern+1, fname))
 				return(TRUE);
 			fname++;
 			continue;
-			}
-		if	((*pattern == '?') || (toupper(*fname) == *pattern))
-			{
+		}
+
+		if ((*pattern == '?') || (toupper(*fname) == *pattern))
+		{
 			pattern++;
 			fname++;
 			continue;
-			}
-		return(FALSE);
 		}
+
+		return FALSE;
+	}
 
 	/* jetzt ist mindesten eine Zeichenkette leer */
 
-	if	((*pattern) == (*fname))
-		return(TRUE);		/* beide EOS */
+	if ((*pattern) == (*fname))
+		return TRUE;		/* beide EOS */
 
 	/* jetzt ist genau eine Zeichenkette leer */
 
-	if	(*fname)
-		return(FALSE);		/* pattern leer, fname nicht */
+	if (*fname)
+		return FALSE;		/* pattern leer, fname nicht */
 
 	/* jetzt ist pattern nicht leer, fname ist leer */
 
-	while((*pattern) == '*')
+	while ((*pattern) == '*')
 		pattern++;
-	return(!(*pattern));	/* OK, wenn nur '*'e brig */
+	return !(*pattern);	/* OK, wenn nur '*'e brig */
 }

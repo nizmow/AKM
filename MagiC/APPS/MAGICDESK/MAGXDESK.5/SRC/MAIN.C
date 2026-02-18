@@ -83,21 +83,24 @@ XSend(int *msg)
 
 _main()
 {
-	int     msg[8], id, t;
-	char    *path;
-	GRECT   rv;
+	int msg[8], id, t;
+	char *path;
+	GRECT rv;
 
 	appl_init();
-	do {
+	for (;;)
+	{
 		evnt_mesag(msg);
-		switch(msg[0]) {
+		switch(msg[0])
+		{
 			case AP_TERM:
 				goto quit;
 
 			case AV_WHAT_IZIT:
 				id = wind_find(msg[3], msg[4]);     // Fenster finden
 				t = 0;
-				if (id>0) {                         // da ist eines
+				if (id > 0)
+				{                         // da ist eines
 					winx_get(id, WF_OWNER, &rv);    // Eigentmer finden
 					id = rv.g_x;                    // merken
 					t = 7;                          // Typ ist Fenster
@@ -110,12 +113,14 @@ _main()
 			case AV_SENDKEY:
 				winx_get(0, WF_TOP, &rv);       // top, owner, below
 				t = msg[4]>>8;
-				if ((t == 17) && (msg[3] == K_CTRL)) {
+				if ((t == 17) && (msg[3] == K_CTRL))
+				{
 					id = rv.g_w;                                // below
 					winx_get(id, WF_OWNER, &rv);                // owner
 					Send(rv.g_x, WM_TOPPED, id, 0L, 0L);
 				}
-				else if (t == 22 && msg[3] == K_CTRL)
+				else
+				if (t == 22 && msg[3] == K_CTRL)
 					Send(rv.g_y, WM_CLOSED, rv.g_x, 0L, 0L);
 				break;
 
@@ -140,12 +145,8 @@ _main()
 				Send(Server, SH_WDRAW, *path-'A', 0L, 0L);
 				break;
 		}
-	} while (1);
+	}
 quit:
 	appl_exit();
 	_exit(0);
 }
-
-
-
-

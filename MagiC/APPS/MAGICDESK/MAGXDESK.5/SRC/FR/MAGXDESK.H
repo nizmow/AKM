@@ -167,19 +167,20 @@
 #define EIN_DSV          45  /* BOXCHAR in Baum T_EINST */
 #define EIN_DSV1         46  /* BOXCHAR in Baum T_EINST */
 #define EIN_PP           48  /* BUTTON in Baum T_EINST */
-#define EIN_GRP5         49  /* IBOX in Baum T_EINST */
-#define EIN_COL0         51  /* BOXCHAR in Baum T_EINST */
-#define EIN_COL          52  /* BOX in Baum T_EINST */
-#define EIN_COL1         53  /* BOXCHAR in Baum T_EINST */
-#define EIN_PAT0         54  /* BOXCHAR in Baum T_EINST */
-#define EIN_PAT          55  /* BOX in Baum T_EINST */
-#define EIN_PAT1         56  /* BOXCHAR in Baum T_EINST */
-#define EIN_RAS0         58  /* BOXCHAR in Baum T_EINST */
-#define EIN_RAS          59  /* BOXCHAR in Baum T_EINST */
-#define EIN_RAS1         60  /* BOXCHAR in Baum T_EINST */
-#define EIN_KACH         61  /* FTEXT in Baum T_EINST */
-#define EINS_DRK         63  /* BUTTON in Baum T_EINST */
-#define EINST_DN         64  /* BUTTON in Baum T_EINST */
+#define EIN_RELOAD       49  /* BUTTON in Baum T_EINST */
+#define EIN_GRP5         50  /* IBOX in Baum T_EINST */
+#define EIN_COL0         52  /* BOXCHAR in Baum T_EINST */
+#define EIN_COL          53  /* BOX in Baum T_EINST */
+#define EIN_COL1         54  /* BOXCHAR in Baum T_EINST */
+#define EIN_PAT0         55  /* BOXCHAR in Baum T_EINST */
+#define EIN_PAT          56  /* BOX in Baum T_EINST */
+#define EIN_PAT1         57  /* BOXCHAR in Baum T_EINST */
+#define EIN_RAS0         59  /* BOXCHAR in Baum T_EINST */
+#define EIN_RAS          60  /* BOXCHAR in Baum T_EINST */
+#define EIN_RAS1         61  /* BOXCHAR in Baum T_EINST */
+#define EIN_KACH         62  /* FTEXT in Baum T_EINST */
+#define EINS_DRK         64  /* BUTTON in Baum T_EINST */
+#define EINST_DN         65  /* BUTTON in Baum T_EINST */
 
 #define T_ABOUT          7   /* Formular/Dialog */
 #define ABOU_IMG         1   /* IMAGE in Baum T_ABOUT */

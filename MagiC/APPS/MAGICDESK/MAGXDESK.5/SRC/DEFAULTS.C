@@ -49,7 +49,8 @@ CICONBLK *std_tra_icon;	/* fÅr Papierkorb */
 CICONBLK *std_dev_icon;	/* fÅr Devices */
 CICONBLK *std_par_icon;	/* fÅr Elter-Verzeichnis ".." */
 
-static void set_deskt_icons( int initial );
+static void set_deskt_icons(int initial);
+
 
 /****************************************************************
 *
@@ -94,7 +95,7 @@ static void init_app_icons( void )
 }
 
 
-static int _load_app_icons( char *buf )
+static int _load_app_icons(char *buf)
 {
 	long n_icons = 0L;
 	CICONBLK **icons;
@@ -106,7 +107,8 @@ static int _load_app_icons( char *buf )
 	register DATAFILE *da;
 	register PATHNAME *pa;
 	register SPECIALOBJECT *sp;
-	struct {
+	struct
+	{
 		long		magic;
 		int		subfn;
 		int		numicns;
@@ -116,27 +118,29 @@ static int _load_app_icons( char *buf )
 	} magic_rcfix;
 
 
-
 	ich = (struct ico_head *) buf;
-	if	(ich->magic == 'BnKr')
-		{
+	if (ich->magic == 'BnKr')
+	{
 		dirty_applicat_dat = TRUE;
 		ich->magic = 'AnKr';
-		}
-	else	dirty_applicat_dat = FALSE;
+	}
+	else
+	{
+		dirty_applicat_dat = FALSE;
+	}
 
-	if	((ich->magic != 'AnKr') || (ich->version != 2))
-		{
+	if ((ich->magic != 'AnKr') || (ich->version != 2))
+	{
 		Mfree(buf);
-		return(-1);
-		}
+		return -1;
+	}
 
 	init_app_icons();		/* immer erst Standard-Icons */
-	if	(apdatabuf)
-		{
+	if (apdatabuf)
+	{
 		Mfree(apdatabuf);
 		n_apps = n_dfiles = n_paths = n_specs = 0L;
-		}
+	}
 
 	apdatabuf = buf;
 	apps = (APPLICATION *) (buf + ich->p_ap2ic);
@@ -167,78 +171,78 @@ static int _load_app_icons( char *buf )
 	/* relozieren */
 
 	for	(i = 0, ap = apps; i < n_apps; i++,ap++)
-		{
+	{
 		ap->apname += (long) buf;
-		if	(((long) ap->path) >= 0L)
+		if (((long) ap->path) >= 0L)
 			ap->path += (long) buf;
 		ap->icon = icons[(long) (ap->icon)];
-		}
+	}
 	for	(i = 0, da = dfiles; i < n_dfiles; i++,da++)
-		{
+	{
 		da->daname += (long) buf;
 		j = ((long) da->ap);	/* Index der APP */
-		if	(j != -1L)
+		if (j != -1L)
 			da->ap = apps + j;
 		else	da->ap = NULL;
 		da->icon = icons[(long) (da->icon)];
-		}
+	}
 	for	(i = 0, pa = paths; i < n_paths; i++,pa++)
-		{
+	{
 		pa->path += (long) buf;
 		pa->icon = icons[(long) (pa->icon)];
-		}
+	}
 	for	(i = 0, sp = specs; i < n_specs; i++,sp++)
-		{
+	{
 		sp->icon = icons[(long) (sp->icon)];
-		}
+	}
 
 	/* Standardicons festlegen */
 
 	stdci = specialkey_to_iconblk('APPS');
-	if	(stdci)
+	if (stdci)
 		std_app_icon = stdci;
 	stdci = specialkey_to_iconblk('DATS');
-	if	(stdci)
+	if (stdci)
 		std_dat_icon = stdci;
 	stdci = specialkey_to_iconblk('FLDR');
-	if	(stdci)
+	if (stdci)
 		std_fld_icon = stdci;
 	stdci = specialkey_to_iconblk('PARD');
-	if	(stdci)
+	if (stdci)
 		std_par_icon = stdci;
 	stdci = specialkey_to_iconblk('DRVS');
-	if	(stdci)
-		{
+	if (stdci)
+	{
 		std_dsk_icon = stdci;
 		stdci->monoblk.ib_ptext = (adr_icons+I_DSK)->
 								ob_spec.iconblk->ib_ptext;
-		}
+	}
 	stdci = specialkey_to_iconblk('TRSH');
-	if	(stdci)
-		{
+	if (stdci)
+	{
 		stdci->monoblk.ib_ptext = (adr_icons+I_PAP)->
 								ob_spec.iconblk->ib_ptext;
 		std_tra_icon = stdci;
-		}
+	}
 	stdci = specialkey_to_iconblk('PRNT');
-	if	(stdci)
-		{
+	if (stdci)
+	{
 		stdci->monoblk.ib_ptext = (adr_icons+I_DRK)->
 								ob_spec.iconblk->ib_ptext;
 		std_prt_icon = stdci;
-		}
+	}
 	stdci = specialkey_to_iconblk('BTCH');
-	if	(stdci)
-		{
+	if (stdci)
+	{
 		stdci->monoblk.ib_ptext = (adr_icons+I_BAT)->
 								ob_spec.iconblk->ib_ptext;
 		std_bat_icon = stdci;
-		}
+	}
 	stdci = specialkey_to_iconblk('DEVC');
-	if	(stdci)
+	if (stdci)
 		std_dev_icon = stdci;
 
-	return(0);
+	return 0;
 }
 
 
@@ -256,28 +260,28 @@ void load_app_icons( void )
 	strcpy(path, desk_path);
 	strcat(path, "applicat.dat");
 	fd = (int) Fopen(path, RMODE_RD);
-	if	(fd < 0)
+	if (fd < 0)
 		return;			/* Datei nicht gefunden */
 	retcode = Fcntl(fd, (long) &xa, FSTAT);
-	if	(!retcode)
+	if (!retcode)
 		flen = xa.size;
 	else	goto err;
 
 	buf = Malloc(flen);
-	if	(!buf)
-		{
+	if (!buf)
+	{
 		err:
 		Fclose(fd);
 		return;
-		}
+	}
 
 	retcode = Fread(fd, flen, buf);
 	Fclose(fd);
-	if	(retcode != flen)
-		{
+	if (retcode != flen)
+	{
 		Mfree(buf);
 		return;
-		}
+	}
 
 	_load_app_icons(buf);
 }
@@ -291,7 +295,7 @@ void load_app_icons( void )
 
 void	re_read_icons(void *data)
 {
-	if	(_load_app_icons( data ))
+	if (_load_app_icons( data ))
 		return;		/* Fehler */
 	set_deskt_icons(FALSE);
 	upd_icons();
@@ -315,24 +319,24 @@ APPLICATION * find_application(char *fname)
 	register APPLICATION *a;
 	register int i;
 
-	if	(n_apps)
-		{
+	if (n_apps)
+	{
 		f = strrchr(fname, '.');
-		if	(f)
-			{
+		if (f)
+		{
 			*f = EOS;				/* Extension entfernen */
 			for	(a = apps,i = 0; i < n_apps; i++,a++)
+			{
+				if (!stricmp(fname, a->apname))
 				{
-				if	(!stricmp(fname, a->apname))
-					{
 					*f = '.';
-					return(a);
-					}
+					return a;
 				}
-			*f = '.';
 			}
+			*f = '.';
 		}
-	return(NULL);
+	}
+	return NULL;
 }
 
 
@@ -359,19 +363,20 @@ DATAFILE * find_datafile(char *fname)
 
 	extension = strrchr(fname, '.');
 	for	(da = dfiles; da < dfiles + n_dfiles; da++)
-		{
+	{
 		d = da->daname;
-		if	((d[0] == '*') && (extension))
-			{
-			if	(!stricmp(extension, d+1))
-				return(da);
-			}
-		else	{
-			if	(!stricmp(fname, d))
-				return(da);
-			}
+		if ((d[0] == '*') && (extension))
+		{
+			if (!stricmp(extension, d+1))
+				return da;
 		}
-	return(NULL);
+		else
+		{
+			if (!stricmp(fname, d))
+				return da;
+		}
+	}
+	return NULL;
 }
 
 PATHNAME * find_path(char *path, char *nurname)
@@ -380,26 +385,27 @@ PATHNAME * find_path(char *path, char *nurname)
 	register int i;
 
 
-	if	(!nurname)
-		{
+	if (!nurname)
+	{
 		nurname = path + strlen(path) - 2;
 		while((nurname > path) && (*nurname != '\\'))
 			nurname--;
 		nurname++;
-		}
+	}
 	for	(i = 0,pa = paths; i < n_paths; i++,pa++)
+	{
+		if (pa->path[1] == ':')	/* abs. Pfad */
 		{
-		if	(pa->path[1] == ':')	/* abs. Pfad */
-			{
-			if	(!stricmp(path, pa->path))
-				return(pa);
-			}
-		else	{
-			if	(!stricmp(nurname, pa->path))
-				return(pa);
-			}
+			if (!stricmp(path, pa->path))
+				return pa;
 		}
-	return(NULL);
+		else
+		{
+			if (!stricmp(nurname, pa->path))
+				return pa;
+		}
+	}
+	return NULL;
 }
 
 
@@ -419,14 +425,16 @@ CICONBLK * pgmname_to_iconblk(char *fname)
 
 
 	a = find_application(fname);
-	if	(a)
-		return(a->icon);
+	if (a)
+		return a->icon;
+
 	extension = strrchr(fname, '.');
-	if	((extension) &&
+	if ((extension) &&
 		(!stricmp(extension, ".ACC") ||
 		!stricmp(extension, ".ACX")))
 		return(datname_to_iconblk(fname));
-	return(std_app_icon);
+
+	return std_app_icon;
 }
 
 
@@ -444,9 +452,9 @@ CICONBLK * datname_to_iconblk(char *fname)
 	register DATAFILE *da;
 
 	da = find_datafile(fname);
-	if	(da)
-		return(da->icon);
-	return(std_dat_icon);
+	if (da)
+		return da->icon;
+	return std_dat_icon;
 }
 
 
@@ -469,9 +477,10 @@ CICONBLK * diskname_to_iconblk(int diskname, char **name)
 	pth[1] = ':';
 	pth[2] = '\\';
 	pth[3] = EOS;
-	if	(name)
+	if (name)
 		*name = std_dsk_icon->monoblk.ib_ptext;
-	return(foldername_to_iconblk(pth, pth+1));
+
+	return foldername_to_iconblk(pth, pth + 1);
 }
 
 
@@ -480,18 +489,18 @@ CICONBLK * foldername_to_iconblk(char *path, char *nurname)
 	register PATHNAME *p;
 
 	p = find_path(path, nurname);
-	if	(p)
-		return(p->icon);
-	if	(path[3])
-		return(std_fld_icon);		/* "Ordner" */
-	return(std_dsk_icon);			/* "Disk" */
+	if (p)
+		return p->icon;
+	if (path[3])
+		return std_fld_icon;		/* "Ordner" */
+	return std_dsk_icon;			/* "Disk" */
 }
 
 
 #pragma warn -par
 CICONBLK * parentname_to_iconblk(char *path, char *nurname)
 {
-	return(std_par_icon);
+	return std_par_icon;
 }
 #pragma warn +par
 
@@ -499,7 +508,7 @@ CICONBLK * parentname_to_iconblk(char *path, char *nurname)
 #pragma warn -par
 CICONBLK * batchname_to_iconblk(char *fname)
 {
-	return(std_bat_icon);
+	return std_bat_icon;
 }
 #pragma warn +par
 
@@ -507,7 +516,7 @@ CICONBLK * batchname_to_iconblk(char *fname)
 #pragma warn -par
 CICONBLK * devicename_to_iconblk(char *fname)
 {
-	return(std_dev_icon);
+	return std_dev_icon;
 }
 #pragma warn +par
 
@@ -517,9 +526,9 @@ CICONBLK * alias_to_iconblk(char *fname)
 	CICONBLK *c;
 
 	c = specialkey_to_iconblk('ALIS');
-	if	(!c)
+	if (!c)
 		c = std_dev_icon;
-	return(c);
+	return c;
 }
 #pragma warn +par
 
@@ -529,12 +538,12 @@ CICONBLK * specialkey_to_iconblk(long key)
 	register SPECIALOBJECT *sp;
 	register int i;
 
-	for	(i = 0, sp = specs; i < n_specs; i++,sp++)
-		{
-		if	(key == sp->key)
-			return(sp->icon);
-		}
-	return(NULL);
+	for	(i = 0, sp = specs; i < n_specs; i++, sp++)
+	{
+		if (key == sp->key)
+			return sp->icon;
+	}
+	return NULL;
 }
 
 
@@ -572,23 +581,24 @@ void set_desktop( void )
 
 	kachel_exit();		/* falls noch alte Kachel da */
 	o = fenster[0]->pobj;
-	if	(*kachel_path)
+	if (*kachel_path)
+	{
+		if ((*kachel_path)->path[0])
 		{
-		if	((*kachel_path)->path[0])
+			if (!kachel_init((*kachel_path)->path, work_out[13] - 1))
 			{
-			if	(!kachel_init((*kachel_path)->path, work_out[13] - 1))
-				{
 				o->ob_type = G_USERDEF;
 				desktop.ub_code = drawdesk;
 				o->ob_spec.userblk = &desktop;
 				return;
-				}
-			}
-		else	{
-			Mfree(*kachel_path);
-			*kachel_path = NULL;
 			}
 		}
+		else
+		{
+			Mfree(*kachel_path);
+			*kachel_path = NULL;
+		}
+	}
 
 	o->ob_type = G_BOX;
 	(o->ob_spec).index = 0;	/* alle Felder auf 0 */
@@ -621,64 +631,65 @@ static void set_deskt_icons( int initial )
 
 	for	(i = 0,o=fenster[0]->pobj+1,ic = icon;
 			i < n_deskicons; i++,o++,ic++)
-		{
+	{
 		typ = ic->icontyp;
-		if	(typ)				/* Icon gÅltig */
-			{
+		if (typ)				/* Icon gÅltig */
+		{
 			txt = ic->text;
 			name = NULL;
-			if	(ic->isdisk)
-				{
+			if (ic->isdisk)
+			{
 				pname = &name;
-				if	(!initial)
-					{
+				if (!initial)
+				{
 					name = ic->data.monoblk.ib_ptext;
-					if	((name >= ic->text) &&
+					if ((name >= ic->text) &&
 						 (name < ic->text+MAX_ICONTXT))
 						 pname = NULL;	/* Icontext retten */
-					}
+				}
 				ic->data = *(diskname_to_iconblk(ic->isdisk, pname));
 				ic->data.monoblk.ib_char = ic->isdisk + 0x1000;
 				ic->icontyp = ITYP_DISK;
-				}
+			}
 			else
-			if	(typ >= ITYP_ORDNER)
-				{
+			if (typ >= ITYP_ORDNER)
+			{
 				name = get_name(txt);
-				if	(typ == ITYP_ORDNER)
-					{
+				if (typ == ITYP_ORDNER)
+				{
 					strcpy(path, txt);
-					if	(path[strlen(txt)-1] != '\\')
+					if (path[strlen(txt)-1] != '\\')
 						strcat(path, "\\");
 					ic->data = *(foldername_to_iconblk(path, NULL));
-					}
+				}
 				else
-				if	(typ == ITYP_BTCHDA)
+				if (typ == ITYP_BTCHDA)
 					ic->data = *(batchname_to_iconblk(name));
 				else
-				if	(typ == ITYP_DEVICE)
+				if (typ == ITYP_DEVICE)
 					ic->data = *(devicename_to_iconblk(name));
 				else
-				if	(typ == ITYP_PROGRA)
+				if (typ == ITYP_PROGRA)
 					ic->data = *(pgmname_to_iconblk(name));
 				else
-/*				if	(typ == ITYP_DATEI)	*/
+/*				if (typ == ITYP_DATEI)	*/
 					ic->data = *(datname_to_iconblk(name));
-				}
-			else	{
-				if	(typ == ITYP_DRUCKR)
+			}
+			else
+			{
+				if (typ == ITYP_DRUCKR)
 					ic->data = *std_prt_icon;
 				else
-/*				if	(typ == ITYP_PAPIER)	*/
+/*				if (typ == ITYP_PAPIER)	*/
 					ic->data = *std_tra_icon;
-				}
+			}
 			init_icnobj(o, &(ic->data),
 					ic->icontyp, name, ic->is_alias);
-			if	(initial)
+			if (initial)
 				o->ob_x -= o->ob_spec.iconblk->ib_xicon;
-			}
+		}
 		else o->ob_flags = HIDETREE;
-		} /* END FOR */
+	} /* END FOR */
 }
 
 
@@ -701,15 +712,15 @@ static char *s;
 static int scnlin( void )
 {
 	while(1)
-		{
-		if	(!*s)
-			return(0);
-		if	(*s++ != '\r')
+	{
+		if (!*s)
+			return 0;
+		if (*s++ != '\r')
 			continue;
-		if	(*s++ != '\n')
-			return(0);
-		return(1);
-		}
+		if (*s++ != '\n')
+			return 0;
+		return 1;
+	}
 }
 
 /*
@@ -746,27 +757,28 @@ static int scndez( void )
 {
 	while(*s == ' ')
 		s++;
-	return((int) strtol(s, &s, 10));
+	return (int) strtol(s, &s, 10);
 }
 
 /*
 *  Liest ein Flag ('1' oder '0')
 */
 
-static char scnflg( void )
+static char scnflg(void)
 {
 	char c;
 
 	while(*s == ' ')
 		s++;
-	if	(*s)
-		{
+	if (*s)
+	{
 		c = *s++ - '0';
-		return(c);
-		}
-	return(0);
+		return c;
+	}
+	return 0;
 }
-void load_status( int pass )
+
+void load_status(int pass)
 {
 	register int i,dx,dy,icw,ich;
 	char **p;
@@ -783,22 +795,21 @@ void load_status( int pass )
 	LONG err;
 
 
-
 	dirty_pgm = TRUE;
 	Mgraf_mouse(HOURGLASS);
-	if	(!pass)
-		{
-		if	(gmemptr)
+	if (!pass)
+	{
+		if (gmemptr)
 			Mfree(gmemptr);
 		gmemptr = NULL;
 
 		icon = NULL;
 		fenster[0]->pobj = NULL;
 
-		}
+	}
 
-	if	(pass)
-		{
+	if (pass)
+	{
 
 		/* zunÑchst sicherheitshalber Defaults setzen */
 		/* ------------------------------------------ */
@@ -809,25 +820,26 @@ void load_status( int pass )
 /* Fenster: */
 		status.use_pp			= TRUE;		/* ".." zeigen */
 		status.show_prticon		= TRUE;
-		status.show_8p3		= TRUE;
+		status.show_8p3			= TRUE;
+		status.auto_reload  	= TRUE;
 		status.h_icon_dist		= 3;
 		status.v_icon_dist		= 1;
-		status.sorttyp 		= M_SNAME;
-		status.showtyp 		= M_ABILDR;
+		status.sorttyp 			= M_SNAME;
+		status.showtyp 			= M_ABILDR;
 		status.is_1col			= FALSE;
 		status.is_groesse		= TRUE;
-		status.is_datum		= TRUE;
+		status.is_datum			= TRUE;
 		status.is_zeit			= TRUE;
 		status.font_is_prop		= FALSE;
 		status.fontID			= 1;
 		status.fontH			= 10;
 /* Kopieren: */
-		status.cnfm_del		= TRUE;
+		status.cnfm_del			= TRUE;
 		status.cnfm_copy		= TRUE;
 		status.mode_ovwr		= CONFIRM;
 		status.check_free		= TRUE;
-		status.resident		= TRUE;
-		status.show_all		= FALSE;
+		status.resident			= TRUE;
+		status.show_all			= FALSE;
 		status.dnam_init		= TRUE;
 		status.copy_resident	= TRUE;
 		status.copy_use_kobold	= FALSE;
@@ -837,13 +849,13 @@ void load_status( int pass )
 		status.desk_col_4		= GREEN;
 		status.desk_patt_4		= 7;
 		status.desk_raster		= 1;
-		if	(kachel_1)
+		if (kachel_1)
 			Mfree(kachel_1);
-		if	(kachel_4)
+		if (kachel_4)
 			Mfree(kachel_4);
-		if	(kachel_8)
+		if (kachel_8)
 			Mfree(kachel_8);
-		if	(kachel_m)
+		if (kachel_m)
 			Mfree(kachel_m);
 		kachel_1 = kachel_4 = kachel_8 = kachel_m = NULL;
 
@@ -857,50 +869,51 @@ void load_status( int pass )
 
 		for	(ln_wind = 1,g=fensterg+1; ln_wind <= ANZFENSTER;
 				ln_wind++,g++)
-			{
+		{
 			g->g_x = 140+20*ln_wind;
 			g->g_y = desk_g.g_y+10*ln_wind;
 			g->g_w = 300;
 			g->g_h = 10*gl_hhchar;
-			}
-		}	/* END IF (pass) */
-	else	{
+		}
+	}	/* END IF (pass) */
+	else
+	{
 		ln_wind = 1;
 		ln_icns = 40;
-		}
+	}
 
 	/* Jetzt die Inf- Datei aus dem AES- Puffer holen */
 	/* ---------------------------------------------- */
 
 	len = shel_get(NULL, -1);	/* LÑnge des INF- Puffers ermitteln */
 	inf = Malloc((long) (len+1));
-	if	(inf == NULL)
-		{
+	if (inf == NULL)
+	{
 		err_alert(ENSMEM);
 		return;
-		}
+	}
 	inf[len] = EOS;
 	shel_get(inf, len);
 	s = inf+128;			/* Beginn der Desktop- Daten */
 
 	ln_wind = 1;					/* erstes Fenster */
 	ln_pgms = 0;
-	if	((s == NULL) || (*s == EOS))	/* keine Daten */
+	if ((s == NULL) || (*s == EOS))	/* keine Daten */
 		goto install;				/* ... dann Defaults verwenden */
 
-	if	(strncmp(s, "#_DSK", 5))
-		{
+	if (strncmp(s, "#_DSK", 5))
+	{
 		err:
 		Rform_alert(1, ALRT_ERR_AT_INF);
 		goto install;
-		}
+	}
 	s += 5;					/* #_DSK Åberspringen */
 	scnstr(dummy_s);			/* "MAGXDESK" */
 	scnstr(dummy_s);			/* Vxx.xx */
 	i_version = scndez();
-	if	(i_version != PGM_I_VERSION)
+	if (i_version != PGM_I_VERSION)
 		goto err;				/* falsche INF- Version */
-	if	(!scnlin())			/* Zeile #_DSK Åberspringen */
+	if (!scnlin())			/* Zeile #_DSK Åberspringen */
 		goto err;
 
 	/* Wir beginnen mit dem Einlesen */
@@ -913,22 +926,22 @@ void load_status( int pass )
 	/* Die groûe Schleife fÅrs Einlesen */
 	/* -------------------------------- */
 
-	for(; *s; scnlin())
-		{
-		if	(strncmp(s, "#_D", 3))
+	for (; *s; scnlin())
+	{
+		if (strncmp(s, "#_D", 3))
 			continue;
 		s+=3;
-		if	(!*s || *s == '\r')
+		if (!*s || *s == '\r')
 			break;
 		code = (*s++) << 8;			/* Hibyte holen */
-		if	(!*s || *s == '\r')
+		if (!*s || *s == '\r')
 			break;
 		code |= *s++;				/* Lobyte holen */
 
 		switch(code)
-			{
+		{
 			case 'SW':
-				if	(!pass)
+				if (!pass)
 					break;
 				old_w = scndez();
 				old_h = scndez();
@@ -957,12 +970,12 @@ void load_status( int pass )
 				status.show_prticon = scnflg(); /* V2: clock */
 				status.disk_extinfo	= scnflg(); /* Alt: resvd0 */
 				status.dnam_init	= scnflg();
-				scnflg();		/* resvd1 */
+				status.auto_reload  = scnflg();		/* v5.05, previously reserved */
 				scnflg();		/* resvd2 */
 				break;
 
 			case 'S2':
-				if	(!pass)
+				if (!pass)
 					break;
 				status.copy_resident = scnflg();
 				status.copy_use_kobold = scnflg();
@@ -983,7 +996,7 @@ void load_status( int pass )
 				break;
 
 			case 'WN':
-				if	(!pass || ln_wind > ANZFENSTER)
+				if (!pass || ln_wind > ANZFENSTER)
 					break;
 				g = fensterg+ln_wind;
 
@@ -998,16 +1011,16 @@ void load_status( int pass )
 				/* Fensterpositionen fÅr Auflîsung umrechnen */
 				/* ----------------------------------------- */
 
-				if	(old_w != desk_g.g_w)
-					{
+				if (old_w != desk_g.g_w)
+				{
 					recalc(&(g->g_x), old_w, desk_g.g_w);
 					recalc(&(g->g_w), old_w, desk_g.g_w);
-					}
-				if	(old_h != desk_g.g_h)
-					{
+				}
+				if (old_h != desk_g.g_h)
+				{
 					recalc(&(g->g_y), old_h, desk_g.g_h);
 					recalc(&(g->g_h), old_h, desk_g.g_h);
-					}
+				}
 				g->g_x += desk_g.g_x;
 				g->g_y += desk_g.g_y;
 
@@ -1019,43 +1032,43 @@ void load_status( int pass )
 				/* Sliderposition, Pfad, Flags */
 				/* --------------------------- */
 
-				{
+			{
 				char buf[200],buf2[200];
 				char *name;
 				int shift,flags;
 
 				shift = scndez();
-				if	(shift < 0)
-					{
+				if (shift < 0)
+				{
 					switch(shift)
-						{
+					{
 						case -1: flags = WFLAG_ICONIFIED;
 								break;
 						case -2: flags = WFLAG_ICONIFIED+WFLAG_ALLICONIFIED;
 								break;
 						case -3: flags = WFLAG_ALLICONIFIED;
 								break;
-						}
-					shift = 0;
 					}
+					shift = 0;
+				}
 				else	flags = 0;
 
 				scnbstr(buf);
 
-				if	(*buf)	/* Fenster geîffnet */
-					{
+				if (*buf)	/* Fenster geîffnet */
+				{
 					name = get_name(buf);
 					strcpy(buf2, name);
 					*name = '\0';
 					create_wnd( ln_wind, buf, buf2, shift, flags, &err);
-					}
 				}
+			}
 				ln_wind++;
 				break;
 
 			case 'IC':
-				if	(pass)
-					{
+				if (pass)
+				{
 					int *obx,*oby;
 					int ich = (adr_icons+I_DSK)->ob_height + 1;
 
@@ -1063,39 +1076,39 @@ void load_status( int pass )
 					icon[ln_icns].is_alias = FALSE;
 					icon[ln_icns].icontyp = scndez();
 					icon[ln_icns].isdisk = scnflg() + '0';
-					if	(icon[ln_icns].isdisk == '@')
+					if (icon[ln_icns].isdisk == '@')
 						icon[ln_icns].isdisk = 0;
 					obx = &(fenster[0]->pobj+ln_icns+1)->ob_x;
 					oby = &(fenster[0]->pobj+ln_icns+1)->ob_y;
 					*obx = scndez();
 					*oby = scndez();
-					if	(old_w != desk_g.g_w)
+					if (old_w != desk_g.g_w)
 						recalc(obx, old_w, desk_g.g_w);
-					if	(*obx < 0)
+					if (*obx < 0)
 						*obx = 0;
-					if	(*obx >= desk_g.g_w-32)
+					if (*obx >= desk_g.g_w-32)
 						*obx = desk_g.g_w-32;
 
-					if	(old_h != desk_g.g_h)
+					if (old_h != desk_g.g_h)
 						recalc(oby, old_h, desk_g.g_h);
-					if	(*oby < 0)
+					if (*oby < 0)
 						*oby = 0;
-					if	(*oby >= desk_g.g_h-ich)
+					if (*oby >= desk_g.g_h-ich)
 						*oby = desk_g.g_h-ich;
 					*obx += desk_g.g_x;
 					*oby += desk_g.g_y;
-					if	(icon[ln_icns].icontyp >= ITYP_ORDNER)
+					if (icon[ln_icns].icontyp >= ITYP_ORDNER)
 						scnbstr(icon[ln_icns].text);
-					}
+				}
 
 				ln_icns++;
 				break;
 
 			case 'PG':
-				if	(!pass || ln_pgms >= ANZPROGRAMS)
+				if (!pass || ln_pgms >= ANZPROGRAMS)
 					break;
 				scnbstr(menuprograms[ln_pgms].path);
-				if	(menuprograms[ln_pgms].path[0] == '*')
+				if (menuprograms[ln_pgms].path[0] == '*')
 					strcpy(menuprograms[ln_pgms].path,
 						menuprograms[ln_pgms].path + 1);
 				ln_pgms++;
@@ -1104,15 +1117,15 @@ void load_status( int pass )
 			case	'K1':
 				p = &kachel_1;
 			 kachel:
-				if	(!pass)
+				if (!pass)
 					break;
 				scnbstr(dummy_s);
-				if	((i = (int) strlen(dummy_s)) > 0)
-					{
+				if ((i = (int) strlen(dummy_s)) > 0)
+				{
 					*p = Malloc(i+1);
-					if	(*p)
+					if (*p)
 						strcpy(*p, dummy_s);
-					}
+				}
 				break;
 
 			case	'K4':
@@ -1135,14 +1148,14 @@ void load_status( int pass )
 		/*	case 'AP':   in V3 nicht mehr verwendet */
 
 			case 'PP':
-				if	(!pass)
+				if (!pass)
 					break;
-				{
+			{
 				char	buf[200];
 				char *ziel1,*ziel2;
 
 				buf[0] = EOS;
-				if	(*s)
+				if (*s)
 					s++;
 				ziel1 = buf;
 				while((*s) && (*s != '\r') && (*s != '\n'))
@@ -1150,35 +1163,35 @@ void load_status( int pass )
 				*ziel1 = EOS;
 				ziel1 = ((adr_ttppar+TTPPAR_1)->ob_spec.tedinfo)->te_ptext;
 				ziel2 = ((adr_ttppar+TTPPAR_2)->ob_spec.tedinfo)->te_ptext;
-				if	(buf[0])
-					{
+				if (buf[0])
+				{
 					strncpy(ziel1, buf, TTPLEN);
-					if	(strlen(buf) >= TTPLEN)
-						{
+					if (strlen(buf) >= TTPLEN)
+					{
 						ziel1[TTPLEN] = EOS;
 						strcpy(ziel2, buf + TTPLEN);
-						}
 					}
 				}
+			}
 				break;
-			} /* END CASE */
-		} /* END FOR */
+		} /* END CASE */
+	} /* END FOR */
 
 	install:
 	Mfree(inf);
 
-	if	(!pass)		/* wollte nur n_icons bestimmen */
-		{
+	if (!pass)		/* wollte nur n_icons bestimmen */
+	{
 
 
 		n_deskicons = ln_icns + PLUSICONS;
 		gmemptr = Malloc(sizeof(ICON)        * n_deskicons +
 					  sizeof(OBJECT)      * (n_deskicons+1));
-		if	(!gmemptr)
-			{
+		if (!gmemptr)
+		{
 			err_alert(ENSMEM);
 			return;
-			}
+		}
 		fenster[0]->shownum  = fenster[0]->realnum = n_deskicons;
 		fenster[0]->pobj = (OBJECT *)      gmemptr;
 		icon		  	 = (ICON   *)      (fenster[0]->pobj + n_deskicons + 1);
@@ -1198,26 +1211,26 @@ void load_status( int pass )
 		dx = desk_g.g_x;
 		dy = desk_g.g_y;
 		for	(i = 0; i < n_deskicons; i++)
-			{
+		{
 			o++;
 			o->ob_next = i+2;
 			o->ob_head = o->ob_tail = -1;
 			o->ob_x = dx;
 			o->ob_y = dy;
 			dx += icw;
-			if	(dx+icw > desk_g.g_w)
-				{
+			if (dx+icw > desk_g.g_w)
+			{
 				dx = desk_g.g_x;
 				dy += ich;
-				if	(dy+ich > desk_g.g_h)
+				if (dy+ich > desk_g.g_h)
 					dy = desk_g.g_y;
-				}
-			o->ob_flags = o->ob_state = o->ob_type = 0;
 			}
+			o->ob_flags = o->ob_state = o->ob_type = 0;
+		}
 		o->ob_next = 0;
 		o->ob_flags = LASTOB;
 		return;
-		}
+	}
 
 	/* Farbe des Desktop-Hintergrunds */
 	/* ------------------------------ */
@@ -1292,25 +1305,25 @@ static void status_to_ascii(char *inf)
 
 	/* 2. Zeile: "#_DSW w h t a bb cccc ddddddddddddd"	*/
 	/* w	 Bildschirmbreite							*/
-	/* h  Bildschirmhîhe							*/
+	/* h  Bildschirmhîhe								*/
 	/* t	 Sortiertyp 0..4							*/
 	/* a  '0'/'1' = Anzeigen als Bilder/als Text 		*/
 	/* b  '08'/'09'/'10' = Punktgrîûe fÅr Text			*/
 	/* c  1col/isgr/isdat/iszeit						*/
-	/* d  status.blitstate							*/
-	/*	 status.cnfm_del							*/
-	/*	 status.cnfm_copy							*/
-	/*	 status.mode_ovwr							*/
-	/*	 status.check_free							*/
-	/*	 status.use_fldl							*/
-	/*	 status.resident							*/
-	/*	 status.show_all							*/
+	/* d  status.blitstate								*/
+	/*	 status.cnfm_del								*/
+	/*	 status.cnfm_copy								*/
+	/*	 status.mode_ovwr								*/
+	/*	 status.check_free								*/
+	/*	 status.use_fldl								*/
+	/*	 status.resident								*/
+	/*	 status.show_all								*/
 	/*	 status.show_prticon	V2: clock				*/
-	/*	 status.use_cache							*/
-	/*	 status.dnam_init							*/
-	/*	 status.resvd1								*/
-	/*	 status.resvd2								*/
-	/* --------------------------------------------------- */
+	/*	 status.use_cache								*/
+	/*	 status.dnam_init								*/
+	/*	 status.auto_reload								*/
+	/*	 status.resvd2									*/
+	/* ------------------------------------------------ */
 
 	prtdez(desk_g.g_w);
 	prtdez(desk_g.g_h);
@@ -1319,7 +1332,7 @@ static void status_to_ascii(char *inf)
 	*s++ = ' ';
 	prtflg(status.showtyp == M_ATEXT);
 /*
-	if	(status.points == M_8_PKT)
+	if (status.points == M_8_PKT)
 		i = 8;
 	else i = (status.points == M_9_PKT) ? 9 : 10;
 */
@@ -1343,7 +1356,7 @@ static void status_to_ascii(char *inf)
 	prtflg(status.show_prticon);	/* V2: clock */
 	prtflg(status.disk_extinfo);	/* V4: resvd0 */
 	prtflg(status.dnam_init);
-	*s++ = '0';	/* resvd1 */
+	prtflg(status.auto_reload);		/* v5.05, was resvd1 */
 	*s++ = '0';	/* resvd2 */
 
 	/* 3. Zeile: "#_DS2 aaaa b c x d e f g h i j"		*/
@@ -1361,7 +1374,7 @@ static void status_to_ascii(char *inf)
 	/* h	 status.font_is_prop						*/
 	/* i	 status.fontID								*/
 	/* j	 status.fontH								*/
-	/* --------------------------------------------------- */
+	/* ------------------------------------------------ */
 
 	prtstr("\r\n#_DS2 ");
 	prtflg(status.copy_resident);
@@ -1386,30 +1399,30 @@ static void status_to_ascii(char *inf)
 	/* 7. Zeile: "#_DKM path"						*/
 	/* Pfade fÅr Kachel-IMGs							*/
 
-	if	(kachel_1 && *kachel_1)
-		{
+	if (kachel_1 && *kachel_1)
+	{
 		prtstr("#_DK1 ");
 		prtstr(kachel_1);
 		prtstr("\r\n");
-		}
-	if	(kachel_4 && *kachel_4)
-		{
+	}
+	if (kachel_4 && *kachel_4)
+	{
 		prtstr("#_DK4 ");
 		prtstr(kachel_4);
 		prtstr("\r\n");
-		}
-	if	(kachel_8 && *kachel_8)
-		{
+	}
+	if (kachel_8 && *kachel_8)
+	{
 		prtstr("#_DK8 ");
 		prtstr(kachel_8);
 		prtstr("\r\n");
-		}
-	if	(kachel_m && *kachel_m)
-		{
+	}
+	if (kachel_m && *kachel_m)
+	{
 		prtstr("#_DKM ");
 		prtstr(kachel_m);
 		prtstr("\r\n");
-		}
+	}
 
 	/* 8. Zeile: "#_DEX ext_bat ext_btp					*/
 	/* -------------------------------------------------------- */
@@ -1427,43 +1440,43 @@ static void status_to_ascii(char *inf)
 	/* ------------------------------------------------------ */
 
 	for	(i = 1,pw=fenster+1,g=fensterg+1; i <= ANZFENSTER; i++,pw++,g++)
-		{
+	{
 		GRECT g2;
 
 		w = *pw;
 		prtstr("#_DWN");
 
-		if	(w)
-			{
-			if	(w->flags & WFLAG_ICONIFIED)
+		if (w)
+		{
+			if (w->flags & WFLAG_ICONIFIED)
 				wind_get_grect(w->handle, WF_UNICONIFY, &g2);
 			else	g2 = w->out;
-			}
+		}
 		else	g2 = *g;
 
 		prtdez(g2.g_x - desk_g.g_x);
 		prtdez(g2.g_y - desk_g.g_y);
 		prtdez(g2.g_w);
 		prtdez(g2.g_h);
-		if	(w)
+		if (w)
+		{
+			if (w->flags & WFLAG_ICONIFIED)
 			{
-			if	(w->flags & WFLAG_ICONIFIED)
-				{
-				if	(w->flags & WFLAG_ALLICONIFIED)
+				if (w->flags & WFLAG_ALLICONIFIED)
 					prtdez(-2);
 				else	prtdez(-1);
-				}
-			else	if	(w->flags & WFLAG_ALLICONIFIED)
+			}
+			else	if (w->flags & WFLAG_ALLICONIFIED)
 				prtdez(-3);
 			else	prtdez(w->yscroll);
 			*s++ = ' ';
 			prtstr(w->path );
 			prtstr(w->maske);
-			}
+		}
 		else prtdez(0);
 		*s++ = '\r';
 		*s++ = '\n';
-		}
+	}
 
 	/* "#_DIC typ c x y path" */
 	/* ---------------------- */
@@ -1471,24 +1484,24 @@ static void status_to_ascii(char *inf)
 	for	(i = 0, ic=icon, o = fenster[0]->pobj+1;
 		 i < n_deskicons;
 		 i++,ic++,o++)
+	{
+		if (ic->icontyp)
 		{
-		if	(ic->icontyp)
-			{
 			prtstr("#_DIC");
 			prtdez(ic->icontyp);
 			*s++ = ' ';
 			*s++ = (ic->isdisk) ? (ic->isdisk) : '@';
 			prtdez(o->ob_x - desk_g.g_x + o->ob_spec.iconblk->ib_xicon);
 			prtdez(o->ob_y - desk_g.g_y);
-			if	(ic->icontyp >= ITYP_ORDNER)
-				{
+			if (ic->icontyp >= ITYP_ORDNER)
+			{
 				*s++ = ' ';
 				prtstr(ic->text);
-				}
+			}
 			*s++ = '\r';
 			*s++ = '\n';
-			}
 		}
+	}
 
 	/* "#_DAP path typ ext1 ext2"		*/
 	/* wird in V3 nicht mehr verwendet */
@@ -1498,12 +1511,12 @@ static void status_to_ascii(char *inf)
 	/* ----------- */
 
 	for	(i = 0; i < ANZPROGRAMS; i++)
-		{
+	{
 		prtstr("#_DPG ");
 		prtstr(menuprograms[i].path);
 		*s++ = '\r';
 		*s++ = '\n';
-		}
+	}
 
 	/* "#_DPP line" */
 	/* ------------ */
@@ -1528,22 +1541,22 @@ void save_status(int is_inf)
 
 	Mgraf_mouse(HOURGLASS);
 	inf = (char *) Malloc(65536L);
-	if	(inf == NULL)
-		{
+	if (inf == NULL)
+	{
 		doserr = ENSMEM;
 		goto ende;
-		}
+	}
 
-	if	(is_inf)
-		{
+	if (is_inf)
+	{
 		doserr = Fopen(inf_name, RMODE_RW);
 		handle = (int) doserr;
-		if	(doserr == EFILNF)
-			{
+		if (doserr == EFILNF)
+		{
 			doserr = Fcreate(inf_name, 0);
 			handle = (int) doserr;
-			if	(doserr > E_OK)
-				{
+			if (doserr > E_OK)
+			{
 				char *os_ver_s2 =
 						"#_MAG MAG!X v__.__\r\n"
 						"#[boot]\r\n"
@@ -1553,24 +1566,24 @@ void save_status(int is_inf)
 				strncpy(os_ver_s2+13, os_ver_s+7, 5);
 				Fwrite( (int) doserr, strlen(os_ver_s2), os_ver_s2);
 				Fseek(0L, handle, SEEK_SET);
-				}
 			}
-		if	(doserr < E_OK)
+		}
+		if (doserr < E_OK)
 			goto ende;
 		doserr = Fread(handle, 32768L, inf);
-		if	(doserr < E_OK)
+		if (doserr < E_OK)
 			goto ende;
 		s = inf;
 		while(strncmp(s, "#_CTR", 5))
+		{
+			if (!scnlin())
 			{
-			if	(!scnlin())
-				{
 				err2:
 				doserr = ERROR;
 				goto ende;			/* unerwartetes Dateiende */
-				}
 			}
-		if	(!scnlin())
+		}
+		if (!scnlin())
 			goto err2;
 		t = s;					/* Beginn der neuen Daten */
 		shel_get(s, 128);
@@ -1578,16 +1591,17 @@ void save_status(int is_inf)
 		deflt_topwnr = (tw) ? tw->wnr : -1;
 		status_to_ascii(t + 128);
 		Fseek(t - inf, handle, SEEK_SET);	/* Dateizeiger auf Kontrollfeld */
-		doserr = Fwrite(handle, 128 + strlen(t+128), t);
-		if	(doserr != 128 + strlen(t+128))
-			{
-			if	(doserr >= E_OK)
+		doserr = Fwrite(handle, 128 + strlen(t + 128), t);
+		if (doserr != 128 + strlen(t + 128))
+		{
+			if (doserr >= E_OK)
 				doserr = EWRITF;
 			goto ende;
-			}
-		Fshrink(handle);
 		}
-	else	{
+		Fshrink(handle);
+	}
+	else
+	{
 		unsigned int len;
 
 		doserr = E_OK;
@@ -1596,26 +1610,27 @@ void save_status(int is_inf)
 		inf[len] = EOS;
 		s = inf;
 		status_to_ascii(s + 128);
-		if	(!shel_put(inf, 128 + ((unsigned int) strlen(inf+128) + 1)))
+		if (!shel_put(inf, 128 + ((unsigned int) strlen(inf+128) + 1)))
 			Rform_alert(1, ALRT_OVL_AES_BUF);
-		}
+	}
 
 	ende:
 
-	if	(handle > 0)
+	if (handle > 0)
 		Fclose(handle);
-	if	(inf)
+	if (inf)
 		Mfree(inf);
-	if	(!is_inf && gmemptr)
-		{
+
+	if (!is_inf && gmemptr)
+	{
 		Mfree(gmemptr);
 		gmemptr = NULL;
 
 		icon = NULL;
 		fenster[0]->pobj = NULL;
 
-		}
-	if	(doserr < E_OK)
+	}
+	if (doserr < E_OK)
 		err_alert(doserr);
 	Mgraf_mouse(ARROW);
 }
@@ -1637,57 +1652,59 @@ void reload_status(int drv)
 
 	Mgraf_mouse(HOURGLASS);
 	olddrv = inf_name[0];
-	if	(drv >= 0)
+	if (drv >= 0)
 		inf_name[0] = drv + 'A';
 	inf = (char *) Malloc(65536L);
-	if	(inf == NULL)
-		{
+	if (inf == NULL)
+	{
 		doserr = ENSMEM;
 		goto err;
-		}
+	}
 
 	doserr = Fopen(inf_name, RMODE_RD);
-	if	(doserr == EFILNF)
-		{
-		if	(1 != Rxform_alert(2, ALRT_NO_INF_AT_X,
+	if (doserr == EFILNF)
+	{
+		if (1 != Rxform_alert(2, ALRT_NO_INF_AT_X,
 					inf_name[0], NULL))
-			{
+		{
 			inf_name[0] = olddrv;
 			Mgraf_mouse(ARROW);
 			Mfree(inf);
 			return;
-			}
-		goto getit;
 		}
+		goto getit;
+	}
+
 	handle = (int) doserr;
-	if	(doserr < E_OK)
-		{
+	if (doserr < E_OK)
+	{
 		err:
 
-		if	(handle > 0)
+		if (handle > 0)
 			Fclose(handle);
 		Mgraf_mouse(ARROW);
 		err_alert(doserr);
-		if	(inf)
+		if (inf)
 			Mfree(inf);
 		return;
-		}
+	}
+
 	doserr = Fread(handle, 65535L, inf);
 	Fclose(handle);
-	if	(doserr < E_OK)
+	if (doserr < E_OK)
 		goto err;
 	inf[doserr] = EOS;
 	s = inf;
 	while(strncmp(s, "#_CTR", 5))
+	{
+		if (!scnlin())
 		{
-		if	(!scnlin())
-			{
 			err2:
 			doserr = ERROR;
 			goto err;			/* unerwartetes Dateiende */
-			}
 		}
-	if	(!scnlin())
+	}
+	if (!scnlin())
 		goto err2;
 	shel_put(s, (unsigned int) strlen(s) + 1);
 	getit:

@@ -26,7 +26,7 @@
 char *os_ver_s = "MagiC v__.__  vom __.__.____";
 static AESVARS *aesvars;
 
-void get_syshdr( void )
+void get_syshdr(void)
 {
 	aesvars = *((AESVARS **) (aes_global+11));
 	if	(aesvars->magic2 != 'MAGX')
@@ -38,7 +38,7 @@ void get_syshdr( void )
 	os_ver_s[10] = (((aesvars->version) >> 4) & 0xf) +'0';
 	os_ver_s[11] = (((aesvars->version)     ) & 0xf) +'0';
 
-	if	(aesvars->release < 3)
+	if (aesvars->release < 3)
 		os_ver_s[12] = *("àáâ" + (aesvars->release));
 
 	os_ver_s[18] = (((aesvars->date) >> 28)      ) + '0';
@@ -61,17 +61,17 @@ void get_syshdr( void )
 /*
 int change_res(int dev, int txt)
 {
-	if	(!aesvars)
+	if (!aesvars)
 		return(0);
 #if		COUNTRY==FRG
-	if	(1 != form_alert(1, "[2][Aufl”sungswechsel ?][ OK | Abbruch ]"))
+	if (1 != form_alert(1, "[2][Aufl”sungswechsel ?][ OK | Abbruch ]"))
 		return(0);
 #elif	COUNTRY==USA
-	if	(1 != form_alert(1, "[2][Change resolution ?][ OK | Cancel ]"))
+	if (1 != form_alert(1, "[2][Change resolution ?][ OK | Cancel ]"))
 		return(0);
 #endif
 	aesvars->chgres(dev, txt);
-	return(1);
+	return 1;
 }
 */
 
@@ -84,7 +84,7 @@ int change_res(int dev, int txt)
 
 int alt_keycode_2_ascii(int keycode)
 {
-	return((int) xbios(39, 'AnKr', 1, keycode));
+	return (int) xbios(39, 'AnKr', 1, keycode);
 }
 
 
@@ -96,7 +96,7 @@ int alt_keycode_2_ascii(int keycode)
 
 COOKIE *getcookie(long key)
 {
-	return((COOKIE *) xbios(39, 'AnKr', 4, key));
+	return (COOKIE *) xbios(39, 'AnKr', 4, key);
 }
 
 
@@ -116,16 +116,17 @@ long read_bootsec(int lw, long *ser, int *bps, int *spc,
 	unsigned int  *sw;
 
 
-	if	(NULL == (s = Malloc(512L)))
-		return(ENSMEM);
+	if (NULL == (s = Malloc(512L)))
+		return ENSMEM ;
 	doserr = Rwabs(0, s, 1, 0, lw);
 /*
-	if	(lw == 0 || lw == 1)
+	if (lw == 0 || lw == 1)
 		doserr = M_Floprd(s, NULL, lw, 1, 0, 0, 1);
-	else doserr = Rwabs(0, s, 1, 0, lw);
+	else
+		doserr = Rwabs(0, s, 1, 0, lw);
 */
 	if	(doserr == E_OK)
-		{
+	{
 		*ser    = s[10] + 256 * s[ 9] + 65536L * s[8];
 		*bps    = s[11] + 256 * s[12];
 		*spc    = s[13];
@@ -134,15 +135,18 @@ long read_bootsec(int lw, long *ser, int *bps, int *spc,
 		*ndirs  = s[17] + 256 * s[18];
 		*nsects = s[19] + 256 * s[20];
 		*media  = s[21];
-		*spf	   = s[22] + 256 * s[23];
-		*spt	   = s[24] + 256 * s[25];
+		*spf    = s[22] + 256 * s[23];
+		*spt    = s[24] + 256 * s[25];
 		*nsides = s[26] + 256 * s[27];
 		*nhid   = s[28] + 256 * s[29];
 		*exec   = 0;
 		for	(sw = (unsigned int *) s; (unsigned char *) sw < s+512; sw++)
+		{
 			*exec += *sw;
-		*exec = (*exec == 0x1234);
 		}
+		*exec = (*exec == 0x1234);
+	}
+
 	Mfree(s);
 	return(doserr);
 }
@@ -156,19 +160,20 @@ long read_bootsec(int lw, long *ser, int *bps, int *spc,
 
 static void *rsc_block;
 
-long restart( void )
+long restart(void)
 {
-	extern   BASPAG *_BasPag;
+	extern BASPAG *_BasPag;
 
 	*(aesvars->shel_vector) = NULL;
 	*((void **) (aes_global+7)) = rsc_block;
 	rsc_block = NULL;
-	return(Pexec(EXE_EXFR, "", _BasPag, NULL));
+	return Pexec(EXE_EXFR, "", _BasPag, NULL);
 }
-void res_exec( void )
+
+void res_exec(void)
 {
-	rsc_block = *((void **) (aes_global+7));
-	*((void **) (aes_global+7)) = NULL;
+	rsc_block = *((void **) (aes_global + 7));
+	*((void **) (aes_global + 7)) = NULL;
 	appl_exit();
 	*(aesvars->shel_vector) = restart;
 	Ptermres(-1L, 0);		/* allen Speicher behalten */

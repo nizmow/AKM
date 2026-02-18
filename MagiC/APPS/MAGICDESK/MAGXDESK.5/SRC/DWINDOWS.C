@@ -371,7 +371,7 @@ static void set_info( WINDOW *mywindow )
 		{
 			int lwc;
 			/* long percent; */
-			unsigned long bytes;
+			/* unsigned long bytes; */
 			DISKINFO di;
 			DISKINFO *d;
 
@@ -2210,13 +2210,13 @@ static int find_filename( WINDOW *w, char *fname )
 *
 ****************************************************************/
 
-void dirwindow_autoupdate( void )
+void dirwindow_autoupdate(void)
 {
 	register int wnr,j;
 	register WINDOW **pw,*w;
 	LONG err;
 	XATTR xa;
-	char old_sel[MAX_SELMASK+1];
+	char old_sel[MAX_SELMASK + 1];
 	MYDTA **old_pmydta;
 	OBJECT *old_pobj;
 	char *old_memblk;
@@ -2232,15 +2232,17 @@ void dirwindow_autoupdate( void )
 
 
 	if (is_MgMc < 0)
+	{
 		is_MgMc = (getcookie('MgMc') != NULL);
+	}
 
-	for	( wnr = 1,pw = fenster+1; wnr <= ANZFENSTER; wnr++,pw++)
+	for	(wnr = 1,pw = fenster + 1; wnr <= ANZFENSTER; wnr++,pw++)
 	{
 		w = *pw;
 		if ((!w) || (w->flags & WFLAG_ICONIFIED))
 			continue;
 		if ((!is_MgMc) && (w->real_drive < 2))
-			continue;		/* Auf Atari und PC nicht fr A: B: */ 
+			continue;		/* Auf Atari und PC nicht fr A: B: */
 
 		err = Fxattr( 0, w->path, &xa );
 		if ((!err) && (
@@ -2949,104 +2951,130 @@ static void MY_keyed( WINDOW *w, int kstate, int key )
 	switch(key)
 	{
 /* Einfg */
-		case 0x5200:	/*w->fulled(w);*/
-					optimalsize_wnd(w);
-					break;
-/* Pos1  */
-		case	0x4700:	w->arrowed(w, -1);
-					break;
-/* SH-Pos1 */
-		case 0x4737:	w->arrowed(w, -2);
-					break;
-/* Cursor up */
-		case 0x4800:	w->arrowed(w, WA_UPLINE);
-					break;
-/* Cursor down */
-		case 0x5000:	w->arrowed(w, WA_DNLINE);
-					break;
-/* SH-Cursor up */
-		case 0x4838:	w->arrowed(w, WA_UPPAGE);
-					break;
-/* SH-Cursor dwn */
-		case 0x5032:	w->arrowed(w, WA_DNPAGE);
-					break;
-/* Esc */
-		case 0x011b:	if (shift)
-					{
-						errcode = Dlock(1, w->real_drive);
-						if (errcode < 0)
-						{
-							root[0] = w->real_drive + 'A';
-							err_file = root;
-							err_alert(errcode);
-						}
-						else	Dlock(0, w->real_drive);
-					}
-					dirty_drives[w->real_drive] = TRUE;
-					break;
-/* ^H */
-		case 0x2308:	control_h:
-					parent_path(w);
-					break;
-/* BS */
-		case 0x0e08:	if (kstate & (K_CTRL))
-						goto control_h;
-					len = (int) strlen(w->sel_maske);
-					if (!len)
-						break;
-					if (len > 2)
-					{
-						w->sel_maske[len-2] = '*';
-						w->sel_maske[len-1] = EOS;
-					}
-					else
-					{
-						w->sel_maske[0] = EOS;
-					}
-					upd_selmask(w);
-					break;
-/* Undo */
-		case 0x6100:	if (w->path[3])
-					{
-						w->path[3] = '\0';
-						upd_path(w, FALSE);
-					}
-					break;
+		case 0x5200:
+			/*w->fulled(w);*/
+			optimalsize_wnd(w);
+			break;
 
-		default:		n = key & 0xff;
-					len = (int) strlen(w->sel_maske);
-					if (n == ' ')
-					{
-						if (!len)
-							break;
-						if (w->sel_maske[len-1] == '*')
-						{
-							w->sel_maske[len-1] = EOS;
-							upd_selmask(w);
-						}
-					}
-					else
-					if ((n > ' ') && (len < MAX_SELMASK))
-					{
-						if (!len)
-						{
-							dsel_all();
-							w->sel_maske[0] = '*';
-							len++;
-						}
-						if (w->sel_maske[len-1] != '*')
-						{
-							w->sel_maske[len] = toupper(n);
-						}
-						else
-						{
-							w->sel_maske[len-1] = toupper(n);
-							w->sel_maske[len] = '*';
-						}
-						w->sel_maske[len+1] = EOS;
-						upd_selmask(w);
-					}
+/* Pos1  */
+		case 0x4700:
+			w->arrowed(w, -1);
+			break;
+
+/* SH-Pos1 */
+		case 0x4737:
+			w->arrowed(w, -2);
+			break;
+
+/* Cursor up */
+		case 0x4800:
+			w->arrowed(w, WA_UPLINE);
+			break;
+
+/* Cursor down */
+		case 0x5000:
+			w->arrowed(w, WA_DNLINE);
+			break;
+
+/* SH-Cursor up */
+		case 0x4838:
+			w->arrowed(w, WA_UPPAGE);
+			break;
+
+/* SH-Cursor dwn */
+		case 0x5032:
+			w->arrowed(w, WA_DNPAGE);
+			break;
+
+/* Esc */
+		case 0x011b:
+			if (shift)
+			{
+				errcode = Dlock(1, w->real_drive);
+				if (errcode < 0)
+				{
+					root[0] = w->real_drive + 'A';
+					err_file = root;
+					err_alert(errcode);
+				}
+				else
+				{
+					Dlock(0, w->real_drive);
+				}
 			}
+			dirty_drives[w->real_drive] = TRUE;
+			break;
+
+/* ^H */
+		case 0x2308:
+			control_h:
+			parent_path(w);
+			break;
+
+/* BS */
+		case 0x0e08:
+			if (kstate & (K_CTRL))
+				goto control_h;
+
+			len = (int) strlen(w->sel_maske);
+			if (!len)
+				break;
+			if (len > 2)
+			{
+				w->sel_maske[len-2] = '*';
+				w->sel_maske[len-1] = EOS;
+			}
+			else
+			{
+				w->sel_maske[0] = EOS;
+			}
+			upd_selmask(w);
+			break;
+
+/* Undo */
+		case 0x6100:
+			if (w->path[3])
+			{
+				w->path[3] = '\0';
+				upd_path(w, FALSE);
+			}
+			break;
+
+		default:
+			n = key & 0xff;
+			len = (int) strlen(w->sel_maske);
+			if (n == ' ')
+			{
+				if (!len)
+					break;
+				if (w->sel_maske[len-1] == '*')
+				{
+					w->sel_maske[len-1] = EOS;
+					upd_selmask(w);
+				}
+			}
+			else
+			if ((n > ' ') && (len < MAX_SELMASK))
+			{
+				if (!len)
+				{
+					dsel_all();
+					w->sel_maske[0] = '*';
+					len++;
+				}
+				if (w->sel_maske[len-1] != '*')
+				{
+					w->sel_maske[len] = toupper(n);
+				}
+				else
+				{
+					w->sel_maske[len-1] = toupper(n);
+					w->sel_maske[len] = '*';
+				}
+				w->sel_maske[len+1] = EOS;
+				upd_selmask(w);
+			}
+	} /* switch */
 }
 
 
