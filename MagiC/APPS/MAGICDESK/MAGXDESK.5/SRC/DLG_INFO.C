@@ -17,12 +17,12 @@
 typedef struct _ifd
 {
 	struct _ifd *next;	/* Verkettungszeiger */
-	DIALOG *dialog;		/* Zeiger auf DIALOG oder NULL (kein Fenster */
+	DIALOG *dialog;		/* Zeiger auf DIALOG oder NULL (kein Fenster) */
 	WORD whdl;			/* Handle des Fensters oder -1 */
 	OBJECT *tree;		/* Objektbaum */
 
-	int isfolder;
-	int isdrive;
+	int isfolder;		/* Diese Instanz wird fr "Folder Info" verwendet. */
+	int isdrive;		/* Diese Instanz wird fr einen "Drive Info" verwendet. */
 	int isdeskalias;	/* Desktop-Icon (Datei oder Ordner) */
 	MYDTA f;			/* alle Infos ber die Datei */
 	char altname[65];	/* alter Dateiname */
@@ -30,8 +30,8 @@ typedef struct _ifd
 	XTED fname_xted;	/* Fr den Dateinamen */
 	TEDINFO fname_ted;
 
-	char altalias[ALIAS_MAXLEN+1];
-	char neualias[ALIAS_MAXLEN+1];
+	char altalias[ALIAS_MAXLEN + 1];
+	char neualias[ALIAS_MAXLEN + 1];
 	XTED alias_xted;
 	TEDINFO alias_ted;
 
@@ -43,7 +43,7 @@ typedef struct _ifd
 	CICONBLK cic;		/* Fr das Icon rechts oben */
 	OBJECT _tree[INFO_FILE_NOBJS];
 
-	char _varstrings[0];
+	char _varstrings[0];	/* Alle nicht editierbaren Zeichenketten */
 } INFO_FILE_DATA;
 
 
@@ -56,7 +56,11 @@ static WORD cdecl hdl_info_file(
 				WORD exitbutton, WORD clicks,
 				void *data);
 
-static int variable_strings[] =
+/*
+ IDs der festen Zeichenketten im Info-Dialog, die je nach Instanz
+ ge„ndert werden, z.B. "Anzahl Bytes" oder Dateiname.
+*/
+static const int variable_strings[] =
 {
 	FI_SIZE,
 	FI_DATUM,
@@ -115,9 +119,10 @@ int info_file(char *path, int drv, MYDTA *f,
 			int isfolder, int isdrive, int isdeskalias,
 			int weiter, int number)
 {
-	INFO_FILE_DATA *ifd;
+	INFO_FILE_DATA *ifd;	/* das Objekt, das die gesamte Dialog-Instanz enth„lt */
 	int ret;
 	int x,y;
+	int title_rsc_id;
 	char *wintitle;
 	static long len_of_varstrings = 0;
 	int *obx;
@@ -126,9 +131,9 @@ int info_file(char *path, int drv, MYDTA *f,
 
 
 
-	/* Beim ersten Aufruf die L„nge aller	*/
-	/* variablen G_STRINGs addieren		*/
-	/* ------------------------------------ */
+	/* Beim ersten Aufruf die L„nge aller */
+	/* variablen G_STRINGs addieren       */
+	/* ---------------------------------- */
 
 	if (!len_of_varstrings)
 	{
@@ -152,26 +157,29 @@ int info_file(char *path, int drv, MYDTA *f,
 	memcpy(ifd->_tree, adr_datinf, INFO_FILE_NOBJS * sizeof(OBJECT));
 	ifd->tree = ifd->_tree;
 
-	/* TEDINFOs erstellen */
-	/* ------------------ */
+	/* TEDINFOs (Text-Eingabefelder) erstellen */
+	/* --------------------------------------- */
 
-	memcpy(&ifd->fname_ted, (adr_datinf+FI_FILENAME)->ob_spec.tedinfo,
-			sizeof(TEDINFO));
-	(ifd->tree+FI_FILENAME)->ob_spec.tedinfo = &ifd->fname_ted;
+	memcpy(&ifd->fname_ted, (adr_datinf+FI_FILENAME)->ob_spec.tedinfo, sizeof(TEDINFO));
+	(ifd->tree + FI_FILENAME)->ob_spec.tedinfo = &ifd->fname_ted;
 
-	memcpy(&ifd->alias_ted, (adr_datinf+FI_ALIAS)->ob_spec.tedinfo,
-			sizeof(TEDINFO));
-	(ifd->tree+FI_ALIAS)->ob_spec.tedinfo = &ifd->alias_ted;
+	memcpy(&ifd->alias_ted, (adr_datinf+FI_ALIAS)->ob_spec.tedinfo, sizeof(TEDINFO));
+	(ifd->tree + FI_ALIAS)->ob_spec.tedinfo = &ifd->alias_ted;
 
-	/* variable "free_string"s erstellen */
-	/* --------------------------------- */
+	/* Zu ver„ndernde "free_string"s (feste Zeichenketten, nicht editierbar) erstellen */
+	/* ------------------------------------------------------------------------------- */
 
-	for	(obx = variable_strings,_varstrings = ifd->_varstrings;
-			*obx;
-		obx++)
+	for	(obx = variable_strings, _varstrings = ifd->_varstrings;
+		 *obx;
+		 obx++)
 	{
-		l = strlen(ifd->tree[*obx].ob_spec.free_string) + 1;
+		/* Die L„nge entspricht der im ursprnglichen Baum, festgelegt in der .RSC-Datei. */
+		l = strlen(ifd->tree[*obx].ob_spec.free_string) + 1;	/* +1 wegen end-of-string */
+		/* Wir biegen den Zeiger in unserer Kopie des Objektbaums um. */
 		ifd->tree[*obx].ob_spec.free_string = _varstrings;
+		/* Zur Sicherheit, falls etwas schiefl„uft, initialisieren wir den Text mit einem Marker. */
+		_varstrings[0] = '-';
+		_varstrings[1] = '\0';
 		_varstrings += l;
 	}
 	
@@ -218,14 +226,24 @@ if (n_info_file_dialogs > 4)
 
 	x = 100 + (number << 2);
 	if ((desk_g.g_w >= 800) && (number & 1))
-		x += ifd->tree->ob_width+32;
+	{
+		x += ifd->tree->ob_width + 32;
+	}
 	y = desk_g.g_y + (number << 2) + 20;
 	if (desk_g.g_h >= 460)
+	{
 		y += 80;
+	}
 
 	if (isfolder)
-		wintitle = (isdrive) ? "Laufwerk-Informationen" : "Ordner-Informationen";
-	else	wintitle = "Datei-Informationen";
+	{
+		title_rsc_id = (isdrive) ? STR_TIT_DLG_DRIV : STR_TIT_DLG_FOLD;
+	}
+	else
+	{
+		title_rsc_id = STR_TIT_DLG_FILE;
+	}
+	wintitle = Rgetstring(title_rsc_id);
 
 	ifd->whdl = wdlg_open(ifd->dialog, wintitle,
 					NAME + MOVER + CLOSER, x, y, 0, NULL);
@@ -260,7 +278,7 @@ static void resize_info_file_tree(INFO_FILE_DATA *ifd)
 	int vislen;
 	XTED *xted;
 	TEDINFO *t;
-	int editob,cursorpos;
+	int editob, cursorpos;
 
 
 	d = ifd->dialog;
@@ -278,17 +296,17 @@ static void resize_info_file_tree(INFO_FILE_DATA *ifd)
 
 	tree = ifd->tree;
 
-	o = tree+FI_SIZER;
+	o = tree + FI_SIZER;
 	o->ob_x = tree->ob_width - o->ob_width;
 	o->ob_y = tree->ob_height - o->ob_height;
 
-	o = tree+FI_ICON;
+	o = tree + FI_ICON;
 	o->ob_x = tree->ob_width - o->ob_width - 2 * gl_hwchar;
 
-	o = tree+FI_CAN;
+	o = tree + FI_CAN;
 	o->ob_x = tree->ob_width - o->ob_width - 2 * gl_hwchar;
 
-	o2 = tree+FI_OK;
+	o2 = tree + FI_OK;
 	o2->ob_x = o->ob_x - o2->ob_width - 2 * gl_hwchar;
 
 	if (!ifd->is_8_3)
@@ -357,7 +375,9 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 
 	tree = ifd->tree;
 	if (ifd->isdrive)
+	{
 		objs_hide(tree, FI_FILEATTR, FI_TIMEDATE, 0);
+	}
 	else
 	{
 		objs_hide(tree, FI_DRIVEATTR, FI_DISKLETTER, 0);
@@ -379,9 +399,10 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 
 		ifd->cic = *diskname_to_iconblk(ifd->path[0], NULL);
 		err = Dreadlabel(ifd->path, ifd->altname, 65);
-		if (err != E_OK && err != EFILNF && err != ENMFIL)
+		if ((err != E_OK) && (err != EFILNF) && (err != ENMFIL))
 		{
 			 fehler:
+/*Cconws("HALLO1\r\n");*/
 			err_alert(err);
 			return -1;
 		}
@@ -392,11 +413,11 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 			goto fehler;
 	
 		/* Anzahl von Clustern auf dem Laufwerk: */
-		ultoa(frei.b_total, (tree+DI_CLUST)->ob_spec.free_string, 10);
+		ultoa(frei.b_total, (tree + DI_CLUST)->ob_spec.free_string, 10);
 		/* Sektoren pro Cluster: */
-		ultoa(frei.b_clsiz, (tree+DI_SECCL)->ob_spec.free_string, 10);
+		ultoa(frei.b_clsiz, (tree + DI_SECCL)->ob_spec.free_string, 10);
 		/* Bytes pro Sektor: */
-		ultoa(frei.b_secsiz,(tree+DI_BYSEC)->ob_spec.free_string, 10);
+		ultoa(frei.b_secsiz,(tree + DI_BYSEC)->ob_spec.free_string, 10);
 		/* Bytes pro Cluster: */
 		frei.b_secsiz *= frei.b_clsiz;
 	
@@ -426,11 +447,13 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 							   &media,&spf,&spt,&nsides,&nhid,&exec);
 			if (err != E_OK)
 				goto fehler;
+
 			if (nsides <= 0 || spt <= 0 || nsects <= 0)
 			{
 				err = EMEDIA;
 				goto fehler;
 			}
+
 			flp_info = ifd->altalias;
 			(tree+DI_FLOP)->ob_spec.free_string = flp_info;
 			flp_info[0] = EOS;
@@ -443,9 +466,13 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 			objs_unhide(tree, DI_FLOP, 0);
 			if (exec)
 				objs_unhide(tree, DI_EXEC, 0);
-			else	objs_hide  (tree, DI_EXEC, 0);
+			else
+				objs_hide(tree, DI_EXEC, 0);
 		}
-		else objs_hide  (tree, DI_FLOP, DI_EXEC, 0);
+		else
+		{
+			objs_hide(tree, DI_FLOP, DI_EXEC, 0);
+		}
 
 		ifd->extended_view = status.disk_extinfo;
 		if (ifd->extended_view)
@@ -466,7 +493,7 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 		ifd->cic = ifd->f.ciconblk;
 	}
 
-	if (init_xted(tree+FI_FILENAME, ifd->path, &ifd->fname_xted,
+	if (init_xted(tree + FI_FILENAME, ifd->path, &ifd->fname_xted,
 				ifd->neuname,
 				ifd->altname,
 				&ifd->is_8_3, 22))
@@ -478,11 +505,11 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 	ifd->cic.monoblk.ib_xicon = ifd->cic.monoblk.ib_yicon =
 		ifd->cic.monoblk.ib_wtext = 0;
 
-	o = tree+FI_SIZER;
+	o = tree + FI_SIZER;
 	o->ob_x = tree->ob_width - o->ob_width;
 	o->ob_y = tree->ob_height - o->ob_height;
 
-	o = tree+FI_ICON;
+	o = tree + FI_ICON;
 	o->ob_type = G_CICON;
 	o->ob_spec.ciconblk = &ifd->cic;
 	o->ob_width = ifd->cic.monoblk.ib_wicon;
@@ -491,7 +518,8 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 
 	if (weiter)
 		tree[FI_CONT].ob_flags &= ~HIDETREE;
-	else	tree[FI_CONT].ob_flags |= HIDETREE;
+	else
+		tree[FI_CONT].ob_flags |= HIDETREE;
 
 	/* Datei ist ein Alias oder ein Desktop-Alias */
 	/* ------------------------------------------ */
@@ -520,7 +548,7 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 /*		objs_unhide(tree, FI_ISALI, FI_ALIAS, 0);	*/
 
 		strcpy(ifd->neualias, ifd->altalias);
-		t = (tree+FI_ALIAS)->ob_spec.tedinfo;
+		t = (tree + FI_ALIAS)->ob_spec.tedinfo;
 		xted = &ifd->alias_xted;
 
 		t->te_ptext = ifd->neualias;
@@ -540,7 +568,7 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 		t->te_pvalid = (void *) xted;
 		vislen = (tree->ob_width / gl_hwchar) - 4;
 		xted->xte_vislen = vislen;
-		(tree+FI_ALIAS)->ob_width = vislen*gl_hwchar;
+		(tree + FI_ALIAS)->ob_width = vislen*gl_hwchar;
 	}
 	else
 	{
@@ -571,6 +599,7 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 		bytes[0] = 0L;
 		if (err != E_OK)
 		{
+/*Cconws("HALLO2\r\n");*/
 			err_alert(err);
 			bytes[1] = 0;
 		}
@@ -597,7 +626,7 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 	}
 
 	print_ull(bytes, (tree+FI_SIZE)->ob_spec.free_string);
-	strcat((tree+FI_SIZE)->ob_spec.free_string, " Bytes");
+	strcat((tree + FI_SIZE)->ob_spec.free_string, " Bytes");
 
 	return 0;
 }
@@ -723,7 +752,10 @@ static long exit_info_file_tree(INFO_FILE_DATA *ifd)
 
 	Mgraf_mouse(ARROW);
 	if (err < E_OK)
+	{
+/*Cconws("HALLO3\r\n");*/
 		err_alert(err);
+	}
 
 	/* Status fr erweiterte Informationen merken */
 	/* ------------------------------------------ */

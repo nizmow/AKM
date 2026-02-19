@@ -237,38 +237,44 @@
 
 #define STR_FULL         22  /* Freier String */
 
-#define ALRT_PRINT       23  /* Alert String */
+#define STR_TIT_DLG_DRIV 23  /* Freier String */
 
-#define ALRT_NO_KOBOLD   24  /* Alert String */
+#define STR_TIT_DLG_FOLD 24  /* Freier String */
 
-#define ALRT_STOP_PROC   25  /* Alert String */
+#define STR_TIT_DLG_FILE 25  /* Freier String */
 
-#define ALRT_CONT_LNAMES 26  /* Alert String */
+#define ALRT_PRINT       26  /* Alert String */
 
-#define ALRT_APPISACTIVE 27  /* Alert String */
+#define ALRT_NO_KOBOLD   27  /* Alert String */
 
-#define ALRT_NO_MORE_WND 28  /* Alert String */
+#define ALRT_STOP_PROC   28  /* Alert String */
 
-#define ALRT_CANT_OPEN   29  /* Alert String */
+#define ALRT_CONT_LNAMES 29  /* Alert String */
 
-#define ALRT_NO_PGM_ASNG 30  /* Alert String */
+#define ALRT_APPISACTIVE 30  /* Alert String */
 
-#define ALRT_DD_NO_CMDLN 31  /* Alert String */
+#define ALRT_NO_MORE_WND 31  /* Alert String */
 
-#define ALRT_DD_FAILURE  32  /* Alert String */
+#define ALRT_CANT_OPEN   32  /* Alert String */
 
-#define ALRT_PRINTR_INFO 33  /* Alert String */
+#define ALRT_NO_PGM_ASNG 33  /* Alert String */
 
-#define ALRT_NO_INF_AT_X 34  /* Alert String */
+#define ALRT_DD_NO_CMDLN 34  /* Alert String */
 
-#define ALRT_OVL_AES_BUF 35  /* Alert String */
+#define ALRT_DD_FAILURE  35  /* Alert String */
 
-#define ALRT_ERR_AT_INF  36  /* Alert String */
+#define ALRT_PRINTR_INFO 36  /* Alert String */
 
-#define ALRT_SAVE_WORK   37  /* Alert String */
+#define ALRT_NO_INF_AT_X 37  /* Alert String */
 
-#define ALRT_TRASH_INFO  38  /* Alert String */
+#define ALRT_OVL_AES_BUF 38  /* Alert String */
 
-#define ALRT_OVL_CMDLINE 39  /* Alert String */
+#define ALRT_ERR_AT_INF  39  /* Alert String */
 
-#define ALRT_FREE_AT_DRV 40  /* Alert String */
+#define ALRT_SAVE_WORK   40  /* Alert String */
+
+#define ALRT_TRASH_INFO  41  /* Alert String */
+
+#define ALRT_OVL_CMDLINE 42  /* Alert String */
+
+#define ALRT_FREE_AT_DRV 43  /* Alert String */

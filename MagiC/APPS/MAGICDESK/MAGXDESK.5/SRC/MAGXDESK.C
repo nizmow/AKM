@@ -153,7 +153,7 @@ void main()
 		if (w_ev.mwhich & MU_TIMER)
 		{
 			/* alternatively, we could omit the TIMER when auto-reload is deactivated. */
-			if (status.auto_reload)
+			if (!status.auto_reload_off)
 			{
 				dirwindow_autoupdate();
 			}

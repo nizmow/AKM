@@ -196,7 +196,8 @@ void dial_about(void)
 
 /****************************************************************
 *
-* Der Eintrag "Informationen..." ist angewÑhlt worden.
+* Der Eintrag "Informationen..." ist angewÑhlt worden,
+* und zwar fÅr Papierkorb oder Drucker
 *
 * RÅckgabe:	< 0		abbrechen
 *
@@ -238,24 +239,26 @@ static int info_spec(int typ, int weiter)
 
 int dial_info(WINDOW *w, int obj, void *is_weiter)
 {
-	int typ,ret,config,mal;
-	char	path[256+2];
+	int typ, ret, config, mal;
+	char path[256 + 2];
 	int drv;
 	long err;
 	MYDTA *file;
 	XATTR xa;
 	OBJECT *o;
-	int weiter,number;
+	int weiter, number;
 	static int hinum;	/* Gesamtanzahl Infos */
 	extern CICONBLK *std_dat_icon;
-	int isfolder,isdrive,isdeskalias;
+	int isfolder, isdrive, isdeskalias;
 
 
 
 	mal = FALSE;
 
 	if ((*((int *) is_weiter)) > hinum)
+	{
 		hinum = (*((int *) is_weiter));
+	}
 
 	(*((int *) is_weiter))--;
 	weiter = *((int *) is_weiter);
@@ -282,17 +285,21 @@ int dial_info(WINDOW *w, int obj, void *is_weiter)
 		isfolder = TRUE;
 		if (typ == 'DO')
 			isdrive = TRUE;
-		else	isdrive = FALSE;
+		else
+			isdrive = FALSE;
 		path[strlen(path) - 1] = EOS;		/* abschl. '\' weg */
 	}
-	else	isfolder = isdrive = FALSE;
+	else
+	{
+		isfolder = isdrive = FALSE;
+	}
 
 
 	/* Datei oder Ordner auf dem Desktop */
 	/* --------------------------------- */
 
-	if (file == NULL && !isdrive &&
-				((typ & 0xff) == 'O' || ret == 0))
+	if ((file == NULL) && !isdrive &&
+				((typ & 0xff) == 'O' || (ret == 0)))
 	{
 		file = Malloc(sizeof(MYDTA) + strlen(path) + 2);
 		if (!file)
@@ -332,10 +339,10 @@ int dial_info(WINDOW *w, int obj, void *is_weiter)
 		file->date = xa.mdate;
 		file->filesize = xa.size;
 		strcpy(file->filename, get_name(path));
-		file->attrib   = xa.attr;
+		file->attrib = xa.attr;
 		file->mode = xa.mode;
 
-		o = w->pobj+obj;
+		o = w->pobj + obj;
 		if (o->ob_type == G_CICON)
 			file->ciconblk = *(o->ob_spec.ciconblk);
 		else
@@ -1001,7 +1008,7 @@ void dial_einste(void)
 	ob_sel_dsel(adr_einst, EIN_PP, status.use_pp);
 	ob_sel_dsel(adr_einst, EINST_VE, status.show_all);
 	ob_sel_dsel(adr_einst, EIN_8PL3, status.show_8p3);
-	ob_sel_dsel(adr_einst, EIN_RELOAD, status.auto_reload);		/* auto window reload */
+	ob_sel_dsel(adr_einst, EIN_RELOAD, !status.auto_reload_off);		/* auto window reload */
 	ob_sel_dsel(adr_einst, EINS_DRK, status.show_prticon);
 
 	adr_einst[EIN_DSH].ob_spec.obspec.character =
@@ -1099,11 +1106,11 @@ void dial_einste(void)
 			status.mode_ovwr = OVERWRITE;
 
 		status.check_free	= selected(adr_einst, EINST_KF);
-		status.resident	= selected(adr_einst, EINST_RS);
+		status.resident		= selected(adr_einst, EINST_RS);
 		status.use_pp		= selected(adr_einst, EIN_PP);
-		status.show_all	= selected(adr_einst, EINST_VE);
-		status.show_8p3	= selected(adr_einst, EIN_8PL3);
-		status.auto_reload = selected(adr_einst, EIN_RELOAD);
+		status.show_all		= selected(adr_einst, EINST_VE);
+		status.show_8p3		= selected(adr_einst, EIN_8PL3);
+		status.auto_reload_off = !selected(adr_einst, EIN_RELOAD);
 		status.dnam_init	= selected(adr_einst, EINST_DN);
 		status.save_on_exit	= selected(adr_einst, EINS_ERD);
 		status.rtbutt_dclick= selected(adr_einst, EINS_DCLICK);

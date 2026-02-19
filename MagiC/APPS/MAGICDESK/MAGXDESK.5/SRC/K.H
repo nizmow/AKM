@@ -280,7 +280,7 @@ typedef struct
 	char rtbutt_dclick;		/* Rechte Maustaste = Doppelklick */
 	char disk_extinfo;		/* erweiterte Disk-Informationen */
 	char show_8p3;			/* TOS-Dateisystem als 8+3 */
-	char auto_reload;		/* Verzeichnis-nderungen regelm„ig prfen */
+	char auto_reload_off;	/* Verzeichnis-nderungen regelm„ig prfen */
 	char show_prticon;		/* Druckericon anzeigen */
 	char h_icon_dist;		/* horiz. Icon-Abstand */
 	char v_icon_dist;		/* vertik. Icon-Abstand */

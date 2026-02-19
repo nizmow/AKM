@@ -821,7 +821,7 @@ void load_status(int pass)
 		status.use_pp			= TRUE;		/* ".." zeigen */
 		status.show_prticon		= TRUE;
 		status.show_8p3			= TRUE;
-		status.auto_reload  	= TRUE;
+		status.auto_reload_off 	= FALSE;
 		status.h_icon_dist		= 3;
 		status.v_icon_dist		= 1;
 		status.sorttyp 			= M_SNAME;
@@ -954,23 +954,23 @@ void load_status(int pass)
 
 				scndez();		/* points */
 
-				status.is_1col		= scnflg();
-				status.is_groesse	= scnflg();
-				status.is_datum	= scnflg();
-				status.is_zeit		= scnflg();
+				status.is_1col			= scnflg();
+				status.is_groesse		= scnflg();
+				status.is_datum			= scnflg();
+				status.is_zeit			= scnflg();
 
-				status.rtbutt_dclick= scnflg(); /* Alt: blitstate */
-				status.cnfm_del	= scnflg();
-				status.cnfm_copy	= scnflg();
-				status.mode_ovwr	= scnflg();
-				status.check_free	= scnflg();
-				status.use_pp		= scnflg();
-				status.resident	= scnflg();
-				status.show_all	= scnflg();
-				status.show_prticon = scnflg(); /* V2: clock */
-				status.disk_extinfo	= scnflg(); /* Alt: resvd0 */
-				status.dnam_init	= scnflg();
-				status.auto_reload  = scnflg();		/* v5.05, previously reserved */
+				status.rtbutt_dclick	= scnflg(); /* Alt: blitstate */
+				status.cnfm_del			= scnflg();
+				status.cnfm_copy		= scnflg();
+				status.mode_ovwr		= scnflg();
+				status.check_free		= scnflg();
+				status.use_pp			= scnflg();
+				status.resident			= scnflg();
+				status.show_all			= scnflg();
+				status.show_prticon		= scnflg(); /* V2: clock */
+				status.disk_extinfo		= scnflg(); /* Alt: resvd0 */
+				status.dnam_init		= scnflg();
+				status.auto_reload_off	= scnflg();		/* v5.05, previously reserved */
 				scnflg();		/* resvd2 */
 				break;
 
@@ -1356,7 +1356,7 @@ static void status_to_ascii(char *inf)
 	prtflg(status.show_prticon);	/* V2: clock */
 	prtflg(status.disk_extinfo);	/* V4: resvd0 */
 	prtflg(status.dnam_init);
-	prtflg(status.auto_reload);		/* v5.05, was resvd1 */
+	prtflg(status.auto_reload_off);		/* v5.05, was resvd1 */
 	*s++ = '0';	/* resvd2 */
 
 	/* 3. Zeile: "#_DS2 aaaa b c x d e f g h i j"		*/
