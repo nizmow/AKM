@@ -34,13 +34,13 @@ WINDOW *whdl2window(int whdl)
 
 
 	for	(i = 0,w = windows; i < NWINDOWS; i++,w++)
-		{
-		if	(!*w)
+	{
+		if (!*w)
 			continue;		/* leerer Slot */
-		if	((*w)->handle == whdl)
-			return(*w);
-		}
-	return(NULL);
+		if ((*w)->handle == whdl)
+			return *w;
+	}
+	return NULL;
 }
 
 
@@ -57,11 +57,11 @@ WINDOW **new_window( void )
 
 
 	for	(i = 0,w = windows; i < NWINDOWS; i++,w++)
-		{
-		if	(!*w)
-			return(w);		/* leerer Slot */
-		}
-	return(NULL);
+	{
+		if (!*w)
+			return w;		/* leerer Slot */
+	}
+	return NULL;
 }
 
 
@@ -78,11 +78,11 @@ WINDOW **find_slot_window( WINDOW *myw )
 
 
 	for	(i = 0,w = windows; i < NWINDOWS; i++,w++)
-		{
-		if	(*w == myw)
-			return(w);
-		}
-	return(NULL);
+	{
+		if (*w == myw)
+			return w;
+	}
+	return NULL;
 }
 
 
@@ -107,12 +107,13 @@ void obj_malen(int whdl, OBJECT *tree, int index)
 
 	index = 0;
 	wind_get_grect(whdl,WF_FIRSTXYWH, &list);
-	do	{
-		if	(rc_intersect(&neu,&list))
+	do
+	{
+		if (rc_intersect(&neu,&list))
 			objc_draw(tree,index,1, &list);
 		wind_get_grect(whdl,WF_NEXTXYWH,&list);
-		}
-	while(list.g_w > 0);
+	}
+	while (list.g_w > 0);
 }
 
 
@@ -130,12 +131,13 @@ void redraw_window(WINDOW *w, GRECT *neu)
 
 	graf_mouse(M_OFF, NULL);
 	wind_get(w->handle,WF_FIRSTXYWH,&(g.g_x),&(g.g_y),&(g.g_w),&(g.g_h));
-	do	{
-		if	(rc_intersect(neu,&g))
+	do
+	{
+		if (rc_intersect(neu,&g))
 			w->draw(w, &g);
 		wind_get(w->handle,WF_NEXTXYWH,&(g.g_x),&(g.g_y),&(g.g_w),&(g.g_h));
-		}
-	while(g.g_w > 0);					/* bis Rechteckliste vollst„ndig */
+	}
+	while (g.g_w > 0);					/* bis Rechteckliste vollst„ndig */
 	graf_mouse(M_ON, NULL);
 }
 
@@ -160,7 +162,7 @@ int update_window(WINDOW *w)
 	mesag.msg.is_zero	= 0;
 	mesag.msg.whdl		= w->handle;
 	mesag.msg.g		= w->out;
-	return(appl_write(ap_id, 16, mesag.message));
+	return appl_write(ap_id, 16, mesag.message);
 }
 
 
@@ -185,18 +187,18 @@ static void calc_in(WINDOW *w)
 					&(w->in.g_h));
 
 	*ob_grect = w->in;
-	if	(!(w->flags & WFLAG_ICONIFIED))
-		{
+	if (!(w->flags & WFLAG_ICONIFIED))
+	{
 		scrolled_pixels = w->vshift*(w->showh+w->ydist);
 		(w->tree)->ob_y -= scrolled_pixels;
 		(w->tree)->ob_height += scrolled_pixels;
-		if	(w->step_hshift)
-			{
+		if (w->step_hshift)
+		{
 			scrolled_pixels = w->hshift*w->step_hshift;
 			(w->tree)->ob_x -= scrolled_pixels;
 			(w->tree)->ob_width += scrolled_pixels;
-			}
 		}
+	}
 }
 
 
@@ -215,20 +217,23 @@ static void calc_collin(WINDOW *w)
 
 	x = w->in.g_w - w->xoffs + w->xdist;
 	y = w->in.g_h - w->yoffs + w->ydist;
-	if	(w->is_1col)
+	if (w->is_1col)
+	{
 		c = 1;
-	else {
+	}
+	else
+	{
 		c = x / (w->showw + w->xdist);
-		if	(c < 1)
+		if (c < 1)
 			c = 1;
-		}
+	}
 	w->cols = c;
 	w->wlins = y / (w->showh + w->ydist);
 	w->lins = (w->shownum + w->cols - 1) / w->cols;
-	if	(w->step_hshift)
-		{
+	if (w->step_hshift)
+	{
 		w->vissteps_hshift = (w->in.g_w - w->xoffs) / w->step_hshift;
-		}
+	}
 }
 
 
@@ -244,27 +249,29 @@ void window_calc_hslider(WINDOW *w)
 	long hsize,hpos;
 
 	w->max_hshift = w->allsteps_hshift - w->vissteps_hshift;
-	if	(w->max_hshift < 0)
+	if (w->max_hshift < 0)
 		w->max_hshift = 0;
 
-	if	(w->hshift < 0)
+	if (w->hshift < 0)
 		w->hshift = 0;
-	if	(w->hshift > w->max_hshift)
+	if (w->hshift > w->max_hshift)
 		w->hshift = w->max_hshift;
 
-	if	(w->allsteps_hshift > 0)
+	if (w->allsteps_hshift > 0)
 		hsize = (1000L * w->vissteps_hshift) / w->allsteps_hshift;
-	else hsize = 1000L;
-	if	(hsize > 1000L)
+	else
+		hsize = 1000L;
+	if (hsize > 1000L)
 		hsize = 1000L;
 	wind_set(w->handle, WF_HSLSIZE, (int) hsize, 0,0,0);
 
-	if	(w->max_hshift > 0)
+	if (w->max_hshift > 0)
 		hpos = (1000L * w->hshift) / w->max_hshift;
-	else hpos = 1L;
-	if	(hpos > 1000L)
+	else
+		hpos = 1L;
+	if (hpos > 1000L)
 		hpos = 1000L;
-	if	(hpos < 1)
+	if (hpos < 1)
 		hpos = 1;
 	wind_set(w->handle, WF_HSLIDE, (int) hpos, 0,0,0);
 }
@@ -307,27 +314,29 @@ void window_calc_vslider(WINDOW *w)
 	long vsize,vpos;
 
 	w->max_vshift = w->lins - w->wlins;
-	if	(w->max_vshift < 0)
+	if (w->max_vshift < 0)
 		w->max_vshift = 0;
 
-	if	(w->vshift < 0)
+	if (w->vshift < 0)
 		w->vshift = 0;
-	if	(w->vshift > w->max_vshift)
+	if (w->vshift > w->max_vshift)
 		w->vshift = w->max_vshift;
 
-	if	(w->lins > 0)
+	if (w->lins > 0)
 		vsize = (1000L * w->wlins) / w->lins;
-	else vsize = 1000L;
-	if	(vsize > 1000L)
+	else
+		vsize = 1000L;
+	if (vsize > 1000L)
 		vsize = 1000L;
 	wind_set(w->handle, WF_VSLSIZE, (int) vsize, 0,0,0);
 
-	if	(w->max_vshift > 0)
+	if (w->max_vshift > 0)
 		vpos = (1000L * w->vshift) / w->max_vshift;
-	else vpos = 1L;
-	if	(vpos > 1000L)
+	else
+		vpos = 1L;
+	if (vpos > 1000L)
 		vpos = 1000L;
-	if	(vpos < 1)
+	if (vpos < 1)
 		vpos = 1;
 	wind_set(w->handle, WF_VSLIDE, (int) vpos, 0,0,0);
 }
@@ -363,44 +372,45 @@ static int arrange_window( WINDOW *w )
 	cols = w->cols;
 
 	window_calc_vslider(w);
-	if	(w->step_hshift)
-		{
+	if (w->step_hshift)
+	{
 		window_calc_hslider(w);
 		o -> ob_x 	= w->in.g_x - w->hshift * w->step_hshift;
 		o -> ob_width  = w->in.g_w + w->hshift * w->step_hshift;
-		}
+	}
 
 	/* Position und H”he ggf. korrigieren (von calc_in schon gesetzt) */
 	o -> ob_y 	= w->in.g_y - w->vshift*(w->showh + w->ydist);
 	o -> ob_height = w->in.g_h + w->vshift*(w->showh + w->ydist);
 	for	(i = 0, y = w->yoffs, x = w->xoffs, j = anzahl;
 			j > 0; i++,j--)
-		{
+	{
 		o++;
 
-		if	(o -> ob_type == G_USERDEF)
+		if (o -> ob_type == G_USERDEF)
 			icb = (ICONBLK *) o->ob_spec.userblk->ub_parm;
 		else
-		if	((o -> ob_type == G_ICON) ||
+		if ((o -> ob_type == G_ICON) ||
 			 (o -> ob_type == G_CICON))
 			icb = o->ob_spec.iconblk;
-		else icb = NULL;
+		else
+			icb = NULL;
 
-		if	(i >= cols)
-			{
+		if (i >= cols)
+		{
 			i = 0;
 			x = w->xoffs;
 			y += w->showh + w->ydist;
-			}
+		}
 		o -> ob_x = x;
 		o -> ob_y = y;
-		if	(icb)
+		if (icb)
 			o -> ob_y += w->max_hicon - icb->ib_hicon;
 		x += w->showw + w->xdist;
-		}
-	if	(anzahl < oldcols)
+	}
+	if (anzahl < oldcols)
 		oldcols = anzahl;
-	if	(anzahl < cols)
+	if (anzahl < cols)
 		cols = anzahl;
 	return((oldcols != cols) || (old_vshift != w->vshift) ||
 		  (old_hshift != w->hshift));
@@ -419,7 +429,7 @@ static void fulled(WINDOW *w)
 	register GRECT *out;
 
 
-	if	(w->flags & WFLAG_ICONIFIED)
+	if (w->flags & WFLAG_ICONIFIED)
 		return;
 	out = &(w->out);				/* out = Auženmaže */
 	wind_get(w->handle, WF_PREVXYWH, &prev.g_x, &prev.g_y, &prev.g_w, &prev.g_h);
@@ -429,25 +439,26 @@ static void fulled(WINDOW *w)
 	/*		  Also muž das Fenster verkleinert werden */
 	/* ------------------------------------------------ */
 
-	if	((out->g_x == full.g_x) && (out->g_y == full.g_y) &&
+	if ((out->g_x == full.g_x) && (out->g_y == full.g_y) &&
 		 (out->g_w == full.g_w) && (out->g_h == full.g_h)) {
 		graf_shrinkbox(&prev, &full);
 		out->g_x = prev.g_x; out->g_y = prev.g_y;
 		out->g_w = prev.g_w; out->g_h = prev.g_h;
-		}
+	}
 
 	/* 2. Fall: Das Fenster hat nicht Maximalgr”že	  */
 	/*		  Also Gr”že auf Maximum 			  */
 	/* ------------------------------------------------ */
 
-	else {
+	else
+	{
 		graf_growbox(out, &full);
 		out->g_x = full.g_x; out->g_y = full.g_y;
 		out->g_w = full.g_w; out->g_h = full.g_h;
-		}
+	}
 
 	wind_set(w->handle,WF_CURRXYWH,out->g_x, out->g_y, out->g_w, out->g_h);
-	if	(arrange_window(w))
+	if (arrange_window(w))
 		update_window(w);
 }
 
@@ -470,14 +481,15 @@ void hshift(WINDOW *w, int newshift)
 
 
 
-	if	(w->flags & WFLAG_ICONIFIED)
+	if (w->flags & WFLAG_ICONIFIED)
 		return;
-	if	(newshift < 0)
+	if (newshift < 0)
 		newshift = 0;
-	else if	(newshift > w->max_hshift)
-			newshift = w->max_hshift;
+	else
+	if (newshift > w->max_hshift)
+		newshift = w->max_hshift;
 
-	if	(0 == (diff = newshift - w->hshift))
+	if (0 == (diff = newshift - w->hshift))
 		return;
 
 	w->hshift = newshift;
@@ -485,11 +497,11 @@ void hshift(WINDOW *w, int newshift)
 
 	/* wenn >= 1 Seite gescrollt, wird das Fenster neu aufgebaut */
 
-	if	(abs(diff) > w->vissteps_hshift)
-		{
+	if (abs(diff) > w->vissteps_hshift)
+	{
 		update_window(w);
 		return;
-		}
+	}
 
 	/* Von Zeilen in Pixel umrechnen */
 	/* diff > 0: Balken nach unten, Inhalt nach oben */
@@ -500,23 +512,25 @@ void hshift(WINDOW *w, int newshift)
 
 	graf_mouse(M_OFF, NULL);
 	wind_get_grect(w->handle,WF_FIRSTXYWH, &g);
-	do	{
-		if	(rc_intersect(&scrg, &g))
-			{
+	do
+	{
+		if (rc_intersect(&scrg, &g))
+		{
 			xcopy = g.g_w - abs(diff);		/* soviele Pixel blitten */
-			if	(xcopy > 0)
-				{
+			if (xcopy > 0)
+			{
 				pxy[1] = pxy[5] = g.g_y;
 				pxy[3] = pxy[7] = g.g_y + g.g_h - 1;
-				if	(diff > 0)
-					{
+				if (diff > 0)
+				{
 					pxy[4] = g.g_x;
 					pxy[0] = g.g_x + diff;
-					}
-				else {
+				}
+				else
+				{
 					pxy[0] = g.g_x;
 					pxy[4] = g.g_x - diff;
-					}
+				}
 				pxy[2] = pxy[0] + xcopy - 1;
 				pxy[6] = pxy[4] + xcopy - 1;
 				src_mfdb.fd_addr = dest_mfdb.fd_addr = NULL;
@@ -528,14 +542,14 @@ void hshift(WINDOW *w, int newshift)
 				vro_cpyfm(vdi_handle, S_ONLY, pxy, &src_mfdb, &dest_mfdb);
 				/* alles neu zeichnen, was nicht vom Zielraster berdeckt wurde */
 				g.g_w -= xcopy;
-				if	(diff > 0)
+				if (diff > 0)
 					g.g_x += xcopy;
-				}
-			w->draw(w, &g);
 			}
-		wind_get(w->handle,WF_NEXTXYWH,&(g.g_x),&(g.g_y),&(g.g_w),&(g.g_h));
+			w->draw(w, &g);
 		}
-	while(g.g_w > 0);					/* bis Rechteckliste vollst„ndig */
+		wind_get(w->handle,WF_NEXTXYWH,&(g.g_x),&(g.g_y),&(g.g_w),&(g.g_h));
+	}
+	while (g.g_w > 0);					/* bis Rechteckliste vollst„ndig */
 
 	graf_mouse(M_ON, NULL);
 }
@@ -559,14 +573,15 @@ static void vshift(WINDOW *w, int newshift)
 
 
 
-	if	(w->flags & WFLAG_ICONIFIED)
+	if (w->flags & WFLAG_ICONIFIED)
 		return;
-	if	(newshift < 0)
+	if (newshift < 0)
 		newshift = 0;
-	else if	(newshift > w->max_vshift)
-			newshift = w->max_vshift;
+	else
+	if (newshift > w->max_vshift)
+		newshift = w->max_vshift;
 
-	if	(0 == (diff = newshift - w->vshift))
+	if (0 == (diff = newshift - w->vshift))
 		return;
 
 	w->vshift = newshift;
@@ -574,11 +589,11 @@ static void vshift(WINDOW *w, int newshift)
 
 	/* wenn >= 1 Seite gescrollt, wird das Fenster neu aufgebaut */
 
-	if	(abs(diff) > w->wlins)
-		{
+	if (abs(diff) > w->wlins)
+	{
 		update_window(w);
 		return;
-		}
+	}
 
 	/* Von Zeilen in Pixel umrechnen */
 	/* diff > 0: Balken nach unten, Inhalt nach oben */
@@ -589,23 +604,25 @@ static void vshift(WINDOW *w, int newshift)
 
 	graf_mouse(M_OFF, NULL);
 	wind_get_grect(w->handle,WF_FIRSTXYWH, &g);
-	do	{
-		if	(rc_intersect(&scrg, &g))
-			{
+	do
+	{
+		if (rc_intersect(&scrg, &g))
+		{
 			ycopy = g.g_h - abs(diff);		/* soviele Pixel blitten */
-			if	(ycopy > 0)
-				{
+			if (ycopy > 0)
+			{
 				pxy[0] = pxy[4] = g.g_x;
 				pxy[2] = pxy[6] = g.g_x + g.g_w - 1;
-				if	(diff > 0)
-					{
+				if (diff > 0)
+				{
 					pxy[5] = g.g_y;
 					pxy[1] = g.g_y + diff;
-					}
-				else {
+				}
+				else
+				{
 					pxy[1] = g.g_y;
 					pxy[5] = g.g_y - diff;
-					}
+				}
 				pxy[3] = pxy[1] + ycopy - 1;
 				pxy[7] = pxy[5] + ycopy - 1;
 				src_mfdb.fd_addr = dest_mfdb.fd_addr = NULL;
@@ -617,14 +634,14 @@ static void vshift(WINDOW *w, int newshift)
 				vro_cpyfm(vdi_handle, S_ONLY, pxy, &src_mfdb, &dest_mfdb);
 				/* alles neu zeichnen, was nicht vom Zielraster berdeckt wurde */
 				g.g_h -= ycopy;
-				if	(diff > 0)
+				if (diff > 0)
 					g.g_y += ycopy;
-				}
-			w->draw(w, &g);
 			}
-		wind_get(w->handle,WF_NEXTXYWH,&(g.g_x),&(g.g_y),&(g.g_w),&(g.g_h));
+			w->draw(w, &g);
 		}
-	while(g.g_w > 0);					/* bis Rechteckliste vollst„ndig */
+		wind_get(w->handle,WF_NEXTXYWH,&(g.g_x),&(g.g_y),&(g.g_w),&(g.g_h));
+	}
+	while (g.g_w > 0);					/* bis Rechteckliste vollst„ndig */
 
 	graf_mouse(M_ON, NULL);
 }
@@ -641,17 +658,17 @@ static void vshift(WINDOW *w, int newshift)
 
 static void arrowed(WINDOW *w, int arrow)
 {
-	int	new_hshift,new_vshift;
+	int new_hshift,new_vshift;
 
 
-	if	(w->flags & WFLAG_ICONIFIED)
+	if (w->flags & WFLAG_ICONIFIED)
 		return;
 
 	new_hshift = w->hshift;
 	new_vshift = w->vshift;
 
 	switch(arrow)
-		{
+	{
 		case -1:			new_vshift  = 0;
 						break;
 		case -2:			new_vshift  = w->max_vshift;
@@ -677,7 +694,7 @@ static void arrowed(WINDOW *w, int arrow)
 		case WA_RTLINE:	new_hshift++;
 						break;
 		default:			return;
-		}
+	}
 	w->set_vshift(w, new_vshift);
 	w->set_hshift(w, new_hshift);
 }
@@ -728,13 +745,13 @@ static void hslid(WINDOW *w, int newpos)
 	long newshift;
 
 
-	if	(w->step_hshift)
-		{
-		if	(w->flags & WFLAG_ICONIFIED)
+	if (w->step_hshift)
+	{
+		if (w->flags & WFLAG_ICONIFIED)
 			return;
 		newshift = (newpos * (w->max_hshift + 1L))/1000L;
 		w->set_hshift(w, (int) newshift);
-		}
+	}
 }
 
 
@@ -750,7 +767,7 @@ static void vslid(WINDOW *w, int newpos)
 	long newshift;
 
 
-	if	(w->flags & WFLAG_ICONIFIED)
+	if (w->flags & WFLAG_ICONIFIED)
 		return;
 	newshift = (newpos * (w->max_vshift + 1L))/1000L;
 	w->set_vshift(w, (int) newshift);
@@ -766,14 +783,14 @@ static void vslid(WINDOW *w, int newpos)
 
 static void sized(WINDOW *w, GRECT *g)
 {
-	if	(w->flags & WFLAG_ICONIFIED)
+	if (w->flags & WFLAG_ICONIFIED)
 		return;
-	if	(wind_set(w->handle, WF_CURRXYWH, g->g_x, g->g_y, g->g_w, g->g_h))
-		{
+	if (wind_set(w->handle, WF_CURRXYWH, g->g_x, g->g_y, g->g_w, g->g_h))
+	{
 		w->out = *g;
-		if	(arrange_window(w))
+		if (arrange_window(w))
 			update_window(w);
-		}
+	}
 }
 
 
@@ -786,11 +803,11 @@ static void sized(WINDOW *w, GRECT *g)
 static void moved(WINDOW *w, GRECT *g)
 {
 	g->g_x &= ~7;
-	if	(wind_set(w->handle, WF_CURRXYWH, g->g_x, g->g_y, g->g_w, g->g_h))
-		{
+	if (wind_set(w->handle, WF_CURRXYWH, g->g_x, g->g_y, g->g_w, g->g_h))
+	{
 		w->out = *g;
 		calc_in(w);
-		}
+	}
 }
 
 
@@ -827,7 +844,7 @@ static void _draw_obj_window(WINDOW *w, GRECT *g)
 static void _message_obj_window(WINDOW *w, int kstate, int message[16])
 {
 	switch(message[0])
-		{
+	{
 		case WM_REDRAW:
 			redraw_window(w, (GRECT *) (message+4));
 			break;
@@ -864,7 +881,7 @@ static void _message_obj_window(WINDOW *w, int kstate, int message[16])
 		case WM_MOVED:
 			w->moved(w, (GRECT *) (message+4));
 			break;
-		}
+	}
 }
 
 
@@ -879,7 +896,7 @@ static void _message_obj_window(WINDOW *w, int kstate, int message[16])
 *
 ****************************************************************/
 
-void	init_window( WINDOW *w)
+void init_window( WINDOW *w)
 {
 	w->close = closed;
 	w->open = opened;

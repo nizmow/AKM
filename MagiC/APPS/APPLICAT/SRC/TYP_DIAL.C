@@ -83,39 +83,41 @@ WORD cdecl hdl_ftypes( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *da
 
 	tree = adr_ftypes;
 
-	if	(exitbutton == HNDL_INIT)
+	if (exitbutton == HNDL_INIT)
+	{
+		if (d_typ)			/* Dialog ist schon ge”ffnet ! */
 		{
-		if	(d_typ)			/* Dialog ist schon ge”ffnet ! */
-			{
 			wind_set(wdlg_get_handle(d_typ), WF_TOP, 0,0,0,0);
-			return(0);		/* create verweigern */
-			}
+			return 0;		/* create verweigern */
+		}
 
 		(TXT(tree+FTYPE_2))[0] = EOS;
 		(TXT(tree+FTYPE_3))[0] = EOS;
 		(TXT(tree+FTYPE_4))[0] = EOS;
 
-		if	(clicks == 1)
-			{
+		if (clicks == 1)
+		{
 								/* Dateityp editieren */
 			mydat = *((struct dat_file *) data);
 			mypgm = *((struct pgm_file *) pgmx+mydat.pgm);
 			strcpy(TXT(tree+FTYPE_1), mydat.name);
 			objs_hide(tree, FTYPE_2, FTYPE_3, FTYPE_4, 0);
-			}
-		else	{
-			if	(clicks == 2)
-				{
+		}
+		else
+		{
+			if (clicks == 2)
+			{
 				extern char *def_txt;
 
 				mypgm = *((struct pgm_file *) data);
 				strcpy(TXT(tree+FTYPE_1), def_txt);
-				}
+			}
 				
-			else	{
+			else
+			{
 				mypgm = *((struct pgm_file *) data);
 				(TXT(tree+FTYPE_1))[0] = EOS;
-				}
+			}
 			mydat.sel = FALSE;
 			mydat.name[0] = EOS;
 			mydat.rscname[0] = EOS;
@@ -126,63 +128,64 @@ WORD cdecl hdl_ftypes( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *da
 			(tree[FTYPE_2]).ob_flags |= EDITABLE;
 			(tree[FTYPE_3]).ob_flags |= EDITABLE;
 			(tree[FTYPE_4]).ob_flags |= EDITABLE;
-			}
+		}
 
 		strcpy((tree+FTYPE_ANW)->ob_spec.free_string, mypgm.name);
 
-		return(1);
-		}
+		return 1;
+	}
 
 	/* 3. Fall: Dialog soll geschlossen werden */
 	/* --------------------------------------- */
 
-	if	(exitbutton == HNDL_CLSD) /* Wenn Dialog geschlossen werden soll... */
-		{
+	if (exitbutton == HNDL_CLSD) /* Wenn Dialog geschlossen werden soll... */
+	{
 		close_dialog:
 		save_dialog_xy(d);
-		return(0);		/* ...dann schliežen wir ihn auch */
-		}
+		return 0;		/* ...dann schliežen wir ihn auch */
+	}
 
-	if	(exitbutton < 0)
-		return(1);
+	if (exitbutton < 0)
+		return 1;
 
 	/* 4. Fall: Exitbutton wurde bet„tigt */
 	/* ---------------------------------- */
 
-	if	(clicks != 1)
+	if (clicks != 1)
 		goto ende;
 
-	if	(exitbutton == FTYPE_OK)
-		{
+	if (exitbutton == FTYPE_OK)
+	{
 		register int i;
 
 		ob_dsel(tree, exitbutton);
-		if	(mydat.name[0])	/* Zeichenkette editieren */
-			{
-			change_dat( &mypgm, &mydat,TXT(tree+FTYPE_1));
-			}
-		else	{				/* neue Dateitypen */
-			for	(i = 0; i < 4; i++)
-				{
-				strcpy(mydat.name, TXT(tree+FTYPE_1+i));
-				if	(mydat.name[0])
-					insert_dat( &mypgm, &mydat );
-				}
-			}
-		goto close_dialog;
-		}
-
-	if	(exitbutton == FTYPE_CN)			/* Abbruch */
+		if (mydat.name[0])	/* Zeichenkette editieren */
 		{
+			change_dat( &mypgm, &mydat,TXT(tree+FTYPE_1));
+		}
+		else
+		{				/* neue Dateitypen */
+			for	(i = 0; i < 4; i++)
+			{
+				strcpy(mydat.name, TXT(tree+FTYPE_1+i));
+				if (mydat.name[0])
+					insert_dat( &mypgm, &mydat );
+			}
+		}
+		goto close_dialog;
+	}
+
+	if (exitbutton == FTYPE_CN)			/* Abbruch */
+	{
 		ob_dsel(tree, exitbutton);
 		goto close_dialog;
-		}
+	}
 
-	return(1);
+	return 1;
 
 	ende:
 	ob_dsel(tree, exitbutton);
 	subobj_wdraw(d, exitbutton, exitbutton, 1);
-	return(1);		/* weiter */
+	return 1;		/* weiter */
 }
 #pragma warn +par

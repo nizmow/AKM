@@ -119,19 +119,19 @@ static int path_2_arg(const char *path, char *buf, int len)
 		if (*path == '\'')
 		{
 			if (!(--len))
-				return(-1);
+				return -1;
 			*buf++ = '\'';
 		}
 
 		if (!(--len))
-			return(-1);
+			return -1;
 		*buf++ = *path++;
 	}
 
 	if (hoch)
 	{
 		if (!(--len))
-			return(-1);
+			return -1;
 		*buf++ = '\'';
 	}
 
@@ -154,7 +154,7 @@ WINDEFPOS *def_wind_pos(const char *s)
 	for (i = 0,w = windefpos; i < n_windefpos; i++,w++)
 	{
 		if (!strcmp(w->name, s))
-			return(w);
+			return w;
 	}
 
 	return NULL;
@@ -170,15 +170,18 @@ WINDEFPOS *def_wind_pos(const char *s)
 *
 ****************************************************************/
 
-static void get_len( long *npg, long *nd, long *npt, long *ns, long *ni,
-		char **m_used )
+static void get_len
+(
+	long *npg, long *nd, long *npt, long *ns, long *ni,
+	char **m_used
+)
 {
 	register struct pgm_file *pg;
 	register struct dat_file *d;
 	register struct pth_file *pt;
 	register struct spc_file *s;
 	register int i,n;
-	char	*used,*buf;
+	char *used,*buf;
 
 
 	if (m_used)
@@ -250,7 +253,8 @@ static void get_len( long *npg, long *nd, long *npt, long *ns, long *ni,
 
 	if (m_used)
 		*m_used = buf;
-	else	Mfree(buf);
+	else
+		Mfree(buf);
 }
 
 
@@ -312,14 +316,14 @@ static long put_icondata(int action, int n_icn, int *ic, CICONBLK **cb,
 	all_len = 0L;
 	for (i = 0, curr_ic = ic, curr_cb = cb; i < n_icn;
 			i++,curr_ic++,curr_cb++)
-		{
+	{
 		if (data)
 			*curr_cb = (CICONBLK *) (offset + all_len);
 		icn = icnx + *curr_ic;
 		o = rscx[icn->rscfile].adr_icons + icn->objnr;
 		n = 0;
 		switch(o->ob_type)
-			{
+		{
 			case G_ICON:
 				ciblk.monoblk = *(o->ob_spec.iconblk);
 				mono_len = (ciblk.monoblk.ib_wicon >> 3) *
@@ -340,80 +344,84 @@ static long put_icondata(int action, int n_icn, int *ic, CICONBLK **cb,
 							2 * mono_len +	/* Mono-Icon */
 							12);	/* Text */
 				if (cic == (void *) -1L)
-					{
+				{
 					cic = NULL;
 					ciblk.mainlist = NULL;
-					}
+				}
 				cic2 = cic;
 				while (cic2)
-					{
+				{
 					n++;
 					cic2 = cic2->next_res;
-					}
+				}
 				break;
 			default: exit(-1);
-			}
+		} /* switch */
 
+		if (action)
+		{
+			/* CICONBLK schreiben */
+
+			ciblk.mainlist = (CICON *) n;
+			memcpy(data, &ciblk, sizeof(CICONBLK));
+			data += sizeof(CICONBLK);
+
+			/* Monochrom-Icon */
+			memcpy(data, ciblk.monoblk.ib_pdata, mono_len);
+			data += mono_len;
+			/* Monochrom-Maske */
+			memcpy(data, ciblk.monoblk.ib_pmask, mono_len);
+			data += mono_len;
+		}
+
+		all_len += sizeof(CICONBLK) + mono_len + mono_len;
+
+		/* Farbicons */
+		while (cic)
+		{
+			slen = mono_len * cic->num_planes;
 			if (action)
-				{
-				/* CICONBLK schreiben */
+			{
+				mycicon.num_planes = cic->num_planes;
+				mycicon.col_data = mycicon.col_mask = (void *) 1L;
+				if (cic->sel_data)
+					mycicon.sel_data = mycicon.sel_mask = (void *) 1L;
+				else
+					mycicon.sel_data = mycicon.sel_mask = NULL;
+				if (cic->next_res)
+					mycicon.next_res = (CICON *) 1L;
+				else
+					mycicon.next_res = NULL;
 
-				ciblk.mainlist = (CICON *) n;
-				memcpy(data, &ciblk, sizeof(CICONBLK));
-				data += sizeof(CICONBLK);
-	
-				/* Monochrom-Icon */
-				memcpy(data, ciblk.monoblk.ib_pdata, mono_len);
+				memcpy(data, &mycicon, sizeof(CICON));
+				data += sizeof(CICON);
+
+				memcpy(data, cic->col_data, slen);
+				data += slen;
+
+				memcpy(data, cic->col_mask, mono_len);
 				data += mono_len;
-				/* Monochrom-Maske */
-				memcpy(data, ciblk.monoblk.ib_pmask, mono_len);
-				data += mono_len;
-				}
-			all_len += sizeof(CICONBLK) + mono_len + mono_len;
 
-			/* Farbicons */
-			while (cic)
+				if (cic->sel_data)
 				{
-				slen = mono_len * cic->num_planes;
-				if (action)
-					{
-					mycicon.num_planes = cic->num_planes;
-					mycicon.col_data = mycicon.col_mask = (void *) 1L;
-					if (cic->sel_data)
-						mycicon.sel_data = mycicon.sel_mask = (void *) 1L;
-					else	mycicon.sel_data = mycicon.sel_mask = NULL;
-					if (cic->next_res)
-						mycicon.next_res = (CICON *) 1L;
-					else mycicon.next_res = NULL;
-
-					memcpy(data, &mycicon, sizeof(CICON));
-					data += sizeof(CICON);
-
-					memcpy(data, cic->col_data, slen);
+					memcpy(data, cic->sel_data, slen);
 					data += slen;
-
-					memcpy(data, cic->col_mask, mono_len);
+					memcpy(data, cic->sel_mask, mono_len);
 					data += mono_len;
+				}
+			} /* if (action) */
 
-					if (cic->sel_data)
-						{
-						memcpy(data, cic->sel_data, slen);
-						data += slen;
-						memcpy(data, cic->sel_mask, mono_len);
-						data += mono_len;
-						}
-					}
-
-				all_len += sizeof(CICON) +
+			all_len += sizeof(CICON) +
 							slen +
 							mono_len;
-				if (cic->sel_data)
-					all_len += slen + mono_len;
+			if (cic->sel_data)
+				all_len += slen + mono_len;
 							
-				cic = cic->next_res;
-				}
-		}
-	return(all_len);
+			cic = cic->next_res;
+		} /* while */
+	} /* for */
+
+	return all_len;
 }
 
 
@@ -426,10 +434,10 @@ static long put_icondata(int action, int n_icn, int *ic, CICONBLK **cb,
 static int compare_ico_dat(DATAFILE *e1, DATAFILE *e2)
 {
 	if ((e1->daname[0] == '*') && (e2->daname[0] != '*'))
-		return(1);	/* '*'-lose Typen nach vorn */
+		return 1;	/* '*'-lose Typen nach vorn */
 	if ((e1->daname[0] != '*') && (e2->daname[0] == '*'))
-		return(-1);
-	return(stricmp(e1->daname, e2->daname));
+		return -1;
+	return stricmp(e1->daname, e2->daname);
 }
 
 
@@ -477,7 +485,7 @@ static long put_icons(void)
 	char *icondata;
 	char *used_icons;
 	XAESMSG xmsg;
-	int	msg[8];
+	int msg[8];
 
 
 
@@ -486,7 +494,7 @@ static long put_icons(void)
 
 	all_slen = 0;
 	for (i = 0,pgm_file = pgmx; i < pgmn; i++,pgm_file++)
-		{
+	{
 		if (!pgm_file->name[0])
 			continue;				/* leerer Eintrag */
 		if (pgm_file->name[0] == '<')
@@ -495,17 +503,19 @@ static long put_icons(void)
 		if ((!pgm_file->path[0]) || (!pgm_file->ntypes))
 			continue;				/* kein Pfad */
 		all_slen += strlen(pgm_file->path) + 1;
-		}
+	}
+
 	for (i = 0,dat_file = datx; i < datn; i++,dat_file++)
-		{
+	{
 		if (!dat_file->name[0])
 			continue;				/* leerer Eintrag */
 		all_slen += strlen(dat_file->name) + 1;
-		}
+	}
+
 	for (i = 0,pth_file = pthx; i < pthn; i++,pth_file++)
-		{
+	{
 		all_slen += strlen(pth_file->path) + 1;
-		}
+	}
 	if (all_slen & 1)
 		all_slen++;		/* gerade Adresse */
 
@@ -517,13 +527,14 @@ static long put_icons(void)
 	get_len( &h.n_ap2ic, &h.n_da2ic,
 			&h.n_pa2ic, &h.n_sp2ic, &h.n_icn, &used_icons );
 	if (!used_icons)
-		return(ENSMEM);
+		return ENSMEM;
 	ic = Malloc( h.n_icn * sizeof(int));	/* interne Icon-Nummern */
+
 	for (i = 0,curr_ic = ic,buf = used_icons; i < icnn; i++,buf++)
-		{
+	{
 		if (*buf)
 			*curr_ic++ = i;
-		}
+	}
 	Mfree(used_icons);
 
 	/* L„nge der Icon-Daten bestimmen */
@@ -545,7 +556,7 @@ static long put_icons(void)
 
 	buf = Malloc(all_len);
 	if (!buf || !ic)
-		return(ENSMEM);
+		return ENSMEM;
 
 	slen = sizeof(struct ico_head);
 
@@ -584,12 +595,12 @@ static long put_icons(void)
 	curr_dat = dat;
 	curr_string = all_strings;
 	for (i = 0,z = linx; i < linn; )
-		{
+	{
 		n = z->pgmnr;
 		pgm_file = pgmx+n;
 
 		if (pgm_file->name[0] != '<')
-			{
+		{
 			curr_app->config = pgm_file->config;
 			curr_app->memlimit = pgm_file->memlimit;
 			curr_app->apname = (long) curr_string;
@@ -598,56 +609,60 @@ static long put_icons(void)
 			curr_string += slen;
 			if ((pgm_file->path) && (pgm_file->path[0]) &&
 				 (pgm_file->ntypes))
-				{
+			{
 				curr_app->path = (long) curr_string;
 				slen = strlen(pgm_file->path) + 1;
 				memcpy(curr_string, pgm_file->path, slen);
 				curr_string += slen;
-				}
-			else	curr_app->path = -1L;
+			}
+			else
+			{
+				curr_app->path = -1L;
+			}
 
 			/* Icon suchen */
 			for (cci = ic; cci < curr_ic; cci++)
-				{
+			{
 				if (*cci == pgm_file->iconnr)
 					goto ok;
-				}
+			}
 			*curr_ic++ = pgm_file->iconnr;
 			ok:
 			curr_app->icon_nr = cci - ic;
-			}
+		}
 
 		/* angemeldete Dateitypen */
 
 		while ((i < linn) && (z->pgmnr == n))
-			{
+		{
 			if (z->datnr >= 0)
-				{
+			{
 				dat_file = datx + z->datnr;
 				slen = strlen(dat_file->name) + 1;
 
 				curr_dat->daname = (long) curr_string;
 				if (pgm_file->name[0] != '<')
 					curr_dat->ap = curr_app - app;	/* Index der AP */
-				else curr_dat->ap = -1;	/* keine APP */
+				else
+					curr_dat->ap = -1;	/* keine APP */
 				memcpy(curr_string, dat_file->name, slen);
 				curr_string += slen;
 		
 				/* Icon suchen */
 				for (cci = ic; cci < curr_ic; cci++)
-					{
+				{
 					if (*cci == dat_file->iconnr)
 						goto ok2;
-					}
+				}
 				*curr_ic++ = dat_file->iconnr;
 				ok2:
 				curr_dat->icon_nr = cci - ic;
 
-				curr_dat++;
+			curr_dat++;
 				}
 			i++;
 			z++;
-			}
+		}
 
 		if (pgm_file->name[0] != '<')
 			curr_app++;
@@ -745,7 +760,7 @@ static long put_icons(void)
 		{
 			Mfree(buf2);
 			err_alert(ERROR);
-			return(ERROR);
+			return ERROR;
 		}
 	}
 
@@ -832,7 +847,7 @@ long put_inf(void)
 
 	wbuf = Malloc(WBUFLEN);
 	if (!wbuf)
-		return(ENSMEM);
+		return ENSMEM;
 	wlen = 0L;		/* Schreibpuffer ist leer */
 	*wbuf = EOS;
 	ret = Fcreate(fname, 0);

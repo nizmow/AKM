@@ -472,9 +472,10 @@ typedef struct _syshdr
 
 /* Cookie structure */
 
-typedef struct {
-	long		key;
-	long		value;
+typedef struct
+{
+	long key;
+	long value;
 } COOKIE;
 
 /* Sconfig(2) -> */

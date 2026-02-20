@@ -39,84 +39,93 @@
 #define RSC_FNAME_INTERN     "<internal>"			/*"<intern>"*/
 #define APP_NAME_FREE        "<free>"				/*"<frei>"*/
 
-typedef struct {
+typedef struct
+{
 	char name[32];				/* SchlÅssel (Fenstername) */
 	GRECT g;					/* Position */
 } WINDEFPOS;
 
-struct dialog_userdata {
+struct dialog_userdata
+{
 	char *ident;
 	int mode;					/* merken, ob Aktion bei HNDL_OPEN */
 };
 
-struct iconfile {
-	char	fname[MAX_NAMELEN];		/* Dateiname */
+struct iconfile
+{
+	char fname[MAX_NAMELEN];	/* Dateiname */
 	OBJECT *adr_icons;			/* Baum mit Icons */
-	int	nicons;				/* Anzahl Icons */
-	int	firsticon;			/* Index in der Icontabelle */
+	int nicons;					/* Anzahl Icons */
+	int firsticon;				/* Index in der Icontabelle */
 };
 
-struct dat_file {
-	int	sel;					/* selektiert */
-/*	int	sel_icon;		*/		/* Icon selektiert */
-	char	name[MAX_NAMELEN];		/* Dateityp, "" = unbenutzt */
+struct dat_file
+{
+	int sel;					/* selektiert */
+/*	int sel_icon;		*/		/* Icon selektiert */
+	char name[MAX_NAMELEN];		/* Dateityp, "" = unbenutzt */
 	char rscname[MAX_NAMELEN];	/* Name der RSC-Datei */
-	int  rscindex;				/* Nummer des Icons in rsc */
-	int	iconnr;				/* interne Iconnummer */
-	int	pgm;					/* zugehîrige Applikation */
-	int  next;				/* fÅr Verkettung, bis -1 */
+	int rscindex;				/* Nummer des Icons in rsc */
+	int iconnr;					/* interne Iconnummer */
+	int pgm;					/* zugehîrige Applikation */
+	int next;					/* fÅr Verkettung, bis -1 */
 };
 
-struct pgm_file {
-	int	sel;					/* selektiert */
-/*	int	sel_icon;		*/		/* Icon selektiert */
-	char	name[MAX_NAMELEN];		/* Name ohne Ext/ "" = unbenutzt */
+struct pgm_file
+{
+	int sel;					/* selektiert */
+/*	int sel_icon;		*/		/* Icon selektiert */
+	char name[MAX_NAMELEN];	/* Name ohne Ext/ "" = unbenutzt */
 	char rscname[MAX_NAMELEN];	/* Name der RSC-Datei */
 	int  rscindex;				/* Nummer des Icons in rsc */
-	int	iconnr;				/* interne Iconnummer */
+	int iconnr;					/* interne Iconnummer */
 	char path[MAX_PATHLEN];		/* Voller Pfad */
-	int	config;				/* Konfigurationsbits */
+	int config;					/* Konfigurationsbits */
 	long memlimit;				/* Speicherlimit */
-	int	ntypes;				/* Anzahl angemeldeter Dateien */
-	int	types;				/* verkettete Liste */
+	int ntypes;					/* Anzahl angemeldeter Dateien */
+	int types;					/* verkettete Liste */
 };
 
-struct pth_file {
+struct pth_file
+{
 	struct pth_file *next;		/* Verkettung fÅr scrollbox */
-	WORD	sel;					/* selektiert */
-/*	int	sel_icon;		*/		/* Icon selektiert */
+	WORD sel;					/* selektiert */
+/*	int sel_icon;		*/		/* Icon selektiert */
 	char path[MAX_PATHLEN];		/* Voller oder rel. Pfad */
 	char rscname[MAX_NAMELEN];	/* Name der RSC-Datei */
-	int  rscindex;				/* Nummer des Icons in rsc */
-	int	iconnr;				/* interne Iconnummer */
+	int rscindex;				/* Nummer des Icons in rsc */
+	int iconnr;					/* interne Icon-Nummer */
 };
 
-struct spc_file {
+struct spc_file
+{
 	struct spc_file *next;		/* Verkettung fÅr scrollbox */
-	int	sel;					/* selektiert */
-/*	int	sel_icon;		*/		/* Icon selektiert */
-	long	key;					/* SchlÅssel fÅr DAT-Datei */
+	int sel;					/* selektiert */
+/*	int sel_icon;		*/		/* Icon selektiert */
+	long key;					/* SchlÅssel fÅr DAT-Datei */
 	char name[MAX_NAMELEN];		/* Name in der Dialogbox */
 	char rscname[MAX_NAMELEN];	/* Name der RSC-Datei */
-	int  rscindex;				/* Nummer des Icons in rsc */
-	int	iconnr;				/* interne Iconnummer */
+	int rscindex;				/* Nummer des Icons in rsc */
+	int iconnr;					/* interne Icon-Nummer */
 };
 
-struct icon {
-	int	rscfile;				/* fÅr versch. Dateien */
-	int	objnr;				/* Objektnummer */
-/*	int	sel_pgm;	*/			/* als Programm-Icon selektiert */
-/*	int	sel_dat;	*/			/* als Datei-Icon selektiert */
+struct icon
+{
+	int rscfile;				/* fÅr versch. Dateien */
+	int objnr;					/* Objektnummer */
+/*	int sel_pgm;	*/			/* als Programm-Icon selektiert */
+/*	int sel_dat;	*/			/* als Datei-Icon selektiert */
 };
 
-struct zeile {
+struct zeile
+{
 	struct zeile *next;			/* Verkettung fÅr scrollbox */
-	WORD	sel;					/* selektiert */
-	int	pgmnr;				/* Nummer des Programmnamens */
-	int	reldatnr;				/* angemeldete Datei 0..ntypes-1 */
-							/*  nix angemeldet: -1 */
-	int	datnr;				/* absolute Nummer der Datei */
-							/*  nix angemeldet: -1 */
+	WORD sel;					/* selektiert */
+	int pgmnr;					/* Nummer des Programmnamens */
+	int reldatnr;				/* angemeldete Datei 0..ntypes-1 */
+								/*  nix angemeldet: -1 */
+	int datnr;					/* absolute Nummer der Datei */
+								/*  nix angemeldet: -1 */
 };
 
 extern int is_multiwindow;		/* alle Fenster sind offen */
@@ -136,10 +145,10 @@ extern DIALOG *xy_wdlg_init(
 			void *data,
 			int title_code
 			);
-extern void save_dialog_xy( DIALOG *d );
+extern void save_dialog_xy(DIALOG *d);
 extern long err_alert(long e);
 
-extern int  rsrc_gtree(int gindex, OBJECT **tree );
+extern int  rsrc_gtree(int gindex, OBJECT **tree);
 extern int spcn;
 extern int pthn;
 extern int datn;
@@ -157,6 +166,5 @@ extern struct iconfile	rscx[MAX_RSCN];
 
 extern int is_3d;
 
-extern void error(int id);
+extern void error(int id);		/* show alert from resource string */
 extern char buf512[512];
-

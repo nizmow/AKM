@@ -36,33 +36,33 @@ static int visible_len = -1;
 static int showindex_to_icnobj(int index)
 {
 	static int icons[] =
-		{FLICON1,FLICON2,FLICON3,FLICON4,FLICON5};
+	{FLICON1,FLICON2,FLICON3,FLICON4,FLICON5};
 
-	return(icons[index]);
+	return icons[index];
 }
 static int icnobj_to_showindex(int objnr)
 {
 	switch(objnr)
-		{
-		case FLICON1: return(0);
-		case FLICON2: return(1);
-		case FLICON3: return(2);
-		case FLICON4: return(3);
-		case FLICON5: return(4);
-		}
-	return(-1);
+	{
+		case FLICON1: return 0;
+		case FLICON2: return 1;
+		case FLICON3: return 2;
+		case FLICON4: return 3;
+		case FLICON5: return 4;
+	}
+	return -1;
 }
 static int pthobj_to_showindex(int objnr)
 {
 	switch(objnr)
-		{
-		case FLD1:	return(0);
-		case FLD2:	return(1);
-		case FLD3:	return(2);
-		case FLD4:	return(3);
-		case FLD5:	return(4);
-		}
-	return(-1);
+	{
+		case FLD1:	return 0;
+		case FLD2:	return 1;
+		case FLD3:	return 2;
+		case FLD4:	return 3;
+		case FLD5:	return 4;
+	}
+	return -1;
 }
 
 
@@ -83,14 +83,14 @@ void abbrev_path(char *dst, char *src, int len )
 	register char *t,*u;
 	int l;
 
-	if	((l = (int) strlen(src)) < len)
-		{
+	if ((l = (int) strlen(src)) < len)
+	{
 		strcpy(dst, src);
 		return;
-		}
+	}
 	
 	u = t = src + l - len + 6;
-	while((*t) && (*t != '\\'))
+	while ((*t) && (*t != '\\'))
 		t++;
 	*dst++ = *src++;	/* "X:\" */
 	*dst++ = *src++;
@@ -98,9 +98,10 @@ void abbrev_path(char *dst, char *src, int len )
 	*dst++ = '.';
 	*dst++ = '.';
 	*dst++ = '.';
-	if	(!(*t) || !(t[1]))
+	if (!(*t) || !(t[1]))
 		strcpy(dst, u);
-	else	strcpy(dst, t);
+	else
+		strcpy(dst, t);
 }
 
 
@@ -119,21 +120,21 @@ static int scroll_win_path( DIALOG *d, char *path )
 	register int n;
 
 	for	(n = 0,pth = pthx; n < pthn; n++,pth++)
-		if	(!stricmp(pth->path, path))
+		if (!stricmp(pth->path, path))
 			goto found;
-	return(-1);
+	return -1;
 	found:
 	adr_icp_dialog[DEL_FLD].ob_state &= ~DISABLED;
 	selected_path = pth;
-	if	((n > 0) && (n > pthn - 5))
+	if ((n > 0) && (n > pthn - 5))
 		n = pthn - 5;
-	if	(n < 0)
+	if (n < 0)
 		n = 0;
 	pth->sel = TRUE;
 	lbox_scroll_to(sbox, n, NULL, NULL);
-	if	(d)
+	if (d)
 		subobj_wdraw(d_icp, FL_BK, FL_BK, MAX_DEPTH);
-	return(0);
+	return 0;
 }
 
 
@@ -150,9 +151,10 @@ static void cdecl select_item( LIST_BOX *box, OBJECT *tree,
 {
 	struct pth_file *mypth = (struct pth_file *) item;
 
-	if	(mypth->sel)
+	if (mypth->sel)
 		selected_path = mypth;
-	else	selected_path = NULL;
+	else
+		selected_path = NULL;
 }
 
 static WORD cdecl set_item( LIST_BOX *box, OBJECT *tree,
@@ -167,15 +169,15 @@ static WORD cdecl set_item( LIST_BOX *box, OBJECT *tree,
 	int ic_height,ob_height;
 
 
-	if	(!item)
-		{
+	if (!item)
+	{
 		dob = tree+index;
 		dob->ob_spec.tedinfo->te_ptext[1] = EOS;
 		dob->ob_flags &= ~TOUCHEXIT;
 		dob = tree+dob->ob_head;
 		dob->ob_flags |= HIDETREE;
-		return(index);
-		}
+		return index;
+	}
 
 	ob_height = tree[index].ob_height;
 
@@ -187,9 +189,10 @@ static WORD cdecl set_item( LIST_BOX *box, OBJECT *tree,
 	abbrev_path(dob -> ob_spec.tedinfo->te_ptext+1,
 			mypth->path, visible_len);
 /*	len = (int) strlen(dob -> ob_spec.tedinfo->te_ptext+1);	*/
-	if	(mypth->sel)
+	if (mypth->sel)
 		ob_sel(dob, 0);
-	else	ob_dsel(dob, 0);
+	else
+		ob_dsel(dob, 0);
 /*	dob->ob_width = len * gl_hwchar;	*/
 	ic = icnx + mypth->iconnr;
 
@@ -198,14 +201,16 @@ static WORD cdecl set_item( LIST_BOX *box, OBJECT *tree,
 	dob = tree+dob->ob_head;
 	dob->ob_flags &= ~HIDETREE;
 
-	if	(item->selected)
+	if (item->selected)
 		dob->ob_state &= ~WHITEBAK;
-	else	dob->ob_state |= WHITEBAK;
+	else
+		dob->ob_state |= WHITEBAK;
 
 /*
-	if	(mypth->sel_icon)
+	if (mypth->sel_icon)
 		ob_sel(dob, 0);
-	else	ob_dsel(dob, 0);
+	else
+		ob_dsel(dob, 0);
 */
 	sob = rscx[ic->rscfile].adr_icons + ic->objnr;
 	ic_height = sob->ob_spec.ciconblk->monoblk.ib_hicon+8;
@@ -216,13 +221,13 @@ static WORD cdecl set_item( LIST_BOX *box, OBJECT *tree,
 	dob -> ob_height	= sob -> ob_height;
 
 /*
-	if	(rect)
-		{
+	if (rect)
+	{
 		rect->g_x += xpos_textob;
 		rect->g_w = visible_len*gl_hwchar;
-		}
+	}
 */
-	return(index);
+	return index;
 }
 #pragma warn .par
 
@@ -241,16 +246,18 @@ static LBOX_ITEM *cat_paths( void )
 
 	/* Verkette die "pth_file"-Strukturen */
 	for	(i = 0,pth = pthx; i < pthn-1; i++,pth++)
-		{
+	{
 		pth->next = pth+1;
-		}
-	if	(pthn)
-		{
+	}
+	if (pthn)
+	{
 		sc = (LBOX_ITEM *) pthx;
 		pthx[pthn-1].next = NULL;
-		}
-	else	sc = NULL;
-	return(sc);
+	}
+	else
+		sc = NULL;
+
+	return sc;
 }
 
 
@@ -264,17 +271,17 @@ void icp_dial_init_rsc( void )
 {
 	int /* dummy,*/ i;
 	static int ctrl_objs[5] =
-		{FL_BK, FL_UP, FL_DOWN, FL_BSL, FL_SLID};
+	{FL_BK, FL_UP, FL_DOWN, FL_BSL, FL_SLID};
 	static int objs[5] =
-		{FLD1,FLD2,FLD3,FLD4,FLD5};
+	{FLD1,FLD2,FLD3,FLD4,FLD5};
 
 
-	if	(!is_3d)
-		{
+	if (!is_3d)
+	{
 		adr_icp_dialog[ctrl_objs[3]].ob_spec.obspec.fillpattern = 1;
 		for	(i = 1; i < 5; i++)
 			adr_icp_dialog[ctrl_objs[i]].ob_spec.obspec.framesize = 1;
-		}
+	}
 
 	adr_icp_dialog[DEL_FLD].ob_state |= DISABLED;
 
@@ -294,7 +301,7 @@ void icp_dial_init_rsc( void )
 					NULL,
 					0,0,0,0
 					);
-	if	(!sbox)
+	if (!sbox)
 		Pterm((int) ENSMEM);
 }
 
@@ -311,9 +318,9 @@ static int delete_pth( int pth )
 	register int i;
 
 	for	(i = pth,p = pthx+pth; i < pthn-1; i++,p++)
-		{
+	{
 		*p = *(p+1);
-		}
+	}
 	pthn--;
 	lbox_set_items(sbox, cat_paths());
 	lbox_set_slider(sbox, lbox_get_first(sbox), NULL);
@@ -321,14 +328,14 @@ static int delete_pth( int pth )
 	/* Aufr„umarbeiten */
 	/* --------------- */
 
-	if	(d_icp)
-		{
+	if (d_icp)
+	{
 		lbox_update(sbox, NULL);
 		subobj_wdraw(d_icp, FL_BK, FL_BK, MAX_DEPTH);
 		subobj_wdraw(d_icp, FL_BSL, FL_BSL, MAX_DEPTH);
-		}
+	}
 
-	return(0);
+	return 0;
 }
 
 
@@ -347,67 +354,68 @@ int insert_pth( struct pth_file *new, struct pth_file *old )
 	register struct pth_file *mypth;
 
 
-	if	(!(new->path[0]))
-		{
+	if (!(new->path[0]))
+	{
 		err_form:
 		Rform_alert(1, ALRT_PATH_INVAL, NULL);
-		return(-1);			/* Pfad ist leer */
-		}
-	if	(new->path[1] == ':')
-		{
-		if	(new->path[2] != '\\')
+		return -1;			/* Pfad ist leer */
+	}
+	if (new->path[1] == ':')
+	{
+		if (new->path[2] != '\\')
 			goto err_form;
 		is_abs = TRUE;
-		}
-	else	is_abs = FALSE;
+	}
+	else
+		is_abs = FALSE;
 
 	/* Suche <new> in pthx[] */
 	/* --------------------- */
 
 	for	(i = 0,mypth = pthx; i < pthn; i++,mypth++)
-		{
-		if	(!stricmp(mypth->path, new->path))
-			return(-2);		/* Pfad existiert schon */
-		}
+	{
+		if (!stricmp(mypth->path, new->path))
+			return -2;		/* Pfad existiert schon */
+	}
 
 	/* Suche <old> in pthx[] */
 	/* --------------------- */
 
-	if	(old->path[0])
-		{
+	if (old->path[0])
+	{
 		for	(newpos = 0,mypth = pthx; newpos < pthn;
 				newpos++,mypth++)
-			{
+		{
 			/* entfernen! */
-			if	(!stricmp(mypth->path, old->path))
-				{
+			if (!stricmp(mypth->path, old->path))
+			{
 				for	(; newpos < pthn-1; newpos++,mypth++)
-					{
+				{
 					*mypth = *(mypth+1);
-					}
+				}
 				pthn--;
 				break;
-				}
 			}
 		}
+	}
 
 	/* neuen Pfad erstellen (einsortieren) */
 	/* ----------------------------------- */
 
-	if	(datn >= MAX_DATN)
-		{
+	if (datn >= MAX_DATN)
+	{
 		Rform_alert(1, ALRT_OVERFLOW, NULL);
-		return(-3);		/* šberlauf */
-		}
+		return -3;		/* šberlauf */
+	}
 	for	(newpos = 0,mypth = pthx; newpos < pthn; newpos++,mypth++)
-		{
-		if	(is_abs && (mypth->path[1] != ':'))
+	{
+		if (is_abs && (mypth->path[1] != ':'))
 			break;
-		if	(!is_abs && (mypth->path[1] == ':'))
+		if (!is_abs && (mypth->path[1] == ':'))
 			continue;
-		if	(stricmp(mypth->path, new->path) > 0)
+		if (stricmp(mypth->path, new->path) > 0)
 			break;
-		}
+	}
 	for	(i = pthn; i > newpos; i--)
 		pthx[i] = pthx[i-1];
 	pthn++;
@@ -425,13 +433,13 @@ int insert_pth( struct pth_file *new, struct pth_file *old )
 	lbox_set_items(sbox, cat_paths());
 	lbox_set_slider(sbox, i, NULL);
 	lbox_update(sbox, NULL);
-	if	(d_icp)
-		{
+	if (d_icp)
+	{
 		subobj_wdraw(d_icp, FL_BK, FL_BK, MAX_DEPTH);
 		subobj_wdraw(d_icp, FL_BSL, FL_BSL, MAX_DEPTH);
-		}
+	}
 
-	return(0);
+	return 0;
 }
 
 
@@ -462,14 +470,14 @@ static void chg_icon(int mypth, int iconnr)
 	register int i;
 
 
-	if	(!d_icp)
+	if (!d_icp)
 		return;
 	ic = icnx + iconnr;
 	sob = rscx[ic->rscfile].adr_icons + ic->objnr;
 	n = lbox_get_first(sbox);
 	for	(i = 0; (i < 5) && (i+n < pthn); i++)
-		{
-		if	(i+n != mypth)
+	{
+		if (i+n != mypth)
 			continue;
 		dob = adr_icp_dialog + showindex_to_icnobj(i);
 		ob_dsel(dob, 0);
@@ -479,7 +487,7 @@ static void chg_icon(int mypth, int iconnr)
 		dob->ob_height	= sob->ob_height;
 		subobj_wdraw(d_icp, showindex_to_icnobj(i),
 					0, 8);
-		}
+	}
 }
 
 
@@ -495,13 +503,13 @@ void icp_dial_set_icon( int iconnr )
 
 
 	for	(i = 0; i < pthn; i++)
+	{
+		if (pthx[i].sel)
 		{
-		if	(pthx[i].sel)
-			{
 			pthx[i].iconnr = iconnr;
 			chg_icon(i, iconnr);
-			}
 		}
+	}
 }
 
 
@@ -516,17 +524,17 @@ static void icp_set_icon(int iconnr, int objnr)
 	int pth;
 
 	pth = icnobj_to_showindex(objnr);
-	if	(pth >= 0)
-		{
+	if (pth >= 0)
+	{
 		pth += lbox_get_first( sbox );
 		pthx[pth].iconnr = iconnr;
 		chg_icon(pth, iconnr);
-		}
+	}
 }
 
 static void icp_malen(int objnr)
 {
-	if	(d_icp)
+	if (d_icp)
 		subobj_wdraw(d_icp, objnr ,0, 8);
 }
 
@@ -536,19 +544,23 @@ int icp_get_zielobj(int x, int y, int whdl, OBJECT **tree,
 {
 	GRECT dummy;
 
-	if	(!d_icp)
-		return(FALSE);		/* Objekt ungltig */
-	if	(whdl != wdlg_get_handle(d_icp))
-		return(FALSE);
+	if (!d_icp)
+		return FALSE;		/* Objekt ungltig */
+
+	if (whdl != wdlg_get_handle(d_icp))
+		return FALSE;
+
 	wdlg_get_tree(d_icp, tree, &dummy);
 	*objnr = objc_find(*tree, 0, 8, x, y);
-	if	(icnobj_to_showindex(*objnr) >= 0)
-		{
+
+	if (icnobj_to_showindex(*objnr) >= 0)
+	{
 		*set_icon = icp_set_icon;
 		*malen = icp_malen;
-		return(TRUE);
-		}
-	return(FALSE);
+		return TRUE;
+	}
+
+	return FALSE;
 }
 
 
@@ -589,31 +601,31 @@ WORD cdecl hdl_icp( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
 	tree = adr_icp_dialog;
 	du = wdlg_get_udata(d);
 
-	if	(exitbutton == HNDL_INIT)
-		{
-		if	(d_icp)			/* Dialog ist schon ge”ffnet ! */
-			return(0);		/* create verweigern */
+	if (exitbutton == HNDL_INIT)
+	{
+		if (d_icp)			/* Dialog ist schon ge”ffnet ! */
+			return 0;		/* create verweigern */
 
-		if	(is_multiwindow)
+		if (is_multiwindow)
 			objs_disable(tree, FL_OK, FL_CN, 0);
 		retcode = 1;			/* keine Aktion notwendig */
 
-		if	((data) && (*((char **) data)))
-			{
+		if ((data) && (*((char **) data)))
+		{
 			path = *((char **) data);
-			if	(0 > scroll_win_path( NULL, path ))
+			if (0 > scroll_win_path( NULL, path ))
 				retcode = 2;	/* Aktion notwendig ! */
-			}
+		}
 
 		du->mode = retcode;
-		return(1);
-		}
+		return 1;
+	}
 
 	/* 1a. Fall: Dialog ist ge”ffnet worden */
 	/* ------------------------------------ */
 
-	if	((exitbutton == HNDL_OPEN) && (du->mode == 2))
-		{
+	if ((exitbutton == HNDL_OPEN) && (du->mode == 2))
+	{
 		du->mode = 1;
 		d_pth = xy_wdlg_init(
  				hdl_pth,
@@ -622,24 +634,24 @@ WORD cdecl hdl_icp( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
  				1,
  				path,
  				STR_WTIT_DEFPATH);
-		if	(!d_pth)
+		if (!d_pth)
 			Rform_alert(1, ALRT_ERRWINDOPEN, NULL);
-		return(1);
-		}
+		return 1;
+	}
 
 
 	/* 3. Fall: Dialog soll geschlossen werden */
 	/* --------------------------------------- */
 
-	if	(exitbutton == HNDL_CLSD)
-		{	/* Wenn Dialog geschlossen werden soll... */
+	if (exitbutton == HNDL_CLSD)
+	{	/* Wenn Dialog geschlossen werden soll... */
 		close_dialog:
 		d_icp = NULL;
-		return(0);		/* ...dann schliežen wir ihn auch */
-		}
+		return 0;		/* ...dann schliežen wir ihn auch */
+	}
 
-	if	(exitbutton < 0)
-		return(1);
+	if (exitbutton < 0)
+		return 1;
 
 	/* 4. Fall: Exitbutton wurde bet„tigt */
 	/* ---------------------------------- */
@@ -648,8 +660,8 @@ WORD cdecl hdl_icp( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
 		/* ------------------------- */
 
 	pth = pthobj_to_showindex(exitbutton);
-	if	((clicks == 2) && (pth >= 0))
-		{
+	if ((clicks == 2) && (pth >= 0))
+	{
 		pth += lbox_get_first( sbox );
  		d_pth = xy_wdlg_init(
  				hdl_pth,
@@ -658,39 +670,39 @@ WORD cdecl hdl_icp( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
  				0,
  				pthx + pth,
  				STR_WTIT_DEFPATH);
-		if	(!d_pth)
+		if (!d_pth)
 			Rform_alert(1, ALRT_ERRWINDOPEN, NULL);
-		return(1);
-		}
+		return 1;
+	}
 
 		/* Doppelklick auf Icon */
 		/* -------------------- */
 
-	if	((clicks == 2) && (icnobj_to_showindex(exitbutton) >= 0))
-		{
+	if ((clicks == 2) && (icnobj_to_showindex(exitbutton) >= 0))
+	{
 		open_iconsel();
-		return(1);
-		}
+		return 1;
+	}
 
 
-	if	(clicks != 1)
+	if (clicks != 1)
 		goto ende;
 
 	/* Scrollbox angew„hlt */
 	/* ------------------- */
 
-	if	(exitbutton == FLICON1)
+	if (exitbutton == FLICON1)
 		exitbutton = FLD1;
-	if	(exitbutton == FLICON2)
+	if (exitbutton == FLICON2)
 		exitbutton = FLD2;
-	if	(exitbutton == FLICON3)
+	if (exitbutton == FLICON3)
 		exitbutton = FLD3;
-	if	(exitbutton == FLICON4)
+	if (exitbutton == FLICON4)
 		exitbutton = FLD4;
-	if	(exitbutton == FLICON5)
+	if (exitbutton == FLICON5)
 		exitbutton = FLD5;
 
-	if	((exitbutton == FL_UP) ||
+	if ((exitbutton == FL_UP) ||
 		 (exitbutton == FL_DOWN) ||
 		 (exitbutton == FL_BSL) ||
 		 (exitbutton == FL_SLID) ||
@@ -699,31 +711,31 @@ WORD cdecl hdl_icp( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
 		 (exitbutton == FLD3) ||
 		 (exitbutton == FLD4) ||
 		 (exitbutton == FLD5))
-		{
+	{
 		lbox_do(sbox, exitbutton);
 
 		/* select-Status ge„ndert ? */
 
-		if	(!selected_path &&
+		if (!selected_path &&
 			 !(adr_icp_dialog[DEL_FLD].ob_state & DISABLED))
-			{
+		{
 			deselect_path(d);
-			}
-		if	(selected_path &&
+		}
+		if (selected_path &&
 			 (adr_icp_dialog[DEL_FLD].ob_state & DISABLED))
-			{
+		{
 			adr_icp_dialog[DEL_FLD].ob_state &= ~DISABLED;
 			subobj_wdraw(d, DEL_FLD, DEL_FLD, 1);
-			}
-		return(1);
 		}
+		return 1;
+	}
 
 
 		/* Neuen Pfad generieren */
 		/* -------------------- */
 
-	if	(exitbutton == NEU_FLD)
-		{
+	if (exitbutton == NEU_FLD)
+	{
  		d_pth = xy_wdlg_init(
  				hdl_pth,
  				adr_newpath,
@@ -731,43 +743,43 @@ WORD cdecl hdl_icp( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
  				0,
  				NULL,
  				STR_WTIT_DEFPATH);
-		if	(!d_pth)
+		if (!d_pth)
 			Rform_alert(1, ALRT_ERRWINDOPEN, NULL);
 		goto ende;
-		}
+	}
 
 		/* Pfad l”schen */
 		/* ------------ */
 
-	if	(exitbutton == DEL_FLD)
-		{
-		if	(!selected_path)
+	if (exitbutton == DEL_FLD)
+	{
+		if (!selected_path)
 			exit(-1);		/* ??? */
 		deselect_path(d);
 		delete_pth(selected_path-pthx);
 		goto ende;
-		}
+	}
 
 		/* Buttons zur Dialogbeendigung */
 		/* ---------------------------- */
 
-	if	(exitbutton == FL_OK)			/* OK */
-		{
+	if (exitbutton == FL_OK)			/* OK */
+	{
 		save_dialog_xy(d);
-		if	(put_inf())
+		if (put_inf())
 			goto ende;				/* Fehler bei INF */
 		goto close_dialog;
-		}
+	}
 
-	if	(exitbutton == FL_CN)			/* Abbruch */
-		{
+	if (exitbutton == FL_CN)			/* Abbruch */
+	{
 		save_dialog_xy(d);
 		goto close_dialog;
-		}
+	}
 
 	ende:
 	ob_dsel(tree, exitbutton);
 	subobj_wdraw(d, exitbutton, exitbutton, 1);
-	return(1);		/* weiter */
+	return 1;		/* weiter */
 }
 #pragma warn +par

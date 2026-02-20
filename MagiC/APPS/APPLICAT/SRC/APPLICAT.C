@@ -50,8 +50,8 @@
 *	int n_icons;
 *	int n_pgm;		Anzahl Programmeintr„ge
 *	int n_dat;		Anzahl Dateieintr„ge
-*	long	offs_pgm;
-*	long	offs_dat;		Zeiger auf Tabelle der Daten-Dateien
+*	long offs_pgm;
+*	long offs_dat;		Zeiger auf Tabelle der Daten-Dateien
 *	void *pgmx[n_pgm];	Angemeldete Programme
 *	void *datx[n_dat];	Angemeldete Dateitypen
 *	void *icons[n_icons];
@@ -64,7 +64,7 @@
 *	char cpath[?]		kompletter Pfadname nullterminiert,
 *					auf gerade Adresse erweitert
 *					ggf. '\0', wenn kein Pfad bekannt ist.
-*	int	icon;		Index fr Icon (ggf. auch Standardicon)
+*	int icon;		Index fr Icon (ggf. auch Standardicon)
 *	int config;		Konfigurationsbits (TTP/Single...)
 *	int types[?];		Index auf Dateitypen, durch -1
 *					abgeschlossen
@@ -72,7 +72,7 @@
 *	 Daten:
 *	char name[?];		Extension, nullterminiert,
 *					auf gerade Adresse erweitert
-*	int	icon;		Index fr Icon (ggf. auch Standardicon)
+*	int icon;		Index fr Icon (ggf. auch Standardicon)
 *
 *
 ****************************************************************/
@@ -101,20 +101,20 @@
 #include "appldata.h"
 #include "iconsel.h"
 
-int	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
-int	ap_id;
-int	is_3d;
+int gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
+int ap_id;
+int is_3d;
 GRECT scrg;
 
 int is_multiwindow;		/* alle Fenster sind offen */
 
-int spcn	= 0;			/* Anzahl Spezialobjekte */
-int pthn	= 0;			/* Anzahl Pfade */
-int datn	= 0;			/* Anzahl Dateitypen */
-int pgmn	= 0;			/* Anzahl Programme */
-int icnn  = 0;			/* Anzahl Icons */
-int linn  = 0;			/* Anzahl Zeilen */
-int rscn	= 0;			/* Anzahl RSC-Dateien */
+int spcn = 0;			/* Anzahl Spezialobjekte */
+int pthn = 0;			/* Anzahl Pfade */
+int datn = 0;			/* Anzahl Dateitypen */
+int pgmn = 0;			/* Anzahl Programme */
+int icnn = 0;			/* Anzahl Icons */
+int linn = 0;			/* Anzahl Zeilen */
+int rscn = 0;			/* Anzahl RSC-Dateien */
 struct pgm_file pgmx[MAX_PGMN];
 struct dat_file datx[MAX_DATN];
 struct pth_file pthx[MAX_PTHN];
@@ -124,11 +124,11 @@ struct zeile	 linx[MAX_LINN];
 struct iconfile rscx[MAX_RSCN];
 
 
-void open_work		(void);
-void close_work     (void);
+void open_work(void);
+void close_work(void);
 
-static void _rsrc_load( char *fname );
-void  Mgraf_mouse(int type);
+static void _rsrc_load(char *fname);
+void Mgraf_mouse(int type);
 
 /* Dialoge */
 
@@ -158,9 +158,9 @@ OBJECT *adr_ftypes;
 int main(int argc, char *argv[])
 {
 	EVNT w_ev;
-	int	whdl;
-	char	action[2] = {0,0};
-	char *args[2] = {NULL, NULL};
+	int whdl;
+	char action[2] = {0,0};
+	char *args[2] = { NULL, NULL };
 	WINDOW *w;
 	int dummy;
 	WORD intin2;
@@ -180,36 +180,37 @@ int main(int argc, char *argv[])
 	/* INF- Datei einlesen */
 	/* ------------------- */
 
-	if	(get_inf())
-		return(-1);
+	if (get_inf())
+		return -1;
 
 	/* Kommandozeile auswerten */
 	/* ----------------------- */
 
-	if	(argc > 1)
+	if (argc > 1)
+	{
+		if (argv[1][0] != '-')
 		{
-		if	(argv[1][0] != '-')
-			{
 			par_err:
 			Rform_alert(1, ALRT_ERRARG, NULL);
-			return(-1);
-			}
+			return -1;
+		}
+
 		action[0] = argv[1][1];
-		if	(!action[0])
+		if (!action[0])
 			goto par_err;
 		action[1] = argv[1][2];
-		if	(argc > 2)
+		if (argc > 2)
 			args[0] = argv[2];
-		if	(argc > 3)
+		if (argc > 3)
 			args[1] = argv[3];
-		}
+	}
 
 
 	open_work();
 	load_icons();
 	load_int_icons();
 
-	if	((action[0] == 'c') && (!action[1]))
+	if ((action[0] == 'c') && (!action[1]))
 		{
 		/* nur compilieren */
 		put_inf();
@@ -245,11 +246,11 @@ int main(int argc, char *argv[])
 
 	is_multiwindow = FALSE;
 
-	if	(action[0] == 'i')
-		{
+	if (action[0] == 'i')
+	{
 		open_iconsel();
 		switch(action[1])
-			{
+		{
 		 case 'a':
 		 		d_ica = xy_wdlg_init(
 		 				hdl_ica,
@@ -258,7 +259,7 @@ int main(int argc, char *argv[])
 		 				0,
 		 				args,
 		 				STR_WINTITLE_APP);
-				if	(!d_ica)
+				if (!d_ica)
 					goto fehler;
 				break;
 		 case 'd':
@@ -269,7 +270,7 @@ int main(int argc, char *argv[])
 		 				1,
 		 				args,
 		 				STR_WINTITLE_APP);
-				if	(!d_ica)
+				if (!d_ica)
 					goto fehler;
 				break;
 		 case 'o':
@@ -280,7 +281,7 @@ int main(int argc, char *argv[])
 		 				0,
 		 				args,
 		 				STR_WINTITLE_PTH);
-				if	(!d_icp)
+				if (!d_icp)
 					goto fehler;
 				break;
 		 case 's':
@@ -291,14 +292,14 @@ int main(int argc, char *argv[])
 		 				0,
 		 				args,
 		 				STR_WINTITLE_SPC);
-				if	(!d_spc)
+				if (!d_spc)
 					goto fehler;
 				break;
-			}
 		}
+	}
 	else
-	if	(action[0] == 'a')
-		{
+	if (action[0] == 'a')
+	{
  		d_ica = xy_wdlg_init(
  				hdl_ica,
  				adr_ica_dialog,
@@ -306,11 +307,12 @@ int main(int argc, char *argv[])
  				2,
  				args,
  				STR_WINTITLE_APP);
-		if	(!d_ica)
+		if (!d_ica)
 			goto fehler;
-		}
+	}
 
-	else	{
+	else
+	{
 		is_multiwindow = TRUE;
 
  		d_ica = xy_wdlg_init(
@@ -320,7 +322,7 @@ int main(int argc, char *argv[])
  				0,
  				args,
  				STR_WINTITLE_APP);
-		if	(!d_ica)
+		if (!d_ica)
 			goto fehler;
 
  		d_icp = xy_wdlg_init(
@@ -330,7 +332,7 @@ int main(int argc, char *argv[])
  				0,
  				args,
  				STR_WINTITLE_PTH);
-		if	(!d_icp)
+		if (!d_icp)
 			goto fehler;
 
  		d_spc = xy_wdlg_init(
@@ -340,12 +342,12 @@ int main(int argc, char *argv[])
  				0,
  				args,
  				STR_WINTITLE_SPC);
-		if	(!d_spc)
+		if (!d_spc)
 			goto fehler;
-		}
+	}
 
-	while(1)
-		{
+	for (;;)
+	{
 		w_ev.mwhich = evnt_multi(MU_KEYBD+MU_BUTTON+MU_MESAG,
 					  2,			/* Doppelklicks erkennen 	*/
 					  1,			/* nur linke Maustaste		*/
@@ -359,24 +361,24 @@ int main(int argc, char *argv[])
 					  &w_ev.mclicks
 					  );
 
-		if	(w_ev.mwhich & MU_KEYBD)
-			{
+		if (w_ev.mwhich & MU_KEYBD)
+		{
 			int message[8];
 
-			if	(w_ev.key == 0x1011)	/* Ctrl-Q */
-				{
+			if (w_ev.key == 0x1011)	/* Ctrl-Q */
+			{
 				break;		/* Beenden */
-				}
+			}
 			else
-			if	(w_ev.key == 0x1615)	/* Ctrl-U */
-				{
+			if (w_ev.key == 0x1615)	/* Ctrl-U */
+			{
 				/* unser oberstes Fenster <whdl> ermitteln */
 				intin2 = ap_id;		/* Eingabewert! */
 				wind_get(0, WF_BOTTOM, &intin2, &whdl,
 						&dummy, &dummy);
 				/* schicke mir selbst eine Nachricht */
-				if	(whdl > 0)
-					{
+				if (whdl > 0)
+				{
 					message[0] = WM_CLOSED;
 					message[1] = ap_id;
 					message[2] = 0;
@@ -384,18 +386,19 @@ int main(int argc, char *argv[])
 					message[4] = message[5] =
 					message[6] = message[7] = 0;
 					appl_write(ap_id, 16, message);
-					}
-				goto key_done;
 				}
-			if	(w_ev.key == 0x1117)	/* Ctrl-W */
-				{
+				goto key_done;
+			}
+
+			if (w_ev.key == 0x1117)	/* Ctrl-W */
+			{
 				/* unser unterstes Fenster <whdl> ermitteln */
 				intin2 = ap_id;		/* Eingabewert! */
 				wind_get(-1, WF_BOTTOM, &intin2, &whdl,
 						&dummy, &dummy);
 				/* schicke mir selbst eine Nachricht */
-				if	(whdl > 0)
-					{
+				if (whdl > 0)
+				{
 					message[0] = WM_TOPPED;
 					message[1] = ap_id;
 					message[2] = 0;
@@ -403,91 +406,93 @@ int main(int argc, char *argv[])
 					message[4] = message[5] =
 					message[6] = message[7] = 0;
 					appl_write(ap_id, 16, message);
-					}
-				goto key_done;
 				}
+				goto key_done;
+			}
 
 			w = whdl2window(top_whdl());
-			if	(w)
-				{
+			if (w)
+			{
 				w->key(w, w_ev.kstate, w_ev.key);
 			key_done:
 				w_ev.mwhich &= ~MU_KEYBD;	/* bearbeitet */
-				}
 			}
+		} /* (w_ev.mwhich & MU_KEYBD) */
 
-		if	(w_ev.mwhich & MU_BUTTON)
-			{
+		if (w_ev.mwhich & MU_BUTTON)
+		{
 			w = whdl2window(wind_find(w_ev.mx, w_ev.my));
-			if	(w)
-				{
+			if (w)
+			{
 				w->button(w, w_ev.kstate, w_ev.mx, w_ev.my,
 						w_ev.mbutton, w_ev.mclicks);
 				w_ev.mwhich &= ~MU_BUTTON;	/* bearbeitet */
-				}
 			}
+		}
 
-		if	(w_ev.mwhich & MU_MESAG)
+		if (w_ev.mwhich & MU_MESAG)
+		{
+			if (w_ev.msg[0] == AP_TERM)
 			{
-			if	(w_ev.msg[0] == AP_TERM)
-				{
 				close_work();
-				return(0);
-				}
+				return 0;
+			}
 /*
-			if	(w_ev.msg[0] == AV_START)
-				{
-				}
+			if (w_ev.msg[0] == AV_START)
+			{
+			}
 */
 
-			if	(((w_ev.msg[0] >= 20) &&
+			if (((w_ev.msg[0] >= 20) &&
 					(w_ev.msg[0] < 40)) ||		/* WM_XX */
 				 	(w_ev.msg[0] >= 1040))
-				{
+			{
 				w = whdl2window(w_ev.msg[3]);
-				if	(w)
-					{
+				if (w)
+				{
 					w->message(w, w_ev.kstate, w_ev.msg);
 					w_ev.mwhich &= ~MU_MESAG;	/* bearbeitet */
-					}
 				}
 			}
+		}
 
 
-		if	(d_ica && !wdlg_evnt(d_ica, &w_ev))
+		if (d_ica && !wdlg_evnt(d_ica, &w_ev))
 			break;
-		if	(d_icp && !wdlg_evnt(d_icp, &w_ev))
+		if (d_icp && !wdlg_evnt(d_icp, &w_ev))
 			break;
-		if	(d_spc && !wdlg_evnt(d_spc, &w_ev))
+		if (d_spc && !wdlg_evnt(d_spc, &w_ev))
 			break;
 
-		if	(d_typ && !wdlg_evnt(d_typ, &w_ev))
-			{
+		if (d_typ && !wdlg_evnt(d_typ, &w_ev))
+		{
 			Mfree(wdlg_get_udata(d_typ));
 			wdlg_close(d_typ, NULL, NULL);
 			wdlg_delete(d_typ);
 			d_typ = NULL;
-			}
-		if	(d_anw && !wdlg_evnt(d_anw, &w_ev))
-			{
+		}
+
+		if (d_anw && !wdlg_evnt(d_anw, &w_ev))
+		{
 			Mfree(wdlg_get_udata(d_anw));
 			wdlg_close(d_anw, NULL, NULL);
 			wdlg_delete(d_anw);
 			d_anw = NULL;
-			}
-		if	(d_pth && !wdlg_evnt(d_pth, &w_ev))
-			{
+		}
+
+		if (d_pth && !wdlg_evnt(d_pth, &w_ev))
+		{
 			Mfree(wdlg_get_udata(d_pth));
 			wdlg_close(d_pth, NULL, NULL);
 			wdlg_delete(d_pth);
 			d_pth = NULL;
-			}
+		}
 
-		} /* END FOREVER */
+	} /* END FOREVER */
 
 	fehler:
 	close_work();
-	return(0);
+	return 0;
 }
 
 
@@ -497,7 +502,7 @@ long err_alert(long e)
 {
 	form_xerr(e, err_file);
 	err_file = NULL;
-	return(e);
+	return e;
 }
 
 
@@ -523,14 +528,17 @@ DIALOG *xy_wdlg_init(
 	struct dialog_userdata *du;
 
 
-	if	(NULL == (du = Malloc(sizeof(struct dialog_userdata))))
-		return(NULL);
-	if	((wd = def_wind_pos( ident )) != NULL)
-		{
+	if (NULL == (du = Malloc(sizeof(struct dialog_userdata))))
+		return NULL;
+
+	if ((wd = def_wind_pos( ident )) != NULL)
+	{
 		x = wd->g.g_x;
 		y = wd->g.g_y + gl_hhbox;
-		}
-	else	x = y = -1;
+	}
+	else
+		x = y = -1;
+
 	du->ident = ident;
 	du->mode = 0;
 	d = wdlg_create(
@@ -542,8 +550,8 @@ DIALOG *xy_wdlg_init(
 			0			/* flags */
 			);
 
-	if	(d)
-		{
+	if (d)
+	{
 		whdl = wdlg_open(
 			d,
 			Rgetstring(title_code, NULL),
@@ -551,17 +559,18 @@ DIALOG *xy_wdlg_init(
 			x,y,
 			0,			/* code */
 			NULL );		/* data */
-		if	(whdl <= 0)
-			{
+		if (whdl <= 0)
+		{
 			wdlg_delete(d);
 			d = NULL;
 			Rform_alert(1, ALRT_ERRWINDOPEN, NULL);
-			}
 		}
+	}
 
-	if	(!d)
+	if (!d)
 		Mfree(du);
-	return(d);
+
+	return d;
 }
 
 
@@ -572,7 +581,7 @@ DIALOG *xy_wdlg_init(
 *
 *************************************************************/
 
-void save_dialog_xy( DIALOG *d )
+void save_dialog_xy(DIALOG *d)
 {
 	register WINDEFPOS *wd;
 	OBJECT *tree;
@@ -583,17 +592,18 @@ void save_dialog_xy( DIALOG *d )
 	du = wdlg_get_udata(d);
 	wdlg_get_tree(d, &tree, &dummy);
 	wd = def_wind_pos( du->ident );
-	if	((!wd) && (n_windefpos < MAXWINDEFPOS))
-		{
+	if ((!wd) && (n_windefpos < MAXWINDEFPOS))
+	{
 		wd = windefpos+n_windefpos;	/* freien Eintrag suchen */
 		strcpy(wd->name, du->ident);
 		n_windefpos++;
-		}
-	if	(wd)
-		{
+	}
+
+	if (wd)
+	{
 		wd->g.g_x = tree->ob_x;
 		wd->g.g_y = tree->ob_y - gl_hhbox;
-		}
+	}
 }
 
 
@@ -655,28 +665,31 @@ int rsrc_gtree(int index, OBJECT **tree )
 int extract_apname(char *path, char *name)
 {
 	char *nurname;
-	char fname[MAX_NAMELEN+10];
+	char fname[MAX_NAMELEN + 10];
 	char *f;
 
 
 	nurname = get_name(path);
-	if	(strlen(nurname) > MAX_NAMELEN+9)
-		{
+	if (strlen(nurname) > MAX_NAMELEN+9)
+	{
 		over:
 		Rform_alert(1, ALRT_FNAME_2LONG, NULL);
-		return(-1);
-		}
+		return -1;
+	}
+
 	strcpy(fname, nurname);
 	f = strchr(fname, '.');
-	if	(f)
+	if (f)
 		*f = EOS;
-	if	(!fname[0] || (strlen(fname) > MAX_NAMELEN-1))
+	if (!fname[0] || (strlen(fname) > MAX_NAMELEN-1))
 		goto over;
-	if	(strpbrk(fname, "[]:\\'"))
-		{
+
+	if (strpbrk(fname, "[]:\\'"))
+	{
 		Rform_alert(1, ALRT_FNAME_INVAL, NULL);
-		return(-1);
-		}
+		return -1;
+	}
+
 	strcpy(name, fname);
 	return(nurname == path);
 }
@@ -694,19 +707,10 @@ int get_deficonnr(long key)
 	register struct spc_file *spc_file;
 
 	for	(i = 0,spc_file = spcx; i < spcn; i++,spc_file++)
-		if	(spc_file->key == key)
-			return(spc_file->iconnr);
-	return(0);
-}
+	{
+		if (spc_file->key == key)
+			return spc_file->iconnr;
+	}
 
-
-/****************************************************************
-*
-* Fehler-Alert ohne variablen Text
-*
-****************************************************************/
-
-void error(int id)
-{
-	form_alert(1, Rgetstring(id, NULL));
+	return 0;
 }

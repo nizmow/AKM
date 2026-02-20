@@ -162,7 +162,7 @@ static int get_icon(const char *fname, int n)
 		{
 			if (n >= rscx[i].nicons)
 				return -1;		/* Fehler ! */
-			return(rscx[i].firsticon + n);
+			return rscx[i].firsticon + n;
 		}
 	}
 
@@ -246,55 +246,59 @@ void load_icons( void )
 	Fsetdta(&mydta);
 	errcode = Fsfirst("rsc\\*.rsc", 0);
 	for (;errcode == E_OK; errcode = Fsnext())
-		{
+	{
 		if (rscn >= MAX_RSCN)
-			{
+		{
 			save_rscdata( rscglobal );
 			restore_rscdata( systemglobal );
 			Rform_alert(1, ALRT_TOOMANY_RSC, NULL);
 			restore_rscdata( rscglobal );
 			break;
-			}
+		}
+
 		strcpy(fname+4, mydta.d_fname);
 		strcpy(rscx[rscn].fname, mydta.d_fname);
+
 		if (!rsrc_load(fname))
-			{
+		{
 			form_xerr(EFILNF, fname);
 			continue;
-			}
+		}
 
 		if (!rsrc_gaddr(R_TREE, 0, &rscx[rscn].adr_icons))
-			{
+		{
 			save_rscdata( rscglobal );
 			restore_rscdata( systemglobal );
 			Rform_alert(1, ALRT_FORMATICERR, NULL);
 			restore_rscdata( rscglobal );
 			continue;
-			}
+		}
 
 		rscx[rscn].nicons = 0;
 		rscx[rscn].firsticon = icnn;
 		objnr = rscx[rscn].adr_icons->ob_head;	/* erstes Kind */
 	
 		while (objnr > 0)		/* gltig und nicht parent */
-			{
+		{
 			ob = rscx[rscn].adr_icons + objnr;
 			if ((ob->ob_type != G_ICON) && (ob->ob_type != G_CICON))
-				{
+			{
 				save_rscdata( rscglobal );
 				restore_rscdata( systemglobal );
 				Rform_alert(1, ALRT_FORMATICERR, NULL);
 				restore_rscdata( rscglobal );
 				break;
-				}
+			}
+
 			if (icnn >= MAX_ICNN)
-				{
+			{
 				save_rscdata( rscglobal );
 				restore_rscdata( systemglobal );
 				Rform_alert(1, ALRT_2MANY_ICONS, NULL);
 				restore_rscdata( rscglobal );
 				break;
-				}
+			}
+
 			ic -> rscfile = rscn;
 			ic -> objnr = objnr;
 			/* ic -> sel_pgm = ic -> sel_dat = FALSE */
@@ -306,17 +310,17 @@ void load_icons( void )
 		rscn++;
 		if (icnn >= MAX_ICNN)
 			break;
-		}
+	}
 
 	/* Icons umrechnen */
 	/* --------------- */
 
 	for (i = 0; i < spcn; i++)
-		{
+	{
 		spcx[i].iconnr = get_icon(spcx[i].rscname, spcx[i].rscindex);
 		if (spcx[i].iconnr < 0)
 			spcx[i].iconnr = 3;
-		}
+	}
 
 	for (i = 0; i < pgmn; i++)
 		{
@@ -330,26 +334,26 @@ void load_icons( void )
 		}
 
 	for (i = 0; i < datn; i++)
-		{
+	{
 		datx[i].iconnr = get_icon(datx[i].rscname, datx[i].rscindex);
 		if (datx[i].iconnr < 0)
-			{
+		{
 			datx[i].iconnr = get_deficonnr('DATS');
 			if (!datx[i].iconnr)
 				datx[i].iconnr = 3;
-			}
 		}
+	}
 
 	for (i = 0; i < pthn; i++)
-		{
+	{
 		pthx[i].iconnr = get_icon(pthx[i].rscname, pthx[i].rscindex);
 		if (pthx[i].iconnr < 0)
-			{
+		{
 			pthx[i].iconnr = get_deficonnr('FLDR');
 			if (!pthx[i].iconnr)
 				pthx[i].iconnr = 1;
-			}
 		}
+	}
 
 	restore_rscdata(systemglobal);		/* System-RSC zurck */
 }
@@ -357,7 +361,7 @@ void load_icons( void )
 
 /****************************************************************
 *
-* Fehler-Alert fr APPLICAT.INF, mit variablem Text
+* Fehler-Alert fr APPLICAT.INF, mit Text zum Einfgen
 *
 * ALRT_ERR_IN_INF ist:
 * "[3][Fehler auf APPLICAT.INF:|%s][Abbruch]"
@@ -366,7 +370,7 @@ void load_icons( void )
 *
 ****************************************************************/
 
-static void serror(char *s)
+static void alert_error_in_inf(char *s)
 {
 	/* replace control characters "[]|%" in string to insert */
 	char *t = s;
@@ -382,6 +386,18 @@ static void serror(char *s)
 	/* merge alert template with variable text and show alert */
 	sprintf(buf512, Rgetstring(ALRT_ERR_IN_INF, NULL), s);
 	form_alert(1, buf512);
+}
+
+
+/****************************************************************
+*
+* Fehler-Alert fr APPLICAT.INF, mit Text aus der RSC-Datei
+*
+****************************************************************/
+
+void error(int id)
+{
+	alert_error_in_inf(Rgetstring(id, NULL));
 }
 
 
@@ -442,7 +458,7 @@ static int scanpath(char **lpos, char *buf, int len)
 		while (*s && ((*s != ' ')))
 		{
 			if (!len)
-				return(1);
+				return 1;
 			*buf++ = *s++;
 			len--;
 		}
@@ -511,21 +527,22 @@ static int getgroup( char *s )
 	while (isspace(*t))		/* fhrende Leerstellen berlesen */
 		t++;
 	if (*t++ != '[')
-		return(1);		/* Fehler */
+		return 1;		/* Fehler */
 
 	if (*t == '\'')
-		{
+	{
 		if (scanpath(&t, s, MAX_NAMELEN))
-			return(1);
-		}
-	else	{
+			return 1;
+	}
+	else
+	{
 		while ((*t) && ((*t != ']')))
 			*s++ = *t++;
-		}
+	}
 
 	if (*t != ']')
-		return(1);		/* letztes Zeichen nicht ']' */
-	return(0);
+		return 1;		/* letztes Zeichen nicht ']' */
+	return 0;
 }
 */
 
@@ -572,7 +589,7 @@ static void readline(void)
 		{
 			if (!*cpos)
 			{
-				error(STR_ERR_EOF_INF);
+				error(STR_ERR_EOF_INF);		/* show alert from resource file */
 				exit(1);		/* Dateiende */
 			}
 	
@@ -961,7 +978,7 @@ long get_inf(void)
 		/* "Zeile: |" */
 		strcpy(s, Rgetstring(STR_LINE, NULL));
 		strcat(s, line);
-		serror(s);
+		alert_error_in_inf(s);
 	}
 
 	Mfree(inf_buf);
