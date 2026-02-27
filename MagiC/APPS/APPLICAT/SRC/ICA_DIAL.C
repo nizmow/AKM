@@ -861,7 +861,7 @@ int insert_dat( struct pgm_file *pgm, struct dat_file *dat )
 		if (!mydat->name[0])
 		{
 			newdat = j;
-			goto ok_neu;
+			goto ok_new;
 		}
 	}
 
@@ -870,7 +870,7 @@ int insert_dat( struct pgm_file *pgm, struct dat_file *dat )
 	newdat = datn;
 	datn++;
 
-	ok_neu:
+	ok_new:
 	datx[newdat] = *dat;
 	dat = datx+newdat;		/* dat = Zeiger auf neuen Eintrag */
 
@@ -1044,12 +1044,12 @@ int delete_dat( int dat )
 *
 *********************************************************************/
 
-int change_dat( struct pgm_file *pgm, struct dat_file *dat,
-				char *newname )
+int change_dat(struct pgm_file *pgm, struct dat_file *dat,
+				char *newname)
 {
 	register int i,j;
-	struct dat_file neudat;
-	DIALOG *d_icons_alt;
+	struct dat_file dat_new;
+	DIALOG *d_icons_prev;
 
 
 	/* Suche <pgm> in pgmx[] */
@@ -1080,13 +1080,13 @@ int change_dat( struct pgm_file *pgm, struct dat_file *dat,
 	/* dat „ndern */
 	/* ---------- */
 
-	neudat = *dat;
-	strcpy(neudat.name, newname);
-	d_icons_alt = d_ica;
+	dat_new = *dat;
+	strcpy(dat_new.name, newname);
+	d_icons_prev = d_ica;
 	d_ica = NULL;		/* Redraw verhindern */
 	delete_dat(j);
-	d_ica = d_icons_alt;
-	insert_dat(pgm, &neudat);
+	d_ica = d_icons_prev;
+	insert_dat(pgm, &dat_new);
 	return 0;
 }
 
@@ -1097,7 +1097,7 @@ int change_dat( struct pgm_file *pgm, struct dat_file *dat,
 *
 *********************************************************************/
 
-int insert_pgm( struct pgm_file *pgm )
+int insert_pgm(struct pgm_file *pgm)
 {
 	register int i,j,k;
 
@@ -1190,11 +1190,11 @@ int insert_pgm( struct pgm_file *pgm )
 
 /*********************************************************************
 *
-* L”scht ein Programm
+* Entfernt ein Programm aus den globalen Listen linx[] und pgmx[]
 *
 *********************************************************************/
 
-int delete_pgm( int pgm )
+int delete_pgm(int pgm)
 {
 	register int i,j,k;
 
@@ -1301,7 +1301,7 @@ static void chg_icon(int win, int meinding, int iconnr)
 *
 *********************************************************************/
 
-void ica_dial_set_icon( int iconnr )
+void ica_dial_set_icon(int iconnr)
 {
 	register int i;
 
@@ -1364,15 +1364,15 @@ static void ica_set_icon(int iconnr, int objnr)
 	}
 }
 
-static void ica_malen(int objnr)
+static void ica_draw_subobj(int objnr)
 {
 	if (d_ica)
 		subobj_wdraw(d_ica, objnr ,0, MAX_DEPTH);
 }
 
-int ica_get_zielobj(int x, int y, int whdl, OBJECT **tree,
+int ica_get_target_obj(int x, int y, int whdl, OBJECT **tree,
 			int *objnr, void (**set_icon)(int iconnr, int objnr),
-			void (**malen)(int objnr))
+			void (**drawfn)(int objnr))
 {
 	GRECT dummy;
 
@@ -1389,7 +1389,7 @@ int ica_get_zielobj(int x, int y, int whdl, OBJECT **tree,
 		 (daticnobj_to_showindex(*objnr) >= 0))
 	{
 		*set_icon = ica_set_icon;
-		*malen = ica_malen;
+		*drawfn = ica_draw_subobj;
 		return TRUE;
 	}
 
@@ -1403,7 +1403,7 @@ int ica_get_zielobj(int x, int y, int whdl, OBJECT **tree,
 *
 *********************************************************************/
 
-static void deselect_dfile( DIALOG *d)
+static void deselect_dfile(DIALOG *d)
 {
 	if (selected_datfile)
 	{
@@ -1583,8 +1583,8 @@ char *def_txt;		/* ->hdl_typ */
 
 #pragma warn -par
 
-WORD cdecl hdl_ica( DIALOG *d, EVNT *ev, WORD exitbutton,
-		WORD clicks, void *data )
+WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
+		WORD clicks, void *data)
 {
 	struct zeile *oldsel;
 	struct spd_file *oldsel2;
@@ -1621,6 +1621,7 @@ WORD cdecl hdl_ica( DIALOG *d, EVNT *ev, WORD exitbutton,
 				if (cmd_pgm_path[0] == '<')	/* nicht angem. */
 					cmd_pgm_path = APP_NAME_FREE;
 			}
+
 			cmd_pgm = scroll_win_app( NULL, cmd_pgm_path);
 			if (cmd_pgm >= 0)
 			{
@@ -1637,6 +1638,7 @@ WORD cdecl hdl_ica( DIALOG *d, EVNT *ev, WORD exitbutton,
 				}
 				sync_sel();
 			}
+
 			if (clicks == 0)	/* Icon fr Programm */
 			{
 				if (cmd_pgm == -1)	/* neues Programm */
@@ -1658,7 +1660,7 @@ WORD cdecl hdl_ica( DIALOG *d, EVNT *ev, WORD exitbutton,
 
 		du->mode = retcode;
 		return 1;
-	}
+	} /* (exitbutton == HNDL_INIT) */
 
 	/* 1a. Fall: Dialog ist ge”ffnet worden */
 	/* ------------------------------------ */
@@ -1714,14 +1716,15 @@ WORD cdecl hdl_ica( DIALOG *d, EVNT *ev, WORD exitbutton,
 		}
 
 		return 1;
-	}
+	} /* ((exitbutton == HNDL_OPEN) && (du->mode == 2)) */
 
 
 	/* 3. Fall: Dialog soll geschlossen werden */
 	/* --------------------------------------- */
 
 	if (exitbutton == HNDL_CLSD)
-	{	/* Wenn Dialog geschlossen werden soll... */
+	{
+		/* Wenn Dialog geschlossen werden soll... */
 		close_dialog:
 		d_ica = NULL;
 		return 0;		/* ...dann schliežen wir ihn auch */
@@ -1912,8 +1915,8 @@ WORD cdecl hdl_ica( DIALOG *d, EVNT *ev, WORD exitbutton,
 
 
 
-		/* Neues Programm generieren */
-		/* ------------------------- */
+	/* Neues Programm generieren */
+	/* ------------------------- */
 
 	if (exitbutton == NEU_PGM)
 	{

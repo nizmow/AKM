@@ -320,15 +320,15 @@ static void spc_set_icon(int iconnr, int objnr)
 	}
 }
 
-static void spc_malen(int objnr)
+static void spc_draw_subobj(int objnr)
 {
 	if (d_spc)
 	subobj_wdraw(d_spc, objnr ,0, 8);
 }
 
-int spc_get_zielobj(int x, int y, int whdl, OBJECT **tree,
+int spc_get_target_obj(int x, int y, int whdl, OBJECT **tree,
 			int *objnr, void (**set_icon)(int iconnr, int objnr),
-			void (**malen)(int objnr))
+			void (**drawfn)(int objnr))
 {
 	GRECT dummy;
 
@@ -344,7 +344,7 @@ int spc_get_zielobj(int x, int y, int whdl, OBJECT **tree,
 	if (icnobj_to_showindex(*objnr) >= 0)
 	{
 		*set_icon = spc_set_icon;
-		*malen = spc_malen;
+		*drawfn = spc_draw_subobj;
 		return TRUE;
 	}
 

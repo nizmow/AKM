@@ -107,14 +107,14 @@ void move_icons(int x_koor, int y_koor, OBJECT *tree, int objnr)
 	OBJECT *mov_boxes;
 	EVNTDATA ev;
 	int old_x,old_y;
-	OBJECT *zieltree;
-	int zielwhdl;
-	int zielobj;
-	int altobj = 0;
-	OBJECT *alttree = NULL;
+	OBJECT *target_tree;
+	int target_whdl;
+	int target_obj;
+	int prev_obj = 0;
+	OBJECT *prev_tree = NULL;
 	void (*set_icon)(int iconnr, int objnr);
-	void (*malen)(int objnr);
-	void (*altmalen)(int objnr) = NULL;
+	void (*drawfn)(int objnr);
+	void (*prev_drawfn)(int objnr) = NULL;
 
 
 	mov_boxes = tree + objnr;		/* Tabelle aller Objekte */
@@ -151,48 +151,48 @@ void move_icons(int x_koor, int y_koor, OBJECT *tree, int objnr)
 
 		graf_mouse(M_OFF, NULL);
 		draw_boxes(tree, &mov_boxes, 1, ptr_g,
-				 old_x-x_koor, old_y-y_koor);
+				 old_x - x_koor, old_y - y_koor);
 
-		zielwhdl = wind_find(ev.x, ev.y);
-		if (!ica_get_zielobj(ev.x, ev.y, zielwhdl, &zieltree,
-				&zielobj, &set_icon, &malen) &&
-			 !icp_get_zielobj(ev.x, ev.y, zielwhdl, &zieltree,
-				&zielobj, &set_icon, &malen) &&
-			 !spc_get_zielobj(ev.x, ev.y, zielwhdl, &zieltree,
-				&zielobj, &set_icon, &malen))
+		target_whdl = wind_find(ev.x, ev.y);
+		if (!ica_get_target_obj(ev.x, ev.y, target_whdl, &target_tree,
+				&target_obj, &set_icon, &drawfn) &&
+			 !icp_get_target_obj(ev.x, ev.y, target_whdl, &target_tree,
+				&target_obj, &set_icon, &drawfn) &&
+			 !spc_get_target_obj(ev.x, ev.y, target_whdl, &target_tree,
+				&target_obj, &set_icon, &drawfn))
 		{
-			zieltree = NULL;
-			zielobj = -1;
+			target_tree = NULL;
+			target_obj = -1;
 		}
 
-		if (zieltree != alttree || zielobj != altobj)
+		if ((target_tree != prev_tree) || (target_obj != prev_obj))
 		{
-			if (alttree && altobj > 0)
+			if (prev_tree && prev_obj > 0)
 			{
-				altmalen(altobj);
+				prev_drawfn(prev_obj);
 			}
-			if (zieltree && zielobj > 0)
+			if (target_tree && target_obj > 0)
 			{
-				ob_sel(zieltree, zielobj);
-				malen(zielobj);
-				ob_dsel(zieltree, zielobj);
+				ob_sel(target_tree, target_obj);
+				drawfn(target_obj);
+				ob_dsel(target_tree, target_obj);
 			}
-			alttree = zieltree;
-			altobj  = zielobj;
-			altmalen = malen;
+			prev_tree = target_tree;
+			prev_obj  = target_obj;
+			prev_drawfn = drawfn;
 		}
 	}
 	while (ev.bstate & 1);
 
-	if (zielobj > 0)
+	if (target_obj > 0)
 	{
-		malen(zielobj);
-		set_icon(objnr - 1, zielobj);
+		drawfn(target_obj);
+		set_icon(objnr - 1, target_obj);
 	}
+
 	graf_mouse(ARROW, NULL);
 	graf_mouse(M_ON, NULL);
 	wind_update(END_UPDATE);
-
 }
 
 
@@ -232,7 +232,7 @@ static void button_iconsel( WINDOW *w, int kstate,
 	else
 		ob_sel(w->tree, objnr);
 
-	obj_malen(w->handle, w->tree, objnr);
+	window_draw_obj(w->handle, w->tree, objnr);
 }
 #pragma warn .par
 

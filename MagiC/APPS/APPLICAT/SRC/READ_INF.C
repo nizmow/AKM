@@ -176,7 +176,7 @@ static int get_icon(const char *fname, int n)
 *
 *********************************************************************/
 
-void load_int_icons( void )
+void load_int_icons(void)
 {
 	rsrc_gtree(T_DEFICN, &(rscx[0].adr_icons));
 }
@@ -188,7 +188,7 @@ void load_int_icons( void )
 *
 *********************************************************************/
 
-void load_icons( void )
+void load_icons(void)
 {
 	register int i;
 	char *fname = "rsc\\12345678901234567890";
@@ -626,7 +626,7 @@ static void readline(void)
 *
 ****************************************************************/
 
-static void rreadline( void )
+static void rreadline(void)
 {
 	do
 		readline();
@@ -656,6 +656,7 @@ const char *key2name(long key)
 		case 'DRVS': rsc_index = STR_DRVS; break;
 		case 'TRSH': rsc_index = STR_TRSH; break;
 		case 'PRNT': rsc_index = STR_PRNT; break;
+
 		default: memcpy(unknown, &key, 4); return unknown;
 	}
 

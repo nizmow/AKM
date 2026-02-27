@@ -1,4 +1,4 @@
-#define NWINDOWS	1
+#define NWINDOWS 1
 #define WFLAG_ICONIFIED	1
 
 typedef struct _window
@@ -24,10 +24,10 @@ typedef struct _window
 	void	(*moved)		(struct _window *w, GRECT *g);
 	void	(*draw)		(struct _window *w, GRECT *g);
 	char	title[128];		/* Titelzeile 					*/
-	char	info[60];			/* Infozeile 					*/
-	GRECT 	out;				/* Fenster- Gesamtmaûe 			*/
+	char	info[60];		/* Infozeile 					*/
+	GRECT 	out;			/* Fenster- Gesamtmaûe 			*/
 	GRECT	in;				/* Fenster- Innenmaûe 			*/
-	int		is_1col;			/* immer einspaltig				*/
+	int		is_1col;		/* immer einspaltig				*/
 	int		showw;			/* Breite eines Objekts			*/
 	int		showh;			/* Hîhe eines Objekts			*/
 	int		max_hicon;		/* grîûtes Icon-Objekt			*/
@@ -35,7 +35,7 @@ typedef struct _window
 	int		ydist;			/* y-Abstand der Objekte			*/
 	int		xoffs;			/* x-Rand des ersten Objekts		*/
 	int		yoffs;			/* y-Rand des ersten Objekts		*/
-	int		shownum;			/* Anzahl	Objekte				*/
+	int		shownum;		/* Anzahl	Objekte				*/
 	int		cols;			/* Objekte/Zeile 				*/
 
 	int		wlins;			/* Anzahl ganz sichtbarer Zeilen 	*/
@@ -43,11 +43,11 @@ typedef struct _window
 	int		vshift;			/* Nr. der obersten Zeile 		*/
 	int		max_vshift;		/* Maximales <vshift> 			*/
 
-	int		step_hshift;		/* Schrittweite fÅr hor. Scrolling */
-	int		allsteps_hshift;	/* Gesamtanzahl Schritte			*/
-	int		vissteps_hshift;	/* Anzahl ganz sichtbarer Schritte	*/
-	int		hshift;			/* akt. Anzahl Scrollschritte		*/
-	int		max_hshift;		/* max. Anzahl Scrollschritte		*/
+	int	step_hshift;		/* Schrittweite fÅr hor. Scrolling */
+	int	allsteps_hshift;	/* Gesamtanzahl Schritte			*/
+	int	vissteps_hshift;	/* Anzahl ganz sichtbarer Schritte	*/
+	int	hshift;				/* akt. Anzahl Scrollschritte		*/
+	int	max_hshift;			/* max. Anzahl Scrollschritte		*/
 
 	OBJECT	*tree;			/* Zeiger auf dargestellte Objekte */
 	long	usertype;
@@ -56,7 +56,7 @@ typedef struct _window
 
 typedef union _wmesag 
 {
-	int		message[8];
+	int message[8];
 	struct
 	{
 		int code;
@@ -70,13 +70,13 @@ typedef union _wmesag
 
 
 /* FÅr Fenster */
-extern int top_whdl( void );
+extern int top_whdl(void);
 extern WINDOW *windows[NWINDOWS];
 extern WINDOW **new_window( void );
 extern WINDOW **find_slot_window( WINDOW *myw );
 extern WINDOW *whdl2window(int whdl);
 extern int find_obj(OBJECT *tree, int x, int y);
-extern void obj_malen(int whdl, OBJECT *tree, int index);
+extern void window_draw_obj(int whdl, OBJECT *tree, int index);
 extern void init_window( WINDOW *w);
 extern void window_calc_hslider(WINDOW *w);
 extern void window_calc_vslider(WINDOW *w);

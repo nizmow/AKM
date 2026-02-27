@@ -50,7 +50,7 @@ WINDOW *whdl2window(int whdl)
 *
 ****************************************************************/
 
-WINDOW **new_window( void )
+WINDOW **new_window(void)
 {
 	register int i;
 	register WINDOW **w;
@@ -71,7 +71,7 @@ WINDOW **new_window( void )
 *
 ****************************************************************/
 
-WINDOW **find_slot_window( WINDOW *myw )
+WINDOW **find_slot_window(WINDOW *myw)
 {
 	register int i;
 	register WINDOW **w;
@@ -91,27 +91,26 @@ WINDOW **find_slot_window( WINDOW *myw )
 * Das Objekt mit der Objektnummer <index> wird neu gemalt.
 * (da es sich entweder verschoben hat oder der Status sich
 *  ge„ndert hat).
-* Das Objekt liegt im Fenster mit Nummer <wnr> bzw. auf dem
-* Desktop, wenn <wnr> = 0;
+* Das Objekt liegt im Fenster mit Handle <whdl> bzw. auf dem
+* Desktop, wenn <whdl> = 0.
 *
 ****************************************************************/
 
-void obj_malen(int whdl, OBJECT *tree, int index)
+void window_draw_obj(int whdl, OBJECT *tree, int index)
 {
-	GRECT 	list,neu;
+	GRECT list, new_g;
 
-
-	objc_offset(tree, index, &(neu.g_x), &(neu.g_y));
-	neu.g_w = (tree+index)->ob_width;
-	neu.g_h = (tree+index)->ob_height;
+	objc_offset(tree, index, &(new_g.g_x), &(new_g.g_y));
+	new_g.g_w = (tree + index)->ob_width;
+	new_g.g_h = (tree + index)->ob_height;
 
 	index = 0;
-	wind_get_grect(whdl,WF_FIRSTXYWH, &list);
+	wind_get_grect(whdl, WF_FIRSTXYWH, &list);
 	do
 	{
-		if (rc_intersect(&neu,&list))
-			objc_draw(tree,index,1, &list);
-		wind_get_grect(whdl,WF_NEXTXYWH,&list);
+		if (rc_intersect(&new_g, &list))
+			objc_draw(tree, index, 1, &list);
+		wind_get_grect(whdl, WF_NEXTXYWH, &list);
 	}
 	while (list.g_w > 0);
 }
@@ -120,22 +119,22 @@ void obj_malen(int whdl, OBJECT *tree, int index)
 /****************************************************************
 *
 * Malt das Fenster mit Nummer <wnr> im Bereich
-* neu_x,neu_y,neu_b,neu_h  nach.
+* neu_x,neu_y,neu_b,neu_h nach.
 *
 ****************************************************************/
 
-void redraw_window(WINDOW *w, GRECT *neu)
+void redraw_window(WINDOW *w, GRECT *new_g)
 {
 	GRECT g;
 
 
 	graf_mouse(M_OFF, NULL);
-	wind_get(w->handle,WF_FIRSTXYWH,&(g.g_x),&(g.g_y),&(g.g_w),&(g.g_h));
+	wind_get(w->handle, WF_FIRSTXYWH, &(g.g_x), &(g.g_y), &(g.g_w), &(g.g_h));
 	do
 	{
-		if (rc_intersect(neu,&g))
+		if (rc_intersect(new_g, &g))
 			w->draw(w, &g);
-		wind_get(w->handle,WF_NEXTXYWH,&(g.g_x),&(g.g_y),&(g.g_w),&(g.g_h));
+		wind_get(w->handle, WF_NEXTXYWH, &(g.g_x), &(g.g_y), &(g.g_w), &(g.g_h));
 	}
 	while (g.g_w > 0);					/* bis Rechteckliste vollst„ndig */
 	graf_mouse(M_ON, NULL);
@@ -154,7 +153,7 @@ int update_window(WINDOW *w)
 
 	/* Der Redraw wird nicht direkt ausgefhrt, sondern schickt */
 	/* eine Nachricht an die Applikation, um Kollisionen mit    */
-	/* von AES erzeugten Redraws zu vermeiden                   */
+	/* von AES erzeugten Redraws zu vermeiden.                  */
 	/* -------------------------------------------------------- */
 
 	mesag.msg.code		= WM_REDRAW;
@@ -284,12 +283,12 @@ void window_calc_hslider(WINDOW *w)
 *
 ****************************************************************/
 
-static void arrange_window_horizontal( WINDOW *w )
+static void arrange_window_horizontal(WINDOW *w)
 {
 	OBJECT *o;
 
 
-	o 			= w->tree;
+	o = w->tree;
 
 	calc_in(w);			/* Innenmaže berechnen */
 	w->vissteps_hshift = (w->in.g_w - w->xoffs) / w->step_hshift;
@@ -350,7 +349,7 @@ void window_calc_vslider(WINDOW *w)
 *
 ****************************************************************/
 
-static int arrange_window( WINDOW *w )
+static int arrange_window(WINDOW *w)
 {
 	register int i,j;
 	int x,y,cols;
@@ -361,7 +360,7 @@ static int arrange_window( WINDOW *w )
 	ICONBLK *icb;
 
 
-	oldcols 		= w->cols;
+	oldcols 	= w->cols;
 	old_hshift 	= w->hshift;
 	old_vshift 	= w->vshift;
 	anzahl 		= w->shownum;
@@ -382,6 +381,7 @@ static int arrange_window( WINDOW *w )
 	/* Position und H”he ggf. korrigieren (von calc_in schon gesetzt) */
 	o -> ob_y 	= w->in.g_y - w->vshift*(w->showh + w->ydist);
 	o -> ob_height = w->in.g_h + w->vshift*(w->showh + w->ydist);
+
 	for	(i = 0, y = w->yoffs, x = w->xoffs, j = anzahl;
 			j > 0; i++,j--)
 	{
@@ -408,6 +408,7 @@ static int arrange_window( WINDOW *w )
 			o -> ob_y += w->max_hicon - icb->ib_hicon;
 		x += w->showw + w->xdist;
 	}
+
 	if (anzahl < oldcols)
 		oldcols = anzahl;
 	if (anzahl < cols)
@@ -425,7 +426,7 @@ static int arrange_window( WINDOW *w )
 
 static void fulled(WINDOW *w)
 {
-	GRECT   prev, full;
+	GRECT prev, full;
 	register GRECT *out;
 
 
@@ -435,7 +436,7 @@ static void fulled(WINDOW *w)
 	wind_get(w->handle, WF_PREVXYWH, &prev.g_x, &prev.g_y, &prev.g_w, &prev.g_h);
 	wind_get(w->handle, WF_FULLXYWH, &full.g_x, &full.g_y, &full.g_w, &full.g_h);
  
-	/* 1. Fall: Das Fenster hat bereits Maximalgr”že	  */
+	/* 1. Fall: Das Fenster hat bereits Maximalgr”že */
 	/*		  Also muž das Fenster verkleinert werden */
 	/* ------------------------------------------------ */
 
@@ -446,7 +447,7 @@ static void fulled(WINDOW *w)
 		out->g_w = prev.g_w; out->g_h = prev.g_h;
 	}
 
-	/* 2. Fall: Das Fenster hat nicht Maximalgr”že	  */
+	/* 2. Fall: Das Fenster hat nicht Maximalgr”že */
 	/*		  Also Gr”že auf Maximum 			  */
 	/* ------------------------------------------------ */
 
@@ -658,7 +659,7 @@ static void vshift(WINDOW *w, int newshift)
 
 static void arrowed(WINDOW *w, int arrow)
 {
-	int new_hshift,new_vshift;
+	int new_hshift, new_vshift;
 
 
 	if (w->flags & WFLAG_ICONIFIED)
@@ -669,32 +670,57 @@ static void arrowed(WINDOW *w, int arrow)
 
 	switch(arrow)
 	{
-		case -1:			new_vshift  = 0;
-						break;
-		case -2:			new_vshift  = w->max_vshift;
-						break;
-		case -3:			new_hshift  = 0;
-						break;
-		case -4:			new_hshift  = w->max_hshift;
-						break;
-		case WA_UPPAGE:	new_vshift -= w->wlins;
-						break;
-		case WA_DNPAGE:	new_vshift += w->wlins;
-						break;
-		case WA_UPLINE:	new_vshift--;
-						break;
-		case WA_DNLINE:	new_vshift++;
-						break;
-		case WA_LFPAGE:	new_hshift -= w->vissteps_hshift;
-						break;
-		case WA_RTPAGE:	new_hshift += w->vissteps_hshift;
-						break;
-		case WA_LFLINE:	new_hshift--;
-						break;
-		case WA_RTLINE:	new_hshift++;
-						break;
-		default:			return;
+		case -1:
+			new_vshift  = 0;
+			break;
+
+		case -2:
+			new_vshift  = w->max_vshift;
+			break;
+
+		case -3:
+			new_hshift  = 0;
+			break;
+
+		case -4:
+			new_hshift  = w->max_hshift;
+			break;
+
+		case WA_UPPAGE:
+			new_vshift -= w->wlins;
+			break;
+
+		case WA_DNPAGE:
+			new_vshift += w->wlins;
+			break;
+
+		case WA_UPLINE:
+			new_vshift--;
+			break;
+
+		case WA_DNLINE:
+			new_vshift++;
+			break;
+
+		case WA_LFPAGE:
+			new_hshift -= w->vissteps_hshift;
+			break;
+
+		case WA_RTPAGE:
+			new_hshift += w->vissteps_hshift;
+			break;
+
+		case WA_LFLINE:
+			new_hshift--;
+			break;
+
+		case WA_RTLINE:
+			new_hshift++;
+			break;
+		default:
+			return;
 	}
+
 	w->set_vshift(w, new_vshift);
 	w->set_hshift(w, new_hshift);
 }
@@ -846,7 +872,7 @@ static void _message_obj_window(WINDOW *w, int kstate, int message[16])
 	switch(message[0])
 	{
 		case WM_REDRAW:
-			redraw_window(w, (GRECT *) (message+4));
+			redraw_window(w, (GRECT *) (message + 4));
 			break;
 		case WM_TOPPED:
 			wind_set(w->handle, WF_TOP, 0,0,0,0);
@@ -855,13 +881,13 @@ static void _message_obj_window(WINDOW *w, int kstate, int message[16])
 			w->close(w, kstate);
 			break;
 		case WM_ALLICONIFY:
-			w->alliconified(w, (GRECT *) (message+4), TRUE);
+			w->alliconified(w, (GRECT *) (message + 4), TRUE);
 			break;
 		case WM_ICONIFY:
-			w->iconified(w, (GRECT *) (message+4));
+			w->iconified(w, (GRECT *) (message + 4));
 			break;
 		case WM_UNICONIFY:
-			w->uniconified(w, (GRECT *) (message+4), FALSE);
+			w->uniconified(w, (GRECT *) (message + 4), FALSE);
 			break;
 		case WM_FULLED:
 			w->fulled(w);
@@ -876,10 +902,10 @@ static void _message_obj_window(WINDOW *w, int kstate, int message[16])
 			w->vslid(w, message[4]);
 			break;
 		case WM_SIZED:
-			w->sized(w, (GRECT *) (message+4));
+			w->sized(w, (GRECT *) (message + 4));
 			break;
 		case WM_MOVED:
-			w->moved(w, (GRECT *) (message+4));
+			w->moved(w, (GRECT *) (message + 4));
 			break;
 	}
 }
@@ -888,15 +914,15 @@ static void _message_obj_window(WINDOW *w, int kstate, int message[16])
 /****************************************************************
 *
 * Das Fenster wird mit Default-Funktionen initialisiert.
-* Da der PureC- Linker "intelligent" ist, wird hier nur die
+* Da der PureC-Linker "intelligent" ist, wird hier nur die
 * Dummy-Funktion fr den horizontalen Slider eingetragen.
 *
 * Wenn das Programm den horizontalen Slider braucht, muž es
-* einfach w->hslid = hslid setzen.
+* w->hslid = hslid setzen.
 *
 ****************************************************************/
 
-void init_window( WINDOW *w)
+void init_window(WINDOW *w)
 {
 	w->close = closed;
 	w->open = opened;

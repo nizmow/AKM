@@ -35,8 +35,8 @@ static int visible_len = -1;
 
 static int showindex_to_icnobj(int index)
 {
-	static int icons[] =
-	{FLICON1,FLICON2,FLICON3,FLICON4,FLICON5};
+	static const int icons[] =
+	{ FLICON1, FLICON2, FLICON3, FLICON4, FLICON5 };
 
 	return icons[index];
 }
@@ -78,7 +78,7 @@ static int pthobj_to_showindex(int objnr)
 *
 *********************************************************************/
 
-void abbrev_path(char *dst, char *src, int len )
+void abbrev_path(char *dst, char *src, int len)
 {
 	register char *t,*u;
 	int l;
@@ -114,15 +114,20 @@ void abbrev_path(char *dst, char *src, int len )
 *
 *********************************************************************/
 
-static int scroll_win_path( DIALOG *d, char *path )
+static int scroll_win_path(DIALOG *d, char *path)
 {
 	register struct pth_file *pth;
 	register int n;
 
 	for	(n = 0,pth = pthx; n < pthn; n++,pth++)
+	{
 		if (!stricmp(pth->path, path))
+		{
 			goto found;
+		}
+	}
 	return -1;
+
 	found:
 	adr_icp_dialog[DEL_FLD].ob_state &= ~DISABLED;
 	selected_path = pth;
@@ -145,9 +150,9 @@ static int scroll_win_path( DIALOG *d, char *path )
 *********************************************************************/
 
 #pragma warn -par
-static void cdecl select_item( LIST_BOX *box, OBJECT *tree,
+static void cdecl select_item(LIST_BOX *box, OBJECT *tree,
 			LBOX_ITEM *item, void *user_data,
-			WORD obj_index, WORD last_state )
+			WORD obj_index, WORD last_state)
 {
 	struct pth_file *mypth = (struct pth_file *) item;
 
@@ -157,9 +162,9 @@ static void cdecl select_item( LIST_BOX *box, OBJECT *tree,
 		selected_path = NULL;
 }
 
-static WORD cdecl set_item( LIST_BOX *box, OBJECT *tree,
+static WORD cdecl set_item(LIST_BOX *box, OBJECT *tree,
 			LBOX_ITEM *item, WORD index,
-			void *user_data, GRECT *rect, WORD offset )
+			void *user_data, GRECT *rect, WORD offset)
 {
 	struct pth_file *mypth = (struct pth_file *) item;
 	OBJECT *dob;
@@ -186,9 +191,9 @@ static WORD cdecl set_item( LIST_BOX *box, OBJECT *tree,
 	dob = tree+index;
 	dob->ob_flags &= ~HIDETREE;
 	dob->ob_flags |= TOUCHEXIT;
-	abbrev_path(dob -> ob_spec.tedinfo->te_ptext+1,
+	abbrev_path(dob -> ob_spec.tedinfo->te_ptext + 1,
 			mypth->path, visible_len);
-/*	len = (int) strlen(dob -> ob_spec.tedinfo->te_ptext+1);	*/
+/*	len = (int) strlen(dob -> ob_spec.tedinfo->te_ptext + 1);	*/
 	if (mypth->sel)
 		ob_sel(dob, 0);
 	else
@@ -213,12 +218,12 @@ static WORD cdecl set_item( LIST_BOX *box, OBJECT *tree,
 		ob_dsel(dob, 0);
 */
 	sob = rscx[ic->rscfile].adr_icons + ic->objnr;
-	ic_height = sob->ob_spec.ciconblk->monoblk.ib_hicon+8;
+	ic_height = sob->ob_spec.ciconblk->monoblk.ib_hicon + 8;
 	dob -> ob_y = ob_height - ic_height - 2;
-	dob -> ob_spec	= sob -> ob_spec;
-	dob -> ob_type	= sob -> ob_type;
-	dob -> ob_width	= sob -> ob_width;
-	dob -> ob_height	= sob -> ob_height;
+	dob -> ob_spec   = sob -> ob_spec;
+	dob -> ob_type   = sob -> ob_type;
+	dob -> ob_width  = sob -> ob_width;
+	dob -> ob_height = sob -> ob_height;
 
 /*
 	if (rect)
@@ -238,7 +243,7 @@ static WORD cdecl set_item( LIST_BOX *box, OBJECT *tree,
 *
 *********************************************************************/
 
-static LBOX_ITEM *cat_paths( void )
+static LBOX_ITEM *cat_paths(void)
 {
 	register int i;
 	register struct pth_file *pth;
@@ -247,15 +252,17 @@ static LBOX_ITEM *cat_paths( void )
 	/* Verkette die "pth_file"-Strukturen */
 	for	(i = 0,pth = pthx; i < pthn-1; i++,pth++)
 	{
-		pth->next = pth+1;
+		pth->next = pth + 1;
 	}
 	if (pthn)
 	{
 		sc = (LBOX_ITEM *) pthx;
-		pthx[pthn-1].next = NULL;
+		pthx[pthn - 1].next = NULL;
 	}
 	else
+	{
 		sc = NULL;
+	}
 
 	return sc;
 }
@@ -267,13 +274,13 @@ static LBOX_ITEM *cat_paths( void )
 *
 *********************************************************************/
 
-void icp_dial_init_rsc( void )
+void icp_dial_init_rsc(void)
 {
 	int /* dummy,*/ i;
-	static int ctrl_objs[5] =
-	{FL_BK, FL_UP, FL_DOWN, FL_BSL, FL_SLID};
-	static int objs[5] =
-	{FLD1,FLD2,FLD3,FLD4,FLD5};
+	static const int ctrl_objs[5] =
+	{ FL_BK, FL_UP, FL_DOWN, FL_BSL, FL_SLID };
+	static const int objs[5] =
+	{ FLD1, FLD2, FLD3, FLD4, FLD5 };
 
 
 	if (!is_3d)
@@ -285,9 +292,9 @@ void icp_dial_init_rsc( void )
 
 	adr_icp_dialog[DEL_FLD].ob_state |= DISABLED;
 
-	visible_len = (int) strlen(adr_icp_dialog[FLD1].ob_spec.tedinfo->te_ptext+1);
+	visible_len = (int) strlen(adr_icp_dialog[FLD1].ob_spec.tedinfo->te_ptext + 1);
 
-	sbox = lbox_create(	adr_icp_dialog,
+	sbox = lbox_create(adr_icp_dialog,
 					select_item,
 					set_item,
 					cat_paths(),	/* Items */
@@ -295,7 +302,7 @@ void icp_dial_init_rsc( void )
 					0,		/* erster sichtbarer Eintrag */
 					ctrl_objs,
 					objs,
-					LBOX_VERT+LBOX_REAL+LBOX_SNGL+LBOX_TOGGLE,
+					LBOX_VERT + LBOX_REAL + LBOX_SNGL + LBOX_TOGGLE,
 					20,		/* Scrollverz”gerung */
 					NULL,	/* user data */
 					NULL,
@@ -308,20 +315,21 @@ void icp_dial_init_rsc( void )
 
 /*********************************************************************
 *
-* L”scht einen Pfad.
+* Entfernt einen Eintrag aus der globalen Tabelle pthx[]
 *
 *********************************************************************/
 
-static int delete_pth( int pth )
+static int delete_pth(int pth)
 {
 	register struct pth_file *p;
 	register int i;
 
-	for	(i = pth,p = pthx+pth; i < pthn-1; i++,p++)
+	for	(i = pth, p = pthx + pth; i < pthn - 1; i++,p++)
 	{
-		*p = *(p+1);
+		*p = *(p + 1);		/* Elemente rcken von rechts nach */
 	}
-	pthn--;
+	pthn--;		/* Anzahl der belegten Eintr„ge verringern */
+
 	lbox_set_items(sbox, cat_paths());
 	lbox_set_slider(sbox, lbox_get_first(sbox), NULL);
 
@@ -330,6 +338,7 @@ static int delete_pth( int pth )
 
 	if (d_icp)
 	{
+		/* Der Pfad-Icon-Dialog ist ge”ffnet. */
 		lbox_update(sbox, NULL);
 		subobj_wdraw(d_icp, FL_BK, FL_BK, MAX_DEPTH);
 		subobj_wdraw(d_icp, FL_BSL, FL_BSL, MAX_DEPTH);
@@ -341,15 +350,16 @@ static int delete_pth( int pth )
 
 /*********************************************************************
 *
-* Tr„gt einen neuen Pfad ein bzw „ndert einen bestehenden.
+* Tr„gt einen neuen Pfad in die globale Tabelle pthx[] ein bzw „ndert
+* einen bestehenden.
 * Die Pfade werden so sortiert, daž die absoluten Pfade, d.h. die,
 * die mit "X:\" beginnen, vorn sind.
 *
 *********************************************************************/
 
-int insert_pth( struct pth_file *new, struct pth_file *old )
+int insert_pth(struct pth_file *new, struct pth_file *old)
 {
-	register int i,newpos;
+	register int i, newpos;
 	int is_abs;
 	register struct pth_file *mypth;
 
@@ -367,12 +377,14 @@ int insert_pth( struct pth_file *new, struct pth_file *old )
 		is_abs = TRUE;
 	}
 	else
+	{
 		is_abs = FALSE;
+	}
 
 	/* Suche <new> in pthx[] */
 	/* --------------------- */
 
-	for	(i = 0,mypth = pthx; i < pthn; i++,mypth++)
+	for	(i = 0, mypth = pthx; i < pthn; i++, mypth++)
 	{
 		if (!stricmp(mypth->path, new->path))
 			return -2;		/* Pfad existiert schon */
@@ -383,15 +395,15 @@ int insert_pth( struct pth_file *new, struct pth_file *old )
 
 	if (old->path[0])
 	{
-		for	(newpos = 0,mypth = pthx; newpos < pthn;
-				newpos++,mypth++)
+		for	(newpos = 0, mypth = pthx; newpos < pthn;
+				newpos++, mypth++)
 		{
 			/* entfernen! */
 			if (!stricmp(mypth->path, old->path))
 			{
-				for	(; newpos < pthn-1; newpos++,mypth++)
+				for	(; newpos < pthn - 1; newpos++, mypth++)
 				{
-					*mypth = *(mypth+1);
+					*mypth = *(mypth + 1);
 				}
 				pthn--;
 				break;
@@ -402,12 +414,14 @@ int insert_pth( struct pth_file *new, struct pth_file *old )
 	/* neuen Pfad erstellen (einsortieren) */
 	/* ----------------------------------- */
 
-	if (datn >= MAX_DATN)
+	if (pthn >= MAX_PTHN)
 	{
+		/* Die Tabelle pthx[] ist voll. */
 		Rform_alert(1, ALRT_OVERFLOW, NULL);
 		return -3;		/* šberlauf */
 	}
-	for	(newpos = 0,mypth = pthx; newpos < pthn; newpos++,mypth++)
+
+	for	(newpos = 0,mypth = pthx; newpos < pthn; newpos++, mypth++)
 	{
 		if (is_abs && (mypth->path[1] != ':'))
 			break;
@@ -416,8 +430,9 @@ int insert_pth( struct pth_file *new, struct pth_file *old )
 		if (stricmp(mypth->path, new->path) > 0)
 			break;
 	}
+
 	for	(i = pthn; i > newpos; i--)
-		pthx[i] = pthx[i-1];
+		pthx[i] = pthx[i - 1];
 	pthn++;
 
 	/* eintragen */
@@ -435,6 +450,7 @@ int insert_pth( struct pth_file *new, struct pth_file *old )
 	lbox_update(sbox, NULL);
 	if (d_icp)
 	{
+		/* Der Dialog ist gerade ge”ffnet. */
 		subobj_wdraw(d_icp, FL_BK, FL_BK, MAX_DEPTH);
 		subobj_wdraw(d_icp, FL_BSL, FL_BSL, MAX_DEPTH);
 	}
@@ -449,7 +465,7 @@ int insert_pth( struct pth_file *new, struct pth_file *old )
 *
 *********************************************************************/
 
-static void deselect_path( DIALOG *d)
+static void deselect_path(DIALOG *d)
 {
 	adr_icp_dialog[DEL_FLD].ob_state |= DISABLED;
 	subobj_wdraw(d, DEL_FLD, DEL_FLD, 1);
@@ -464,29 +480,33 @@ static void deselect_path( DIALOG *d)
 
 static void chg_icon(int mypth, int iconnr)
 {
-	OBJECT *sob,*dob;
+	OBJECT *sob, *dob;
 	int n;
 	struct icon *ic;
 	register int i;
 
 
 	if (!d_icp)
+	{
+		/* Der Dialog ist gerade nicht ge”ffnet. */
 		return;
+	}
+
 	ic = icnx + iconnr;
 	sob = rscx[ic->rscfile].adr_icons + ic->objnr;
 	n = lbox_get_first(sbox);
-	for	(i = 0; (i < 5) && (i+n < pthn); i++)
+	for	(i = 0; (i < 5) && (i + n < pthn); i++)
 	{
-		if (i+n != mypth)
+		if (i + n != mypth)
 			continue;
+
 		dob = adr_icp_dialog + showindex_to_icnobj(i);
 		ob_dsel(dob, 0);
 		dob->ob_spec = sob->ob_spec;
 		dob->ob_type = sob->ob_type;
 		dob->ob_width	= sob->ob_width;
 		dob->ob_height	= sob->ob_height;
-		subobj_wdraw(d_icp, showindex_to_icnobj(i),
-					0, 8);
+		subobj_wdraw(d_icp, showindex_to_icnobj(i),	0, 8);
 	}
 }
 
@@ -497,7 +517,7 @@ static void chg_icon(int mypth, int iconnr)
 *
 *********************************************************************/
 
-void icp_dial_set_icon( int iconnr )
+void icp_dial_set_icon(int iconnr)
 {
 	register int i;
 
@@ -532,15 +552,15 @@ static void icp_set_icon(int iconnr, int objnr)
 	}
 }
 
-static void icp_malen(int objnr)
+static void icp_draw_subobj(int objnr)
 {
 	if (d_icp)
-		subobj_wdraw(d_icp, objnr ,0, 8);
+		subobj_wdraw(d_icp, objnr, 0, 8);
 }
 
-int icp_get_zielobj(int x, int y, int whdl, OBJECT **tree,
+int icp_get_target_obj(int x, int y, int whdl, OBJECT **tree,
 			int *objnr, void (**set_icon)(int iconnr, int objnr),
-			void (**malen)(int objnr))
+			void (**drawfn)(int objnr))
 {
 	GRECT dummy;
 
@@ -556,7 +576,7 @@ int icp_get_zielobj(int x, int y, int whdl, OBJECT **tree,
 	if (icnobj_to_showindex(*objnr) >= 0)
 	{
 		*set_icon = icp_set_icon;
-		*malen = icp_malen;
+		*drawfn = icp_draw_subobj;
 		return TRUE;
 	}
 
