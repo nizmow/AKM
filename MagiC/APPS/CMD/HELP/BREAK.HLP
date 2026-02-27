@@ -1,8 +1,8 @@
 Syntax: BREAK
         BREAK ON
         BREAK OFF
-Zweck:  Break-Verify-Flag von KAOS anzeigen oder „ndern. Unter normalem
-        GEMDOS hat der Befehl keine Wirkung.
+Zweck:  Break-Flag von KAOS oder MagiC anzeigen oder „ndern. Unter
+        TOS hat der Befehl keine Wirkung.
 
 Beim Starten von CMD ist das Break-Flag immer ausgeschaltet. Bei
 eingeschaltetem Flag kann man ein laufendes Programm vor und nach jedem
