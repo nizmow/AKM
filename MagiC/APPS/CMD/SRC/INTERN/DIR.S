@@ -362,23 +362,36 @@ dir_com:
 * clr.b    w_flag
 * clr.b    p_flag
 * clr.b    q_flag
- bsr      memavail
+
+*
+* Speicher fÅrs Sortieren holen, fÅr maximal 512 EintrÑge
+*
+
+ bsr      memavail			; d0 = available memory
  move.l   #MAXDIR*28,d1       * 512 Eintr. * (24 Byt. LÑnge + 4 Byt. Zeiger)
- suba.l   a4,a4
+ suba.l   a4,a4			; default: nullptr
  cmp.l    d1,d0
- bcs.b    dir_30
- move.l   d1,d0
+ bcs.b    dir_no_buf		; not enough memory for 512 directory entries, a4 remains nullptr
+ move.l   d1,d0			; get not more than for 512 entries
  bsr      alloc_tpa           * Z=1, wenn Fehler
- beq      dir_end
+ beq      dir_end			; error, cannot get memory
  move.l   d0,a4               * a4 ist Pufferadresse
-dir_30:
+dir_no_buf:
  subq.w   #1,ARGC(a6)
- bgt.b    dir_1
+ bgt.b    dir_arg_loop
+
+* No parameter: insert single parameter "*.*"
+
  movea.l  ARGV(a6),a0
  lea      star_pt_star(pc),a1   * "*.*"
  move.l   a1,4(a0)
  move.w   #1,ARGC(a6)
-dir_1:
+
+*
+* loop over all arguments
+*
+
+dir_arg_loop:
  addq.l   #4,ARGV(a6)
  movea.l  ARGV(a6),a0
  movea.l  (a0),a5                  * a5[] ist Parameter
@@ -563,7 +576,12 @@ dir_8:
  bsr      print_free
 dir_11:
  subq.w   #1,ARGC(a6)
- bne      dir_1
+ bne      dir_arg_loop
+
+*
+* end of argument loop
+*
+
  bsr      free_tpa
 dir_end:
  movem.l  (sp)+,a5/a4/a3/d7

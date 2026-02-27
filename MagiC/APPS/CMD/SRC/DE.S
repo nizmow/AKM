@@ -124,5 +124,5 @@ nach_nix_s:		DC.B  ' unsortiert',0
 bytes_free_s:		DC.B  ' Bytes frei',$d,$a,$a,0
 
 taste_drueckens:	DC.B  'Taste drcken ',0
-not_founds:		DC.B  '  nicht gefunden'
+not_founds:		DC.B  ' nicht gefunden',CR,LF,0
 keine_dateiens:	DC.B  $d,$a,' Keine Dateien',0

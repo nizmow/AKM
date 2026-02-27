@@ -44,71 +44,117 @@ attr_99:
 
 
 *
+* int attrib_com(uint16_t argc, char *argv[], ...)
 *
+* Alle Parameter werden Åber den Stack Åbergeben!
+* Die weiteren Parameter sind nur fÅr den Batch-Betrieb.
+* Darf d0-d2/a0-a2 verÑndern.
 *
+
+*    DATA
+parm_table_rhsa:
+ * use 8 (backspace) as dummy, to make sure 'a' will set bit 5, not 3
+ DC.B	'rhs',8,8,'a',0		; bit 0:R, 1:H, 2:S, 5:A
+* +DEBUG
+	IF 0
+gleich:
+ DC.B	'=',0
+* -DEBUG
+	ENDIF
+ 	EVEN
+*	TEXT
+
+SPO	SET	12
+
 attrib_com:
- move.l   a5,-(sp)
- bsr      crlf_con
+ movem.l	d3-d5,-(sp)			; add 12 to sp
+
+ addq.l   #4,SP_ARGV+SPO(sp)		; skip argv[0]
+ subq.w   #1,SP_ARGC+SPO(sp)
+ moveq	#0,d3				; no "-" switches, yet
+ moveq	#0,d4				; no "+" switches, yet
+
+attr_sw_loop:
+
+ move.w	SP_ARGC+SPO(sp),d5		; current argc
+
+* evaluate '-' switches
+
+ lea		SP_ARGV+SPO(sp),a0
+ lea		SP_ARGC+SPO(sp),a1
+ lea		parm_table_rhsa(pc),a2
+ bsr		eval_switches
+ bmi		attr_syntax
+ or.l	d0,d3				; d3: add "minus" switches
+
+* evaluate '+' switches
+
+ lea		SP_ARGV+SPO(sp),a0
+ lea		SP_ARGC+SPO(sp),a1
+ lea		parm_table_rhsa(pc),a2
+ bsr		eval_switches_plus
+ bmi		attr_syntax
+ or.l	d0,d4				; d4: add "plus" switches
+
+ cmp.w	SP_ARGC+SPO(sp),d5		; was argc changed?
+ bne.b	attr_sw_loop			; yes, look for more switches
+ tst.w   	SP_ARGC+SPO(sp)
+ beq		attr_syntax			; no (remaining) arguments
+* store attrib switches to global variables
  lea      d+attrplus(pc),a0
- clr.b    (a0)
- clr.b    attrminus-attrplus(a0)
- subq     #1,SP_ARGC+4(sp)
-* Attribute holen
-atcom_3:
- subq     #1,SP_ARGC+4(sp)
- bcs      atcom_50
- addq.l   #4,SP_ARGV+4(sp)
- move.l   SP_ARGV+4(sp),a5
- move.l   (a5),a5
- move.l   a0,a1
- cmpi.b   #'+',(a5)
- beq.b    atcom_1
- lea      d+attrminus(pc),a1
- cmpi.b   #'-',(a5)
- bne.b    atcom_20
-atcom_1:
- addq.l   #1,a5
- move.b   (a5),d0
- beq.b    atcom_3
- bsr      d0_upper
- moveq    #1,d1
- cmpi.b   #'R',d0
- beq.b    atcom_2
- moveq    #2,d1
- cmpi.b   #'H',d0
- beq.b    atcom_2
- moveq    #4,d1
- cmpi.b   #'S',d0
- beq.b    atcom_2
- moveq    #32,d1
- cmpi.b   #'A',d0
- bne.b    atcom_50
-atcom_2:
- or.b     d1,(a1)
- bra.b    atcom_1
-* Dateinamen holen
-atcom_20:
+ move.b   d4,(a0)
+ move.b   d3,attrminus-attrplus(a0)
+
+* loop over all remaining arguments, i.e. files
+
+attr_loop:
+
+* +DEBUG
+	IF 0
+ lea		gleich(pc),a0
+ bsr      strcon
+ moveq	#0,d0
+ move.w	SP_ARGC+SPO(sp),d0
+ bsr		lwrite_long
+ lea		gleich(pc),a0
+ bsr      strcon
+ movea.l  SP_ARGV+SPO(sp),a0
+ movea.l  (a0),a0        * Dateiname(nsmuster)
+ bsr      strcon
+ lea		gleich(pc),a0
+ bsr      strcon
+ 	ENDIF
+* -DEBUG
+
+* prepare parameters for executing function
  lea      attr(pc),a1    * auszufÅhrende Routine
  moveq    #6,d0          * Dateityp = alle auûer Subdir
- move.l   a5,a0          * Dateiname(nsmuster)
+ movea.l  SP_ARGV+SPO(sp),a0
+ movea.l  (a0),a0        * Dateiname(nsmuster)
  bsr      for_all
- bne.b    atcom_21
- move.l   a5,a0
+ bne.b    attr_found	* no problem
+* "file not found"
+ movea.l  SP_ARGV+SPO(sp),a0
+ movea.l  (a0),a0        * Dateiname(nsmuster)
  bsr      strcon
  lea      not_founds(pc),a0
  bsr      strcon
  bsr      inc_errlv
-atcom_21:
- addq.l   #4,SP_ARGV+4(sp)
- move.l   SP_ARGV+4(sp),a5
- move.l   (a5),a5
- subq.w   #1,SP_ARGC+4(sp)
- bcc.b    atcom_20
- bra.b    atcom_end
-atcom_50:
+attr_found:
+ addq.l   #4,SP_ARGV+SPO(sp)
+ subq.w   #1,SP_ARGC+SPO(sp)
+ bgt.b    attr_loop
+ bra.b    attr_end
+
+* end loop
+
+* print syntax, end command
+
+attr_syntax:
  lea      syntaxattrs(pc),a0
- bsr      strcon              * Fehlermeldung ausgeben und Ende
+ bsr      strcon
  bsr      inc_errlv
-atcom_end:
- move.l   (sp)+,a5
+attr_end:
+ movem.l  (sp)+,d3-d5
  rts
+

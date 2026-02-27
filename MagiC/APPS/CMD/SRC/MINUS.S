@@ -45,12 +45,19 @@ fnd_sw_none:
 *    (a1) changed
 *
 
+eval_switches_plus:
+ moveq	#'+',d0
+ bra.b	_eval_switches
+
 eval_switches:
- movem.l	d3/a3-a6,-(sp)
+ moveq	#'-',d0			; switch character
+_eval_switches:
+ movem.l	d3/d4/a3-a6,-(sp)
  move.l	a0,a6			; a6 is ptr to ptr table
  move.l	a1,a5			; a1 is ptr to argc
  move.l	a2,a4			; a4 is switch table
  moveq	#0,d3			; no switches found, yet
+ move.l	d0,d4			; switch character
 
  tst.w   	(a5)				; at least one parameter?
  beq.b    evw_end			; no switches
@@ -58,7 +65,7 @@ eval_switches:
  move.l   (a0),a0			; first argument string
  cmpi.b	#'\',(a0)
  bne.b	evw_no_bsl
- cmpi.b   #'-',1(a0)
+ cmp.b    1(a0),d4			; switch character?
  bne.b    evw_no_bsl_minus
 * first argument starts with "\-" -> remove "\" and stop evaluation
 evw_remv_bsl_loop:
@@ -68,7 +75,7 @@ evw_remv_bsl_loop:
 evw_no_bsl_minus:
  cmpi.b   #'\',1(a0)		; "\\"
  bne.b	evw_no_bsl
- cmpi.b   #'-',2(a0)		; "\\-"
+ cmp.b    2(a0),d4			; "\\-"
 * first argument starts with "\\-" -> remove one "\" and stop evaluation
  beq.b    evw_remv_bsl_loop
 evw_no_bsl:
@@ -77,7 +84,7 @@ evw_no_bsl:
 * switch loop. a0 points to current argument
 
 evw_arg_loop:
- cmpi.b   #'-',(a2)+		; "-"
+ cmp.b    (a2)+,d4			; '-' (switch character)?
  bne.b	evw_end			; no switch
 evw_chr_loop:
  move.b	(a2)+,d0
@@ -102,5 +109,5 @@ evw_end:
  move.l	d3,d0
  lea		d+switch_bits(pc),a0
  move.l	d0,(a0)				; store to global variable
- movem.l  (sp)+,d3/a3-a6
+ movem.l  (sp)+,d3/d4/a3-a6
  rts
