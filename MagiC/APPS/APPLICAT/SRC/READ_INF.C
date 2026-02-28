@@ -54,13 +54,13 @@ static int old_w,old_h;		/* alte Bildschirmgr”že */
 
 static int systemglobal[5];
 
-static void save_rscdata( int *save )
+static void save_rscdata(int *save)
 {
-	memcpy(save, _GemParBlk.global+5, 5*sizeof(int));
+	memcpy(save, _GemParBlk.global + 5, 5 * sizeof(int));
 }
-static void restore_rscdata( int *save )
+static void restore_rscdata(int *save)
 {
-	memcpy(_GemParBlk.global+5, save, 5*sizeof(int));
+	memcpy(_GemParBlk.global + 5, save, 5 * sizeof(int));
 }
 
 
@@ -200,7 +200,7 @@ void load_icons(void)
 	int rscglobal[5];
 
 
-	save_rscdata( systemglobal );		/* System-RSC merken */
+	save_rscdata(systemglobal);		/* System-RSC merken */
 
 	strcpy(rscx[0].fname, RSC_FNAME_INTERN);
 	rscx[0].nicons = 7;		/* 8? */
@@ -249,10 +249,10 @@ void load_icons(void)
 	{
 		if (rscn >= MAX_RSCN)
 		{
-			save_rscdata( rscglobal );
-			restore_rscdata( systemglobal );
+			save_rscdata(rscglobal);
+			restore_rscdata(systemglobal);
 			Rform_alert(1, ALRT_TOOMANY_RSC, NULL);
-			restore_rscdata( rscglobal );
+			restore_rscdata(rscglobal);
 			break;
 		}
 
@@ -267,10 +267,10 @@ void load_icons(void)
 
 		if (!rsrc_gaddr(R_TREE, 0, &rscx[rscn].adr_icons))
 		{
-			save_rscdata( rscglobal );
-			restore_rscdata( systemglobal );
+			save_rscdata(rscglobal);
+			restore_rscdata(systemglobal);
 			Rform_alert(1, ALRT_FORMATICERR, NULL);
-			restore_rscdata( rscglobal );
+			restore_rscdata(rscglobal);
 			continue;
 		}
 
@@ -283,25 +283,25 @@ void load_icons(void)
 			ob = rscx[rscn].adr_icons + objnr;
 			if ((ob->ob_type != G_ICON) && (ob->ob_type != G_CICON))
 			{
-				save_rscdata( rscglobal );
-				restore_rscdata( systemglobal );
+				save_rscdata(rscglobal);
+				restore_rscdata(systemglobal);
 				Rform_alert(1, ALRT_FORMATICERR, NULL);
-				restore_rscdata( rscglobal );
+				restore_rscdata(rscglobal);
 				break;
 			}
 
 			if (icnn >= MAX_ICNN)
 			{
-				save_rscdata( rscglobal );
-				restore_rscdata( systemglobal );
+				save_rscdata(rscglobal);
+				restore_rscdata(systemglobal);
 				Rform_alert(1, ALRT_2MANY_ICONS, NULL);
-				restore_rscdata( rscglobal );
+				restore_rscdata(rscglobal);
 				break;
 			}
 
-			ic -> rscfile = rscn;
-			ic -> objnr = objnr;
-			/* ic -> sel_pgm = ic -> sel_dat = FALSE */
+			ic->rscfile = rscn;
+			ic->objnr = objnr;
+			/* ic->sel_pgm = ic->sel_dat = FALSE */
 			ic++;
 			rscx[rscn].nicons++;		/* Anzahl in der Datei */
 			icnn++;					/* Gesamtanzahl */
@@ -478,7 +478,7 @@ static int scanpath(char **lpos, char *buf, int len)
 *
 ****************************************************************/
 
-static int getgroup( char *buf )
+static int getgroup(char *buf)
 {
 	register char *s;
 
@@ -518,7 +518,7 @@ static int getgroup( char *buf )
 	return 0;
 }
 /*
-static int getgroup( char *s )
+static int getgroup(char *s)
 {
 	char *t;
 
@@ -642,25 +642,41 @@ static void rreadline(void)
 
 const char *key2name(long key)
 {
-	int rsc_index;
+	int rsc_index = -1;
 	static char unknown[5] = "____";
 
-	switch (key)
-	{
-		case 'APPS': rsc_index = STR_APPS; break;
-		case 'DATS': rsc_index = STR_DATS; break;
-		case 'BTCH': rsc_index = STR_BTCH; break;
-		case 'DEVC': rsc_index = STR_DEVC; break;
-		case 'ALIS': rsc_index = STR_ALIS; break;
-		case 'FLDR': rsc_index = STR_FLDR; break;
-		case 'DRVS': rsc_index = STR_DRVS; break;
-		case 'TRSH': rsc_index = STR_TRSH; break;
-		case 'PRNT': rsc_index = STR_PRNT; break;
+	if (key == 'APPS')
+		rsc_index = STR_APPS;
+	else
+	if (key == 'DATS')
+		rsc_index = STR_DATS;
+	else
+	if (key == 'BTCH')
+		rsc_index = STR_BTCH;
+	else
+	if (key == 'DEVC')
+		rsc_index = STR_DEVC;
+	else
+	if (key == 'ALIS')
+		rsc_index = STR_ALIS;
+	else
+	if (key == 'FLDR')
+		rsc_index = STR_FLDR;
+	else
+	if (key == 'DRVS')
+		rsc_index = STR_DRVS;
+	else
+	if (key == 'TRSH')
+		rsc_index = STR_TRSH;
+	else
+	if (key == 'PRNT')
+		rsc_index = STR_PRNT;
 
-		default: memcpy(unknown, &key, 4); return unknown;
-	}
+	if (rsc_index >= 0)
+		return Rgetstring(rsc_index, NULL);
 
-	return Rgetstring(rsc_index, NULL);
+	memcpy(unknown, &key, 4);
+	return unknown;
 }
 
 

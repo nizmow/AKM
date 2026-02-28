@@ -277,13 +277,13 @@ static void calc_ic(int icn, int *o, char **rnam, char **inam)
 	*o = icn - rscf->firsticon;		/* Achtung: fhrt wohl zu -1 bei FLPDSK! */
 	/* Name des Icons (dummy) */
 	obj = rscf->adr_icons + icnx[icn].objnr;
-	if (obj -> ob_type == G_USERDEF)
+	if (obj->ob_type == G_USERDEF)
 		icb = (ICONBLK *) obj->ob_spec.userblk->ub_parm;
 	else
-	if ((obj -> ob_type == G_ICON) ||
-		 (obj -> ob_type == G_CICON))
+	if ((obj->ob_type == G_ICON) ||
+		 (obj->ob_type == G_CICON))
 		icb = (ICONBLK *) obj->ob_spec.iconblk;
-	*inam = icb -> ib_ptext;
+	*inam = icb->ib_ptext;
 }
 
 
@@ -467,7 +467,7 @@ static long put_icons(void)
 	char *curr_string;
 
 	int *ic,*curr_ic,*cci;
-	register struct zeile *z;
+	register struct item_line *z;
 
 	struct ico_ap *app,*curr_app;
 	struct ico_dat *dat, *curr_dat;
@@ -524,11 +524,11 @@ static long put_icons(void)
 
 	h.magic = 'AnKr';
 	h.version = 0x0002L;
-	get_len( &h.n_ap2ic, &h.n_da2ic,
-			&h.n_pa2ic, &h.n_sp2ic, &h.n_icn, &used_icons );
+	get_len(&h.n_ap2ic, &h.n_da2ic,
+			&h.n_pa2ic, &h.n_sp2ic, &h.n_icn, &used_icons);
 	if (!used_icons)
 		return ENSMEM;
-	ic = Malloc( h.n_icn * sizeof(int));	/* interne Icon-Nummern */
+	ic = Malloc(h.n_icn * sizeof(int));	/* interne Icon-Nummern */
 
 	for (i = 0,curr_ic = ic,buf = used_icons; i < icnn; i++,buf++)
 	{
@@ -540,7 +540,7 @@ static long put_icons(void)
 	/* L„nge der Icon-Daten bestimmen */
 	/* ------------------------------ */
 
-	all_iconlen = put_icondata(0, h.n_icn, ic, NULL, NULL, 0L);
+	all_iconlen = put_icondata(0, (int) h.n_icn, ic, NULL, NULL, 0L);
 
 	/* Speicher allozieren und Tabellen zuweisen */
 	/* ----------------------------------------- */
@@ -594,7 +594,7 @@ static long put_icons(void)
 	curr_ic = ic;
 	curr_dat = dat;
 	curr_string = all_strings;
-	for (i = 0,z = linx; i < linn; )
+	for (i = 0,z = linx; i < linn;)
 	{
 		n = z->pgmnr;
 		pgm_file = pgmx+n;
@@ -734,7 +734,7 @@ static long put_icons(void)
 	/* Icons anlegen */
 	/* ------------- */
 
-	put_icondata(1, h.n_icn, ic, cb, icondata, icon_offs);
+	put_icondata(1, (int) h.n_icn, ic, cb, icondata, icon_offs);
 
 	/* Kopie zum Abspeichern anlegen */
 	/* ----------------------------- */
@@ -800,7 +800,7 @@ long put_inf(void)
 {
 	long ret;
 	register struct dat_file *d;
-	register struct zeile *z;
+	register struct item_line *z;
 	register int i,n;
 	long npg,nd,npt,ns,ni;
 	char *wbuf;
@@ -893,7 +893,7 @@ long put_inf(void)
 	/* Tabellengr”žen ermitteln und schreiben */
 	/* -------------------------------------- */
 
-	get_len( &npg, &nd, &npt, &ns, &ni, NULL );
+	get_len(&npg, &nd, &npt, &ns, &ni, NULL);
 
 	sprintf(buf512, ";PROGRAMS = %ld\r\n"
 				";FILETYPES = %ld\r\n"
@@ -909,7 +909,7 @@ long put_inf(void)
 	/* Eintr„ge rausschreiben */
 	/* ---------------------- */
 
-	for (i = 0,z = linx; i < linn; )
+	for (i = 0,z = linx; i < linn;)
 	{
 		/* Gruppe: Programmname */
 		n = z->pgmnr;

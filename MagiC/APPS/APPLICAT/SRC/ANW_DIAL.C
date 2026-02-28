@@ -17,7 +17,7 @@
 #include "anw_dial.h"
 
 
-#define TXT(a)      ((((a) -> ob_spec.tedinfo))->te_ptext)
+#define TXT(a) ((((a)->ob_spec.tedinfo))->te_ptext)
 
 struct pgm_file mypgm;	/* Anwendung in Arbeit */
 
@@ -28,7 +28,7 @@ struct pgm_file mypgm;	/* Anwendung in Arbeit */
 *
 *********************************************************************/
 
-void anw_dial_init_rsc( void )
+void anw_dial_init_rsc(void)
 {
 }
 
@@ -41,8 +41,8 @@ void anw_dial_init_rsc( void )
 * Endung BAT,BTP		: Batchdatei
 * sonst				: Textdatei
 *
-* vorbereitet fÅr lange Dateinamen: Die Extension darf groû oder
-* klein geschrieben werden.
+* vorbereitet fÅr lange Dateinamen: Die "file name extension" darf
+* groû oder klein geschrieben werden.
 *
 *********************************************************************/
 
@@ -65,6 +65,7 @@ static int suffixtyp(char *s)
 		if (!strcmp(ext, "TTP"))
 			return PGMT_TP;
 	}
+
 	return PGMT_ISGEM;
 }
 
@@ -89,10 +90,10 @@ static int suffixtyp(char *s)
 
 #pragma warn -par
 
-WORD cdecl hdl_anwndg( DIALOG *d, EVNT *ev, WORD exitbutton, int clicks, void *data )
+WORD cdecl hdl_anwndg(DIALOG *d, EVNT *ev, WORD exitbutton, int clicks, void *data)
 {
 	OBJECT *tree;
-	char fname[MAX_NAMELEN+10];
+	char fname[MAX_NAMELEN + 10];
 	int only_fname;
 	char *s;
 	char c;

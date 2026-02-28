@@ -119,8 +119,8 @@ struct pgm_file pgmx[MAX_PGMN];
 struct dat_file datx[MAX_DATN];
 struct pth_file pthx[MAX_PTHN];
 struct spc_file spcx[MAX_SPCN];
-struct icon	 icnx[MAX_ICNN];
-struct zeile	 linx[MAX_LINN];
+struct icon icnx[MAX_ICNN];
+struct item_line linx[MAX_LINN];
 struct iconfile rscx[MAX_RSCN];
 
 
@@ -358,8 +358,7 @@ int main(int argc, char *argv[])
 					  0L,	/* ms */
 					  (EVNTDATA*) &(w_ev.mx),
 					  &w_ev.key,
-					  &w_ev.mclicks
-					  );
+					  &w_ev.mclicks);
 
 		if (w_ev.mwhich & MU_KEYBD)
 		{
@@ -531,7 +530,7 @@ DIALOG *xy_wdlg_init(
 	if (NULL == (du = Malloc(sizeof(struct dialog_userdata))))
 		return NULL;
 
-	if ((wd = def_wind_pos( ident )) != NULL)
+	if ((wd = def_wind_pos(ident)) != NULL)
 	{
 		x = wd->g.g_x;
 		y = wd->g.g_y + gl_hhbox;
@@ -558,7 +557,7 @@ DIALOG *xy_wdlg_init(
 			NAME+CLOSER+MOVER,
 			x,y,
 			0,			/* code */
-			NULL );		/* data */
+			NULL);		/* data */
 		if (whdl <= 0)
 		{
 			wdlg_delete(d);
@@ -591,7 +590,7 @@ void save_dialog_xy(DIALOG *d)
 
 	du = wdlg_get_udata(d);
 	wdlg_get_tree(d, &tree, &dummy);
-	wd = def_wind_pos( du->ident );
+	wd = def_wind_pos(du->ident);
 	if ((!wd) && (n_windefpos < MAXWINDEFPOS))
 	{
 		wd = windefpos+n_windefpos;	/* freien Eintrag suchen */
@@ -619,9 +618,9 @@ void subobj_wdraw(void *d, int obj, int startob, int depth)
 	GRECT g;
 
 
-	wdlg_get_tree( d, &tree, &g );
+	wdlg_get_tree(d, &tree, &g);
 	objc_grect(tree, obj, &g);
-	wdlg_redraw( d, &g, startob, depth );
+	wdlg_redraw(d, &g, startob, depth);
 }
 
 
@@ -646,7 +645,7 @@ void close_work(void)
 *
 ****************************************************************/
 
-int rsrc_gtree(int index, OBJECT **tree )
+int rsrc_gtree(int index, OBJECT **tree)
 {
 	return(rsrc_gaddr(R_TREE, index, tree));
 }
@@ -662,7 +661,7 @@ int rsrc_gtree(int index, OBJECT **tree )
 *
 ****************************************************************/
 
-int extract_apname(char *path, char *name)
+int extract_apname(const char *path, char *name)
 {
 	char *nurname;
 	char fname[MAX_NAMELEN + 10];
@@ -670,9 +669,9 @@ int extract_apname(char *path, char *name)
 
 
 	nurname = get_name(path);
-	if (strlen(nurname) > MAX_NAMELEN+9)
+	if (strlen(nurname) > MAX_NAMELEN + 9)
 	{
-		over:
+		overfl:
 		Rform_alert(1, ALRT_FNAME_2LONG, NULL);
 		return -1;
 	}
@@ -681,8 +680,8 @@ int extract_apname(char *path, char *name)
 	f = strchr(fname, '.');
 	if (f)
 		*f = EOS;
-	if (!fname[0] || (strlen(fname) > MAX_NAMELEN-1))
-		goto over;
+	if (!fname[0] || (strlen(fname) > MAX_NAMELEN - 1))
+		goto overfl;
 
 	if (strpbrk(fname, "[]:\\'"))
 	{

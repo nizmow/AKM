@@ -6,7 +6,7 @@
 #include <portab.h>
 #endif
 
-#define PROGRAM_VERSION_STR "v1.01"
+#define PROGRAM_VERSION_STR "v1.02"
 
 #define MAX_NAMELEN 34
 #define MAX_PATHLEN 128
@@ -117,9 +117,9 @@ struct icon
 /*	int sel_dat;	*/			/* als Datei-Icon selektiert */
 };
 
-struct zeile
+struct item_line
 {
-	struct zeile *next;			/* Verkettung fÅr scrollbox */
+	struct item_line *next;		/* Verkettung fÅr scrollbox */
 	WORD sel;					/* selektiert */
 	int pgmnr;					/* Nummer des Programmnamens */
 	int reldatnr;				/* angemeldete Datei 0..ntypes-1 */
@@ -136,15 +136,14 @@ extern WINDOW *mywindow;
 extern int get_deficonnr(long key);
 extern void subobj_wdraw(void *d, int obj, int startob, int depth);
 extern void fname_ext(char *s, char *d);
-extern int extract_apname(char *path, char *name);
+extern int extract_apname(const char *path, char *name);
 extern DIALOG *xy_wdlg_init(
 			HNDL_OBJ hndl_obj,
 			OBJECT *tree,
 			char *ident,
 			int code,
 			void *data,
-			int title_code
-			);
+			int title_code);
 extern void save_dialog_xy(DIALOG *d);
 extern long err_alert(long e);
 
@@ -161,7 +160,7 @@ extern struct dat_file	datx[MAX_DATN];
 extern struct pth_file	pthx[MAX_PTHN];
 extern struct spc_file	spcx[MAX_SPCN];
 extern struct icon		icnx[MAX_ICNN];
-extern struct zeile		linx[MAX_LINN];
+extern struct item_line	linx[MAX_LINN];
 extern struct iconfile	rscx[MAX_RSCN];
 
 extern int is_3d;

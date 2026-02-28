@@ -19,17 +19,17 @@
 #define FALSE  0
 #define EOS    '\0'
 #ifndef NULL
-#define NULL        ( ( void * ) 0L )
+#define NULL ((void *) 0L)
 #endif
 #define USA	0
 #define FRG	1
 
-#define TXT(a)      ((((a) -> ob_spec.tedinfo))->te_ptext)
+#define TXT(a) ((((a)->ob_spec.tedinfo))->te_ptext)
 
 static struct dat_file mydat;	/* Anwendung in Arbeit */
 static struct pgm_file mypgm;	/* Anwendung in Arbeit */
 
-extern int  rsrc_gtree(int gindex, OBJECT **tree );
+extern int  rsrc_gtree(int gindex, OBJECT **tree);
 extern int  selected(OBJECT *tree, int which);
 extern void ob_dsel(OBJECT *tree, int which);
 extern void ob_sel (OBJECT *tree, int which);
@@ -40,9 +40,8 @@ extern void fname_ext(char *s, char *d);
 extern void Mgraf_mouse(int type);
 extern long err_alert(long e);
 
-extern int insert_dat( struct pgm_file *pgm, struct dat_file *dat );
-extern int change_dat( struct pgm_file *pgm, struct dat_file *dat,
-				char *newname );
+extern int insert_dat(struct pgm_file *pgm, struct dat_file *dat);
+extern int change_dat(struct pgm_file *pgm, struct dat_file *dat, char *newname);
 
 /*********************************************************************
 *
@@ -50,7 +49,7 @@ extern int change_dat( struct pgm_file *pgm, struct dat_file *dat,
 *
 *********************************************************************/
 
-void typ_dial_init_rsc( void )
+void typ_dial_init_rsc(void)
 {
 }
 
@@ -73,7 +72,7 @@ void typ_dial_init_rsc( void )
 
 #pragma warn -par
 
-WORD cdecl hdl_ftypes( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data )
+WORD cdecl hdl_ftypes(DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data)
 {
 	OBJECT *tree;
 
@@ -91,16 +90,16 @@ WORD cdecl hdl_ftypes( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *da
 			return 0;		/* create verweigern */
 		}
 
-		(TXT(tree+FTYPE_2))[0] = EOS;
-		(TXT(tree+FTYPE_3))[0] = EOS;
-		(TXT(tree+FTYPE_4))[0] = EOS;
+		(TXT(tree + FTYPE_2))[0] = EOS;
+		(TXT(tree + FTYPE_3))[0] = EOS;
+		(TXT(tree + FTYPE_4))[0] = EOS;
 
 		if (clicks == 1)
 		{
 								/* Dateityp editieren */
 			mydat = *((struct dat_file *) data);
 			mypgm = *((struct pgm_file *) pgmx+mydat.pgm);
-			strcpy(TXT(tree+FTYPE_1), mydat.name);
+			strcpy(TXT(tree + FTYPE_1), mydat.name);
 			objs_hide(tree, FTYPE_2, FTYPE_3, FTYPE_4, 0);
 		}
 		else
@@ -110,13 +109,13 @@ WORD cdecl hdl_ftypes( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *da
 				extern char *def_txt;
 
 				mypgm = *((struct pgm_file *) data);
-				strcpy(TXT(tree+FTYPE_1), def_txt);
+				strcpy(TXT(tree + FTYPE_1), def_txt);
 			}
 				
 			else
 			{
 				mypgm = *((struct pgm_file *) data);
-				(TXT(tree+FTYPE_1))[0] = EOS;
+				(TXT(tree + FTYPE_1))[0] = EOS;
 			}
 			mydat.sel = FALSE;
 			mydat.name[0] = EOS;
@@ -130,7 +129,7 @@ WORD cdecl hdl_ftypes( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *da
 			(tree[FTYPE_4]).ob_flags |= EDITABLE;
 		}
 
-		strcpy((tree+FTYPE_ANW)->ob_spec.free_string, mypgm.name);
+		strcpy((tree + FTYPE_ANW)->ob_spec.free_string, mypgm.name);
 
 		return 1;
 	}
@@ -161,15 +160,15 @@ WORD cdecl hdl_ftypes( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *da
 		ob_dsel(tree, exitbutton);
 		if (mydat.name[0])	/* Zeichenkette editieren */
 		{
-			change_dat( &mypgm, &mydat,TXT(tree+FTYPE_1));
+			change_dat(&mypgm, &mydat, TXT(tree + FTYPE_1));
 		}
 		else
 		{				/* neue Dateitypen */
 			for	(i = 0; i < 4; i++)
 			{
-				strcpy(mydat.name, TXT(tree+FTYPE_1+i));
+				strcpy(mydat.name, TXT(tree + FTYPE_1 + i));
 				if (mydat.name[0])
-					insert_dat( &mypgm, &mydat );
+					insert_dat(&mypgm, &mydat);
 			}
 		}
 		goto close_dialog;

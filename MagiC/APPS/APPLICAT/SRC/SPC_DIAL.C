@@ -36,8 +36,8 @@ static void *sbox;
 
 static int showindex_to_icnobj(int index)
 {
-	static int icons[] =
-	{SPCICON1,SPCICON2,SPCICON3,SPCICON4,SPCICON5};
+	static const int icons[] =
+	{ SPCICON1, SPCICON2, SPCICON3, SPCICON4, SPCICON5 };
 
 	return icons[index];
 }
@@ -62,9 +62,9 @@ static int icnobj_to_showindex(int objnr)
 *********************************************************************/
 
 #pragma warn -par
-static void cdecl select_item( LIST_BOX *box, OBJECT *tree,
+static void cdecl select_item(LIST_BOX *box, OBJECT *tree,
 			LBOX_ITEM *item, void *user_data,
-			WORD obj_index, WORD last_state )
+			WORD obj_index, WORD last_state)
 {
 /*
 	struct pth_file *myspc = (struct spc_file *) item;
@@ -76,9 +76,9 @@ static void cdecl select_item( LIST_BOX *box, OBJECT *tree,
 */
 }
 
-static WORD cdecl set_item( LIST_BOX *box, OBJECT *tree,
+static WORD cdecl set_item(LIST_BOX *box, OBJECT *tree,
 			LBOX_ITEM *item, WORD index,
-			void *user_data, GRECT *rect, WORD offset )
+			void *user_data, GRECT *rect, WORD offset)
 {
 	struct spc_file *myspc = (struct spc_file *) item;
 	OBJECT *dob;
@@ -103,7 +103,7 @@ static WORD cdecl set_item( LIST_BOX *box, OBJECT *tree,
 	/* Text */
 
 	dob = tree+index;
-	strcpy(dob -> ob_spec.tedinfo->te_ptext+1, myspc->name);
+	strcpy(dob->ob_spec.tedinfo->te_ptext + 1, myspc->name);
 /*	len = (int) strlen(myspc->name);	*/
 	if (myspc->sel)
 		ob_sel(dob, 0);
@@ -128,12 +128,12 @@ static WORD cdecl set_item( LIST_BOX *box, OBJECT *tree,
 		ob_dsel(dob, 0);
 */
 	sob = rscx[ic->rscfile].adr_icons + ic->objnr;
-	ic_height = sob->ob_spec.ciconblk->monoblk.ib_hicon+8;
-	dob -> ob_y = ob_height - ic_height - 2;
-	dob -> ob_spec	= sob -> ob_spec;
-	dob -> ob_type	= sob -> ob_type;
-	dob -> ob_width	= sob -> ob_width;
-	dob -> ob_height	= sob -> ob_height;
+	ic_height = sob->ob_spec.ciconblk->monoblk.ib_hicon + 8;
+	dob->ob_y = ob_height - ic_height - 2;
+	dob->ob_spec = sob->ob_spec;
+	dob->ob_type = sob->ob_type;
+	dob->ob_width = sob->ob_width;
+	dob->ob_height = sob->ob_height;
 /*
 	if (rect)
 	{
@@ -152,21 +152,21 @@ static WORD cdecl set_item( LIST_BOX *box, OBJECT *tree,
 *
 *********************************************************************/
 
-static LBOX_ITEM *cat_spcs( void )
+static LBOX_ITEM *cat_spcs(void)
 {
 	register int i;
 	register struct spc_file *spc;
 	LBOX_ITEM *sc;
 
 	/* Verkette die "spc_file"-Strukturen */
-	for	(i = 0,spc = spcx; i < spcn-1; i++,spc++)
+	for	(i = 0, spc = spcx; i < spcn - 1; i++, spc++)
 	{
-		spc->next = spc+1;
+		spc->next = spc + 1;
 	}
 	if (spcn)
 	{
 		sc = (LBOX_ITEM *) spcx;
-		spcx[spcn-1].next = NULL;
+		spcx[spcn - 1].next = NULL;
 	}
 	else
 		sc = NULL;
@@ -180,7 +180,7 @@ static LBOX_ITEM *cat_spcs( void )
 *
 *********************************************************************/
 
-void spc_dial_init_rsc( void )
+void spc_dial_init_rsc(void)
 {
 	int /* dummy, */ i;
 	static int ctrl_objs[5] =
@@ -196,9 +196,9 @@ void spc_dial_init_rsc( void )
 			adr_spc_dialog[ctrl_objs[i]].ob_spec.obspec.framesize = 1;
 	}
 /*
-	visible_len = (int) strlen(adr_spc_dialog[SPC1].ob_spec.tedinfo->te_ptext+1);
+	visible_len = (int) strlen(adr_spc_dialog[SPC1].ob_spec.tedinfo->te_ptext + 1);
 */
-	sbox = lbox_create(	adr_spc_dialog,
+	sbox = lbox_create(adr_spc_dialog,
 					select_item,
 					set_item,
 					cat_spcs(),	/* Items */
@@ -224,7 +224,7 @@ void spc_dial_init_rsc( void )
 *
 *********************************************************************/
 
-static void scroll_win_key( DIALOG *d, long key )
+static void scroll_win_key(DIALOG *d, long key)
 {
 	register struct spc_file *spc;
 	register int n;
@@ -263,9 +263,9 @@ static void chg_icon(int myspc, int iconnr)
 	ic = icnx + iconnr;
 	sob = rscx[ic->rscfile].adr_icons + ic->objnr;
 	n = lbox_get_first(sbox);
-	for	(i = 0; (i < 5) && (i+n < spcn); i++)
+	for	(i = 0; (i < 5) && (i + n < spcn); i++)
 	{
-		if (i+n != myspc)
+		if (i + n != myspc)
 			continue;
 		dob = adr_spc_dialog + showindex_to_icnobj(i);
 		ob_dsel(dob, 0);
@@ -285,7 +285,7 @@ static void chg_icon(int myspc, int iconnr)
 *
 *********************************************************************/
 
-void spc_dial_set_icon( int iconnr )
+void spc_dial_set_icon(int iconnr)
 {
 	register int i;
 
@@ -314,7 +314,7 @@ static void spc_set_icon(int iconnr, int objnr)
 	spc = icnobj_to_showindex(objnr);
 	if (spc >= 0)
 	{
-		spc += lbox_get_first( sbox );
+		spc += lbox_get_first(sbox);
 		spcx[spc].iconnr = iconnr;
 		chg_icon(spc, iconnr);
 	}
@@ -373,7 +373,7 @@ int spc_get_target_obj(int x, int y, int whdl, OBJECT **tree,
 
 #pragma warn -par
 
-WORD cdecl hdl_spc( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data )
+WORD cdecl hdl_spc(DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data)
 {
 	OBJECT *tree;
 	long key;
@@ -395,7 +395,7 @@ WORD cdecl hdl_spc( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
 		if ((data) && (*((char **) data)))
 		{
 			memcpy(&key, *((char **) data), sizeof(long));
-			scroll_win_key( NULL, key );
+			scroll_win_key(NULL, key);
 		}
 	
 		return 1;

@@ -191,9 +191,9 @@ static WORD cdecl set_item(LIST_BOX *box, OBJECT *tree,
 	dob = tree+index;
 	dob->ob_flags &= ~HIDETREE;
 	dob->ob_flags |= TOUCHEXIT;
-	abbrev_path(dob -> ob_spec.tedinfo->te_ptext + 1,
+	abbrev_path(dob->ob_spec.tedinfo->te_ptext + 1,
 			mypth->path, visible_len);
-/*	len = (int) strlen(dob -> ob_spec.tedinfo->te_ptext + 1);	*/
+/*	len = (int) strlen(dob->ob_spec.tedinfo->te_ptext + 1);	*/
 	if (mypth->sel)
 		ob_sel(dob, 0);
 	else
@@ -219,17 +219,17 @@ static WORD cdecl set_item(LIST_BOX *box, OBJECT *tree,
 */
 	sob = rscx[ic->rscfile].adr_icons + ic->objnr;
 	ic_height = sob->ob_spec.ciconblk->monoblk.ib_hicon + 8;
-	dob -> ob_y = ob_height - ic_height - 2;
-	dob -> ob_spec   = sob -> ob_spec;
-	dob -> ob_type   = sob -> ob_type;
-	dob -> ob_width  = sob -> ob_width;
-	dob -> ob_height = sob -> ob_height;
+	dob->ob_y = ob_height - ic_height - 2;
+	dob->ob_spec   = sob->ob_spec;
+	dob->ob_type   = sob->ob_type;
+	dob->ob_width  = sob->ob_width;
+	dob->ob_height = sob->ob_height;
 
 /*
 	if (rect)
 	{
 		rect->g_x += xpos_textob;
-		rect->g_w = visible_len*gl_hwchar;
+		rect->g_w = visible_len * gl_hwchar;
 	}
 */
 	return index;
@@ -250,7 +250,7 @@ static LBOX_ITEM *cat_paths(void)
 	LBOX_ITEM *sc;
 
 	/* Verkette die "pth_file"-Strukturen */
-	for	(i = 0,pth = pthx; i < pthn-1; i++,pth++)
+	for	(i = 0,pth = pthx; i < pthn - 1; i++,pth++)
 	{
 		pth->next = pth + 1;
 	}
@@ -546,7 +546,7 @@ static void icp_set_icon(int iconnr, int objnr)
 	pth = icnobj_to_showindex(objnr);
 	if (pth >= 0)
 	{
-		pth += lbox_get_first( sbox );
+		pth += lbox_get_first(sbox);
 		pthx[pth].iconnr = iconnr;
 		chg_icon(pth, iconnr);
 	}
@@ -606,7 +606,7 @@ int icp_get_target_obj(int x, int y, int whdl, OBJECT **tree,
 
 #pragma warn -par
 
-WORD cdecl hdl_icp( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data )
+WORD cdecl hdl_icp(DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data)
 {
 	int pth;
 	static char *path;
@@ -633,7 +633,7 @@ WORD cdecl hdl_icp( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
 		if ((data) && (*((char **) data)))
 		{
 			path = *((char **) data);
-			if (0 > scroll_win_path( NULL, path ))
+			if (0 > scroll_win_path(NULL, path))
 				retcode = 2;	/* Aktion notwendig ! */
 		}
 
@@ -682,7 +682,7 @@ WORD cdecl hdl_icp( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
 	pth = pthobj_to_showindex(exitbutton);
 	if ((clicks == 2) && (pth >= 0))
 	{
-		pth += lbox_get_first( sbox );
+		pth += lbox_get_first(sbox);
  		d_pth = xy_wdlg_init(
  				hdl_pth,
  				adr_newpath,
@@ -776,7 +776,7 @@ WORD cdecl hdl_icp( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
 		if (!selected_path)
 			exit(-1);		/* ??? */
 		deselect_path(d);
-		delete_pth(selected_path-pthx);
+		delete_pth((int) (selected_path - pthx));
 		goto ende;
 	}
 

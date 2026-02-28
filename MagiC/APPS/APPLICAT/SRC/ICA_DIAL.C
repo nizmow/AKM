@@ -52,8 +52,8 @@ struct spd_file {
 */
 
 static void *sbox1,*sbox2;
-static struct zeile *selected_pgmline = NULL;
-static struct zeile *selected_datline = NULL;
+static struct item_line *selected_pgmline = NULL;
+static struct item_line *selected_datline = NULL;
 static struct spd_file *selected_spdfile = NULL;
 static struct dat_file  *selected_datfile = NULL;
 static struct pgm_file  *selected_program = NULL;
@@ -140,7 +140,7 @@ static int datobj_to_showindex(int objnr)
 *
 *********************************************************************/
 
-static int pgm_filetype( int pgm, int n )
+static int pgm_filetype(int pgm, int n)
 {
 	int dat;
 
@@ -164,7 +164,7 @@ static int pgm_filetype( int pgm, int n )
 *
 *********************************************************************/
 
-static void enable_scroll( DIALOG *d, int *objs )
+static void enable_scroll(DIALOG *d, int *objs)
 {
 	register int i;
 
@@ -176,7 +176,7 @@ static void enable_scroll( DIALOG *d, int *objs )
 			subobj_wdraw(d, objs[i], 0, MAX_DEPTH);
 	}
 }
-static void disable_scroll( DIALOG *d, int *objs)
+static void disable_scroll(DIALOG *d, int *objs)
 {
 	register int i;
 
@@ -201,11 +201,11 @@ static void disable_scroll( DIALOG *d, int *objs)
 *
 *********************************************************************/
 
-static int scroll_win_app( DIALOG *d, char *ap_path )
+static int scroll_win_app(DIALOG *d, char *ap_path)
 {
 	char fname[MAX_NAMELEN];
 	register struct pgm_file *pgm;
-	register struct zeile *line;
+	register struct item_line *line;
 	register int n,i;
 
 
@@ -242,7 +242,7 @@ static int scroll_win_app( DIALOG *d, char *ap_path )
 *
 *********************************************************************/
 
-static int scroll_win_dat( DIALOG *d, char *datname )
+static int scroll_win_dat(DIALOG *d, char *datname)
 {
 	register int j,k;
 	register struct dat_file *dat;
@@ -294,11 +294,11 @@ static int scroll_win_dat( DIALOG *d, char *datname )
 *********************************************************************/
 
 #pragma warn -par
-static void cdecl select_item1( LIST_BOX *box, OBJECT *tree,
+static void cdecl select_item1(LIST_BOX *box, OBJECT *tree,
 			LBOX_ITEM *item, void *user_data,
-			WORD obj_index, WORD last_state )
+			WORD obj_index, WORD last_state)
 {
-	struct zeile *line = (struct zeile *) item;
+	struct item_line *line = (struct item_line *) item;
 
 	if (line->sel)
 	{
@@ -310,12 +310,12 @@ static void cdecl select_item1( LIST_BOX *box, OBJECT *tree,
 	}
 }
 
-static void cdecl select_item2( LIST_BOX *box, OBJECT *tree,
+static void cdecl select_item2(LIST_BOX *box, OBJECT *tree,
 			LBOX_ITEM *item, void *user_data,
-			WORD obj_index, WORD last_state )
+			WORD obj_index, WORD last_state)
 {
 	struct spd_file *spd = (struct spd_file *) item;
-	struct zeile *line = (struct zeile *) item;
+	struct item_line *line = (struct item_line *) item;
 
 	if (selected_program)
 	{
@@ -341,11 +341,11 @@ static void cdecl select_item2( LIST_BOX *box, OBJECT *tree,
 	}
 }
 
-static WORD cdecl set_item1( LIST_BOX *box, OBJECT *tree,
+static WORD cdecl set_item1(LIST_BOX *box, OBJECT *tree,
 			LBOX_ITEM *item, WORD index,
-			void *user_data, GRECT *rect, WORD offset )
+			void *user_data, GRECT *rect, WORD offset)
 {
-	struct zeile *line = (struct zeile *) item;
+	struct item_line *line = (struct item_line *) item;
 	GRECT *redr;
 	struct pgm_file *mypgm;
 	OBJECT *dob;
@@ -391,9 +391,9 @@ static WORD cdecl set_item1( LIST_BOX *box, OBJECT *tree,
 	dob->ob_flags &= ~HIDETREE;
 	dob->ob_flags |= TOUCHEXIT;
 	dob->ob_state &= ~DISABLED;
-	strncpy(dob -> ob_spec.tedinfo->te_ptext+1,
+	strncpy(dob->ob_spec.tedinfo->te_ptext + 1,
 			mypgm->name, visible_pgmlen);
-/*	len = (int) strlen(dob -> ob_spec.tedinfo->te_ptext+1);	*/
+/*	len = (int) strlen(dob->ob_spec.tedinfo->te_ptext + 1);	*/
 	if (mypgm->sel)
 /*	if (item->selected)	*/
 	{
@@ -437,11 +437,11 @@ static WORD cdecl set_item1( LIST_BOX *box, OBJECT *tree,
 */
 	sob = rscx[ic->rscfile].adr_icons + ic->objnr;
 	ic_height = sob->ob_spec.ciconblk->monoblk.ib_hicon+8;
-	dob -> ob_y = ob_height - ic_height - 2;
-	dob -> ob_spec	= sob -> ob_spec;
-	dob -> ob_type	= sob -> ob_type;
-	dob -> ob_width	= sob -> ob_width;
-	dob -> ob_height	= sob -> ob_height;
+	dob->ob_y = ob_height - ic_height - 2;
+	dob->ob_spec	= sob->ob_spec;
+	dob->ob_type	= sob->ob_type;
+	dob->ob_width	= sob->ob_width;
+	dob->ob_height	= sob->ob_height;
 
 /*
 	if (rect)
@@ -452,11 +452,11 @@ static WORD cdecl set_item1( LIST_BOX *box, OBJECT *tree,
 */
 	return index;
 }
-static WORD cdecl set_item2( LIST_BOX *box, OBJECT *tree,
+static WORD cdecl set_item2(LIST_BOX *box, OBJECT *tree,
 			LBOX_ITEM *item, WORD index,
-			void *user_data, GRECT *rect, WORD offset )
+			void *user_data, GRECT *rect, WORD offset)
 {
-	struct zeile *line = (struct zeile *) item;
+	struct item_line *line = (struct item_line *) item;
 	struct spd_file *sd = (struct spd_file *) item;
 	struct dat_file *mydat;
 	OBJECT *dob;
@@ -494,9 +494,9 @@ static WORD cdecl set_item2( LIST_BOX *box, OBJECT *tree,
 	mydat = datx+len;
 	dob = tree+index;
 	dob->ob_flags &= ~HIDETREE;
-	strncpy(dob -> ob_spec.tedinfo->te_ptext+1,
+	strncpy(dob->ob_spec.tedinfo->te_ptext + 1,
 			mydat->name, visible_datlen);
-/*	len = (int) strlen(dob -> ob_spec.tedinfo->te_ptext+1); */
+/*	len = (int) strlen(dob->ob_spec.tedinfo->te_ptext + 1); */
 	if (item->selected)
 		ob_sel(dob, 0);
 	else
@@ -519,12 +519,12 @@ static WORD cdecl set_item2( LIST_BOX *box, OBJECT *tree,
 		ob_dsel(dob, 0);
 */
 	sob = rscx[ic->rscfile].adr_icons + ic->objnr;
-	ic_height = sob->ob_spec.ciconblk->monoblk.ib_hicon+8;
-	dob -> ob_y = ob_height - ic_height - 2;
-	dob -> ob_spec	= sob -> ob_spec;
-	dob -> ob_type	= sob -> ob_type;
-	dob -> ob_width	= sob -> ob_width;
-	dob -> ob_height	= sob -> ob_height;
+	ic_height = sob->ob_spec.ciconblk->monoblk.ib_hicon + 8;
+	dob->ob_y = ob_height - ic_height - 2;
+	dob->ob_spec = sob->ob_spec;
+	dob->ob_type = sob->ob_type;
+	dob->ob_width = sob->ob_width;
+	dob->ob_height = sob->ob_height;
 
 /*
 	if (rect)
@@ -544,21 +544,21 @@ static WORD cdecl set_item2( LIST_BOX *box, OBJECT *tree,
 *
 *********************************************************************/
 
-static LBOX_ITEM *cat_lines( void )
+static LBOX_ITEM *cat_lines(void)
 {
 	register int i;
-	register struct zeile *line;
+	register struct item_line *line;
 	LBOX_ITEM *sc;
 
-	/* Verkette die "zeile"-Strukturen */
-	for	(i = 0,line = linx; i < linn-1; i++,line++)
+	/* Verkette die "item_line"-Strukturen */
+	for	(i = 0,line = linx; i < linn - 1; i++,line++)
 	{
-		line->next = line+1;
+		line->next = line + 1;
 	}
 	if (linn)
 	{
 		sc = (LBOX_ITEM *) linx;
-		linx[linn-1].next = NULL;
+		linx[linn - 1].next = NULL;
 	}
 	else
 	{
@@ -575,7 +575,7 @@ static LBOX_ITEM *cat_lines( void )
 *
 *********************************************************************/
 
-void ica_dial_init_rsc( void )
+void ica_dial_init_rsc(void)
 {
 /*	int dummy;	*/
 	register int i;
@@ -585,16 +585,16 @@ void ica_dial_init_rsc( void )
 	sc = cat_lines();
 
 	if (!is_3d)
-{
-		for	(i = 1; i < 5; i++)
 	{
+		for	(i = 1; i < 5; i++)
+		{
 			adr_ica_dialog[ctrl_objs1[i]].ob_spec.obspec.framesize =
 			adr_ica_dialog[ctrl_objs2[i]].ob_spec.obspec.framesize = 1;
-	}
+		}
 
 		adr_ica_dialog[ctrl_objs1[3]].ob_spec.obspec.fillpattern =
 		adr_ica_dialog[ctrl_objs2[3]].ob_spec.obspec.fillpattern = 1;
-}
+	}
 
 	adr_ica_dialog[DEL_PGM].ob_state |= DISABLED;
 	adr_ica_dialog[NEU_DAT].ob_state |= DISABLED;
@@ -605,8 +605,8 @@ void ica_dial_init_rsc( void )
 	enable_scroll(NULL, ctrl_objs1);
 	disable_scroll(NULL, ctrl_objs2);
 
-	visible_pgmlen = (int) strlen(adr_ica_dialog[PRG1].ob_spec.tedinfo->te_ptext+1);
-	visible_datlen = (int) strlen(adr_ica_dialog[DAT1].ob_spec.tedinfo->te_ptext+1);
+	visible_pgmlen = (int) strlen(adr_ica_dialog[PRG1].ob_spec.tedinfo->te_ptext + 1);
+	visible_datlen = (int) strlen(adr_ica_dialog[DAT1].ob_spec.tedinfo->te_ptext + 1);
 
 	sbox1 = lbox_create(adr_ica_dialog,
 					select_item1,
@@ -646,19 +646,19 @@ void ica_dial_init_rsc( void )
 
 /*********************************************************************
 *
-* Setzt das Attribut zeile->sel korrekt
+* Setzt das Attribut item_line->sel korrekt
 *
 *********************************************************************/
 
-static void sync_sel( void )
+static void sync_sel(void)
 {
-	register int i,n;
-	register struct zeile *z;
+	register int i, n;
+	register struct item_line *z;
 	register struct spd_file *sd;
 
 
 	selected_pgmline = selected_datline = NULL;
-	for	(i=0,z=linx; i < linn; i++,z++)
+	for	(i = 0, z = linx; i < linn; i++, z++)
 	{
 		z->sel = FALSE;
 		if (!z->reldatnr || z->reldatnr == -1)
@@ -683,7 +683,7 @@ static void sync_sel( void )
 	if (sel_dfiles && selected_program)
 	{
 		n = selected_program->ntypes;
-		for	(i = 0, sd = sel_dfiles; i < n; i++,sd++)
+		for	(i = 0, sd = sel_dfiles; i < n; i++, sd++)
 		{
 			sd->selected = FALSE;
 			if (datx[sd->datnr].sel)
@@ -702,7 +702,7 @@ static void sync_sel( void )
 *
 *********************************************************************/
 
-static void setup_programs( int line )
+static void setup_programs(int line)
 {
 	if (line < 0)
 		line = lbox_get_first(sbox1);
@@ -723,7 +723,7 @@ static void setup_programs( int line )
 *
 *********************************************************************/
 
-static void setup_datafiles( int line )
+static void setup_datafiles(int line)
 {
 	if (line < 0)
 		line = lbox_get_first(sbox1);
@@ -745,9 +745,9 @@ static void setup_datafiles( int line )
 *
 *********************************************************************/
 
-static void setup_spdfiles( int line )
+static void setup_spdfiles(int line)
 {
-	register int i,n;
+	register int i, n;
 	register struct spd_file *sd;
 
 
@@ -763,8 +763,8 @@ static void setup_spdfiles( int line )
 			for	(i = 0, sd = sel_dfiles; i < n; i++,sd++)
 			{
 				sd->selected = FALSE;
-				if (i < n-1)
-					sd->next = sd+1;
+				if (i < n - 1)
+					sd->next = sd + 1;
 				else
 					sd->next = NULL;
 				sd->datnr = pgm_filetype(selected_pgmnr, i);
@@ -807,11 +807,11 @@ static void setup_spdfiles( int line )
 *
 *********************************************************************/
 
-int insert_dat( struct pgm_file *pgm, struct dat_file *dat )
+int insert_dat(struct pgm_file *pgm, struct dat_file *dat)
 {
 	register struct pgm_file *mypgm;
 	register struct dat_file *mydat;
-	register struct zeile *z;
+	register struct item_line *z;
 	int *prev;
 	register int pgmnr,j,k,l;
 	int newdat;
@@ -845,10 +845,10 @@ int insert_dat( struct pgm_file *pgm, struct dat_file *dat )
 		{
 			char s[200];
 
-			sprintf(s,Rgetstring(ALRT_FTYPE_INUSE, NULL),
+			sprintf(s, Rgetstring(ALRT_FTYPE_INUSE, NULL),
 					dat->name,
-					(pgmx+(mydat->pgm))->name);
-			form_alert(1,s);
+					(pgmx + (mydat->pgm))->name);
+			form_alert(1, s);
 			return -1;
 		}
 	}
@@ -872,7 +872,7 @@ int insert_dat( struct pgm_file *pgm, struct dat_file *dat )
 
 	ok_new:
 	datx[newdat] = *dat;
-	dat = datx+newdat;		/* dat = Zeiger auf neuen Eintrag */
+	dat = datx + newdat;		/* dat = Zeiger auf neuen Eintrag */
 
 	/* dat in die Verkettung fr dat->pgm eintragen 			*/
 	/* wird als <k-te> angemeldete Datei zu mypgm eingetragen	*/
@@ -904,7 +904,7 @@ int insert_dat( struct pgm_file *pgm, struct dat_file *dat )
 	/* ggf. einsortieren in linx[] */
 	/* --------------------------- */
 
-	for	(j = 0,z=linx; j < linn; j++,z++)
+	for	(j = 0, z = linx; j < linn; j++,z++)
 	{
 		if (z->pgmnr != pgmnr)
 			continue;
@@ -913,7 +913,7 @@ int insert_dat( struct pgm_file *pgm, struct dat_file *dat )
 		j += k;		/* rel. Pos der neuen Datei */
 		z += k;
 		for	(l = linn; l > j; l--)
-			linx[l] = linx[l-1];
+			linx[l] = linx[l - 1];
 		linn++;
 		z->sel = FALSE;
 		break;
@@ -962,7 +962,7 @@ int insert_dat( struct pgm_file *pgm, struct dat_file *dat )
 *
 *********************************************************************/
 
-int delete_dat( int dat )
+int delete_dat(int dat)
 {
 	register int i,k;
 	int pgm;
@@ -979,13 +979,13 @@ int delete_dat( int dat )
 		if (linx[i].datnr == dat)
 		{
 			if ((linx[i].reldatnr == 0) &&
-				 ((i+1 >= linn) || (linx[i+1].pgmnr != pgm)))
+				 ((i + 1 >= linn) || (linx[i + 1].pgmnr != pgm)))
 			{
 				linx[i].datnr = linx[i].reldatnr = -1;
 				goto no_del;
 			}
-			for	(k = i; k < linn-1; k++)
-				linx[k] = linx[k+1];
+			for	(k = i; k < linn - 1; k++)
+				linx[k] = linx[k + 1];
 			for	(k = i; (k < linn) && (linx[k].pgmnr == pgm); k++)
 				linx[k].reldatnr--;
 			goto ok2;
@@ -1160,7 +1160,7 @@ int insert_pgm(struct pgm_file *pgm)
 			 (stricmp(pgmx[linx[j].pgmnr].name, pgm->name) > 0))
 		{
 			for	(k = linn; k > j; k--)
-				linx[k] = linx[k-1];
+				linx[k] = linx[k - 1];
 			goto ok2;
 		}
 	}
@@ -1177,7 +1177,7 @@ int insert_pgm(struct pgm_file *pgm)
 	if (selected_program)	/* Zeile selektiert, dann... */
 	{
 		sync_sel();		/* Selektionsstatus korrigieren */
-		j = selected_pgmline - linx;			/* ...nicht scrollen! */
+		j = (int) (selected_pgmline - linx);			/* ...nicht scrollen! */
 	}
 	setup_programs(j);
 	if (!selected_program)
@@ -1206,10 +1206,10 @@ int delete_pgm(int pgm)
 	{
 		if (linx[i].pgmnr == pgm)
 		{
-			for	(j = i+1; (linx[j].pgmnr == pgm) && (j < linn); j++)
+			for	(j = i + 1; (linx[j].pgmnr == pgm) && (j < linn); j++)
 				;
 			for	(k = j; k < linn; k++)
-				linx[k+i-j] = linx[k];
+				linx[k + i - j] = linx[k];
 			goto ok2;
 		}
 	}
@@ -1271,14 +1271,14 @@ static void chg_icon(int win, int meinding, int iconnr)
 	for	(i = 0; i < NLINES; i++)
 	{
 		if (win == PGMS)
-			ding = (i+n < linn) ? linx[i+n].pgmnr : -1;
+			ding = (i + n < linn) ? linx[i + n].pgmnr : -1;
 		else
 		if (win == PDFLS)
-			ding = (i+n < linn) ? linx[i+n].datnr : -1;
+			ding = (i + n < linn) ? linx[i + n].datnr : -1;
 		else
 	/*	if (win == DFLS)	*/
-			ding = (i+n < selected_program->ntypes) ?
-					sel_dfiles[i+n].datnr : -1;
+			ding = (i + n < selected_program->ntypes) ?
+					sel_dfiles[i + n].datnr : -1;
 
 		if (ding != meinding)
 			continue;
@@ -1288,8 +1288,8 @@ static void chg_icon(int win, int meinding, int iconnr)
 		ob_dsel(dob, 0);
 		dob->ob_spec = sob->ob_spec;
 		dob->ob_type = sob->ob_type;
-		dob->ob_width	= sob->ob_width;
-		dob->ob_height	= sob->ob_height;
+		dob->ob_width = sob->ob_width;
+		dob->ob_height = sob->ob_height;
 		subobj_wdraw(d_ica, j, 0, MAX_DEPTH);
 	}
 }
@@ -1338,7 +1338,7 @@ static void ica_set_icon(int iconnr, int objnr)
 	pgm = pgmicnobj_to_showindex(objnr);
 	if (pgm >= 0)
 	{
-		pgm += lbox_get_first( sbox1 );
+		pgm += lbox_get_first(sbox1);
 		pgm = linx[pgm].pgmnr;
 		pgmx[pgm].iconnr = iconnr;
 		chg_icon(PGMS, pgm, iconnr);
@@ -1348,7 +1348,7 @@ static void ica_set_icon(int iconnr, int objnr)
 	dat = daticnobj_to_showindex(objnr);
 	if (dat >= 0)
 	{
-		dat += lbox_get_first( sbox2 );
+		dat += lbox_get_first(sbox2);
 		if (selected_program)
 		{
 			dat = sel_dfiles[dat].datnr;
@@ -1367,7 +1367,7 @@ static void ica_set_icon(int iconnr, int objnr)
 static void ica_draw_subobj(int objnr)
 {
 	if (d_ica)
-		subobj_wdraw(d_ica, objnr ,0, MAX_DEPTH);
+		subobj_wdraw(d_ica, objnr, 0, MAX_DEPTH);
 }
 
 int ica_get_target_obj(int x, int y, int whdl, OBJECT **tree,
@@ -1435,7 +1435,7 @@ static void deselect_dfile(DIALOG *d)
 *
 *********************************************************************/
 
-static void deselect_program( DIALOG *d)
+static void deselect_program(DIALOG *d)
 {
 	enable_scroll(d, ctrl_objs1);
 	disable_scroll(d, ctrl_objs2);
@@ -1586,9 +1586,9 @@ char *def_txt;		/* ->hdl_typ */
 WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
 		WORD clicks, void *data)
 {
-	struct zeile *oldsel;
+	struct item_line *oldsel;
 	struct spd_file *oldsel2;
-	int pgm,dat;
+	int pgm, dat;
 	static int cmd_pgm;
 	static int cmd_dat;
 	static char *cmd_pgm_path;
@@ -1622,19 +1622,19 @@ WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
 					cmd_pgm_path = APP_NAME_FREE;
 			}
 
-			cmd_pgm = scroll_win_app( NULL, cmd_pgm_path);
+			cmd_pgm = scroll_win_app(NULL, cmd_pgm_path);
 			if (cmd_pgm >= 0)
 			{
 				pgm_was_selected(NULL, cmd_pgm, TRUE);
 				if (cmd_dat_path)
-					cmd_dat = scroll_win_dat( NULL, cmd_dat_path);
+					cmd_dat = scroll_win_dat(NULL, cmd_dat_path);
 				else
 					cmd_dat = -1;
 				if (cmd_dat >= 0)
 				{
 					dat_was_selected(NULL, cmd_dat);
 					sync_sel();
-					lbox_update( sbox2, NULL );
+					lbox_update(sbox2, NULL);
 				}
 				sync_sel();
 			}
@@ -1742,7 +1742,7 @@ WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
 	pgm = pgmobj_to_showindex(exitbutton);
 	if ((clicks == 2) && (pgm >= 0))
 	{
-		pgm += lbox_get_first( sbox1 );
+		pgm += lbox_get_first(sbox1);
 		pgm = linx[pgm].pgmnr;
 		if (pgm < 0 || pgmx[pgm].name[0] == '<')	/* freie Dateien */
 		{
@@ -1768,7 +1768,7 @@ WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
 	dat = datobj_to_showindex(exitbutton);
 	if ((clicks == 2) && (dat >= 0))
 	{
-		dat += lbox_get_first( sbox2 );
+		dat += lbox_get_first(sbox2);
 		if (selected_program)
 			dat = sel_dfiles[dat].datnr;
 		else

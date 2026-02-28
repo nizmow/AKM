@@ -43,7 +43,7 @@ extern WORD global[];			/* Haupt-Thread */
 *
 ****************************************************************/
 
-int top_whdl( void )
+int top_whdl(void)
 {
 	int whdl;
 	int dummy;
@@ -72,23 +72,23 @@ int find_obj(OBJECT *tree, int x, int y)
 	int end;
 
 
-	if ((i = (tree -> ob_head)) < 0)
+	if ((i = (tree->ob_head)) < 0)
 		return 0;
-	if ((tree -> ob_flags) & HIDETREE)
+	if ((tree->ob_flags) & HIDETREE)
 		return -1;			/* etwa inaktiver Hintergrund */
-	end = tree -> ob_tail;
-	x -= tree -> ob_x;			/* Position der Root abziehen */
-	y -= tree -> ob_y;
+	end = tree->ob_tail;
+	x -= tree->ob_x;			/* Position der Root abziehen */
+	y -= tree->ob_y;
 	for	(; i <= end; i++)
 	{
 		tree++;
 		if ((tree->ob_flags) & HIDETREE)
 			continue;
-		if (tree -> ob_type == G_USERDEF)
+		if (tree->ob_type == G_USERDEF)
 			icn = (ICONBLK *) tree->ob_spec.userblk->ub_parm;
 		else
-		if ((tree -> ob_type == G_ICON) ||
-			 (tree -> ob_type == G_CICON))
+		if ((tree->ob_type == G_ICON) ||
+			 (tree->ob_type == G_CICON))
 			icn = tree->ob_spec.iconblk;
 		else
 			icn = NULL;
@@ -136,8 +136,8 @@ void objc_grect(OBJECT *tree, int objn, GRECT *g)
 
 	o = tree + objn;
 	objc_offset(tree, objn, &nx, &ny);
-	if (((o -> ob_type == G_BUTTON) || (o -> ob_type == G_FTEXT)) &&
-		 (o-> ob_flags & FL3DMASK))
+	if (((o->ob_type == G_BUTTON) || (o->ob_type == G_FTEXT)) &&
+		 (o->ob_flags & FL3DMASK))
 	{
 		x = o->ob_x;
 		y = o->ob_y;
@@ -149,10 +149,10 @@ void objc_grect(OBJECT *tree, int objn, GRECT *g)
 	}
 	else
 	{
-		g -> g_x = nx;
-		g -> g_y = ny;
-		g -> g_w = o -> ob_width;
-		g -> g_h = o -> ob_height;
+		g->g_x = nx;
+		g->g_y = ny;
+		g->g_w = o->ob_width;
+		g->g_h = o->ob_height;
 	}
 }
 
@@ -190,7 +190,7 @@ int rc_intersect(GRECT *p1, GRECT *p2)
 	p2->g_y = ty;
 	p2->g_w = tw - tx;
 	p2->g_h = th - ty;
-	return( (tw > tx) && (th > ty) );
+	return((tw > tx) && (th > ty));
 }
 
 
@@ -300,25 +300,25 @@ void objs_enable(OBJECT *tree, ...)
 
 int selected(OBJECT *tree, int which)
 {
-	return( ((tree+which)->ob_state & SELECTED) ? 1 : 0 );
+	return(((tree + which)->ob_state & SELECTED) ? 1 : 0);
 }
 
 void ob_dsel(OBJECT *tree, int which)
 {
-	(tree+which)->ob_state &= ~SELECTED;
+	(tree + which)->ob_state &= ~SELECTED;
 }
 
 void ob_sel_dsel(OBJECT *tree, int which, int sel)
 {
 	if (sel)
-		(tree+which)->ob_state |=  SELECTED;
+		(tree + which)->ob_state |=  SELECTED;
 	else
-		(tree+which)->ob_state &= ~SELECTED;
+		(tree + which)->ob_state &= ~SELECTED;
 }
 
 void ob_sel(OBJECT *tree, int which)
 {
-	(tree+which)->ob_state |= SELECTED;
+	(tree + which)->ob_state |= SELECTED;
 }
 
 
@@ -380,7 +380,7 @@ void open_work(void)
 	register int i;
 
 
-	for  (i = 0; i < 10; work_in[i++] = 1)
+	for (i = 0; i < 10; work_in[i++] = 1)
 		;
 	work_in[10]=2;                     /* Rasterkoordinaten */
 	v_opnvwk(work_in, &vdi_handle, work_out);
@@ -393,7 +393,7 @@ void open_work(void)
 *
 *********************************************************************/
 
-void Mrsrc_load( char *fname, WORD *global )
+void Mrsrc_load(char *fname, WORD *global)
 {
 	if (!MT_rsrc_load(fname, global))
 	{
@@ -476,19 +476,19 @@ void print_values(char *s, int n, int values[])
 *
 *********************************************************************/
 
-char *get_name(char *path)
+char *get_name(const char *path)
 {
-	register char *n;
+	register char *name;
 
-	n = strrchr(path, '\\');
-	if (!n)
+	name = strrchr(path, '\\');
+	if (!name)
 	{
 		if ((*path) && (path[1] == ':'))
 			path += 2;
-		return path;
+		return (char *) path;
 	}
 
-	return n + 1;
+	return (char *) (name + 1);
 }
 
 
@@ -566,7 +566,7 @@ int is_absolute_path(char *path)
 *
 *********************************************************************/
 
-char *Rgetstring( WORD string_id, WORD *global )
+char *Rgetstring(WORD string_id, WORD *global)
 {
 	char *alert;
 
@@ -581,7 +581,7 @@ char *Rgetstring( WORD string_id, WORD *global )
 *
 *********************************************************************/
 
-WORD Rform_alert( WORD defbutton, WORD alert_id, WORD *global )
+WORD Rform_alert(WORD defbutton, WORD alert_id, WORD *global)
 {
 	return form_alert(defbutton, Rgetstring(alert_id, global));
 }
@@ -594,8 +594,8 @@ WORD Rform_alert( WORD defbutton, WORD alert_id, WORD *global )
 *
 *********************************************************************/
 
-WORD Rxform_alert( WORD defbutton, WORD alert_id,
-				char drv, char *path, WORD *global )
+WORD Rxform_alert(WORD defbutton, WORD alert_id,
+				char drv, char *path, WORD *global)
 {
 	register char *alert;
 	char buf[256];
