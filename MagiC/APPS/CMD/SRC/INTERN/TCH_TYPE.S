@@ -117,8 +117,8 @@ tyf_50:
 *
 
 *    DATA
-parm_table_s:
- DC.B	's',0
+parm_table_q:
+ DC.B	'q',0
  	EVEN
 *	TEXT
 
@@ -142,7 +142,7 @@ t_com:
 
  lea		SP_ARGV+8(sp),a0
  lea		SP_ARGC+8(sp),a1
- lea		parm_table_s(pc),a2
+ lea		parm_table_q(pc),a2
  bsr		eval_switches
  bmi		toty_syntax
  tst.w   	SP_ARGC+8(sp)

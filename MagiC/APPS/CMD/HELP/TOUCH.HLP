@@ -1,8 +1,8 @@
-Syntax: TOUCH [-s] datei1 datei2 ...
+Syntax: TOUCH [-q] datei1 datei2 ...
 Zweck: Datum und Uhrzeit der Datei(en) auf aktuelles Datum und aktuelle
        Uhrzeit setzen, als ob sie ge„ndert worden w„re.
 
-Der Schalter "-s" ("silent") unterdrckt Kontrollausgaben auf die Konsole.
+Der Schalter "-q" ("quiet") unterdrckt Kontrollausgaben auf die Konsole.
 Das Archivbit (ab TOS 1.04 untersttzt) wird nicht ver„ndert.
 Als <datei> kann man auch einen Pfad angeben, etwa "TOUCH \", dann werden
 alle Dateien auf dem Wurzellaufwerk in Uhrzeit und Datum aktualisiert.

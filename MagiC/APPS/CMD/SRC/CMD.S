@@ -154,23 +154,30 @@ not_from_tc:
 	IFF ACC					; Wir laufen NICHT als .ACC
 
 * Environment-Behandlung
- lea      _base+$2c(pc),a2
+ lea      _base+p_env(pc),a2
  move.l   (a2),a0                  * Zeiger auf altes Environment
  lea      d+environment(pc),a1
  move.l   a1,(a2)                  * Zeiger in Basepage auf neues Environment setzen
  move.l	a0,d0				* altes Environment NULL (unwahrscheinlich)?
- beq.b	ini_22				* ja, nix kopieren
+ beq.b	ini_env_end			* ja, nix kopieren
+
 * Environment kopieren
- move.w   #env_ende-environment-2,d1
-ini_23:
- move.b   (a0)+,(a1)+
- dbeq     d1,ini_23
- tst.b    (a0)
- beq.b    ini_22
- tst.w    d1
- bhi.b    ini_23
-ini_22:
- clr.b    (a1)+                    * Kopie mit zwei Nullbytes abschliežen
+
+ move.w   #env_end-environment-2,d1	; d1 = 1021
+ini_env_copy_loop:
+ move.b   (a0)+,(a1)+			; loop count <= 1022
+ dbeq     d1,ini_env_copy_loop	; loop if NOT equal, i.e. no NUL copied, then decrement until -1
+ bne.b    ini_env_overfl			; last copied byte was not zero, thus unlucky overflow in midst of string, d1 should be -1 now
+* string copied, including trailing NUL, limit not reached
+ tst.b    (a0)					; two zeros, i.e. end of environment?
+ beq.b    ini_env_end			; yes, add last NUL byte
+ subq.w   #1,d1				; adjust d1, because dbeq skipped the decrement
+ bcc.b    ini_env_copy_loop		; copy next string
+* Last string copied successfully, buffer is now full. Additional strings are lost.
+ bra.b	ini_env_end			; add another NUL
+ini_env_overfl:
+ clr.b    (a1)+                    ; in case of overflow in midst of a string we must add two NULs
+ini_env_end:
  clr.b    (a1)
 
 	ENDIF					; IFF ACC
@@ -1542,7 +1549,7 @@ envset_11:
 envset_14:
  tst.b    (a4)
  bne.b    envset_11      * Suche nach dem Ende des Environments (in a4)
- lea      d+env_ende(pc),a0
+ lea      d+env_end(pc),a0
  suba.l   a4,a0
  cmp.l    a0,d0
  ble.b    envset_12
@@ -3585,7 +3592,7 @@ d:
      OFFSET    0
 
 environment:   DS.B      $3ff
-env_ende:      DS.B      1
+env_end:       DS.B      1
 
                DS.B      3000
 stack:         DS.L      1
@@ -3595,8 +3602,8 @@ query_flag:    DS.W      1
 treelevel      EQU       query_flag     * Zum Durchsuchen des Dir- Baums
 errlv2         EQU       query_flag     * letzter Errorlevel
 t_flag         EQU       query_flag     * Touch- Flag fr COPY
-dir_zeilen:    DS.W      1              * Bei DIR
-schluessel     EQU       dir_zeilen     * Bei SORT
+dir_lines:     DS.W      1              * Bei DIR
+schluessel     EQU       dir_lines      * Bei SORT
 
 w_flag:        DS.B      1              * Bei DIR
 r_flag         EQU       w_flag         * Bei SORT

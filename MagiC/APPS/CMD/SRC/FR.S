@@ -41,6 +41,8 @@ diskerr_s:		DC.B  '  sur le disque %:',$d,$a
 				DC.B  '[A]nnuler, [R]ecommencer, [I]gnorer ?',0
 	ENDIF
 
+syntax_echo_s:		DC.B  'Syntaxe: ECHO [ON|OFF]',CR,LF
+				DC.B  '         ECHO [-n] [...]',CR,LF,0
 out_of_envs:		DC.B  $d,$a,'Environnement plein',$d,$a,0
 syntaxfehlers:		DC.B  $d,$a,'Syntaxe: SET [var=[valeur]]',$d,$a,0
 	* ATTENTION: set insert position!

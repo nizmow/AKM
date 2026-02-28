@@ -51,7 +51,7 @@ MAXDIR    EQU  512            * Maximal 512 Directory- Eintr„ge
 
 dir_entry:
  moveq    #1,d0
- lea      d+dir_zeilen(pc),a0
+ lea      d+dir_lines(pc),a0
  cmpi.w   #MAXDIR,(a0)
  bge.b    dire_end              * Zuviele Eintr„ge
  addq.w   #1,(a0)             * Anzahl der Eintr„ge mitz„hlen
@@ -81,7 +81,7 @@ dire_end:
 dir_entry_print:
  link     a6,#0
  movem.l  d6/d7/a5/a4,-(sp)
- lea      d+dir_zeilen(pc),a0
+ lea      d+dir_lines(pc),a0
  addq.w   #1,(a0)
  move.w   (a0),d6
  ext.l    d6
@@ -89,8 +89,8 @@ dir_entry_print:
  btst     #4,21(a5)                          * Subdirectory ?
  bne.b    dep_30
  move.l   26(a5),d0
- add.l    d0,normal_len-dir_zeilen(a0)       * L„nge akkumulieren
- addq.w   #1,normal_no-dir_zeilen(a0)        * Anzahl Dateien
+ add.l    d0,normal_len-dir_lines(a0)       * L„nge akkumulieren
+ addq.w   #1,normal_no-dir_lines(a0)        * Anzahl Dateien
 dep_30:
  lea      leers(pc),a4
  cmpi.b   #'.',30(a5)              * Name beginnt mit '.'
@@ -501,7 +501,7 @@ dir_skip_sort_output:
  move.l   a4,zeiger_adr-w_flag(a3)
  lea      4*MAXDIR(a4),a0
  move.l   a0,puffer_adr-w_flag(a3)
- clr.w    dir_zeilen-w_flag(a3)
+ clr.w    dir_lines-w_flag(a3)
  lea      dir_entry(pc),a1
  lea      sort_mode(pc),a0
  cmpi.b   #'U',(a0)				* "unsorted"
@@ -524,7 +524,7 @@ dir_12:
 * Das Verzeichnis wird jetzt sortiert, falls <sort_mode> <> 'U'
 *
  move.l   a4,-(sp)				* Zeigertabelle
- lea      d+dir_zeilen(pc),a0
+ lea      d+dir_lines(pc),a0
  move.w   (a0),d7
  clr.w    (a0)
  ext.l    d7

@@ -1,10 +1,10 @@
-Syntax: TYPE [-s] datei1 datei2 ...
+Syntax: TYPE [-q] datei1 datei2 ...
 Zweck:  Datei(en) anzeigen
 
 TYPE kann beliebig viele Argumente haben. Ist <datei> ein Dateimuster
 oder ein Pfad, werden alle passenden Dateien angezeigt. Die Dateinamen
 erscheinen nur auf dem Bildschirm und werden nicht nach stdout
-geschrieben. Der Schalter "-s" ("silent") unterdrckt die Kontrollausgaben
+geschrieben. Der Schalter "-q" ("quiet") unterdrckt die Kontrollausgaben
 auf die Konsole.
 
 Im Gegensatz zu "MORE" wird das Zeichen ^Z nicht ausgewertet, damit die

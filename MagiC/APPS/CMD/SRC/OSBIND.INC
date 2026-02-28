@@ -349,16 +349,16 @@ MOUSE_BT            EQU -$254
 p_lowtpa            EQU  0
 p_hitpa             EQU  4
 p_tbase             EQU  8
-p_tlen              EQU  12
-p_dbase             EQU  16
-p_dlen              EQU  20
-p_bbase             EQU  24
-p_blen              EQU  28
-p_dta               EQU  32
-p_parent            EQU  36
-p_res1              EQU  40
-p_env               EQU  44
-p_devx              EQU  48
+p_tlen              EQU  12	; 0x0a
+p_dbase             EQU  16	; 0x10
+p_dlen              EQU  20	; 0x14
+p_bbase             EQU  24	; 0x18
+p_blen              EQU  28	; 0x1c
+p_dta               EQU  32	; 0x20
+p_parent            EQU  36	; 0x24
+p_res1              EQU  40	; 0x28
+p_env               EQU  44	; 0x2c
+p_devx              EQU  48	; 0x30
 p_defdrv            EQU  55
 
 p_cmdlin            EQU  128
