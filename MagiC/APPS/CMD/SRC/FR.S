@@ -104,7 +104,7 @@ status_s:			DC.B  $d,$a,'Le Flag est ',0
 error_verifys:		DC.B  'Etat invalide',$d,$a,0
 syntax_sorts:		DC.B  $d,$a,'Syntaxe: SORT -C -R -n',$d,$a,0
 sort_memerrs:		DC.B  $d,$a,'SORT: MÇmoire insuffisante',$d,$a,0
-sort_zielvolls:	DC.B  'SORT: Disque destination plein',$d,$a,0
+sort_volume_full_s:	DC.B  'SORT: Disque destination plein',$d,$a,0
 syntax_finds:		DC.B  $d,$a,'Syntaxe: FIND chaåne',$d,$a,0
 mehrs:			DC.B  $d,'--Plus--',0
 syntax_ifs:		DC.B  $d,$a,'Erreur d''expression IF',$d,$a,0

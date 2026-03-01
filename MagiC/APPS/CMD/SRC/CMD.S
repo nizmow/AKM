@@ -375,22 +375,6 @@ brk_cl:
  bsr      clr_pipename        * temporÑre Dateien (fÅr Pipes) lîschen
  suba.l   a5,a5
 
-* void free_tpa()
-*  Gibt ggf. reservierten Speicher frei, verÑndert nicht Register d0
-
-free_tpa:
- move.l   d0,-(sp)
- lea      tpa_base(pc),a0
- move.l   (a0),-(sp)
- beq.b    ft_notpa
- clr.l    (a0)
- gemdos   Mfree
- addq.l   #2,sp
-ft_notpa:
- addq.l   #4,sp
- move.l   (sp)+,d0
- rts
-
 * long sfirst(a0 = char *path, a1 = DTA *dta, d0 = int attr_pat)
 
 sfirst:
@@ -424,6 +408,7 @@ read:
 
 
 * long write(d0 = int handle, d1 = long count, a0 = char *buf)
+* -> d0 = number of written bytes or negative error code
 
 write:
  moveq    #Fwrite,d2
@@ -433,7 +418,7 @@ r_w:
  move.w   d0,-(sp)                 ; handle
  move.w   d2,-(sp)                 ; DOS- Funktionscode
  trap     #1
- adda.w   #$c,sp
+ adda.w   #12,sp
  rts
 
 
@@ -530,6 +515,21 @@ alloc_tpa:
 atpa_end:
  rts
 
+* void free_tpa()
+*  Gibt ggf. reservierten Speicher frei, verÑndert nicht Register d0
+
+free_tpa:
+ move.l   d0,-(sp)
+ lea      tpa_base(pc),a0
+ move.l   (a0),-(sp)
+ beq.b    ft_notpa
+ clr.l    (a0)
+ gemdos   Mfree
+ addq.l   #2,sp
+ft_notpa:
+ addq.l   #4,sp
+ move.l   (sp)+,d0
+ rts
 
 * long memavail()
 *  Gibt Malloc(-1L) zurÅck
@@ -840,8 +840,8 @@ str3:
  rts
 
 
-* int str_toi(a0 = char *string)
-*  Wandelt String ohne Vorzeichen in int
+* uint16_t str_toi(a0 = char *string)
+*  Convert NUL terminated string to number
 
 str_toi:
  clr.w    d0
@@ -1056,6 +1056,7 @@ std_end:
 * int errno;
 *  Falls <errno> < 0, wird der Fehlercode ausgedruckt und CMD
 *  neu gestartet (break)
+* éndert nicht d0, es sei denn, d0 ist negativ
 *
 fatal:
  tst      d0
@@ -1345,6 +1346,7 @@ putch:
 
 *
 * void crlf_stdout()
+* -> d0 = 1 (OK) or 0 (volume full) or negative error code
 *
 crlf_stdout:
  moveq    #CR,d0
@@ -1353,8 +1355,9 @@ crlf_stdout:
 
 
 *
-* long putchar()
+* long putchar(int c)
 *  Druckt das Zeichen in d0 nach stdout
+* -> d0 = number of written bytes (1 or 0) or negative error code
 *
 putchar:
  move.w   d0,-(sp)
@@ -2015,7 +2018,7 @@ cmps:
  exg.l    a0,a1
 cmps_1:
  moveq    #1,d0
- move.w   d+schluessel(pc),d1
+ move.w   d+sort_keypos(pc),d1
  beq.b    cpms_6
  subq.w   #1,d1
 cmps_3:
@@ -3603,7 +3606,7 @@ treelevel      EQU       query_flag     * Zum Durchsuchen des Dir- Baums
 errlv2         EQU       query_flag     * letzter Errorlevel
 t_flag         EQU       query_flag     * Touch- Flag fÅr COPY
 dir_lines:     DS.W      1              * Bei DIR
-schluessel     EQU       dir_lines      * Bei SORT
+sort_keypos    EQU       dir_lines      * Bei SORT
 
 w_flag:        DS.B      1              * Bei DIR
 r_flag         EQU       w_flag         * Bei SORT

@@ -104,7 +104,7 @@ status_s:			DC.B  $d,$a,'Flag is ',0
 error_verifys:		DC.B  'Invalid state',$d,$a,0
 syntax_sorts:		DC.B  $d,$a,'Syntax: SORT -C -R -n',$d,$a,0
 sort_memerrs:		DC.B  $d,$a,'SORT: insufficient memory',$d,$a,0
-sort_zielvolls:	DC.B  'SORT: Destination volume full',$d,$a,0
+sort_volume_full_s:	DC.B  'SORT: Destination volume full',$d,$a,0
 syntax_finds:		DC.B  $d,$a,'Syntax: FIND string',$d,$a,0
 mehrs:			DC.B  $d,'--more--',0
 syntax_ifs:		DC.B  $d,$a,'Error in IF expression',$d,$a,0

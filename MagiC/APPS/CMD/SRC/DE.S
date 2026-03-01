@@ -102,7 +102,7 @@ status_s:			DC.B  $d,$a,'Flag ist ',0
 error_verifys:		DC.B  'UngÅltiger Zustand',$d,$a,0
 syntax_sorts:		DC.B  $d,$a,'Syntax: SORT -C -R -n',$d,$a,0
 sort_memerrs:		DC.B  $d,$a,'SORT: Zuwenig RAM',$d,$a,0
-sort_zielvolls:	DC.B  'SORT: Ziel-Volume voll',$d,$a,0
+sort_volume_full_s:	DC.B  'SORT: Ziel-Volume voll',$d,$a,0
 syntax_finds:		DC.B  $d,$a,'Syntax: FIND text',$d,$a,0
 mehrs:			DC.B  $d,'--Mehr--',0
 syntax_ifs:		DC.B  $d,$a,'Fehler in IF- Ausdruck',$d,$a,0
