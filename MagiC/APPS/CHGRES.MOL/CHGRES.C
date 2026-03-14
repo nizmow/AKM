@@ -42,7 +42,7 @@ typedef unsigned long uint32_t;
 
 
 #define SV_INQUIRE 0	/* inquire sysvar data, see mt_objc_sysvar() */
-#define AD3DVAL 6                  /* AES 4.0     */
+#define AD3DVAL 6		/* AES 4.0     */
 
 
 int gl_apid;
@@ -59,6 +59,17 @@ static int must_shutdown;
 #define NUM_COLOUR_MODES 7
 #define NUM_SCREEN_SIZES 14
 
+static const uint32_t colour_modes[NUM_COLOUR_MODES][2] =
+{
+	{ 2, 0x0000 },
+	{ 4, 0x0000 },
+	{ 16, 0x0000 },
+	{ 16, 0x0001 },
+	{ 256, 0x0001 },
+	{ 32 * 1024, 0x0003 },
+	{ 16L * 1024L * 1024L, 0x0003 }
+};
+
 static const char *colour_mode_names[NUM_COLOUR_MODES] =
 {
 	"2 (mono)",
@@ -66,27 +77,29 @@ static const char *colour_mode_names[NUM_COLOUR_MODES] =
 	"16 (interleaved)",
 	"16",
 	"256",
-	"32k",
-	"16M"
+	"32 k",
+	"16 M"
 };
 
-static const char *screen_sizes_names[NUM_SCREEN_SIZES] =
+static const uint16_t screen_sizes[NUM_SCREEN_SIZES][2] =
 {
-	"320 * 200",
-	"512 * 384",
-	"640 * 400",
-	"640 * 480",
-	"800 * 608",
-	"720 * 576",
-	"1024 * 768",
-	"1280 * 720",
-	"1280 * 960",
-	"1280 * 1024",
-	"1600 * 1200",
-	"1920 * 1080",
-	"1920 * 1200",
-	"2560 * 1440"
+	{  320,  200 },
+	{  512,  384 },
+	{  640,  400 },
+	{  640,  480 },
+	{  800,  608 },
+	{  720,  576 },
+	{ 1024,  768 },
+	{ 1280,  720 },
+	{ 1280,  960 },		/* TODO: remove 1 */
+	{ 1280, 1024 },
+	{ 1600, 1200 },
+	{ 1920, 1080 },
+	{ 1920, 1200 },
+	{ 2560, 1440 }
 };
+
+static char screen_sizes_names[NUM_SCREEN_SIZES][16];
 
 static LBOX_ITEM screen_size_lbox_item_tab[NUM_SCREEN_SIZES];
 
@@ -106,7 +119,11 @@ static LIST_BOX *color_lbox;
 static DIALOG *dialog;
 
 /* dialogue status */
-static int dlg_curr_colour_mode = 0;
+static int original_colour_mode = -1;
+static int original_screen_size = -1;
+
+static int dlg_curr_colour_mode = 0;    /* TODO: set to -1 */
+static int dlg_curr_screen_size = -1;	/* TODO: set to -1 */
 
 
 /*************************************************************
@@ -116,18 +133,46 @@ static int dlg_curr_colour_mode = 0;
 * Uses Vgetrgb() with an invalid colour index higher than 255
 *
 *************************************************************/
-static long molGetVideoMode()
+static void molGetVideoMode(void)
 {
-	long ret;
+	unsigned i;
 
 	currMode.length = (uint16_t) sizeof(currMode);
-	ret = xbios(/*VgetRGB*/ 94, (uint16_t) 0xf000, (uint16_t) 0, &currMode);
-	if ((ret == 0) && (currMode.magic != 0x14534711L))
+	(void) xbios(/*VgetRGB*/ 94, (uint16_t) 0xf000, (uint16_t) 0, &currMode);
+
+	/*
+	DBGOUT("vmode.length    = %u\n", currMode.length);
+	DBGOUT("vmode.magic     = 0x%08lx\n", currMode.magic);
+	DBGOUT("vmode.ncolours  = %lu\n", currMode.ncolours);
+	DBGOUT("vmode.bits      = %u\n", currMode.bits);
+	DBGOUT("vmode.flags     = 0x%04x\n", currMode.flags);
+	DBGOUT("vmode.width     = %u\n", currMode.width);
+	DBGOUT("vmode.height    = %u\n", currMode.height);
+	*/
+
+	/* search for colour mode in presets */
+	for (i = 0; i < NUM_COLOUR_MODES; i++)
 	{
-		ret = -1;
+		if ((colour_modes[i][0] == currMode.ncolours) &&
+		    (colour_modes[i][1] == (uint32_t) currMode.flags))
+		{
+			original_colour_mode = i;
+			dlg_curr_colour_mode = i;
+			break;
+		}
 	}
 
-	return ret;
+	/* search for screen size in presets */
+	for (i = 0; i < NUM_SCREEN_SIZES; i++)
+	{
+		if ((screen_sizes[i][0] == currMode.width) &&
+		    (screen_sizes[i][1] == currMode.height))
+		{
+			original_screen_size = i;
+			dlg_curr_screen_size = i;
+			break;
+		}
+	}
 }
 
 
@@ -136,16 +181,26 @@ static long molGetVideoMode()
 * Initialise LISTBOX
 *
 *************************************************************/
-static void initListBox()
+static void initListBox(void)
 {
 	unsigned i;
 
 	for (i = 0; i < NUM_SCREEN_SIZES; i++)
 	{
+		uint16_t w = screen_sizes[i][0];
+		uint16_t h = screen_sizes[i][1];
+		sprintf(screen_sizes_names[i], "%4u * %4u", w, h);
+
 		if (i + 1 < NUM_SCREEN_SIZES)
 		{
 			screen_size_lbox_item_tab[i].next = &screen_size_lbox_item_tab[i + 1];
 		}
+		
+		if (i == dlg_curr_screen_size)
+		{
+			screen_size_lbox_item_tab[i].selected = 1;
+		}
+
 		screen_size_lbox_item_tab[i].data1 = i;
 		screen_size_lbox_item_tab[i].data2 = screen_sizes_names[i];
 	}
@@ -192,8 +247,12 @@ static int const objs[N_ITEMS] =
 * Popup
 *
 *************************************************************/
-/*int simple_popup(OBJECT *tree, int obj_index, const char *const *names, int num_names, int selected)*/
-static int simple_popup(OBJECT *tree, int obj_index, const char **names, int num_names, int selected)
+static int simple_popup
+(
+	OBJECT *tree, int obj_index,
+	const char * const *names, int num_names,
+	int selected
+)
 {
 	OBJECT *obj;
 	int i;
@@ -207,7 +266,8 @@ static int simple_popup(OBJECT *tree, int obj_index, const char **names, int num
 		if (len > maxlen)
 			maxlen = (int)len;
 	}
-	newtree = (OBJECT *)Malloc((num_names * 2 + 1) * sizeof(OBJECT));
+
+	newtree = (OBJECT *) Malloc((num_names * 2 + 1) * sizeof(OBJECT));
 	if (newtree != NULL)
 	{
 		OBJECT *o;
@@ -273,6 +333,7 @@ static int simple_popup(OBJECT *tree, int obj_index, const char **names, int num
 			o->ob_y = 0;
 			y += gl_hchar;
 		}
+
 		objc_offset(tree, obj_index, &newtree[ROOT].ob_x, &newtree[ROOT].ob_y);
 		newtree[ROOT].ob_y -= sel_y;
 		selected = form_popup(newtree, 0, 0);
@@ -284,6 +345,7 @@ static int simple_popup(OBJECT *tree, int obj_index, const char **names, int num
 		{
 			selected = -1;
 		}
+
 		Mfree(newtree);
 	}
 	return selected;
@@ -354,6 +416,7 @@ static int cdecl lbox_set_item_cb
 	{
 		tree[obj_index].ob_state &= ~OS_SELECTED;
 	}
+
 	while (*text)
 		*text++ = ' ';
 	return obj_index;
@@ -422,23 +485,10 @@ static void cdecl lbox_select_item_cb
 * Update popup in main dialogue to show selected colour mode
 *
 *************************************************************/
-static void set_bpp(int bpp_index)
+static void update_colour_mode(void)
 {
-	const char *src;
-	char *dst;
-	OBJECT *tree;
-
-	src = colour_mode_names[bpp_index];
-	tree = rs_trindex[MAIN_DIALOG];
-	dst = tree[CHGRES_COLORS].ob_spec.free_string;
-	if (*dst)
-		*dst++ = ' ';
-	if (*dst)
-		*dst++ = ' ';
-	while (*dst && *src)
-		*dst++ = *src++;
-	while (*dst)
-		*dst++ = ' ';
+	rs_trindex[MAIN_DIALOG][CHGRES_COLORS].ob_spec.free_string =
+			 (char *) colour_mode_names[dlg_curr_colour_mode];
 }
 
 
@@ -730,6 +780,13 @@ static int cdecl hdl_obj(DIALOG *dialog, EVNT *events, WORD obj, WORD clicks, vo
 		index = simple_popup(tree, CHGRES_COLORS,
 							 colour_mode_names, NUM_COLOUR_MODES,
 							 dlg_curr_colour_mode);
+		if (index >= 0)
+		{
+			dlg_curr_colour_mode = index;
+			update_colour_mode();
+			redraw_obj(dialog, CHGRES_COLORS);
+		}
+
 #if 0
 		if (index >= 0)
 		{
@@ -796,7 +853,7 @@ static int cdecl hdl_obj(DIALOG *dialog, EVNT *events, WORD obj, WORD clicks, vo
 
 /*************************************************************
 *
-* Show and handle main dialogue
+* main screen mode dialogue
 *
 *************************************************************/
 static int select_res(void)
@@ -807,6 +864,13 @@ static int select_res(void)
 	static const GRECT empty_grect = { 0, 0, 0, 0 };
 
 	tree = rs_trindex[MAIN_DIALOG];
+
+	/* Hide unused "Info.." and "New.." buttons */
+
+	tree[CHGRES_INFO].ob_flags |= OF_HIDETREE;
+	tree[CHGRES_NEW].ob_flags |= OF_HIDETREE;
+
+/*
 	if (dlg_curr_colour_mode != -1)
 	{
 		tree[CHGRES_OK].ob_state &= ~OS_DISABLED;
@@ -822,11 +886,10 @@ static int select_res(void)
 		tree[CHGRES_INFO].ob_state |= OS_DISABLED;
 		tree[CHGRES_INFO].ob_flags &= ~OF_SELECTABLE;
 	}
+	*/
 	#if 0
 	if (magicpc)
 	{
-		tree[CHGRES_INFO].ob_flags |= OF_HIDETREE;
-		tree[CHGRES_NEW].ob_flags &= ~OF_HIDETREE;
 	} else
 	{
 		tree[CHGRES_INFO].ob_flags &= ~OF_HIDETREE;
@@ -834,7 +897,7 @@ static int select_res(void)
 	}
 	#endif
 
-	set_bpp(dlg_curr_colour_mode);
+	update_colour_mode();
 	dialog = wdlg_create(hdl_obj, tree, NULL, 0, NULL, 0);
 	if (dialog != NULL)
 	{
@@ -929,13 +992,23 @@ static void fix_rsc(void)
 
 /*************************************************************
 *
-* pass control to SHUTDOWN to execute resolution change
+* Pass control to SHUTDOWN to execute resolution change
+*
+* switch resolution:
+*
+*	SHUTDOWN dev [txth]
+*
+* switch Falcon resolution:
+*
+*	SHUTDOWN dev txth xdv
+*
+* txth is text height, usually 0.
 *
 *************************************************************/
-static int start_shutdown()
+static int start_shutdown(void)
 {
 	char buf[64];
-	buf[0] = (char)sprintf(&buf[1], "%d 0 %d", dlg_curr_colour_mode, 0x4711);
+	buf[0] = (char) sprintf(&buf[1], "%d 0 %d", dlg_curr_colour_mode, 0x4711);
 	shel_write(1, 1, 1, "SHUTDOWN.PRG", buf); /* BUG: return value ignored */
 	return 0;
 }
