@@ -1,0 +1,13 @@
+chgres_m.prg
+.C[-Iimport]	; .h search path
+.L[-S=$2000]   ; Stackgrîûe auf 8 KByte setzen
+=
+minstart.o     ; minimal startup code
+chgres.c
+
+import\gemut_mt		(import\gemut_mt.h)
+import\pcstdlib.lib   ; standard lib
+import\pctoslib.lib
+import\mt_aes.lib
+; magxlib.lib
+;import\pcgemlib.lib				; fÅr VDI
