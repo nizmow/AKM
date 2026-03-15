@@ -1,4 +1,4 @@
-chgres_m.prg
+chgres.prg
 .C[-Iimport]	; .h search path
 .L[-S=$2000]   ; Stackgr”že auf 8 KByte setzen
 =

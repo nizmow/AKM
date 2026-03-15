@@ -15,6 +15,8 @@
 *
 * parameters: none
 *
+* LISTBOX: https://freemint.github.io/tos.hyp/de/lbox.html
+*
 ****************************************************************/
 
 #include <tos.h>
@@ -29,7 +31,7 @@
 #if 1
 #define DBGOUT printf
 #else
-define DBGOUT()
+#define DBGOUT(...)
 #endif
 
 typedef char int8_t;
@@ -56,9 +58,42 @@ static OBJECT **rs_trindex;
 
 static int must_shutdown;
 
-#define NUM_COLOUR_MODES 7
-#define NUM_SCREEN_SIZES 14
+#define N_ITEMS (CHGRES_BOX_LAST - CHGRES_BOX_FIRST + 1)
+static const int ctrl_objs[5] =
+{
+	CHGRES_BOX, CHGRES_UP, CHGRES_DOWN, CHGRES_BACK, CHGRES_SLIDER
+};
 
+static const int objs[N_ITEMS] =
+{
+	CHGRES_BOX_FIRST,
+	CHGRES_BOX_FIRST+1,
+	CHGRES_BOX_FIRST+2,
+	CHGRES_BOX_FIRST+3,
+	CHGRES_BOX_FIRST+4,
+	CHGRES_BOX_FIRST+5,
+	CHGRES_BOX_FIRST+6,
+	CHGRES_BOX_FIRST+7,
+	CHGRES_BOX_FIRST+8,
+	CHGRES_BOX_LAST
+};
+
+#ifndef OS_SELECTED
+#define OS_SELECTED SELECTED
+#define OS_DISABLED DISABLED
+#define OS_SHADOWED SHADOWED
+#define OS_NORMAL NORMAL
+#define OS_CHECKED CHECKED
+#define OF_SELECTABLE SELECTABLE
+#define OF_DEFAULT DEFAULT
+#define OF_HIDETREE HIDETREE
+#define OF_FL3DBAK FL3DBAK
+#define OF_LASTOB LASTOB
+#define OF_NONE   NONE
+#endif
+
+
+#define NUM_COLOUR_MODES 7
 static const uint32_t colour_modes[NUM_COLOUR_MODES][2] =
 {
 	{ 2, 0x0000 },
@@ -81,17 +116,32 @@ static const char *colour_mode_names[NUM_COLOUR_MODES] =
 	"16 M"
 };
 
+#define RES_ST_LOW 0
+#define RES_ST_MID 1
+#define RES_ST_HIGH 2
+
+#define SIZE_ST_LOW 3
+#define SIZE_ST_MID 5
+#define SIZE_ST_HIGH 6
+
+#define NUM_SCREEN_SIZES 18
 static const uint16_t screen_sizes[NUM_SCREEN_SIZES][2] =
 {
-	{  320,  200 },
+	/* Atari compatibility modes */
+	{  320,  200 },		/* forces colour mode 2 */
+	{  640,  200 },		/* forces colour mode 1 */
+	{  640,  400 },		/* forces colour mode 0 */
+	/* general modes */
+	{  320,  200 },		/* SIZE_ST_LOW */
 	{  512,  384 },
-	{  640,  400 },
+	{  640,  200 },		/* SIZE_ST_MID */
+	{  640,  400 },		/* SIZE_ST_HIGH */
 	{  640,  480 },
 	{  800,  608 },
 	{  720,  576 },
 	{ 1024,  768 },
 	{ 1280,  720 },
-	{ 1280,  960 },		/* TODO: remove 1 */
+	{ 1280,  960 },
 	{ 1280, 1024 },
 	{ 1600, 1200 },
 	{ 1920, 1080 },
@@ -99,7 +149,7 @@ static const uint16_t screen_sizes[NUM_SCREEN_SIZES][2] =
 	{ 2560, 1440 }
 };
 
-static char screen_sizes_names[NUM_SCREEN_SIZES][16];
+static char screen_sizes_names[NUM_SCREEN_SIZES][22];
 
 static LBOX_ITEM screen_size_lbox_item_tab[NUM_SCREEN_SIZES];
 
@@ -115,7 +165,7 @@ struct MagiCVideoMode
 };
 
 static struct MagiCVideoMode currMode;
-static LIST_BOX *color_lbox;
+static LIST_BOX *colour_lbox;
 static DIALOG *dialog;
 
 /* dialogue status */
@@ -178,7 +228,85 @@ static void molGetVideoMode(void)
 
 /*************************************************************
 *
-* Initialise LISTBOX
+* Tell MagiC emulator the next video mode after warm boot
+*
+* Uses Vsetrgb() with an invalid colour index higher than 255
+*
+*************************************************************/
+static long molSetVideoMode(void)
+{
+	long ret;
+
+	switch(dlg_curr_colour_mode)
+	{
+		case 0:
+			currMode.ncolours = 2;
+			currMode.bits = 1;
+			currMode.flags = 0;
+			break;
+
+		case 1:
+			currMode.ncolours = 4;
+			currMode.bits = 2;
+			currMode.flags = 0;
+			break;
+
+		case 2:
+			currMode.ncolours = 16;
+			currMode.bits = 4;
+			currMode.flags = 0;
+			break;
+
+		case 3:
+			currMode.ncolours = 16;
+			currMode.bits = 4;
+			currMode.flags = 1;	/* packed */
+			break;
+
+		case 4:
+			currMode.ncolours = 256;
+			currMode.bits = 8;
+			currMode.flags = 1;	/* packed */
+			break;
+
+		case 5:
+			currMode.ncolours = 32 * 1024L;
+			currMode.bits = 16;
+			currMode.flags = 3;
+			break;
+
+		case 6:
+			currMode.ncolours = 16 * 1024L * 1024L;
+			currMode.bits = 32;
+			currMode.flags = 3;
+			break;
+	}
+
+	if (dlg_curr_screen_size >= 0)
+	{
+		currMode.width = screen_sizes[dlg_curr_screen_size][0];
+		currMode.height = screen_sizes[dlg_curr_screen_size][1];
+	}
+
+	ret = xbios(/*VsetRGB*/ 93, (uint16_t) 0xf000, (uint16_t) 0, &currMode);
+
+	/*
+	DBGOUT("vmode.length    = %u\n", currMode.length);
+	DBGOUT("vmode.magic     = 0x%08lx\n", currMode.magic);
+	DBGOUT("vmode.ncolours  = %lu\n", currMode.ncolours);
+	DBGOUT("vmode.bits      = %u\n", currMode.bits);
+	DBGOUT("vmode.flags     = 0x%04x\n", currMode.flags);
+	DBGOUT("vmode.width     = %u\n", currMode.width);
+	DBGOUT("vmode.height    = %u\n", currMode.height);
+	*/
+
+	return ret;
+}
+
+
+/*************************************************************
+*
+* Initialise LISTBOX with colour modes and resolutions
 *
 *************************************************************/
 static void initListBox(void)
@@ -189,7 +317,21 @@ static void initListBox(void)
 	{
 		uint16_t w = screen_sizes[i][0];
 		uint16_t h = screen_sizes[i][1];
-		sprintf(screen_sizes_names[i], "%4u * %4u", w, h);
+		sprintf(screen_sizes_names[i], "%4u * %4u", w, h);	/* 12 characters */
+		if (i == RES_ST_LOW)
+		{
+			strcat(screen_sizes_names[i], " (ST low)");		/* +9 characters */
+		}
+		else
+		if (i == RES_ST_MID)
+		{
+			strcat(screen_sizes_names[i], " (ST mid)");		/* +9 characters */
+		}
+		else
+		if (i == RES_ST_HIGH)
+		{
+			strcat(screen_sizes_names[i], " (ST high)");	/* +10 characters */
+		}
 
 		if (i + 1 < NUM_SCREEN_SIZES)
 		{
@@ -207,44 +349,27 @@ static void initListBox(void)
 }
 
 
-#define N_ITEMS (CHGRES_BOX_LAST - CHGRES_BOX_FIRST + 1)
-static int const ctrl_objs[5] =
+/*************************************************************
+*
+* redraw a single dialogue OBJECT
+*
+*************************************************************/
+static void redraw_obj(DIALOG *dlg, int obj)
 {
-	CHGRES_BOX, CHGRES_UP, CHGRES_DOWN, CHGRES_BACK, CHGRES_SLIDER
-};
+	OBJECT *tree;
+	GRECT gr;
 
-static int const objs[N_ITEMS] =
-{
-	CHGRES_BOX_FIRST,
-	CHGRES_BOX_FIRST+1,
-	CHGRES_BOX_FIRST+2,
-	CHGRES_BOX_FIRST+3,
-	CHGRES_BOX_FIRST+4,
-	CHGRES_BOX_FIRST+5,
-	CHGRES_BOX_FIRST+6,
-	CHGRES_BOX_FIRST+7,
-	CHGRES_BOX_FIRST+8,
-	CHGRES_BOX_LAST
-};
-
-#ifndef OS_SELECTED
-#define OS_SELECTED SELECTED
-#define OS_DISABLED DISABLED
-#define OS_SHADOWED SHADOWED
-#define OS_NORMAL NORMAL
-#define OS_CHECKED CHECKED
-#define OF_SELECTABLE SELECTABLE
-#define OF_DEFAULT DEFAULT
-#define OF_HIDETREE HIDETREE
-#define OF_FL3DBAK FL3DBAK
-#define OF_LASTOB LASTOB
-#define OF_NONE   NONE
-#endif
+	wdlg_get_tree(dlg, &tree, &gr);
+	wind_update(BEG_UPDATE);
+	wdlg_redraw(dlg, &gr, obj, MAX_DEPTH);
+	wind_update(END_UPDATE);
+}
 
 
 /*************************************************************
 *
-* Popup
+* Popup for colour modes
+* return selected index or -1 on error
 *
 *************************************************************/
 static int simple_popup
@@ -258,6 +383,10 @@ static int simple_popup
 	int i;
 	int maxlen;
 	OBJECT *newtree;
+	OBJECT *o;
+	int y;
+	int sel_y;
+
 
 	obj = &tree[obj_index];
 	for (i = maxlen = 0; i < num_names; i++)
@@ -268,86 +397,88 @@ static int simple_popup
 	}
 
 	newtree = (OBJECT *) Malloc((num_names * 2 + 1) * sizeof(OBJECT));
-	if (newtree != NULL)
+	if (newtree == NULL)
 	{
-		OBJECT *o;
-		int y;
-		int sel_y;
-
-		maxlen += 4;
-		maxlen *= gl_wchar;
-		if (maxlen < obj->ob_width)
-			maxlen = obj->ob_width;
-		o = newtree;
-		o->ob_next = -1;  /* NIL */
-		o->ob_type = G_BOX;
-		o->ob_state = OS_SHADOWED;
-		o->ob_spec.index = 0xff1000L;
-		o->ob_flags = OF_FL3DBAK;
-		if (num_names > 0)
-		{
-			o->ob_head = 1;
-			o->ob_tail = (num_names * 2) - 1;
-		} else
-		{
-			o->ob_flags |= OF_LASTOB;
-			o->ob_head = o->ob_tail = -1;  /* NIL */
-		}
-		o->ob_width = maxlen;
-		o->ob_height = num_names * gl_hchar;
-		y = 0;
-		sel_y = -obj->ob_height;
-		for (i = 1; i <= num_names; i++)
-		{
-			o++;
-			if (i < num_names)
-				o->ob_next = (i * 2) + 1;
-			else
-				o->ob_next = ROOT;
-			o->ob_head = o->ob_tail = i * 2;
-			o->ob_flags = OF_FL3DBAK|OF_SELECTABLE;
-			o->ob_type = G_IBOX;
-			o->ob_spec.index = 0;
-			o->ob_state = OS_NORMAL;
-			o->ob_width = maxlen;
-			o->ob_height = gl_hchar;
-			o->ob_x = 0;
-			o->ob_y = y;
-			if ((selected + 1) == i)
-			{
-				sel_y = y;
-				o->ob_state |= OS_CHECKED;
-			}
-			o++;
-			o->ob_next = i * 2 - 1;
-			o->ob_head = o->ob_tail = -1; /* NIL */
-			o->ob_flags = OF_NONE;
-			if (i == num_names)
-				o->ob_flags |= OF_LASTOB;
-			o->ob_type = G_STRING;
-			o->ob_spec.free_string = (char *)names[i - 1];
-			o->ob_state = OS_NORMAL;
-			o->ob_width = 0;
-			o->ob_height = gl_hchar;
-			o->ob_x = gl_wchar * 2;
-			o->ob_y = 0;
-			y += gl_hchar;
-		}
-
-		objc_offset(tree, obj_index, &newtree[ROOT].ob_x, &newtree[ROOT].ob_y);
-		newtree[ROOT].ob_y -= sel_y;
-		selected = form_popup(newtree, 0, 0);
-		if (selected > 0)
-		{
-			selected -= 1;
-			selected >>= 1;
-		} else
-		{
-			selected = -1;
-		}
-
-		Mfree(newtree);
+		#if 0
+		DBGOUT("ERR: out of memory\n");
+		#endif
+		return -1;
 	}
+
+	maxlen += 4;
+	maxlen *= gl_wchar;
+	if (maxlen < obj->ob_width)
+		maxlen = obj->ob_width;
+	o = newtree;
+	o->ob_next = -1;  /* NIL */
+	o->ob_type = G_BOX;
+	o->ob_state = OS_SHADOWED;
+	o->ob_spec.index = 0xff1000L;
+	o->ob_flags = OF_FL3DBAK;
+	if (num_names > 0)
+	{
+		o->ob_head = 1;
+		o->ob_tail = (num_names * 2) - 1;
+	} else
+	{
+		o->ob_flags |= OF_LASTOB;
+		o->ob_head = o->ob_tail = -1;  /* NIL */
+	}
+	o->ob_width = maxlen;
+	o->ob_height = num_names * gl_hchar;
+	y = 0;
+	sel_y = -obj->ob_height;
+	for (i = 1; i <= num_names; i++)
+	{
+		o++;
+		if (i < num_names)
+			o->ob_next = (i * 2) + 1;
+		else
+			o->ob_next = ROOT;
+		o->ob_head = o->ob_tail = i * 2;
+		o->ob_flags = OF_FL3DBAK|OF_SELECTABLE;
+		o->ob_type = G_IBOX;
+		o->ob_spec.index = 0;
+		o->ob_state = OS_NORMAL;
+		o->ob_width = maxlen;
+		o->ob_height = gl_hchar;
+		o->ob_x = 0;
+		o->ob_y = y;
+		if ((selected + 1) == i)
+		{
+			sel_y = y;
+			o->ob_state |= OS_CHECKED;
+		}
+		o++;
+		o->ob_next = i * 2 - 1;
+		o->ob_head = o->ob_tail = -1; /* NIL */
+		o->ob_flags = OF_NONE;
+		if (i == num_names)
+			o->ob_flags |= OF_LASTOB;
+		o->ob_type = G_STRING;
+		o->ob_spec.free_string = (char *)names[i - 1];
+		o->ob_state = OS_NORMAL;
+		o->ob_width = 0;
+		o->ob_height = gl_hchar;
+		o->ob_x = gl_wchar * 2;
+		o->ob_y = 0;
+		y += gl_hchar;
+	}
+
+	objc_offset(tree, obj_index, &newtree[ROOT].ob_x, &newtree[ROOT].ob_y);
+	newtree[ROOT].ob_y -= sel_y;
+	selected = form_popup(newtree, 0, 0);
+
+	if (selected > 0)
+	{
+		selected -= 1;
+		selected >>= 1;
+	} else
+	{
+		selected = -1;
+	}
+
+	Mfree(newtree);
 	return selected;
 }
 
@@ -382,7 +513,19 @@ static int do_dialog(OBJECT *tree)
 
 /*************************************************************
 *
-* LISTBOX callback
+* Update popup in main dialogue to show selected colour mode
+*
+*************************************************************/
+static void update_colour_mode(void)
+{
+	rs_trindex[MAIN_DIALOG][CHGRES_COLORS].ob_spec.free_string =
+			 (char *) colour_mode_names[dlg_curr_colour_mode];
+}
+
+
+/*************************************************************
+*
+* LISTBOX callback to initialise a GEM object with a listbox item
 *
 *************************************************************/
 #pragma warn -par
@@ -423,21 +566,10 @@ static int cdecl lbox_set_item_cb
 }
 #pragma warn +par
 
-static void redraw_obj(DIALOG *dlg, int obj)
-{
-	OBJECT *tree;
-	GRECT gr;
-
-	wdlg_get_tree(dlg, &tree, &gr);
-	wind_update(BEG_UPDATE);
-	wdlg_redraw(dlg, &gr, obj, MAX_DEPTH);
-	wind_update(END_UPDATE);
-}
-
 
 /*************************************************************
 *
-* LISTBOX callback
+* LISTBOX callback for selecting an item
 *
 *************************************************************/
 #pragma warn -par
@@ -452,9 +584,13 @@ static void cdecl lbox_select_item_cb
 {
 	/* (void) last_state; */
 	DIALOG *dialog = (DIALOG *) user_data;
+	int new_colour_mode = dlg_curr_colour_mode;
 
 	if (item != NULL)
 	{
+		dlg_curr_screen_size = item->data1;
+
+		/*
 		if (dlg_curr_colour_mode == -1)
 		{
 			tree[CHGRES_OK].ob_state &= ~OS_DISABLED;
@@ -462,19 +598,32 @@ static void cdecl lbox_select_item_cb
 			tree[CHGRES_OK].ob_flags |= OF_DEFAULT;
 			redraw_obj(dialog, CHGRES_OK);
 		}
-		#if 0
-		if (res->base.flags & FLAG_INFO)
+		*/
+
+		if ((dlg_curr_screen_size == RES_ST_LOW) &&
+		    (dlg_curr_colour_mode != 2))
 		{
-			tree[CHGRES_INFO].ob_state &= ~OS_DISABLED;
-			tree[CHGRES_INFO].ob_flags |= OF_SELECTABLE;
-		} else
-		{
-			tree[CHGRES_INFO].ob_state |= OS_DISABLED;
-			tree[CHGRES_INFO].ob_flags &= ~OF_SELECTABLE;
+			new_colour_mode = 2;
 		}
-		#endif
-		redraw_obj(dialog, CHGRES_INFO);
-		dlg_curr_colour_mode = item->data1;
+		else
+		if ((dlg_curr_screen_size == RES_ST_MID) &&
+		    (dlg_curr_colour_mode != 1))
+		{
+			new_colour_mode = 1;
+		}
+		else
+		if ((dlg_curr_screen_size == RES_ST_HIGH) &&
+		    (dlg_curr_colour_mode != 0))
+		{
+			new_colour_mode = 0;
+		}
+
+		if (new_colour_mode != dlg_curr_colour_mode)
+		{
+			dlg_curr_colour_mode = new_colour_mode;
+			update_colour_mode();
+			redraw_obj(dialog, CHGRES_COLORS);
+		}
 	}
 }
 #pragma warn +par
@@ -482,263 +631,11 @@ static void cdecl lbox_select_item_cb
 
 /*************************************************************
 *
-* Update popup in main dialogue to show selected colour mode
+* WDIALOG callback
+*
+* return zero to leave dialogue
 *
 *************************************************************/
-static void update_colour_mode(void)
-{
-	rs_trindex[MAIN_DIALOG][CHGRES_COLORS].ob_spec.free_string =
-			 (char *) colour_mode_names[dlg_curr_colour_mode];
-}
-
-
-
-#if 0
-static int count_res(struct res *res)
-{
-	int count;
-
-	count = 0;
-	while (res != NULL)
-	{
-		res = res->base.next;
-		count++;
-	}
-	return count;
-}
-
-
-static int cmp_res(const void *res1, const void *res2)
-{
-	const struct res *r1 = *(const void *const *)res1;
-	const struct res *r2 = *(const void *const *)res2;
-	if ((r1->base.virt_hres > r2->base.virt_hres) ||
-     ((r1->base.virt_hres >= r2->base.virt_hres &&
-      ((r1->base.virt_vres > r2->base.virt_vres ||
-       ((r1->base.virt_vres >= r2->base.virt_vres &&
-        ((r1->base.hres > r2->base.hres ||
-         ((r1->base.hres >= r2->base.hres &&
-          ((r1->base.vres > r2->base.vres ||
-           ((r1->base.vres >= r2->base.vres &&
-            (((r1->base.flags & FLAG_INFO) != 0)) && (((r2->base.flags & FLAG_INFO) == 0 ||
-             r1->freq > r2->freq)))))))))))))))))
-	    return 1;
-	return -1;
-}
-
-
-static struct res *sort_restab(struct res *res)
-{
-	struct res **table;
-	int count;
-	struct res **respp;
-	struct res *ret;
-
-	count = count_res(res);
-	ret = res;
-	table = (struct res **)Malloc(count * sizeof(*table));
-	if (table != NULL)
-	{
-		respp = table;
-		while (res != NULL)
-		{
-			*respp++ = res;
-			res = res->base.next;
-		}
-		qsort(table, count, sizeof(*table), cmp_res);
-		ret = table[0];
-		respp = table;
-		while (count > 1)
-		{
-			respp[0]->base.next = respp[1];
-			respp++;
-			count--;
-		}
-		respp[0]->base.next = NULL;
-		Mfree(table);
-	}
-	return ret;
-}
-
-
-static void set_items(void)
-{
-	lbox_set_items(color_lbox, (LBOX_ITEM *)res_tab);
-	lbox_update(color_lbox, NULL);
-}
-
-
-static void show_info(struct res *res)
-{
-	OBJECT *tree;
-	long linesize;
-	short orig_hres;
-	short orig_vres;
-
-	tree = rs_trindex[INFO_DIALOG];
-	sprintf(tree[INFO_HRES].ob_spec.free_string, "%4d", res->base.hres);
-	sprintf(tree[INFO_VRES].ob_spec.free_string, "%4d", res->base.vres);
-	sprintf(tree[INFO_FREQ].ob_spec.free_string, "%4d", res->base.flags & FLAG_INFO ? res->freq : 0);
-	sprintf(tree[INFO_VIRT_HRES].ob_spec.tedinfo->te_ptext, "%4d", res->base.virt_hres);
-	sprintf(tree[INFO_VIRT_VRES].ob_spec.tedinfo->te_ptext, "%4d", res->base.virt_vres);
-	if (do_dialog(tree) == INFO_OK && !magicpc)
-	{
-		orig_hres = res->base.virt_hres;
-		orig_vres = res->base.virt_vres;
-
-		res->base.virt_hres = atoi(tree[INFO_VIRT_HRES].ob_spec.tedinfo->te_ptext);
-		res->base.virt_vres = atoi(tree[INFO_VIRT_VRES].ob_spec.tedinfo->te_ptext);
-		if ((res->base.virt_hres & 15) != 0 || (res->base.virt_vres & 15) != 0)
-		{
-			res->base.virt_hres &= -16;
-			res->base.virt_vres &= -16;
-			do_dialog(rs_trindex[ERR_VIRTUAL_RES]);
-		}
-		if (res->base.virt_hres < res->base.hres)
-			res->base.virt_hres = res->base.hres;
-		if (res->base.virt_vres < res->base.vres)
-			res->base.virt_vres = res->base.vres;
-		if (res->planes >= 24)
-			linesize = (long)res->base.virt_hres * 4;
-		else if (res->planes >= 15)
-			linesize = (long)res->base.virt_hres * 2;
-		else
-			linesize = ((long)res->base.virt_hres * res->planes) >> 3;
-		if (linesize > 32700)
-		{
-			res->base.virt_hres = orig_hres;
-			res->base.virt_vres = orig_vres;
-			do_dialog(rs_trindex[ERR_RES_TOO_LARGE]);
-		} else
-		{
-			if ((linesize * res->base.virt_vres) > 1048576L) /* FIXME: hard coded */
-			{
-				res->base.virt_hres = orig_hres;
-				res->base.virt_vres = orig_vres;
-				do_dialog(rs_trindex[ERR_RES_TOO_LARGE]);
-			}
-		}
-		sprintf(res->base.desc, "%4d * %4d, ET 4000", res->base.virt_hres, res->base.virt_vres);
-		if (res->base.hres != res->base.virt_hres || res->base.vres != res->base.virt_vres)
-		{
-			strcat(res->base.desc, ", ");
-			strcat(res->base.desc, rs_frstr[FS_VIRTUAL]);
-		}
-		res_tab = sort_restab(res_tab);
-		set_items();
-		redraw_obj(dialog, CHGRES_BOX);
-	}
-}
-
-
-static void new_res(void)
-{
-	OBJECT *tree;
-	struct res *res;
-
-	/* TODO: nvdivga.inf currently cannot be rewritten */
-	if (!magicpc)
-		return;
-	tree = rs_trindex[NEW_RES];
-	sprintf(tree[NEW_HRES].ob_spec.tedinfo->te_ptext, "%4d", 640);
-	sprintf(tree[NEW_VRES].ob_spec.tedinfo->te_ptext, "%4d", 480);
-	if (do_dialog(tree) == NEWRES_OK)
-	{
-		res = (struct res *)Malloc(sizeof(*res));
-		if (res != NULL)
-		{
-			res->base.selected = FALSE;
-			res->base.desc = res->descbuf;
-			res->base.vmode = SVEXT|0x200|STMODES|OVERSCAN|7;
-			res->base.flags = FLAG_INFO;
-			res->planes = valid_planes[bpp_index];
-			switch (res->planes)
-			{
-			case 8:
-				res->base.rez = nvdipc_driver_ids[0];
-				break;
-			case 15:
-				res->base.rez = nvdipc_driver_ids[1];
-				break;
-			case 16:
-				res->base.rez = nvdipc_driver_ids[2];
-				break;
-			case 32:
-				res->base.rez = nvdipc_driver_ids[3];
-				break;
-			}
-			res->base.virt_hres = atoi(tree[NEW_HRES].ob_spec.tedinfo->te_ptext);
-			res->base.virt_vres = atoi(tree[NEW_VRES].ob_spec.tedinfo->te_ptext);
-			if ((res->base.virt_hres & 15) != 0 || (res->base.virt_vres & 7) != 0)
-			{
-				res->base.virt_hres &= -16;
-				res->base.virt_vres &= -8;
-				do_dialog(rs_trindex[ERR_VIRTUAL_RES]);
-			}
-			if (res->base.virt_hres < 512)
-				res->base.virt_hres = 512;
-			if (res->base.virt_vres < 384)
-				res->base.virt_vres = 384;
-			res->base.hres = res->base.virt_hres;
-			res->base.vres = res->base.virt_vres;
-			res->freq = 0;
-			res->mode_offset = 0;
-			sprintf(res->base.desc, "%4d * %4d", res->base.virt_hres, res->base.virt_vres);
-			res->base.next = res_tab;
-			res_tab = sort_restab(res);
-			possible_resolutions[bpp_index] = res_tab;
-			set_items();
-			lbox_set_asldr(color_lbox, 0, NULL);
-			redraw_obj(dialog, CHGRES_BOX);
-		}
-	}
-}
-
-
-static void delete_res(void)
-{
-	struct res *res;
-	struct res **respp;
-	OBJECT *tree;
-
-	/* TODO: nvdivga.inf currently cannot be rewritten */
-	if (!magicpc)
-		return;
-	res = (struct res *)lbox_get_slct_item(color_lbox);
-	if (res->base.flags & FLAG_INFO)
-	{
-		if (do_dialog(rs_trindex[RES_DELETE]) == RES_DELETE_OK)
-		{
-			respp = &res_tab;
-			while (*respp != NULL)
-			{
-				if (*respp == res)
-				{
-					*respp = res->base.next;
-					Mfree(res);
-					cur_res = NULL;
-					tree = rs_trindex[MAIN_DIALOG];
-					tree[CHGRES_OK].ob_state |= OS_DISABLED;
-					tree[CHGRES_OK].ob_flags &= ~OF_SELECTABLE;
-					tree[CHGRES_OK].ob_flags &= ~OF_DEFAULT;
-					tree[CHGRES_INFO].ob_state |= OS_DISABLED;
-					tree[CHGRES_INFO].ob_flags &= ~OF_SELECTABLE;
-					break;
-				}
-				respp = &(*respp)->base.next;
-			}
-			possible_resolutions[bpp_index] = res_tab;
-			set_items();
-			lbox_set_asldr(color_lbox, 0, NULL);
-			redraw_obj(dialog, ROOT);
-		}
-	}
-}
-#endif
-
-
-/* WDIALOG callback */
-
 #pragma warn -par
 static int cdecl hdl_obj(DIALOG *dialog, EVNT *events, WORD obj, WORD clicks, void *data)
 {
@@ -752,100 +649,81 @@ static int cdecl hdl_obj(DIALOG *dialog, EVNT *events, WORD obj, WORD clicks, vo
 	{
 		if (obj != HNDL_CLSD)
 			return 1;
-		return 0;
+		return 0;	/* dialogue has been closed */
 	}
+
 	index = obj;
 	if (clicks > 1)
-		index |= 0x8000;
-	if (lbox_do(color_lbox, index) == -1)
-		obj = CHGRES_OK;
+	{
+		index |= 0x8000;	/* double click on object */
+	}
+
+	/* handle listbox items and control objects */
+
+	if (lbox_do(colour_lbox, index) == -1)
+	{
+		obj = CHGRES_OK;	/* TODO: double click on item? */
+	}
+
 	switch (obj)
 	{
-	case CHGRES_BOX_FIRST:
-	case CHGRES_BOX_FIRST+1:
-	case CHGRES_BOX_FIRST+2:
-	case CHGRES_BOX_FIRST+3:
-	case CHGRES_BOX_FIRST+4:
-	case CHGRES_BOX_FIRST+5:
-	case CHGRES_BOX_FIRST+6:
-	case CHGRES_BOX_FIRST+7:
-	case CHGRES_BOX_FIRST+8:
-	case CHGRES_BOX_LAST:
-		#if 0
-		if ((events != NULL) && (events->kstate == K_CTRL))
-			delete_res();
-		#endif
-		break;
-	case CHGRES_COLORS:
-		index = simple_popup(tree, CHGRES_COLORS,
+		case CHGRES_COLORS:
+			index = simple_popup(tree, CHGRES_COLORS,
 							 colour_mode_names, NUM_COLOUR_MODES,
 							 dlg_curr_colour_mode);
-		if (index >= 0)
-		{
-			dlg_curr_colour_mode = index;
-			update_colour_mode();
-			redraw_obj(dialog, CHGRES_COLORS);
+			if (index >= 0)
+			{
+				int new_screen_size = dlg_curr_screen_size;
+
+				/* update colour mode popup title */
+
+				dlg_curr_colour_mode = index;
+				update_colour_mode();
+				redraw_obj(dialog, CHGRES_COLORS);
+				
+				/* update listbox, if necessary */
+				
+				if ((dlg_curr_screen_size == RES_ST_LOW) &&
+				    (dlg_curr_colour_mode != 2))
+				{
+					new_screen_size = SIZE_ST_LOW;
+				}
+				else
+				if ((dlg_curr_screen_size == RES_ST_MID) &&
+				    (dlg_curr_colour_mode != 1))
+				{
+					new_screen_size = SIZE_ST_MID;
+				}
+				else
+				if ((dlg_curr_screen_size == RES_ST_HIGH) &&
+				    (dlg_curr_colour_mode != 0))
+				{
+					new_screen_size = SIZE_ST_HIGH;
+				}
+
+				if (new_screen_size != dlg_curr_screen_size)
+				{
+					/* deselect current entry */
+					screen_size_lbox_item_tab[dlg_curr_screen_size].selected = 0;
+					dlg_curr_screen_size = new_screen_size;
+
+					/* select new entry */
+					screen_size_lbox_item_tab[dlg_curr_screen_size].selected = 1;
+					lbox_update(colour_lbox, NULL);
+					redraw_obj(dialog, CHGRES_BOX);
+				}
+			}
+			break;
+
+		case CHGRES_OK:
+			must_shutdown = 1;
+			return 0;	/* end dialogue */
+
+		case CHGRES_CANCEL:
+			must_shutdown = 0;
+			return 0;	/* end dialogue */
 		}
 
-#if 0
-		if (index >= 0)
-		{
-			bpp_index = popup_to_index(index);
-			if (bpp_index >= 0)
-			{
-				res_tab = possible_resolutions[bpp_index];
-				set_bpp(bpp_index);
-				set_items();
-				lbox_set_asldr(color_lbox, 0, NULL);
-				cur_res = (struct res *)lbox_get_slct_item(color_lbox);
-				if (cur_res != NULL)
-				{
-					tree[CHGRES_OK].ob_state &= ~OS_DISABLED;
-					tree[CHGRES_OK].ob_flags |= OF_SELECTABLE;
-					tree[CHGRES_OK].ob_flags |= OF_DEFAULT;
-					if (cur_res->base.flags & FLAG_INFO)
-					{
-						tree[CHGRES_INFO].ob_state &= ~OS_DISABLED;
-						tree[CHGRES_INFO].ob_flags |= OF_SELECTABLE;
-					} else
-					{
-						tree[CHGRES_INFO].ob_state |= OS_DISABLED;
-						tree[CHGRES_INFO].ob_flags &= ~OF_SELECTABLE;
-					}
-				} else
-				{
-					tree[CHGRES_OK].ob_state |= OS_DISABLED;
-					tree[CHGRES_OK].ob_flags &= ~OF_SELECTABLE;
-					tree[CHGRES_OK].ob_flags &= ~OF_DEFAULT;
-					tree[CHGRES_INFO].ob_state |= OS_DISABLED;
-					tree[CHGRES_INFO].ob_flags &= ~OF_SELECTABLE;
-				}
-				redraw_obj(dialog, ROOT);
-			}
-		}
-#endif
-		break;
-	case CHGRES_INFO:
-#if 0
-		show_info(cur_res);
-		tree[CHGRES_INFO].ob_state &= ~OS_SELECTED;
-		redraw_obj(dialog, CHGRES_INFO);
-#endif
-		break;
-	case CHGRES_NEW:
-#if 0
-		new_res();
-		tree[CHGRES_NEW].ob_state &= ~OS_SELECTED;
-		redraw_obj(dialog, CHGRES_NEW);
-#endif
-		break;
-	case CHGRES_OK:
-		must_shutdown = 1;
-		return 0;
-	case CHGRES_CANCEL:
-		must_shutdown = 0;
-		return 0;
-	}
 	return 1;
 }
 #pragma warn +par
@@ -854,6 +732,7 @@ static int cdecl hdl_obj(DIALOG *dialog, EVNT *events, WORD obj, WORD clicks, vo
 /*************************************************************
 *
 * main screen mode dialogue
+* return -1 on error
 *
 *************************************************************/
 static int select_res(void)
@@ -862,77 +741,82 @@ static int select_res(void)
 	EVNT events;
 	int dummy;
 	static const GRECT empty_grect = { 0, 0, 0, 0 };
-
 	tree = rs_trindex[MAIN_DIALOG];
+
+	/*
+	* create WDIALOG and LISTBOX
+	*/
+
+	dialog = wdlg_create(hdl_obj, tree, NULL, 0, NULL, 0);
+	if (dialog == NULL)
+	{
+		#if 0
+		DBGOUT("wdlg_create() failed\n");
+		#endif
+		return -1;
+	}
+
+	colour_lbox = lbox_create(
+						tree,
+						lbox_select_item_cb, lbox_set_item_cb,
+						screen_size_lbox_item_tab,
+						CHGRES_BOX_LAST - CHGRES_BOX_FIRST + 1,
+						0,
+						ctrl_objs, objs,
+						LBOX_VERT|LBOX_AUTO|LBOX_AUTOSLCT|LBOX_REAL|LBOX_SNGL, 40,
+						dialog, dialog, 0, 0, 0, 0);
+	if (colour_lbox == NULL)
+	{
+		#if 0
+		DBGOUT("lbox_create() failed\n");
+		#endif
+		wdlg_delete(dialog);
+		return -1;
+	}
+
+	/*
+	* Initialise dialogue with current settings
+	*/
+
+	if (dlg_curr_screen_size >= 0)
+	{
+		lbox_scroll_to(colour_lbox, dlg_curr_screen_size, NULL, NULL);
+	}
 
 	/* Hide unused "Info.." and "New.." buttons */
 
 	tree[CHGRES_INFO].ob_flags |= OF_HIDETREE;
 	tree[CHGRES_NEW].ob_flags |= OF_HIDETREE;
 
-/*
-	if (dlg_curr_colour_mode != -1)
-	{
-		tree[CHGRES_OK].ob_state &= ~OS_DISABLED;
-		tree[CHGRES_OK].ob_flags |= OF_SELECTABLE;
-		tree[CHGRES_OK].ob_flags |= OF_DEFAULT;
-		tree[CHGRES_INFO].ob_state &= ~OS_DISABLED;
-		tree[CHGRES_INFO].ob_flags |= OF_SELECTABLE;
-	} else
-	{
-		tree[CHGRES_OK].ob_state |= OS_DISABLED;
-		tree[CHGRES_OK].ob_flags &= ~OF_SELECTABLE;
-		tree[CHGRES_OK].ob_flags &= ~OF_DEFAULT;
-		tree[CHGRES_INFO].ob_state |= OS_DISABLED;
-		tree[CHGRES_INFO].ob_flags &= ~OF_SELECTABLE;
-	}
-	*/
-	#if 0
-	if (magicpc)
-	{
-	} else
-	{
-		tree[CHGRES_INFO].ob_flags &= ~OF_HIDETREE;
-		tree[CHGRES_NEW].ob_flags |= OF_HIDETREE;
-	}
-	#endif
-
 	update_colour_mode();
-	dialog = wdlg_create(hdl_obj, tree, NULL, 0, NULL, 0);
-	if (dialog != NULL)
+
+	/*
+	* Open and run dialogue
+	*/
+
+	if (wdlg_open(dialog, rs_frstr[FS_CHANGE_RES], NAME|CLOSER|MOVER, -1, -1, 0, NULL))
 	{
-		color_lbox = lbox_create(
-							tree,
-							lbox_select_item_cb, lbox_set_item_cb,
-							screen_size_lbox_item_tab,
-							CHGRES_BOX_LAST - CHGRES_BOX_FIRST + 1,
-							0,
-			ctrl_objs, objs,
-			LBOX_VERT|LBOX_AUTO|LBOX_AUTOSLCT|LBOX_REAL|LBOX_SNGL, 40,
-			dialog, dialog, 0, 0, 0, 0);
-		if (color_lbox != NULL)
+		do
 		{
-			if (wdlg_open(dialog, rs_frstr[FS_CHANGE_RES], NAME|CLOSER|MOVER, -1, -1, 0, NULL))
-			{
-				do
-				{
-					events.mwhich = evnt_multi(
-										MU_KEYBD | MU_BUTTON | MU_MESAG, /* event types */
-										2, 1, 1, /* nclicks, bmask, bstate */
-										0, &empty_grect,
-										0, &empty_grect,
-										events.msg,			/* msgbuf */
-										0UL,					/* ms */
-										(EVNTDATA *) &events.mx,
-										&events.key,
-										&events.mclicks);
-				} while (wdlg_evnt(dialog, &events) != 0);
-				wdlg_close(dialog, &dummy, &dummy);
-			}
-			lbox_delete(color_lbox);
+			events.mwhich = evnt_multi(
+									MU_KEYBD | MU_BUTTON | MU_MESAG, /* event types */
+									2, 1, 1, /* nclicks, bmask, bstate */
+									0, &empty_grect,
+									0, &empty_grect,
+									events.msg,			/* msgbuf */
+									0UL,					/* ms */
+									(EVNTDATA *) &events.mx,
+									&events.key,
+									&events.mclicks);
 		}
-		wdlg_delete(dialog);
+		while (wdlg_evnt(dialog, &events) != 0);
+
+		wdlg_close(dialog, &dummy, &dummy);
 	}
+
+	lbox_delete(colour_lbox);
+	wdlg_delete(dialog);
+
 	return must_shutdown;
 }
 
@@ -1005,12 +889,11 @@ static void fix_rsc(void)
 * txth is text height, usually 0.
 *
 *************************************************************/
-static int start_shutdown(void)
+static void start_shutdown(void)
 {
 	char buf[64];
 	buf[0] = (char) sprintf(&buf[1], "%d 0 %d", dlg_curr_colour_mode, 0x4711);
 	shel_write(1, 1, 1, "SHUTDOWN.PRG", buf); /* BUG: return value ignored */
-	return 0;
 }
 
 
@@ -1023,7 +906,9 @@ int main(void)
 {
 	if (appl_init() < 0)
 	{
+		#if 0
 		DBGOUT("appl_init() failed\n");
+		#endif
 		return -1;
 	}
 
@@ -1031,7 +916,9 @@ int main(void)
 	graf_mouse(ARROW, NULL);
 	if (!rsrc_load("CHGRES.RSC"))
 	{
+		#if 0
 		DBGOUT("rsrc_load() failed\n");
+		#endif
 		appl_exit();
 		return -2;
 	}
@@ -1044,14 +931,18 @@ int main(void)
 
 	if (select_res())
 	{
-		if (start_shutdown() == 0)
+		if ((dlg_curr_colour_mode != original_colour_mode) ||
+		    (dlg_curr_screen_size != original_screen_size))
 		{
-			do_dialog(rs_trindex[ERR_RESCHG]);
-		} else
-		{
-			/*
-			change_magx_inf(cur_res->base.rez, cur_res->base.vmode);
-			*/
+			/* tell new video mode to emulator */
+			if (molSetVideoMode() == 0)
+			{
+				start_shutdown();
+			}
+			else
+			{
+				do_dialog(rs_trindex[ERR_RESCHG]);
+			}
 		}
 	}
 
