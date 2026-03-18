@@ -204,7 +204,7 @@ static void molGetVideoMode(void)
 	for (i = 0; i < NUM_COLOUR_MODES; i++)
 	{
 		if ((colour_modes[i][0] == currMode.ncolours) &&
-		    (colour_modes[i][1] == (uint32_t) currMode.flags))
+		    (colour_modes[i][1] == (uint32_t) (currMode.flags & 3)))
 		{
 			original_colour_mode = i;
 			dlg_curr_colour_mode = i;
