@@ -159,7 +159,7 @@ struct MagiCVideoMode
 	uint32_t magic;			/* 0x14534711, if valid */
 	uint32_t ncolours;		/* 2,4,16,256,32768,65536,2^24 */
 	uint16_t bits;			/* 1,2,4,8,16,32 */
-	uint16_t flags;			/* Bit 0: packed, Bit 1: direct colour */
+	uint16_t flags;			/* Bit 0: packed, Bit 1: direct colour, Bit 2: double vertical */
 	uint16_t width;			/* screen width */
 	uint16_t height;		/* screen height */
 };
@@ -286,6 +286,11 @@ static long molSetVideoMode(void)
 	{
 		currMode.width = screen_sizes[dlg_curr_screen_size][0];
 		currMode.height = screen_sizes[dlg_curr_screen_size][1];
+	}
+
+	if (dlg_curr_screen_size == RES_ST_MID)
+	{
+		currMode.flags |= 4;	/* double scan */
 	}
 
 	ret = xbios(/*VsetRGB*/ 93, (uint16_t) 0xf000, (uint16_t) 0, &currMode);
@@ -888,11 +893,25 @@ static void fix_rsc(void)
 *
 * txth is text height, usually 0.
 *
+* For the emulator the resolution change does not work, thus
+* a warmboot is initiated, with parameter "-w".
+*
 *************************************************************/
 static void start_shutdown(void)
 {
 	char buf[64];
+	#if 0
+
+	/* initiate resolution change */
 	buf[0] = (char) sprintf(&buf[1], "%d 0 %d", dlg_curr_colour_mode, 0x4711);
+
+	#else
+
+	/* initiate warmboot */
+	buf[0] = (char) sprintf(&buf[1], "-w");
+
+	#endif
+
 	shel_write(1, 1, 1, "SHUTDOWN.PRG", buf); /* BUG: return value ignored */
 }
 
