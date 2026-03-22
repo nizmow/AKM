@@ -101,7 +101,7 @@ static const uint32_t colour_modes[NUM_COLOUR_MODES][2] =
 	{ 16, 0x0000 },
 	{ 16, 0x0001 },
 	{ 256, 0x0001 },
-	{ 32 * 1024, 0x0003 },
+	{ 32L * 1024L, 0x0003 },   /* or 32U * 1024U, while 32 * 1024 causes an overflow */
 	{ 16L * 1024L * 1024L, 0x0003 }
 };
 
@@ -190,7 +190,7 @@ static void molGetVideoMode(void)
 	currMode.length = (uint16_t) sizeof(currMode);
 	(void) xbios(/*VgetRGB*/ 94, (uint16_t) 0xf000, (uint16_t) 0, &currMode);
 
-	/*
+	#if 0
 	DBGOUT("vmode.length    = %u\n", currMode.length);
 	DBGOUT("vmode.magic     = 0x%08lx\n", currMode.magic);
 	DBGOUT("vmode.ncolours  = %lu\n", currMode.ncolours);
@@ -198,7 +198,7 @@ static void molGetVideoMode(void)
 	DBGOUT("vmode.flags     = 0x%04x\n", currMode.flags);
 	DBGOUT("vmode.width     = %u\n", currMode.width);
 	DBGOUT("vmode.height    = %u\n", currMode.height);
-	*/
+	#endif
 
 	/* search for colour mode in presets */
 	for (i = 0; i < NUM_COLOUR_MODES; i++)
