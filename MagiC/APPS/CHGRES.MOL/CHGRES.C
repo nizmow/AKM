@@ -149,7 +149,7 @@ static const uint16_t screen_sizes[NUM_SCREEN_SIZES][2] =
 	{ 2560, 1440 }
 };
 
-static char screen_sizes_names[NUM_SCREEN_SIZES][22];
+static char screen_sizes_names[NUM_SCREEN_SIZES][30];
 
 static LBOX_ITEM screen_size_lbox_item_tab[NUM_SCREEN_SIZES];
 
@@ -325,17 +325,17 @@ static void initListBox(void)
 		sprintf(screen_sizes_names[i], "%4u * %4u", w, h);	/* 12 characters */
 		if (i == RES_ST_LOW)
 		{
-			strcat(screen_sizes_names[i], " (ST low)");		/* +9 characters */
+			strcat(screen_sizes_names[i], rs_frstr[FS_ST_LOW]);
 		}
 		else
 		if (i == RES_ST_MID)
 		{
-			strcat(screen_sizes_names[i], " (ST mid)");		/* +9 characters */
+			strcat(screen_sizes_names[i], rs_frstr[FS_ST_MED]);
 		}
 		else
 		if (i == RES_ST_HIGH)
 		{
-			strcat(screen_sizes_names[i], " (ST high)");	/* +10 characters */
+			strcat(screen_sizes_names[i], rs_frstr[FS_ST_HIGH]);
 		}
 
 		if (i + 1 < NUM_SCREEN_SIZES)
