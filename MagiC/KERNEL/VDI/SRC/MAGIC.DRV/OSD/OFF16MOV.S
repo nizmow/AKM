@@ -2273,13 +2273,11 @@ fbox_eor:			subq.w	#EX_OR-REPLACE,d7
 						beq		fbox_not
 
 fbox_eor_buf:		move.w	d6,-(sp) 		;Bytes pro Zeile
-
-						lea		expand_tab(pc),a6
-
 						movea.l	a0,a5 			;Bufferadresse
 
 						moveq 	#31,d6
 						add.w		bitmap_off_y(a6),d1	;vertikale Verschiebung berÅcksichtigen
+						lea		expand_tab(pc),a6
 						add.w 	d1,d1
 						and.w 	d6,d1 			;y1 & 15
 						beq.s 	fbox_eor_fill2
