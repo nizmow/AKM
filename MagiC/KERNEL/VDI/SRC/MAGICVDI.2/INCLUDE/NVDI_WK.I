@@ -64,7 +64,7 @@ l_color				EQU	70							;.w Linienfarbe
 l_width				EQU	72							;.w Linienbreite
 l_start				EQU	74							;.w Linienanfang
 l_end 				EQU	76							;.w Linienende
-l_lastpix			EQU	78							;.w 1 = letzten Punkt nicht setzen
+l_lastpix			EQU	78							;.w -1 = letzten Punkt nicht setzen, sonst 0
 l_style				EQU	80							;.w Linienstil
 l_styles 			EQU	82							;.w Linienmuster[6]
 l_sdstyle			EQU	94							;.w selbstdefinierter Linienstil
