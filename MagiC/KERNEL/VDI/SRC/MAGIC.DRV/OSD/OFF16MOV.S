@@ -6,6 +6,8 @@
 ;******************************************************************************;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;Die Felder bitmap_off_x/y sind vermutlich ÅberflÅssig, sie existieren
+; nur beim TrueColour- und beim Monochrom-Treiber.
 ;Tabulatorgrîûe:	3
 ;Kommentare:																;ab Spalte 60
 
@@ -115,12 +117,12 @@ get_opnwkinfo:		movem.l	d0/a0-a2,-(sp)
 						lea		10(a2),a2		;work_out + 5
 work_out_int:		move.w	(a2)+,(a0)+
 						dbra		d0,work_out_int
-							
+
 						move.w	#256,26-90(a0)	;work_out[13]: Anzahl der Farbstifte
 						move.w	#1,70-90(a0)	;work_out[35]: Farbe ist vorhanden
 						clr.w		78-90(a0)		;work_out[39]: mehr als 32767 Farbabstufungen in der Palette
 
-						moveq 	#11,d0			
+						moveq 	#11,d0
 work_out_pts:		move.w	(a2)+,(a1)+
 						dbra		d0,work_out_pts
 						movem.l	(sp)+,d0/a0-a2
@@ -149,7 +151,7 @@ ext_out_int:		move.w	(a2)+,(a0)+
 						move.w	#2200,12-90(a0)	;work_out[6]: Anzahl der Rasteroperationen
 						move.w	#1,38-90(a0)		;work_out[19]: Clipping an
 
-						moveq 	#11,d0			
+						moveq 	#11,d0
 ext_out_pts:		move.w	(a2)+,(a1)+
 						dbra		d0,ext_out_pts
 						lea		clip_xmin(a6),a2
@@ -224,7 +226,7 @@ scrninfo_mot:		DC.W 16,17,18,19,20,21,22,23 ;Bits der Rot-IntensitÑt
 						DC.W 0,1,2,3,4,5,6,7 	;Bits der Blau-IntensitÑt
 						DCB.W 8,-1
 						DC.W	24,25,26,27,28,29,30,31	;Bits fÅr den Alpha-Channel
-						DCB.W 8,-1 					
+						DCB.W 8,-1
 						DCB.W 16,-1 				;keine Bits fÅr Genlock
 						DCB.W 32,-1 				;unbenutzte Bits
 
@@ -235,7 +237,7 @@ scrninfo_int:		DC.W 	8,9,10,11,12,13,14,15 ;Bits der Rot-IntensitÑt
 						DC.W	24,25,26,27,28,29,30,31 	;Bits der Blau-IntensitÑt
 						DCB.W 8,-1
 						DC.W	0,1,2,3,4,5,6,7	;Bits fÅr den Alpha-Channel
-						DCB.W 8,-1 					
+						DCB.W 8,-1
 						DCB.W 16,-1 				;keine Bits fÅr Genlock
 						DCB.W 32,-1 				;unbenutzte Bits
 
@@ -293,7 +295,7 @@ relo_loop:			move.w	(a1)+,d1 		;Adress-Offset
 						bra.s 	relo_loop
 relo_exit:			movem.l	(sp)+,d0-d2/a0-a2
 						rts
-						
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 						;Initialisierung'
 
@@ -311,7 +313,7 @@ get_resinfo:		rts
 build_color_maps:	movem.l	d0/a0-a2,-(sp)
 						movea.l	nvdi_struct(pc),a2
 						movea.l	_nvdi_colmaptab(a2),a2
-						
+
 						movea.l	_color_map_ptr(a2),a0
 						lea		color_map(pc),a1
 						moveq		#63,d0
@@ -362,7 +364,7 @@ init_rgb_tabs: 	movem.l	d0-d6/a0-a1,-(sp)
 						move.w	d3,d2				;maximale Blau-IntensitÑt der CLUT
 
 						movem.w	d0-d2,-(sp)
-						
+
 						lea		rgb_in_tab(pc),a0
 
 						moveq		#2,d5
@@ -371,7 +373,7 @@ init_rgbi_loop:	move.w	d3,d4
 						mulu		d0,d4			;*hîchste IntensitÑt
 						add.l 	#500,d4		;runden
 						divu		#1000,d4
-						move.b	d4,(a0)+		
+						move.b	d4,(a0)+
 						addq.w	#1,d3
 						cmp.w 	#1000,d3
 						ble.s 	init_rgbi_loop
@@ -388,7 +390,7 @@ init_rgbi_loop:	move.w	d3,d4
 						moveq		#2,d6
 init_rgbo_bloop:	moveq 	#0,d3
 						move.w	d0,d5			;maximale IntensitÑt der CLUT
-						lsr.w		#1,d5			
+						lsr.w		#1,d5
 						ext.l		d5				;Rundungswert
 init_rgbo_loop:	move.w	d3,d4			;
 						mulu		#1000,d4		;
@@ -405,7 +407,7 @@ init_rgbo_loop:	move.w	d3,d4			;
 
 						movem.l	(sp)+,d0-d6/a0-a1
 						rts
-						
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 						;v_countourfill'
 
@@ -540,7 +542,7 @@ set_palette:		moveq 	#0,d0
 						move.b	1(a0,d0.w),(a1)+
 						move.b	0(a0,d0.w),(a1)+
 						bra.s		set_palette_next
-						
+
 set_palette_mot:	move.l	0(a0,d0.w),(a1)+
 set_palette_next:	dbra		d1,set_palette
 
@@ -566,7 +568,7 @@ wk_reset:			rts
 set_color_rgb:		lea		c_palette(a6),a1
 						add.w 	d3,d3
 						add.w		d3,d3
-						
+
 						btst		#7,bitmap_flags+1(a6)	;Intel-Format, umgekehrte Bytereihenfolge?
 						beq.s		set_col_rgb_mot
 
@@ -603,7 +605,7 @@ set_col_rgb_mot:	lea		1(a1,d3),a1
 get_color_rgb:		lea		c_palette(a6),a0
 						add.w 	d0,d0
 						add.w		d0,d0
-						
+
 						btst		#7,bitmap_flags+1(a6)	;Intel-Format, umgekehrte Bytereihenfolge?
 						beq.s		get_col_rgb_mot
 
@@ -664,10 +666,10 @@ set_pattern:		cmp.w 	#16,d0			;farbiges FÅllmuster?
 set_pattern_col:	move.w	#255,d0			;PixelzÑhler
 						btst		#7,bitmap_flags+1(a6)	;Intel-Format?
 						bne.s		set_pattern_swap
-						
+
 set_pattern_loop:	move.l	(a0)+,(a1)+
 						dbra		d0,set_pattern_loop
-												
+
 						moveq		#31,d0			;FÅllmuster mit 32 Ebenen
 						rts
 
@@ -681,7 +683,7 @@ set_pat_swp_loop:	move.w	(a0)+,d1			;xr
 						swap		d1					;bgrx
 						move.l	d1,(a1)+
 						dbra		d0,set_pat_swp_loop
-						
+
 						move.l	(sp)+,d1
 						moveq		#31,d0			;FÅllmuster mit 32 Ebenen
 						rts
@@ -1216,7 +1218,7 @@ fline:				tst.w		f_planes(a6)
 						beq.s		fline_mono_pat
 
 						move.l	a0,-(sp)
-						
+
 						movea.l	f_pointer(a6),a0
 						moveq 	#15,d4
 						and.w 	d1,d4
@@ -1225,7 +1227,7 @@ fline:				tst.w		f_planes(a6)
 
 						move.w	BYTES_LIN.w,d4	;Bytes pro Zeile
 						movea.l	v_bas_ad.w,a1	;Adresse des Bildschirms
-						
+
 						tst.w 	bitmap_width(a6) ;Off-Screen-Bitmap?
 						beq.s 	fline_laddr
 
@@ -1236,17 +1238,18 @@ fline:				tst.w		f_planes(a6)
 
 						move.w	bitmap_width(a6),d4	;Bytes pro Zeile
 						movea.l	bitmap_addr(a6),a1	;Adresse der Bitmap
-						
+
 fline_laddr:		sub.w 	d0,d2 			;dx
-						add.w		d0,d0				
+						add.w		d0,d0
 						add.w		d0,d0				;Abstand vom Zeilenanfang in Bytes
-						mulu		d4,d1				
+						mulu		d4,d1
 						ext.l		d0
-						add.l		d0,d1				;Zieladresse
+						add.l		d0,d1
+						add.l		a1,d1				;Zieladresse
 
 						move.l	a1,-(sp)
 						moveq 	#64,d7			;Abstand identischer Punkte des Musters
-						
+
 						moveq 	#15,d6			;PunktezÑhler fÅrs Muster
 						cmp.w 	d6,d2 			;mindestens 16 Punkte zeichnen?
 						bge.s 	fline_color
@@ -1263,7 +1266,7 @@ fline_color:		moveq		#63,d0
 fline_color_loop:	move.l	d5,(a1)
 						adda.w	d7,a1
 						dbra		d4,fline_color_loop
-					
+
 						addq.l	#4,d1				;zum nÑchsten Punkt des Musters
 						subq.w	#1,d2
 						dbra		d6,fline_color
@@ -1938,7 +1941,7 @@ fbox:					lea		c_palette(a6),a0
 						move.w	BYTES_LIN.w,d4 ;Bytes pro Zeile
 						tst.w 	bitmap_width(a6) ;Off-Screen-Bitmap?
 						beq.s 	fbox_universal
-						
+
 						lea		bitmap_off_x(a6),a1
 						sub.w		(a1),d0			;bitmap_off_x: horizontale Verschiebung des Ursprungs
 						sub.w		(a1)+,d2			;bitmap_off_x: horizontale Verschiebung des Ursprungs
@@ -2025,7 +2028,7 @@ fbox_buffer:		movea.l	f_pointer(a6),a4 ;Zeiger aufs FÅllmuster
 						beq.s 	fbox_repl_cfill2
 
 						move.l	a4,a3
-						
+
 						move.w	d1,d5
 						eor.w		d6,d5
 						move.w	d1,d6
@@ -2042,7 +2045,7 @@ fbox_repl_cfill2:	REPT		8
 						move.l	(a4)+,(a5)+
 						ENDM
 						dbra		d6,fbox_repl_cfill2
-						
+
 						bra		fbox_repl_x2
 
 fbox_repl_mono:	lea		expand_tab(pc),a6
@@ -2624,7 +2627,7 @@ expand_blt:			move.w	a2,d6 									;Bytes pro Quellzeile
 						moveq		#15,d1
 						and.w		d1,d0										;Shifts nach links fÅr das erste Wort
 						eor.w		d0,d1										;SchleifenzÑhler fÅr das erste Wort
-						
+
 						cmp.w		d1,d4										;SchleifenzÑhler grîûer als die Breite?
 						bge.s		expand_blt_wcnt
 						move.w	d4,d1										;SchleifenzÑhler begrenzen
@@ -2664,7 +2667,7 @@ expand_blt_wcnt:	swap		d0
 						add.w		d2,d2
 						move.w	eblt_tab(pc,d2.w),d2
 						jmp		eblt_tab(pc,d2.w)
-						
+
 eblt_tab:			DC.W		eblt_repl-eblt_tab
 						DC.W		eblt_trans-eblt_tab
 						DC.W		eblt_eor-eblt_tab
@@ -2678,14 +2681,14 @@ eblt_repl_line:	move.w	d4,d3										;dx + 1 - Anzahl der Pixel im ersten Wort
 						move.l	d0,d1
 						swap		d1											;Anzahl der auszugebenden Pixel im ersten Wort - 1
 						bra.s		eblt_repl_loop
-						
+
 eblt_repl_read:	move.w	(a0)+,d2									;Quellwort einlesen
 eblt_repl_loop:	add.w		d2,d2										;Pixel gesetzt?
 						bcc.s		eblt_repl_bg
 						move.l	d6,(a1)+									;Vordergrundfarbe
 						dbra		d1,eblt_repl_loop
 						bra.s		eblt_repl_next
-						
+
 eblt_repl_bg:		move.l	d7,(a1)+									;Hintergrundfarbe
 						dbra		d1,eblt_repl_loop
 
@@ -2695,7 +2698,7 @@ eblt_repl_next:	moveq		#15,d1
 						bpl.s		eblt_repl_read
 						add.w		d3,d1										;Anzahl der Pixel im letzten Wort - 1
 						bpl.s		eblt_repl_read
-						
+
 						adda.w	a2,a0
 						adda.w	a3,a1
 						dbra		d5,eblt_repl_line
@@ -2709,14 +2712,14 @@ eblt_trans_line:	move.w	d4,d3										;dx + 1 - Anzahl der Pixel im ersten Wort
 						move.l	d0,d1
 						swap		d1											;Anzahl der auszugebenden Pixel im ersten Wort - 1
 						bra.s		eblt_trans_loop
-						
+
 eblt_trans_read:	move.w	(a0)+,d2									;Quellwort einlesen
 eblt_trans_loop:	add.w		d2,d2										;Pixel gesetzt?
 						bcc.s		eblt_trans_bg
 						move.l	d6,(a1)+									;Vordergrundfarbe
 						dbra		d1,eblt_trans_loop
 						bra.s		eblt_trans_next
-						
+
 eblt_trans_bg:		addq.l	#4,a1
 						dbra		d1,eblt_trans_loop
 
@@ -2726,7 +2729,7 @@ eblt_trans_next:	moveq		#15,d1
 						bpl.s		eblt_trans_read
 						add.w		d3,d1										;Anzahl der Pixel im letzten Wort - 1
 						bpl.s		eblt_trans_read
-						
+
 						adda.w	a2,a0
 						adda.w	a3,a1
 						dbra		d5,eblt_trans_line
@@ -2740,14 +2743,14 @@ eblt_eor_line:		move.w	d4,d3										;dx + 1 - Anzahl der Pixel im ersten Wort
 						move.l	d0,d1
 						swap		d1											;Anzahl der auszugebenden Pixel im ersten Wort - 1
 						bra.s		eblt_eor_loop
-						
+
 eblt_eor_read:		move.w	(a0)+,d2									;Quellwort einlesen
 eblt_eor_loop:		add.w		d2,d2										;Pixel gesetzt?
 						bcc.s		eblt_eor_bg
 						not.l		(a1)+
 						dbra		d1,eblt_eor_loop
 						bra.s		eblt_eor_next
-						
+
 eblt_eor_bg:		addq.l	#4,a1
 						dbra		d1,eblt_eor_loop
 
@@ -2757,7 +2760,7 @@ eblt_eor_next:		moveq		#15,d1
 						bpl.s		eblt_eor_read
 						add.w		d3,d1										;Anzahl der Pixel im letzten Wort - 1
 						bpl.s		eblt_eor_read
-						
+
 						adda.w	a2,a0
 						adda.w	a3,a1
 						dbra		d5,eblt_eor_line
@@ -2771,14 +2774,14 @@ eblt_rtr_line:		move.w	d4,d3										;dx + 1 - Anzahl der Pixel im ersten Wort
 						move.l	d0,d1
 						swap		d1											;Anzahl der auszugebenden Pixel im ersten Wort - 1
 						bra.s		eblt_rtr_loop
-						
+
 eblt_rtr_read:		move.w	(a0)+,d2									;Quellwort einlesen
 eblt_rtr_loop:		add.w		d2,d2										;Pixel nicht gesetzt?
 						bcs.s		eblt_rtr_fg
 						move.l	d7,(a1)+									;Hintergrundfarbe
 						dbra		d1,eblt_rtr_loop
 						bra.s		eblt_rtr_next
-						
+
 eblt_rtr_fg:		addq.l	#4,a1
 						dbra		d1,eblt_rtr_loop
 
@@ -2788,12 +2791,12 @@ eblt_rtr_next:		moveq		#15,d1
 						bpl.s		eblt_rtr_read
 						add.w		d3,d1										;Anzahl der Pixel im letzten Wort - 1
 						bpl.s		eblt_rtr_read
-						
+
 						adda.w	a2,a0
 						adda.w	a3,a1
 						dbra		d5,eblt_rtr_line
 						rts
-						
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 						;Bitblocktransfer'
 
@@ -2831,7 +2834,7 @@ bitblt:				cmp.w		d4,d6										;horizontal skalieren?
 
 						bclr		#4,r_wmode+1(a6)						;vrt_cpyfm mit Schreibmodus 0-3?
 						bne		expblt
-						
+
 						moveq		#15,d7
 						and.w		r_wmode(a6),d7
 
@@ -3149,16 +3152,16 @@ bitblt_inc: 		cmp.w		#3,d7					;kopieren?
 						lsr.w		#2,d1
 						move.w	d1,d0
 						bne.s		blt040_start_mis
-						
+
 						moveq		#-1,d0
 						bra.s		blt040_end
-												
+
 blt040_start_mis:	not		d0
 						and.w		d6,d0				;Anzahl der anfÑnglich zu kopierenden Langworte - 1
-						
+
 						sub.w		d0,d4
 						subq.w	#1,d4
-						
+
 blt040_end:			move.w	d4,d2
 						lsr.w		#2,d4
 						subq.w	#1,d4				;ZÑhler fÅr move16
@@ -3168,19 +3171,19 @@ blt040_end:			move.w	d4,d2
 						bne.s		blt3li_040_bloop
 
 						moveq		#-1,d2
-						addq.w	#1,d4					
+						addq.w	#1,d4
 						cmp.w		d0,d2				;ein Vielfaches von 16 Bytes kopieren?
 						bne.s		blt3li_040_bloop
-						addq.w	#1,d5	
+						addq.w	#1,d5
 						bra.s		blt3li_040_16nxt
-						
+
 						MC68040
-						
+
 						ALIGN 	16
-						
+
 blt3li_040_16:		move16	(a0)+,(a1)+
 						dbra		d6,blt3li_040_16
-						
+
 						adda.w	a2,a0 			;nÑchste Quellzeile
 						adda.w	a3,a1 			;nÑchste Zielzeile
 blt3li_040_16nxt:	move.w	d4,d6
@@ -3195,10 +3198,10 @@ blt3li_040_16nxt:	move.w	d4,d6
 
 blt3li_040_bloop:	move.w	d0,d6
 						bmi.s		blt3li_move16
-						
+
 blt3li_040_start:	move.l	(a0)+,(a1)+
 						dbra		d6,blt3li_040_start
-						
+
 blt3li_move16:		move.w	d4,d6
 
 blt3li_loop16:		move16	(a0)+,(a1)+
@@ -3497,7 +3500,7 @@ bitblt_scale:		lea	scale_buf_init(pc),a0
 						lea	write_line_init(pc),a3
 
 ;Skalierendes Bitblt
-;Vorgaben:						
+;Vorgaben:
 ;Register d0-d7/a0-a5 werden verÑndert
 ;Eingaben:
 ;Register d0-d7 enthalten im oberen Wort jeweils die nicht geclippten Werte
@@ -3532,7 +3535,7 @@ scale_blt:			move.l	a1,-(sp)									;Zeiger auf scale_buf_reset sichern
 						move.l	a0,write_buffer(sp)
 						move.l	a0,scale_buffer(sp)
 						beq.s		scale_blt_err							;lieû sich der Buffer nicht anlegen?
-						
+
 						movea.l	a2,a1
 						lea		noclip_registers(sp),a0				;Zeiger auf die ungeclippten Koordinaten
 						lea		scale_registers(sp),a2				;Zeiger auf Registerbuffer
@@ -3540,7 +3543,7 @@ scale_blt:			move.l	a1,-(sp)									;Zeiger auf scale_buf_reset sichern
 						movea.l	a0,a4										;Quelladresse
 						move.l	a1,scale_jump(sp)						;Zeiger auf scale_line
 						move.l	a2,scale_jump_trans(sp)				;Zeiger auf scale_line_trans
-						
+
 						lea		noclip_registers(sp),a0				;Zeiger auf die ungeclippten Koordinaten
 						lea		write_registers(sp),a2				;Zeiger auf Registerbuffer
 						jsr		(a3)										;write_line_init aufrufen
@@ -3551,10 +3554,10 @@ scale_blt:			move.l	a1,-(sp)									;Zeiger auf scale_buf_reset sichern
 						sub.w		noclip_zy(sp),d3						;Verschiebung der zy-Koordinate durch Clipping
 
 						move.w	d7,d4										;zdy
-						
+
 						move.w	noclip_zdy(sp),d6
 						move.w	noclip_qdy(sp),d7
-					
+
 						cmp.w		#32767,d6								;zu groû?
 						bhs.s		scale_ver_half
 						cmp.w		#32767,d7								;zu groû?
@@ -3562,8 +3565,8 @@ scale_blt:			move.l	a1,-(sp)									;Zeiger auf scale_buf_reset sichern
 
 scale_ver_half:	lsr.w		#1,d6										;halbieren, um öberlauf zu vermeiden
 						lsr.w		#1,d7										;halbieren, um öberlauf zu vermeiden
-						
-scale_ver_height:	addq.w	#1,d6										;zdy + 1 = dy + 1 
+
+scale_ver_height:	addq.w	#1,d6										;zdy + 1 = dy + 1
 						addq.w	#1,d7										;qdy + 1 = dx + 1
 
 						cmp.w		d7,d6										;dy <= dx?
@@ -3585,7 +3588,7 @@ scale_ver_height:	addq.w	#1,d6										;zdy + 1 = dy + 1
 grow_ver:			move.w	d6,d5
 						neg.w		d5											;e = - Zielhîhe = - ( dy + 1 )
 						ext.l		d5
-						
+
 						tst.w		d1											;Verschiebung der qy-Koordinate durch Clipping?
 						beq.s		grow_ver_offset
 
@@ -3594,7 +3597,7 @@ grow_ver:			move.w	d6,d5
 
 grow_ver_offset:	tst.w		d3											;Verschiebung der zy-Koordinate durch Clipping
 						beq.s		grow_ver_loop
-						
+
 						mulu		d7,d3										;Verschiebung * ya = Verschiebung * ( dx + 1 )
 						add.l		d3,d5										;e korrigieren
 
@@ -3641,20 +3644,20 @@ grow_ver_exit:		movea.l	(sp),a0									;Zeiger auf den Buffer
 ;Ausgaben:
 ;-
 shrink_ver:			move.w	d5,d4										;Anzahl der einzulesenden Zeilen - 1
-						
+
 						move.w	d7,d5
 						neg.w		d5											;e = - Quellhîhe = - ( dx + 1 )
 						ext.l		d5
-						
+
 						tst.w		d1											;Verschiebung der qy-Koordinate durch Clipping?
 						beq.s		shrink_ver_off
-						
+
 						mulu		d6,d1										;Verschiebung * xa = Verschiebung * ( dy + 1 )
 						add.l		d1,d5										;e korrigieren
 
 shrink_ver_off:	tst.w		d3											;Verschiebung der zy-Koordinate durch Clipping
 						beq.s		shrink_ver_loop
-						
+
 						mulu		d7,d3										;Verschiebung * ya = Verschiebung  * ( dx + 1 )
 						sub.l		d3,d5										;e korrigieren
 
@@ -3671,7 +3674,7 @@ shrink_ver_err:	adda.w	r_swidth(a6),a4						;nÑchste Quellzeile
 						add.w 	d6,d5			 							;+ xa, nÑchste Quellzeile
 						bpl.s 	shrink_ver_next						;Fehler >= 0, nÑchste Zielzeile?
 						dbra		d4,shrink_ver_trans					;sind noch weitere Quellzeilen vorhanden?
-	
+
 						moveq		#0,d4										;Zeile ausgeben und Funktion verlassen
 
 shrink_ver_next:	movea.l	sp,a2										;lea	write_buffer(sp),a2
@@ -3707,21 +3710,21 @@ shrink_ver_next:	movea.l	sp,a2										;lea	write_buffer(sp),a2
 scale_buf_init:	move.l	d0,-(sp)
 						moveq		#15,d0
 						and.w		d2,d0
-						add.w		d6,d0										
+						add.w		d6,d0
 						add.l		d0,d0
 						add.l		d0,d0										;BufferlÑnge in Bytes
 
 						tst.w		r_splanes(a6)							;32 Bit?
 						bne.s		scale_buf_len
-						
+
 						lsr.l		#6,d0										;Anzahl der Worte
 						addq.l	#1,d0										;Anzahl der Worte + 1
 						add.l		d0,d0										;Anzahl der Bytes + 2
-						
+
 scale_buf_len:		movea.l	nvdi_struct(pc),a0
 						movea.l	_nvdi_nmalloc(a0),a0					;Zeiger auf nmalloc
 						jsr		(a0)
-						
+
 						move.l	(sp)+,d0
 						rts
 
@@ -3773,20 +3776,20 @@ scale_line_init:	movem.l	d0-d7,-(sp)
 scale_init_addr:	adda.l	d1,a1										;Quelladresse
 
 scale_init_zx:		move.w	d2,d7										;zx
-						
+
 						move.w	d4,d2										;qdx
 						move.w	d6,d3										;zdx
-						
+
 						move.w	d0,d6										;qx
 						moveq		#15,d4
 						and.w		d6,d4										;Verschiebung der Quelldaten nach links
-						
+
 						sub.w		(a0),d6									;Verschiebung der qx-Koordinate durch Clipping
 						sub.w		2*2(a0),d7								;Verschiebung der zx-Koordinate durch Clipping
 
 						move.w	4*2(a0),d0								;qdx ohne Clipping
 						move.w	6*2(a0),d1								;zdx ohne Clipping
-						
+
 						cmp.w		#32767,d0								;zu groû?
 						bhs.s		scale_init_half
 						cmp.w		#32767,d1								;zu groû?
@@ -3800,11 +3803,11 @@ scale_init_width:	addq.w	#1,d0										;Breite der Quelle ohne Clipping
 
 scale_init_cmp:	cmp.w		d0,d1
 						ble.s		scale_init_shr							;verkleinern?
-						
+
 						move.w	d1,d2
 						neg.w		d2											;e = - Zielbreite = - dy
 						ext.l		d2
-						
+
 						tst.w		d6											;Verschiebung der qx-Koordinate durch Clipping?
 						beq.s		scale_init_gya
 						mulu		d1,d6										;Verschiebung * xa
@@ -3829,10 +3832,10 @@ scale_init_sya:	tst.w		d7											;Verschiebung der zx-Koordinate durch Clippi
 						beq.s		scale_init_exit
 						mulu		d0,d7										;Verschiebung * ya
 						sub.l		d7,d3										;e korrigieren
-						
+
 scale_init_exit:	move.w	d1,d6										;xa = Zielbreite = dy + 1
 						move.w	d0,d7										;ya = Quellbreite = dx + 1
-						
+
 						movem.w	d2-d4/d6-d7,(a2)						;Register sichern
 						movea.l	a1,a0										;Quelladresse
 
@@ -3850,7 +3853,7 @@ scale_init32:		lea		scale_line32(pc),a1
 
 						movem.l	(sp)+,d0-d7
 						rts
-						
+
 ;Zeile skalieren
 ;Vorgaben:
 ;Register d4-d7.w mÅssen werden gesichert
@@ -3930,7 +3933,7 @@ grow_line1_exit:	movem.w	(sp)+,d4/d6-d7
 shrink_line1:		move.w	#$8000,d6
 						moveq 	#0,d7
 						bra.s 	shrink_line1_read
-						
+
 shrink_line1_next:sub.w 	a3,d3							 			;- ya, nÑchstes Zielpixel
 						ror.w 	#1,d6
 						dbcs		d2,shrink_line1_loop					;sind noch weitere Quellpixel vorhanden, muû evtl. ein Wort ausgegeben werden?
@@ -3939,7 +3942,7 @@ shrink_line1_next:sub.w 	a3,d3							 			;- ya, nÑchstes Zielpixel
 						subq.w	#1,d2										;sind noch weitere Quellpixel vorhanden?
 						bmi.s 	shrink_line1_exit
 shrink_line1_loop:dbra		d0,shrink_line1_test
-shrink_line1_read:moveq 	#15,d0									;PixelzÑhler fÅr ein Wort	
+shrink_line1_read:moveq 	#15,d0									;PixelzÑhler fÅr ein Wort
 						move.l	(a0),d1									;16 + 16 Pixel einlesen
 						addq.l	#2,a0
 						lsl.l 	d4,d1										;nach links schieben
@@ -4041,19 +4044,19 @@ write_line_init:	movem.l	d0-d3,-(sp)
 						adda.l	d3,a0
 						ext.l		d2
 						add.l		d2,d2
-						add.l		d2,d2						
+						add.l		d2,d2
 						adda.l	d2,a0										;Zieladresse
-						
+
 						tst.w		r_splanes(a6)							;32 Bit?
 						bne.s		write_line_init32
-						
+
 						moveq		#15,d0
 						and.w		d6,d0										;Anzahl der restlichen Pixel - 1
 						swap		d0
 						move.w	d6,d0
 						lsr.w		#4,d0										;Anzahl der Worte - 1
 						move.l	d0,(a2)+
-						
+
 						lea		c_palette(a6),a1
 						move.w	r_fgcol(a6),d0
 						add.w		d0,d0
@@ -4076,11 +4079,11 @@ wl_1_32_tab:		DC.W	wl_1_32_repl-wl_1_32_tab
 						DC.W	wl_1_32_trans-wl_1_32_tab
 						DC.W	wl_1_32_eor-wl_1_32_tab
 						DC.W	wl_1_32_rev_trans-wl_1_32_tab
-						
+
 write_line_init32:move.w	d6,(a2)+
 						moveq		#15,d0
 						and.w		r_wmode(a6),d0
-						
+
 						add.w		d0,d0
 						move.w	wl_32_32_tab(pc,d0.w),d0			;Offset der Funktion
 						lea		wl_32_32_tab(pc,d0.w),a1			;Zeiger auf Ausgabefunktion
@@ -4104,7 +4107,7 @@ wl_32_32_tab:		DC.W	wl_32_32_mode0-wl_32_32_tab
 						DC.W	wl_32_32_mode13-wl_32_32_tab
 						DC.W	wl_32_32_mode14-wl_32_32_tab
 						DC.W	wl_32_32_mode15-wl_32_32_tab
-										
+
 ;Zeile ausgeben, von 1 Bit auf 32 Bit expandieren, REPLACE
 ;Vorgaben:
 ;Register d0-d3/a0-a2 werden verÑndert
@@ -4128,7 +4131,7 @@ wl_1_32_rpl_word:	add.w		d1,d1
 						bcc.s		wl_1_32_rpl_bg
 						move.l	d2,(a1)+									;Vordergrundfarbe
 						dbra		d4,wl_1_32_rpl_word
-						
+
 						dbra		d0,wl_1_32_rpl_loop
 						bra.s		wl_1_32_rpl_end
 
@@ -4385,7 +4388,7 @@ relokation:
 
 						DC.W 0
 
-						
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 						;Laufzeitdaten'
 
