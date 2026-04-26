@@ -82,7 +82,7 @@ static void test1(int src_stand, int nplanes, int inplace)
 	srcMFDB.fd_w = MFDB_W;			/* IGNORED BY MVDI */
 	srcMFDB.fd_h = MFDB_H;
 	srcMFDB.fd_nplanes = nplanes;
-	srcMFDB.fd_wdwidth = MFDB_W * 2;
+	srcMFDB.fd_wdwidth = (MFDB_W * nplanes + 15) / 16;
 	srcMFDB.fd_stand = src_stand;
 	if (inplace)
 	{
@@ -93,6 +93,12 @@ static void test1(int src_stand, int nplanes, int inplace)
 		dstMFDB.fd_addr = dstMem;
 	}
 	dstMFDB.fd_stand = -1;		/* to be set by callee */
+
+	/* is this necessary? */
+	dstMFDB.fd_w = MFDB_W;
+	dstMFDB.fd_h = MFDB_H;
+	dstMFDB.fd_nplanes = nplanes;
+	dstMFDB.fd_wdwidth = srcMFDB.fd_wdwidth;
 
 	printMFDB("src", &srcMFDB);
 	printMFDB("dstBefore", &dstMFDB);
@@ -189,6 +195,7 @@ void ExecLine(char *line)
 int main( void )
 {
 	register int i;
+	char c;
 
 	if ((ap_id = appl_init()) < 0)
 	{
@@ -216,13 +223,45 @@ int main( void )
 		srcMem[i] = v;
 	}
 
+	printf("Choose:\n");
+	printf(" 1 - dev-specific->standard, monochrome, not in-place\n");
+	printf(" 2 - dev-specific->standard, 7 planes, not in-place\n");
+	printf(" 3 - dev-specific->standard, %d planes, not in-place\n", screen_nplanes);
+	printf(" 4 - standard->dev-specific, %d planes, not in-place\n", screen_nplanes);
+	c = Cconin();
+	switch(c)
+	{
+		case '1':
+			test1(0, 1, 0);
+			break;
+
+		case '2':
+			test1(0, 7, 0);
+			break;
+
+		case '3':
+			test1(0, screen_nplanes, 0);
+			break;
+
+		case '4':
+			test1(1, screen_nplanes, 0);
+			break;
+	}
+	printf(" .. press key ");
+	Cconin();
+
 #if 1
 
+#if 0
 	/* success */
 	test1(0, 1, 0);	/* dev-specific -> standard, monochrome, not in-place */
 	/* ignored by true-colour driver */
 	test1(0, 7, 0);	/* dev-specific -> standard, 16 planes, not in-place */
-#if 1
+#endif
+
+#if 0
+	/* ? */
+	test1(1, screen_nplanes, 0);	/* standard -> dev-specific, native planes, not in-place */
 	/* crashes */
 	test1(0, screen_nplanes, 0);	/* dev-specific -> standard, native planes, not in-place */
 #endif
