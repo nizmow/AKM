@@ -1,0 +1,11 @@
+TRNFM.TOS
+.C[-I..\import]	; .h search path
+.L[-S=$800]
+=
+..\import\pcmxstrt.o	; bester Startup
+TRNFM
+..\import\pcstdlib.lib   ; standard lib
+..\import\pctoslib.lib   ; TOS lib
+..\import\mt_dos.lib	; zus„tzliche DOS-Aufrufe
+..\import\mt_aes.lib	; MAGIX AES- lib
+..\import\pcgemlib.lib	; GEM lib
