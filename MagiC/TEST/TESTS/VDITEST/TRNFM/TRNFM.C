@@ -23,9 +23,10 @@ int aes_handle;		/* Screen-Workstation des AES */
 
 #define MFDB_W 10		/* convert a 10x7 rectangle */
 #define MFDB_H 7
+#define MFDB_WW (((MFDB_W + 15) / 16) * 16)		/* width must be divideable by 16 */
 
-static uint32_t srcMem[MFDB_W * MFDB_H];
-static uint32_t dstMem[MFDB_W * MFDB_H];
+static uint32_t srcMem[MFDB_WW * MFDB_H];
+static uint32_t dstMem[MFDB_WW * MFDB_H];
 static MFDB srcMFDB;
 static MFDB dstMFDB;
 
@@ -39,7 +40,7 @@ static void clearMFDB(MFDB *mfdb)
 	{
 		int xy;
 
-		for (xy = 0; xy < MFDB_H * MFDB_W; xy++)
+		for (xy = 0; xy < MFDB_H * MFDB_WW; xy++)
 		{
 			*p++ = 0;
 		}
@@ -62,7 +63,7 @@ static void printMFDB(const char *name, const MFDB *mfdb)
 		for (y = 0; y < MFDB_H; y++)
 		{
 			printf("     0x");
-			for (x = 0; x < MFDB_W; x++)
+			for (x = 0; x < MFDB_WW; x++)
 			{
 				printf("%08lx ", *p++);
 			}
@@ -82,7 +83,7 @@ static void test1(int src_stand, int nplanes, int inplace)
 	srcMFDB.fd_w = MFDB_W;			/* IGNORED BY MVDI */
 	srcMFDB.fd_h = MFDB_H;
 	srcMFDB.fd_nplanes = nplanes;
-	srcMFDB.fd_wdwidth = (MFDB_W * nplanes + 15) / 16;
+	srcMFDB.fd_wdwidth = (MFDB_W + 15) / 16;
 	srcMFDB.fd_stand = src_stand;
 	if (inplace)
 	{
@@ -94,11 +95,13 @@ static void test1(int src_stand, int nplanes, int inplace)
 	}
 	dstMFDB.fd_stand = -1;		/* to be set by callee */
 
+#if 0
 	/* is this necessary? */
 	dstMFDB.fd_w = MFDB_W;
 	dstMFDB.fd_h = MFDB_H;
 	dstMFDB.fd_nplanes = nplanes;
 	dstMFDB.fd_wdwidth = srcMFDB.fd_wdwidth;
+#endif
 
 	printMFDB("src", &srcMFDB);
 	printMFDB("dstBefore", &dstMFDB);
@@ -213,9 +216,10 @@ int main( void )
 	vq_extnd(vdi_handle, 1, extnd_out);
 	screen_nplanes = extnd_out[4];
 
-	/* fill memory block with pseudo random values */
+	/* Fill memory block with pseudo random values */
+	/* Note that for less then 32 bits per pixel, the block still is large enough. */
 	srand(4711);	/* make sure the result is always the same between runs */
-	for (i = 0; i < MFDB_W * MFDB_H; i++)
+	for (i = 0; i < MFDB_WW * MFDB_H; i++)
 	{
 		/* compose 32-bit number from two calls */
 		uint32_t v = Random() << 16;
@@ -226,8 +230,9 @@ int main( void )
 	printf("Choose:\n");
 	printf(" 1 - dev-specific->standard, monochrome, not in-place\n");
 	printf(" 2 - dev-specific->standard, 7 planes, not in-place\n");
-	printf(" 3 - dev-specific->standard, %d planes, not in-place\n", screen_nplanes);
-	printf(" 4 - standard->dev-specific, %d planes, not in-place\n", screen_nplanes);
+	printf(" 3 - dev-specific->standard, 4 planes, not in-place\n");
+	printf(" 4 - dev-specific->standard, %d planes, not in-place\n", screen_nplanes);
+	printf(" 5 - standard->dev-specific, %d planes, not in-place\n", screen_nplanes);
 	c = Cconin();
 	switch(c)
 	{
@@ -240,10 +245,14 @@ int main( void )
 			break;
 
 		case '3':
-			test1(0, screen_nplanes, 0);
+			test1(0, 4, 0);
 			break;
 
 		case '4':
+			test1(0, screen_nplanes, 0);
+			break;
+
+		case '5':
 			test1(1, screen_nplanes, 0);
 			break;
 	}
