@@ -6,11 +6,13 @@
 
 #include <mgx_dos.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <mt_aes.h>
 #include <vdi.h>
 
 typedef unsigned long uint32_t;
+typedef unsigned int uint16_t;
 
 int vdi_handle;
 int screen_nplanes;
@@ -47,17 +49,51 @@ static void clearMFDB(MFDB *mfdb)
 	}
 }
 
-static void printMFDB(const char *name, const MFDB *mfdb)
+static void printMFDB(const char *name, const MFDB *mfdb, unsigned wdwidth, unsigned nplanes)
 {
-	const uint32_t *p;
-
 	printf("%sMFDB addr = 0x%08lx\n", name, mfdb->fd_addr);
 	printf("     fd_w/h/nplanes = %d / %d / %d\n", mfdb->fd_w, mfdb->fd_h, mfdb->fd_nplanes);
 	printf("     fd_wdwidth = %d\n", mfdb->fd_wdwidth);
 	printf("     fd_stand = %d\n", mfdb->fd_stand);
-	p = (const uint32_t *) mfdb->fd_addr;
-	if (p != NULL)
+
+	if (mfdb->fd_addr == NULL)
 	{
+		return;
+	}
+
+	if (mfdb->fd_nplanes)
+	{
+		nplanes = mfdb->fd_nplanes;
+	}
+
+	if (mfdb->fd_wdwidth)
+	{
+		wdwidth = mfdb->fd_wdwidth;
+	}
+
+	if (mfdb->fd_stand > 0)
+	{
+		const uint16_t *p = (const uint16_t *) mfdb->fd_addr;
+		int x, y, plane;
+
+		for (plane = 0; plane < nplanes; plane++)
+		{
+			printf("plane %d:\n", plane);
+			for (y = 0; y < MFDB_H; y++)
+			{
+				printf("     0x");
+				for (x = 0; x < wdwidth; x++)
+				{
+					printf("%04x ", *p++);
+				}
+				printf("\n");
+			}
+			printf("\n");
+		}
+	}
+	else
+	{
+		const uint32_t *p = (const uint32_t *) mfdb->fd_addr;
 		int x, y;
 
 		for (y = 0; y < MFDB_H; y++)
@@ -103,10 +139,10 @@ static void test1(int src_stand, int nplanes, int inplace)
 	dstMFDB.fd_wdwidth = srcMFDB.fd_wdwidth;
 #endif
 
-	printMFDB("src", &srcMFDB);
-	printMFDB("dstBefore", &dstMFDB);
+	printMFDB("src", &srcMFDB, 0, 0);
+	printMFDB("dstBefore", &dstMFDB, srcMFDB.fd_wdwidth, srcMFDB.fd_nplanes);
 	vr_trnfm(vdi_handle, &srcMFDB, &dstMFDB);
-	printMFDB("dstAfter", &dstMFDB);
+	printMFDB("dstAfter", &dstMFDB, srcMFDB.fd_wdwidth, srcMFDB.fd_nplanes);
 	clearMFDB(&dstMFDB);
 }
 
@@ -221,43 +257,79 @@ int main( void )
 	srand(4711);	/* make sure the result is always the same between runs */
 	for (i = 0; i < MFDB_WW * MFDB_H; i++)
 	{
-		/* compose 32-bit number from two calls */
-		uint32_t v = Random() << 16;
-		v |= Random();
+		/* compose 32-bit number from three calls */
+		uint32_t v, v2;
+		v = rand();					/* bits 0..14 */
+		v <<= 17;					/* bits 17..31 */
+		v2 = rand();
+		v2 <<= 2;					/* bits 2..16 */
+		v |= v2;
+		v2 = rand() & 3;			/* bits 0..1 */
+		v |= v2;
 		srcMem[i] = v;
 	}
 
-	printf("Choose:\n");
-	printf(" 1 - dev-specific->standard, monochrome, not in-place\n");
-	printf(" 2 - dev-specific->standard, 7 planes, not in-place\n");
-	printf(" 3 - dev-specific->standard, 4 planes, not in-place\n");
-	printf(" 4 - dev-specific->standard, %d planes, not in-place\n", screen_nplanes);
-	printf(" 5 - standard->dev-specific, %d planes, not in-place\n", screen_nplanes);
-	c = Cconin();
-	switch(c)
+	for (;;)
 	{
-		case '1':
-			test1(0, 1, 0);
-			break;
+		fprintf(stderr, " 1 - dev-specific->standard, monochrome, not in-place\n");
+		fprintf(stderr, " 2 - dev-specific->standard, 2 planes, not in-place\n");
+		fprintf(stderr, " 3 - dev-specific->standard, 4 planes, not in-place\n");
+		fprintf(stderr, " 4 - dev-specific->standard, %d planes, not in-place\n", screen_nplanes);
+		fprintf(stderr, " 5 - standard->dev-specific, %d planes, not in-place\n", screen_nplanes);
+		fprintf(stderr, " 6 - dev-specific->standard, 7 planes, not in-place\n");
+		fprintf(stderr, " 7 - Reduce source MFDB to 0xdeadbeef\n");
+		fprintf(stderr, " x - Exit\n");
+		fprintf(stderr, "Choose: ");
+		c = Cnecin();
+		switch(c)
+		{
+			case '1':
+				test1(0, 1, 0);
+				break;
+	
+			case '2':
+				test1(0, 2, 0);
+				break;
+	
+			case '3':
+				test1(0, 4, 0);
+				break;
+	
+			case '4':
+				test1(0, screen_nplanes, 0);
+				break;
+	
+			case '5':
+				test1(1, screen_nplanes, 0);
+				break;
+	
+			case '6':
+				test1(0, 7, 0);
+				break;
+	
+			case '7':
+				memset(srcMem, 0, sizeof(srcMem));
+				if (screen_nplanes > 16)
+				{
+					srcMem[0] = 0xdeadbeefL;
+				}
+				if (screen_nplanes > 8)
+				{
+					srcMem[0] = 0xdead0000L;
+				}
+				else
+				{
+					srcMem[0] = 0xde000000L;
+				}
+				break;
 
-		case '2':
-			test1(0, 7, 0);
-			break;
+			case 'x':
+			case 'X':
+				return 0;
+		}
 
-		case '3':
-			test1(0, 4, 0);
-			break;
-
-		case '4':
-			test1(0, screen_nplanes, 0);
-			break;
-
-		case '5':
-			test1(1, screen_nplanes, 0);
-			break;
+		fprintf(stderr, "\n -DONE- \n");
 	}
-	printf(" .. press key ");
-	Cconin();
 
 #if 1
 
@@ -274,7 +346,7 @@ int main( void )
 	/* crashes */
 	test1(0, screen_nplanes, 0);	/* dev-specific -> standard, native planes, not in-place */
 #endif
-	return 0;
+/*	return 0; */
 
 #else
 	long err;
