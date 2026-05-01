@@ -313,6 +313,7 @@ int main( void )
 				{
 					srcMem[0] = 0xdeadbeefL;
 				}
+				else
 				if (screen_nplanes > 8)
 				{
 					srcMem[0] = 0xdead0000L;
