@@ -23,8 +23,13 @@ int gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
 int ap_id;
 int aes_handle;		/* Screen-Workstation des AES */
 
+#if 0
 #define MFDB_W 10		/* convert a 10x7 rectangle */
 #define MFDB_H 7
+#else
+#define MFDB_W 33		/* convert a 33x3 rectangle */
+#define MFDB_H 3
+#endif
 #define MFDB_WW (((MFDB_W + 15) / 16) * 16)		/* width must be divideable by 16 */
 
 static uint32_t srcMem[MFDB_WW * MFDB_H];
@@ -110,7 +115,7 @@ static void printMFDB(const char *name, const MFDB *mfdb, unsigned wdwidth, unsi
 }
 
 
-/* offscreen, inplace */
+/* offscreen */
 
 static void test1(int src_stand, int nplanes, int inplace)
 {
@@ -231,10 +236,45 @@ void ExecLine(char *line)
 #endif
 
 
+static int ask_planes(void)
+{
+	char c1,c2;
+	int np;
+
+	fprintf(stderr, "\n planes: ");
+	do
+	{
+		c1 = Cnecin();
+	}
+	while((c1 < '0') || (c1 > '9'));
+	fprintf(stderr, "%c", c1);
+	do
+	{
+		c2 = Cnecin();
+		if (c2 == '\r')
+		{
+			c2 = 0;
+			break;
+		}
+	}
+	while((c2 < '0') || (c2 > '9'));
+
+	np = c1 - '0';
+	if (c2)
+	{
+		np *= 10;
+		np += c2 - '0';
+	}
+
+	return np;
+}
+
+
 int main( void )
 {
 	register int i;
 	char c;
+	int inplace = 0;
 
 	if ((ap_id = appl_init()) < 0)
 	{
@@ -271,43 +311,52 @@ int main( void )
 
 	for (;;)
 	{
-		fprintf(stderr, " 1 - dev-specific->standard, monochrome, not in-place\n");
-		fprintf(stderr, " 2 - dev-specific->standard, 2 planes, not in-place\n");
-		fprintf(stderr, " 3 - dev-specific->standard, 4 planes, not in-place\n");
-		fprintf(stderr, " 4 - dev-specific->standard, %d planes, not in-place\n", screen_nplanes);
-		fprintf(stderr, " 5 - standard->dev-specific, %d planes, not in-place\n", screen_nplanes);
-		fprintf(stderr, " 6 - dev-specific->standard, 7 planes, not in-place\n");
-		fprintf(stderr, " 7 - Reduce source MFDB to 0xdeadbeef\n");
+		const char *p_inp;
+
+		p_inp = (inplace) ? " (inplace)" : "";
+		fprintf(stderr, " 1 - dev-specific->standard, monochrome%s\n", p_inp);
+		fprintf(stderr, " 2 - dev-specific->standard, 2 planes%s\n", p_inp);
+		fprintf(stderr, " 3 - dev-specific->standard, 4 planes%s\n", p_inp);
+		fprintf(stderr, " 4 - dev-specific->standard, %d planes%s\n", screen_nplanes, p_inp);
+		fprintf(stderr, " 5 - standard->dev-specific, %d planes%s\n", screen_nplanes, p_inp);
+		fprintf(stderr, " 6 - dev-specific->standard, ask planes%s\n", p_inp);
+		fprintf(stderr, " 7 - standard->dev-specific, ask planes%s\n", p_inp);
+		fprintf(stderr, " 8 - Reduce source MFDB to 0xdeadbeef\n");
+		fprintf(stderr, " i - Switch to inplace operations\n");
 		fprintf(stderr, " x - Exit\n");
 		fprintf(stderr, "Choose: ");
 		c = Cnecin();
 		switch(c)
 		{
 			case '1':
-				test1(0, 1, 0);
+				test1(0, 1, inplace);
 				break;
 	
 			case '2':
-				test1(0, 2, 0);
+				test1(0, 2, inplace);
 				break;
 	
 			case '3':
-				test1(0, 4, 0);
+				test1(0, 4, inplace);
 				break;
 	
 			case '4':
-				test1(0, screen_nplanes, 0);
+				test1(0, screen_nplanes, inplace);
 				break;
 	
 			case '5':
-				test1(1, screen_nplanes, 0);
+				test1(1, screen_nplanes, inplace);
 				break;
 	
 			case '6':
-				test1(0, 7, 0);
+				test1(0, ask_planes(), inplace);
 				break;
 	
 			case '7':
+				test1(1, ask_planes(), inplace);
+				break;
+
+			case '8':
 				memset(srcMem, 0, sizeof(srcMem));
 				if (screen_nplanes > 16)
 				{
@@ -322,6 +371,11 @@ int main( void )
 				{
 					srcMem[0] = 0xde000000L;
 				}
+				break;
+
+			case 'i':
+			case 'I':
+				inplace = 1;
 				break;
 
 			case 'x':
