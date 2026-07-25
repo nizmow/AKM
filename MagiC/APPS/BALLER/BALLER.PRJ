@@ -1,0 +1,15 @@
+baller.app
+.C[-C]			; allow nested comments
+.C[-Iimport]	; .h search path
+.L[-S=$2000]   ; Stackgrîûe auf 8 KByte setzen
+=              ; list of modules follows...
+import\pcmxstrt.o     ; startup code mit ARGV und Quoting
+baller1	(baller.h) [-P]
+musik		(baller.h, musik.h) [-P]
+import\gemut_mt		(import\gemut_mt.h)
+import\pcstdlib.lib   ; standard lib
+import\pcfltlib.lib				; Flieûkomma-Routinen
+import\pctoslib.lib
+import\mt_aes.lib
+; magxlib.lib
+import\pcgemlib.lib				; fÅr VDI
