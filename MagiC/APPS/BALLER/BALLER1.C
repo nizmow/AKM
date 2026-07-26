@@ -28,7 +28,9 @@
 #define COLOUR_BLACK 1
 
 #define N_SPIELER  2
-#define N_FOERDERTUERME 5
+#define N_SPIELERNAMEN 6			/* im Dialog "Spielernamen fÅr die Tabelle" */
+#define N_FOERDERTUERME 5			/* maximale Anzahl FîrdertÅrme pro Spieler */
+#define N_KANONEN 10				/* maximale Anzahl Kanonen pro Spieler */
 #define BURGEN_DATEN_MAXLEN 5120	/* maximaler Anzahl Elemente fÅr alle Burgen */
 #define N_BURGEN 20					/* maximale Anzahl Burgen */
 #define P57       57.296
@@ -45,7 +47,28 @@ GRECT screen_g;			/* Gesamtgrîûe des Bildschirms */
 int *burgen_daten;				/* hier sind alle Burgen drin, per Malloc() geholt */
 int *burgen[N_BURGEN];			/* soviele Burgen sind in BALLER.DAT erlaubt */
 int burgen_anzahl;				/* soviele sind drin */
+
+
+/* Daten fÅr die beiden Spieler */
+
 int spieler_burg[N_SPIELER];	/* Jede Spieler hat seine Burg, Index auf burgen[] */
+int spieler_geld[N_SPIELER];
+int spieler_pulver[N_SPIELER];
+int spieler_kugeln[N_SPIELER];
+int spieler_volk[N_SPIELER];
+int spieler_steuer[N_SPIELER];
+int spieler_koenig[N_SPIELER];			/* TODO: Eine Zahl, die eine Art Status fÅr den Kînig angibt? */
+struct { int x,y; } spieler_foerdertuerme[N_SPIELER][N_FOERDERTUERME];	/* bis zu fÅnf FîrdertÅrme pro Spieler */
+struct { int x,y,w,p; } spieler_kanonen[N_SPIELER][N_KANONEN];
+
+
+int tabelle_gewonnen[N_SPIELERNAMEN][10];
+char tabelle_spielernamen[N_SPIELERNAMEN][8] =
+{
+	"Tîlpel","Dummel","Brubbel","Wusel","Brîsel","Toffel"
+};
+
+char wind;		/* TODO: Wertebereich sicherstellen */
 
 int *bh;
 int zx,zy;  /* Koordinaten des Zieles */
@@ -73,17 +96,16 @@ double vvx,vvy;
 int m_buf[8], xy[100];
 int ws,wc;
 int *bg, zug;
-int n;	/* TODO: check and rename*/
+int n;	/* Gerade aktiver Spieler, 0 oder 1. TODO: Bereich sicherstellen und sinnvoll umbenennen */
 int oldn;
 int p[6];
-int t_gew[6][10];
 int max_rund,
       ftx,fty,ftw,fth,
       f_h;
 char *l_nam;
 char *r_nam;
 
-char f, mod, wnd, end, txt[4], an_erl, mxin, au_kap;
+char f, mod, end, txt[4], an_erl, mxin, au_kap;
 char cw[2] = {2, 2};
 char cx[2] = {1, 1};
 char cn[7][8]=
@@ -91,17 +113,10 @@ char cn[7][8]=
 	"Tîlpel","Dummel","Brubbel",
 	"Wusel","Brîsel","Toffel","RÅpel"
 };
-char t_na[6][8] =
-{
-	"Tîlpel","Dummel","Brubbel","Wusel","Brîsel","Toffel"
-};
 char nsp1[22] = "Hugo";
 char nsp2[22] = "Emil";
 
-int bx[2],by[2], ge[2],pu[2],vo[2],st[2],kn[2],wx[2],wy[2];
-int ku[2];
-struct { int x,y,w,p; } ka[2][10];
-struct { int x,y; } foerdertuerme[N_SPIELER][N_FOERDERTUERME];	/* bis zu fÅnf FîrdertÅrme pro Spieler */
+int bx[2], by[2], wx[2], wy[2];		/* irgendwelche Koordinaten */
 
 
 /*********************** Elementare  Grafikbefehle ***************************/
@@ -220,13 +235,13 @@ static int t_load(void)
    {
        return 1;
    }
-   Fread(f_h,   1, &an_erl);
-   Fread(f_h,   1, &au_kap);
-   Fread(f_h,   1, &mxin);
-   Fread(f_h,   3, rsctree_options[MAX_XX].ob_spec.tedinfo->te_ptext);
-   Fread(f_h,   2, &max_rund);
-   Fread(f_h,  48, t_na);
-   Fread(f_h, 120, t_gew);
+   Fread(f_h, 1, &an_erl);
+   Fread(f_h, 1, &au_kap);
+   Fread(f_h, 1, &mxin);
+   Fread(f_h, 3, rsctree_options[MAX_XX].ob_spec.tedinfo->te_ptext);
+   Fread(f_h, 2, &max_rund);
+   Fread(f_h, sizeof(tabelle_spielernamen), tabelle_spielernamen);
+   Fread(f_h, sizeof(tabelle_gewonnen), tabelle_gewonnen);
    Fclose(f_h);
    return 0;
 }
@@ -237,13 +252,13 @@ static int t_save(void)
    {
       return 1;
    }
-   Fwrite(f_h,   1, &an_erl);
-   Fwrite(f_h,   1, &au_kap);
-   Fwrite(f_h,   1, &mxin);
-   Fwrite(f_h,   3, rsctree_options[MAX_XX].ob_spec.tedinfo->te_ptext);
-   Fwrite(f_h,   2, &max_rund);
-   Fwrite(f_h,  48, t_na);
-   Fwrite(f_h, 120, t_gew);
+   Fwrite(f_h, 1, &an_erl);
+   Fwrite(f_h, 1, &au_kap);
+   Fwrite(f_h, 1, &mxin);
+   Fwrite(f_h, 3, rsctree_options[MAX_XX].ob_spec.tedinfo->te_ptext);
+   Fwrite(f_h, 2, &max_rund);
+   Fwrite(f_h, sizeof(tabelle_spielernamen), tabelle_spielernamen);
+   Fwrite(f_h, sizeof(tabelle_gewonnen), tabelle_gewonnen);
    Fclose(f_h);
    return 0;
 }
@@ -258,11 +273,11 @@ static char zeichen(void)
 }
 
 
-/* liest eine Dezimalzahl von der Datei, Remarks werden Åberlesen */
+/* liest eine Dezimalzahl von der Datei, Kommentare werden Åberlesen */
 long rdzahl(void)
 {
-   char a, sign = 1,rem = 0;    /* wird durch * getoggled, und zeigt damit an, */
-                           /* ob man sich in einer Bemerkung befindet */
+   char a, sign = 1,rem = 0;    /* wird durch * umgeschaltet, und zeigt damit an, */
+                           /* ob man sich in einem Kommentar befindet */
    long val = 0;
 
    do
@@ -294,14 +309,14 @@ static int burgen_laden(void)
 {
 	int *a,j;
 	int *a_lim;
-	
+
 	a = burgen_daten;
 	a_lim = burgen_daten + BURGEN_DATEN_MAXLEN;
 	if ((f_h = (int) Fopen("BALLER.DAT", 0)) < 0)
 	{
 		return 1;
 	}
-	
+
 	burgen_anzahl = 0;
 	while ((j = (int) rdzahl()) != -999)
 	{
@@ -309,7 +324,7 @@ static int burgen_laden(void)
 		{
 			return 2;
 		}
-		
+
 		/* neue Burg anmelden */
 		burgen[burgen_anzahl++] = a;
 
@@ -344,68 +359,71 @@ static int burgen_laden(void)
 /***************************** Zeichenroutine ********************************/
 void draw(int x, int y, int *a)
 {
-   int i;
-   int fil = 1;
+	int i;
+	int fil = 1;
 
-   graf_mouse(M_OFF, NULL);
-   vsf_interior(vdi_handle, 2);
-   vsf_style(vdi_handle, 9);
+	graf_mouse(M_OFF, NULL);
+	vsf_interior(vdi_handle, 2);
+	vsf_style(vdi_handle, 9);
 
-   while (*a != -1)
-   {
-      if (*a == -2)
-      {
-         vsf_interior(vdi_handle, *++a);
-         vsf_style(vdi_handle, *++a);
-      }
-      else
-      if (*a == -4)
-      {
-          fil = !fil;
-      }
-      else
-      {
-         i = 0;
-         while (*a > -1)
-         {
-            xy[i++] = x + *a++ * f;
-            xy[i++] = y - *a++;
-         }
+	while (*a != -1)
+	{
+		if (*a == -2)
+		{
+			vsf_interior(vdi_handle, *++a);
+			vsf_style(vdi_handle, *++a);
+		}
+		else
+		if (*a == -4)
+		{
+			fil = !fil;
+		}
+		else
+		{
+			i = 0;
+			while (*a > -1)
+			{
+				xy[i++] = x + *a++ * f;
+				xy[i++] = y - *a++;
+			}
 
-         xy[i++] = xy[0];
-         xy[i++] = xy[1];
-         if (fil)
-         {
-            v_fillarea(vdi_handle, i/2, xy);
-         }
-         else
-         {
-             v_pline(vdi_handle, i/2 - 1, xy);
-         }
-      }
-      a++;
-   }
+			xy[i++] = xy[0];
+			xy[i++] = xy[1];
+			if (fil)
+			{
+				v_fillarea(vdi_handle, i/2, xy);
+			}
+			else
+			{
+				v_pline(vdi_handle, i/2 - 1, xy);
+			}
+		}
+		a++;
+	}
 
-   graf_mouse(M_ON, NULL);
+	graf_mouse(M_ON, NULL);
 }
 
 
 /* Kanone k setzen */
-static void init_ka(int k, int xr)
+static void init_kanone(int k, int xr)
 {
-   int x,y;
-	static const int kanon[]={ -2,1,1, 1,0,3,3,5,0,3,3,3,11,2,11,2,9,4,9,4,11,3,11,3,8,0,5,
-	   3,8,6,5,3,8,3,3,-9, 11,0,13,2,15,0,16,0,17,1,17,2,15,4,19,8,16,11,8,3,-9,
-	   -1 };
+	int x,y;
+	static const int kanon[] =
+	{
+		-2,1,1, 1,0,3,3,5,0,3,3,3,11,2,11,2,9,4,9,4,11,3,11,3,8,0,5,
+		3,8,6,5,3,8,3,3,-9, 11,0,13,2,15,0,16,0,17,1,17,2,15,4,19,8,16,11,8,3,-9,
+		-1
+	};
 
-   draw(x = xr + bg[1 + k * 2] * f, y = by[n & 1] - bg[2 + k * 2], kanon);
-   if (~n & 2)
-   {
-      ka[n][k].x = x - 20 * n;
-      ka[n][k].y = y;
-      ka[n][k].w = 45;
-      ka[n][k].p = 12;
-   }
+	draw(x = xr + bg[1 + k * 2] * f, y = by[n & 1] - bg[2 + k * 2], kanon);
+	if (~n & 2)
+	{
+		spieler_kanonen[n][k].x = x - 20 * n;
+		spieler_kanonen[n][k].y = y;
+		spieler_kanonen[n][k].w = 45;		/* Winkel */
+		spieler_kanonen[n][k].p = 12;		/* Pulvermenge */
+	}
 }
 
 
@@ -430,20 +448,32 @@ static void drw_gpk(char w)
 
 	switch( w )
 	{
-		case 0: a=sack; xp=7; yp=10;  i=(ge[m]+149)/150; break;
-		case 1: a=fass; xp=yp=9;      i=(pu[m]+29)/30;  break;
-		case 2: a=kuge; xp=yp=6;      i=ku[m];
+		case 0:
+			a = sack;
+			xp = 7;
+			yp = 10;
+			i = (spieler_geld[m] + 149) / 150;
+			break;
+		case 1:
+			a = fass;
+			xp = yp = 9;
+			i = (spieler_pulver[m] + 29) / 30;
+			break;
+		case 2:
+			a = kuge;
+			xp = yp = 6;
+			i = spieler_kugeln[m];
 	}
 
 	bg = burgen[spieler_burg[m]];
 	w *= 2;
 	xr = (n & 2 ? bx[m] : 639 * m) + f * bg[25 + w];
 	yr = by[m] - bg[26 + w];
-	
+
 	graf_mouse(M_OFF, NULL);
 	clr(xr - bg[31 + w] * m - !n, yr - bg[32 + w], bg[31 + w] + 1, bg[32 + w] + 1);
 	color(1);
-	
+
 	for (y = z = 0; i > 0 && y < bg[32 + w]; y += yp)
 		for (x = 0; i > 0 && x < bg[31 + w]; x += xp, z++,i--)
 			draw(xr + f * x, yr - y, a);
@@ -452,9 +482,14 @@ static void drw_gpk(char w)
 	if (i > 0)    /* Maximalbetrag Åberschritten ? */
 		switch (w)
 		{
-			case 0: ge[m]=z*150; break;
-			case 2: pu[m]=z*30;  break;
-			case 4: ku[m]=z;
+			case 0:
+				spieler_geld[m] = z * 150;
+				break;
+			case 2:
+				spieler_pulver[m] = z * 30;
+				break;
+			case 4:
+				spieler_kugeln[m] = z;
 		}
 }
 
@@ -469,45 +504,53 @@ static void drw_all(void)
 
 
 /***************************** Burg zeichnen *********************************/
+/* Der Berg ist hier schon gezeichnet worden */
 static void burg(int nn)
 {
 	/***************** Grafikdaten fÅr Thron, Kanone... **************************/
 	static const int thron[] =
 	{
-	   -2,2,2, 8,3,5,12,8,12,12,16,12,17,14,15,
-	   15,15,17,17,17,16,21,11,24,11,21,3,-9, -4, 3,0,5,2,24,2,26,0,-9,
-	   19,4,18,9,-9, 10,4,11,9,-9, 14,4,15,4,-9, 8,10,11,11,-9, 21,10,18,11,-9,
-	   14,17,15,17,-9, 13,19,13,19,-9, 16,19,16,19,-9, 12,22,12,21,15,21,14,22,
-	   17,21,17,22,-9, 6,13,6,17,5,16,5,17,7,17,7,16,-9, -1
-	 };
-   int i,xr;
+		-2,2,2, 8,3,5,12,8,12,12,16,12,17,14,15,
+		15,15,17,17,17,16,21,11,24,11,21,3,-9, -4, 3,0,5,2,24,2,26,0,-9,
+		19,4,18,9,-9, 10,4,11,9,-9, 14,4,15,4,-9, 8,10,11,11,-9, 21,10,18,11,-9,
+		14,17,15,17,-9, 13,19,13,19,-9, 16,19,16,19,-9, 12,22,12,21,15,21,14,22,
+		17,21,17,22,-9, 6,13,6,17,5,16,5,17,7,17,7,16,-9, -1
+	};
+	int i,xr;
 
-   oldn = n;
-   n = nn;
-   fn();
-   xr = n & 2 ? (bx[n &= 1]) : (639 * n);
-   bg = burgen[spieler_burg[n]];
-   ge[n] = bg[37];
-   pu[n] = bg[38];
-   ku[n] = bg[39];
-   vo[n] = bg[40];
+	oldn = n;		/* TODO: Das Chaos entwirren */
+	n = nn;
+	fn();
+	xr = n & 2 ? (bx[n &= 1]) : (639 * n);
+	bg = burgen[spieler_burg[n]];		/* Das ist die gerade aktive Burg, linke oder rechte. */
+	spieler_geld[n] = bg[37];			/* Die Burg legt das Anfangskapital fest. */
+	spieler_pulver[n] = bg[38];
+	spieler_kugeln[n] = bg[39];
+	spieler_volk[n] = bg[40];
 
-   color(1);
-   vswr_mode(vdi_handle, 4);
-   draw(xr, by[n], &bg[45]);
-   vswr_mode(vdi_handle, 1);
-   clr(xr + f * bg[21] - n * 30, by[n] - bg[22] - 25, 30, 25);
-   color(1);
-   draw(xr + f * bg[21], by[n] - bg[22], thron);
+	/* das GemÑuer und die beiden dreieckigen Turmspitzen */
+	color(COLOUR_BLACK);
+	vswr_mode(vdi_handle, MD_ERASE);	/* reverse transparent */
+	draw(xr, by[n], &bg[45]);
 
-   n = nn;
-   for (i = 0; i < 10 && bg[i * 2 + 1] > -1; i++)
-   {
-      init_ka(i, xr);
-   }
+	/* Stanze ein weiûes Loch in die Burg, wo spÑter der Kînig sitzt */
+	vswr_mode(vdi_handle, MD_REPLACE);
+	clr(xr + f * bg[21] - n * 30, by[n] - bg[22] - 25, 30, 25);
 
-   drw_all();
-   n = oldn;
+	/* Der Kînig auf dem Thron */
+	color(COLOUR_BLACK);
+	draw(xr + f * bg[21], by[n] - bg[22], thron);
+
+	/* Malt die normalerweise zwei Kanonen */
+	n = nn;
+	for (i = 0; (i < N_KANONEN) && (bg[i * 2 + 1] > -1); i++)
+	{
+		init_kanone(i, xr);
+	}
+
+	/* Malt Geld, Pulver und Kugeln */
+	drw_all();
+	n = oldn;
 }
 
 
@@ -515,13 +558,13 @@ static void burg(int nn)
 static void bild(void)
 {
 	int y,x1,x2,v1,v2;
-	
+
 	graf_mouse(M_OFF, NULL);
 	cls();
-	
+
 	by[0] = (int) (Random() % 80 + 300 & ~3);
 	by[1] = (int) (Random() % 80 + 300 & ~3);
-	
+
 	y = 400;
 	x1 = 0;
 	x2 = 2556;
@@ -563,7 +606,7 @@ static void bild(void)
 	/* Burgen und Text zeichnen */
 
 	vsl_type(vdi_handle, SOLID);
-	memset(ka, -1, 160);
+	memset(spieler_kanonen, -1, sizeof(spieler_kanonen));
 	burg(0);	/* linke Burg */
 	burg(1);	/* rechte Burg */
 	v_gtext(vdi_handle, 276, 395, " Runde     ");
@@ -577,9 +620,9 @@ static void neues_spiel(void)
 	static int pr[6] = { 200,500,400,150,50,50 };   /* Preise zu Beginn */
 	int i;
 
-	wnd = Random() % 60 - 30;
-	st[0] = st[1] = 20;
-	kn[0] = kn[1] = 0;
+	wind = Random() % 60 - 30;
+	spieler_steuer[0] = spieler_steuer[1] = 20;		/* 20% Steuersatz*/
+	spieler_koenig[0] = spieler_koenig[1] = 0;
 
 	for (i = 0; i < 6; i++)
 	{
@@ -591,11 +634,11 @@ static void neues_spiel(void)
 	for (i = 0; i < N_SPIELER; i++)
 	{
 		bg = burgen[spieler_burg[i]];
-		wx[n] = n ? (639 - bg[23]) : bg[23];
-		wy[n] = by[i] - bg[24];
+		wx[i] = i ? (639 - bg[23]) : bg[23];
+		wy[i] = by[i] - bg[24];
 		for (f = 0; f < N_FOERDERTUERME;)
 		{
-			foerdertuerme[i][f++].x = -1;	/* noch kein Fîrderturm */
+			spieler_foerdertuerme[i][f++].x = -1;	/* noch kein Fîrderturm */
 		}
 	}
 
@@ -612,22 +655,25 @@ void z_txt(int a)
 }
 
 
-/******************* Darstellung der beiden Windfahnen ***********************/
+/******************* Darstellung der beiden Windfahnen in den Burgen ***********************/
 static void fahne(void)
 {
-   char m=-1;
+	char m = -1;
 
-   while( ++m<2 ) if( wx[m]>-1 )
-   {
-      clr(wx[m] - 10, wy[m] - 15, 20, 15);
-      color(1);
-      line( wx[m],wy[m],wx[m],wy[m]-15 );
-      if (m == n)
-      {
-         line( wx[m],wy[m]-15,wx[m]+ws,wy[m]-13+wc );
-         line( wx[m],wy[m]-11,wx[m]+ws,wy[m]-13+wc );
-      }
-   }
+	while (++m < 2)		/* TODO: Soll wohl heiûen m=0 und m = 1 */
+		if (wx[m] > -1)
+		{
+			clr(wx[m] - 10, wy[m] - 15, 20, 15);
+			color(COLOUR_BLACK);
+			line(wx[m], wy[m], wx[m], wy[m] - 15);		/* Das mÅûte der Flaggenstock sein. */
+
+			if (m == n)
+			{
+				/* Nur die "aktive" Burg bekommt auch die Fahne. */
+				line(wx[m], wy[m] - 15, wx[m] + ws, wy[m] - 13 + wc);
+				line(wx[m], wy[m] - 11, wx[m] + ws, wy[m] - 13 + wc);
+			}
+		}
 }
 
 
@@ -638,18 +684,20 @@ static void werdran(char c)
 	char *ad;
 	double wk,wl;
 
+	/* zeichne die Nummer der Runde unten in die Mitte */
+
 	z_txt(zug / 2 + 1);
 	v_gtext(vdi_handle, 332, 395, txt);
 
-	a = &rsctree_move[0].ob_x;
+	a = &rsctree_move[0].ob_x;		/* Der rechteckige Dialog mit den Daten des nÑchsten Zugs */
 	if (c)
 	{
 		a[0] = 5 + (629 - a[2]) * n;
 		a[1] = 25;
 		rsctree_move[DNAM].ob_spec.free_string = n ? r_nam : l_nam;
 		ad = rsctree_move[DWIN].ob_spec.free_string;
-		ad[0] = ad[5] = 4 + 28 * !wnd - (wnd > 0);
-		i = (wnd < 0) ? -wnd : wnd;
+		ad[0] = ad[5] = 4 + 28 * !wind - (wind > 0);
+		i = (wind < 0) ? -wind : wind;
 		ad[2] = 48 + i/10;
 		ad[3] = 48 + i%10;
 		if (wx[n] < 0)
@@ -663,11 +711,11 @@ static void werdran(char c)
 		objc_offset(rsctree_move, DWBX, &x, &y);
 		w = rsctree_move[DWBX].ob_width;
 		h = rsctree_move[DWBX].ob_height;
-		
-		objc_draw(rsctree_move, 0, 4, &scr640x400);
-		
-		c = (wnd > 0) ? 1 : -1;
-		wk = c * wnd/15.0;
+
+		objc_draw(rsctree_move, 0, 4, &desk_g);		/* male links oder rechts oben den Dialog fÅr den Zug */
+
+		c = (wind > 0) ? 1 : -1;
+		wk = c * wind/15.0;
 		wl = wk*.82;
 		if (wk > 1.57)
 		{
@@ -684,13 +732,13 @@ static void werdran(char c)
 		ws = s1 / 2.0;
 		ws += !ws;
 		wc = c1 / 2.0;
-		
+
 		graf_mouse(M_OFF, NULL);
 		if (wx[n] > -1)
 		{
 			color(1);
 			x += w/2;
-			line(x,    y + h, x    , y + 5);
+			line(x,    y + h, x    , y + 5);		/* male den senkrechten Flaggenstock in den Dialog */
 			line(x + 1,y + h, x + 1, y + 5);
 			xy[0] = xy[2] = x + 1;
 			xy[1] = y + 5;
@@ -709,10 +757,10 @@ static void werdran(char c)
 			xy[11] = xy[1];
 			xy[ 6] = ((xy[4] + xy[8]) >> 1) + s2;
 			xy[ 7] = ((xy[5] + xy[9]) >> 1) + c2;
-			v_pline(vdi_handle, 6, xy);
+			v_pline(vdi_handle, 6, xy);			/* hÑnge die Fahne an den Flaggenstock im Dialog */
 		}
 
-		fahne();
+		fahne();	/* Male die Fahne in der aktiven Burg und nur den Flaggenstock in der inaktiven */
 		graf_mouse(M_ON, NULL);
 	}
 	else
@@ -751,14 +799,17 @@ static int obj_do(OBJECT *tree)
 		g1.g_x = 260;
 	}
 
+	/* Man beachte, daû wir hier FMD_START und FMD_FINISH weglassen, weil wir
+	   derzeit keine WM_REDRAW-Nachricht auslîsen mîchte, die wir nicht behandeln. */
+
 	form_center(tree, &fgrect);
 	save_screen();
-	form_dial(1, &g1, &fgrect);
-	objc_draw(tree, 0, 5, &scr640x400);
+	form_dial(FMD_GROW, &g1, &fgrect);
+	objc_draw(tree, 0, 5, &desk_g);
 	ret = form_do(tree, fl);
-	tree[ret].ob_state = 0;		/* reset SELECTED state */
+	tree[ret].ob_state = 0;		/* SELECTED lîschen */
 	restore_screen();
-	form_dial(2, &g1, &fgrect);
+	form_dial(FMD_SHRINK, &g1, &fgrect);
 	return ret;
 }
 
@@ -766,77 +817,89 @@ static int obj_do(OBJECT *tree)
 /********************* Neues Spiel: Auswahl der Burgen ***********************/
 static int bur_obj(void)
 {
-   static const GRECT g1 = {70, 20, 30, 20};
+	static const GRECT g1 = {70, 20, 30, 20};
 
-   int i,ob0,ob1,oy0,oy1, x,y,w,h, ol[8];
+	int i,ob0,ob1,oy0,oy1, x,y,w,h, ol[8];
 
-   oy0=by[0]; oy1=by[1]; ob0=spieler_burg[0]; ob1=spieler_burg[1];
+	oy0=by[0]; oy1=by[1]; ob0=spieler_burg[0]; ob1=spieler_burg[1];
 
-   rsctree_castles[BSP1].ob_spec.free_string = l_nam;
-   rsctree_castles[BSP2].ob_spec.free_string = r_nam;
+	rsctree_castles[BSP1].ob_spec.free_string = l_nam;
+	rsctree_castles[BSP2].ob_spec.free_string = r_nam;
 
-   form_center(rsctree_castles, &fgrect);
+	form_center(rsctree_castles, &fgrect);
 
-   w = rsctree_castles[BK1].ob_width;
-   h = rsctree_castles[BK1].ob_height;
-   objc_offset(rsctree_castles, BK1, &x, &y );
-   bx[0] = x;
-   by[0] = y + h;
-   objc_offset(rsctree_castles, BK2, &x, &y);
-   bx[1] = x + w;
-   by[1] = y+h;
+	w = rsctree_castles[BK1].ob_width;
+	h = rsctree_castles[BK1].ob_height;
+	objc_offset(rsctree_castles, BK1, &x, &y );
+	bx[0] = x;
+	by[0] = y + h;
+	objc_offset(rsctree_castles, BK2, &x, &y);
+	bx[1] = x + w;
+	by[1] = y+h;
 
-   save_screen();
-   form_dial(1, &g1, &fgrect);
-   objc_draw(rsctree_castles, 0, 5, &scr640x400);
-   ol[0] = ge[0];
-   ol[1] = ge[1];
-   ol[2] = pu[0];
-   ol[3] = pu[1]; /* Sichern der alten*/
-   ol[4] = ku[0];
-   ol[5] = ku[1];
-   ol[6] = vo[0];
-   ol[7] = vo[1]; /* Werte */
-   burg(2);
-   burg(3);
+	/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
+	save_screen();
+	form_dial(FMD_GROW, &g1, &fgrect);
+	objc_draw(rsctree_castles, 0, 5, &desk_g);
 
-   do
-   {
-      ge[0] = ge[1] = pu[0] = pu[1] = ku[0] = ku[1] = 9999;
-      i = form_do(rsctree_castles, 0);
-      rsctree_castles[i].ob_state = 0;
+	/* alte Werte sichern */
+	ol[0] = spieler_geld[0];
+	ol[1] = spieler_geld[1];
+	ol[2] = spieler_pulver[0];
+	ol[3] = spieler_pulver[1];
+	ol[4] = spieler_kugeln[0];
+	ol[5] = spieler_kugeln[1];
+	ol[6] = spieler_volk[0];
+	ol[7] = spieler_volk[1];
 
-      if ((i == BL1) || (i == BR1))
-      {
-         spieler_burg[0] = (spieler_burg[0] + 1 - 2 * (i == BL1) + burgen_anzahl) % burgen_anzahl;
-         clr(bx[0], y, w, h);
-         burg(2);
-      }
+	/* TODO: sind Werte ungleich Null oder Eins erlaubt? */
+	burg(2);
+	burg(3);
 
-      if ((i == BL2) || (i == BR2))
-      {
-         spieler_burg[1] = (spieler_burg[1] + 1 - 2 * (i == BL2) + burgen_anzahl) % burgen_anzahl;
-         clr(bx[1] - w, y, w, h);
-         burg(3);
-      }
-   } while ((i != BOK) && (i != BAB));
+	do
+	{
+		spieler_geld[0] = spieler_geld[1] = spieler_pulver[0] = spieler_pulver[1] = spieler_kugeln[0] = spieler_kugeln[1] = 9999;
+		i = form_do(rsctree_castles, 0);
+		rsctree_castles[i].ob_state = 0;
 
-   ge[0]=ol[0]; ge[1]=ol[1];  pu[0]=ol[2]; pu[1]=ol[3];
-   ku[0]=ol[4]; ku[1]=ol[5];  vo[0]=ol[6]; vo[1]=ol[7];
+		if ((i == BL1) || (i == BR1))
+		{
+			spieler_burg[0] = (spieler_burg[0] + 1 - 2 * (i == BL1) + burgen_anzahl) % burgen_anzahl;
+			clr(bx[0], y, w, h);
+			burg(2);
+		}
 
-   restore_screen();
-   form_dial(2, &g1, &fgrect);
+		if ((i == BL2) || (i == BR2))
+		{
+			spieler_burg[1] = (spieler_burg[1] + 1 - 2 * (i == BL2) + burgen_anzahl) % burgen_anzahl;
+			clr(bx[1] - w, y, w, h);
+			burg(3);
+		}
+	} while ((i != BOK) && (i != BAB));
 
-   fn();
-   by[0] = oy0;
-   by[1] = oy1;
+	spieler_geld[0] = ol[0];
+	spieler_geld[1] = ol[1];
+	spieler_pulver[0] = ol[2];
+	spieler_pulver[1] = ol[3];
+	spieler_kugeln[0] = ol[4];
+	spieler_kugeln[1] = ol[5];
+	spieler_volk[0] = ol[6];
+	spieler_volk[1] = ol[7];
 
-   if (i == BAB)
-   {
-      spieler_burg[0]=ob0;
-      spieler_burg[1]=ob1;
-   }
-   return i == BOK;
+	restore_screen();
+	form_dial(FMD_SHRINK, &g1, &fgrect);
+
+	fn();
+	by[0] = oy0;
+	by[1] = oy1;
+
+	if (i == BAB)
+	{
+		spieler_burg[0] = ob0;
+		spieler_burg[1] = ob1;
+	}
+
+	return i == BOK;
 }
 
 
@@ -851,30 +914,37 @@ static void tabelle(void)
 	box(56, 59, 584, 340, 1);
 
 	line(144, 59, 144, 340);
+
 	for (i = 152; i < 584; i += 72)
 	{
 		line(i, 59, i, 340);
 	}
+
 	line(56, 84, 584, 84);
+
 	for (i = 92; i < 240; i += 24)
 	{
 		line(56, i, 584, i);
 	}
-	for(i = 244; i < 340; i += 24)
+
+	for (i = 244; i < 340; i += 24)
 		line(56, i, 584, i);
-	for(i = 0; i < 6; i++)
-		v_gtext(vdi_handle, 160 + i * 72, 78, t_na[i]);
-	for(i = 0; i < 6; i++)
-		v_gtext(vdi_handle, 80, 110 + i * 24, t_na[i]);
+
+	for (i = 0; i < N_SPIELERNAMEN; i++)
+		v_gtext(vdi_handle, 160 + i * 72, 78, tabelle_spielernamen[i]);
+
+	for (i = 0; i < N_SPIELERNAMEN; i++)
+		v_gtext(vdi_handle, 80, 110 + i * 24, tabelle_spielernamen[i]);
+
 	vsf_interior(vdi_handle, 2);
 	vsf_style(vdi_handle, 2);
 
-	for (i = 0; i < 6; i++)
+	for (i = 0; i < N_SPIELERNAMEN; i++)
 	{
-	   for(j = 0; j < 10; j++)
+	   for (j = 0; j < 10; j++)
 	   {
-	      z_txt(t_gew[i][j]);
-	      if ((j == 9) && (!t_gew[i][6]))
+	      z_txt(tabelle_gewonnen[i][j]);
+	      if ((j == 9) && (!tabelle_gewonnen[i][6]))
 	      {
 	      	txt[0] = 32;
 	      	txt[1] = '-';
@@ -958,22 +1028,24 @@ static void handle_menu_choose_computer(void)
 }
 
 
+/* */
 static void handle_menu_help(void)
 {
 	static const GRECT g1 = {190, 20, 30, 20};
 	int a = 0, b;
 	OBJECT *c;
 
+	/* Wir lassen hier FMD_START und FMD_FINISH weg, weil wir keine WM_REDRAW-Nachricht wollen */
 	form_center(rsctree_help1, &fgrect);
 	form_center(rsctree_help2, &fgrect);
 	form_center(rsctree_help3, &fgrect);
 	save_screen();
-	form_dial(1, &g1, &fgrect);
+	form_dial(FMD_GROW, &g1, &fgrect);
 	do
 	{
 		c = a ? ((a < 2) ? rsctree_help2 : rsctree_help3) : rsctree_help1;
-		objc_draw(c, 0, 5, &scr640x400);
-		b = form_do( c,0 );
+		objc_draw(c, 0, 5, &desk_g);
+		b = form_do(c, 0);
 		*(int *)(c + 24 * b + 10) = 0;
 		if( a==1 && b==R21 || a==2 && b==R31 ) { b=-1; a=0; }
 		if( a==0 && b==R12 || a==2 && b==R32 ) { b=-1; a=1; }
@@ -981,18 +1053,18 @@ static void handle_menu_help(void)
 	} while(b < 0);
 
 	restore_screen();
-	form_dial(2, &g1, &fgrect);
+	form_dial(FMD_FINISH, &g1, &fgrect);
 }
 
 
 static void handle_menu_player_names(void)
 {
-	memcpy(rsctree_players[EI_N1].ob_spec.tedinfo->te_ptext, t_na[0], 8);
-	memcpy(rsctree_players[EI_N2].ob_spec.tedinfo->te_ptext, t_na[1], 8);
-	memcpy(rsctree_players[EI_N3].ob_spec.tedinfo->te_ptext, t_na[2], 8);
-	memcpy(rsctree_players[EI_N4].ob_spec.tedinfo->te_ptext, t_na[3], 8);
-	memcpy(rsctree_players[EI_N5].ob_spec.tedinfo->te_ptext, t_na[4], 8);
-	memcpy(rsctree_players[EI_N6].ob_spec.tedinfo->te_ptext, t_na[5], 8);
+	memcpy(rsctree_players[EI_N1].ob_spec.tedinfo->te_ptext, tabelle_spielernamen[0], 8);
+	memcpy(rsctree_players[EI_N2].ob_spec.tedinfo->te_ptext, tabelle_spielernamen[1], 8);
+	memcpy(rsctree_players[EI_N3].ob_spec.tedinfo->te_ptext, tabelle_spielernamen[2], 8);
+	memcpy(rsctree_players[EI_N4].ob_spec.tedinfo->te_ptext, tabelle_spielernamen[3], 8);
+	memcpy(rsctree_players[EI_N5].ob_spec.tedinfo->te_ptext, tabelle_spielernamen[4], 8);
+	memcpy(rsctree_players[EI_N6].ob_spec.tedinfo->te_ptext, tabelle_spielernamen[5], 8);
 
 	rsctree_players[ER_LOE].ob_state = 0;
 	rsctree_players[ER_BLE].ob_state = SELECTED;
@@ -1000,19 +1072,19 @@ static void handle_menu_player_names(void)
 	if (obj_do(rsctree_players) == ER_OK)
 	{
 		int i,j;
-		memcpy(t_na[0], rsctree_players[EI_N1].ob_spec.tedinfo->te_ptext, 8);
-		memcpy(t_na[1], rsctree_players[EI_N2].ob_spec.tedinfo->te_ptext, 8);
-		memcpy(t_na[2], rsctree_players[EI_N3].ob_spec.tedinfo->te_ptext, 8);
-		memcpy(t_na[3], rsctree_players[EI_N4].ob_spec.tedinfo->te_ptext, 8);
-		memcpy(t_na[4], rsctree_players[EI_N5].ob_spec.tedinfo->te_ptext, 8);
-		memcpy(t_na[5], rsctree_players[EI_N6].ob_spec.tedinfo->te_ptext, 8);
+		memcpy(tabelle_spielernamen[0], rsctree_players[EI_N1].ob_spec.tedinfo->te_ptext, 8);
+		memcpy(tabelle_spielernamen[1], rsctree_players[EI_N2].ob_spec.tedinfo->te_ptext, 8);
+		memcpy(tabelle_spielernamen[2], rsctree_players[EI_N3].ob_spec.tedinfo->te_ptext, 8);
+		memcpy(tabelle_spielernamen[3], rsctree_players[EI_N4].ob_spec.tedinfo->te_ptext, 8);
+		memcpy(tabelle_spielernamen[4], rsctree_players[EI_N5].ob_spec.tedinfo->te_ptext, 8);
+		memcpy(tabelle_spielernamen[5], rsctree_players[EI_N6].ob_spec.tedinfo->te_ptext, 8);
 		if (rsctree_players[ER_LOE].ob_state)
 		{
-			for (i = 0; i < 6; i++)
+			for (i = 0; i < N_SPIELERNAMEN; i++)
 			{
 				for (j = 0; j < 10; j++)
 				{
-					t_gew[i][j] = 0;
+					tabelle_gewonnen[i][j] = 0;
 				}
 			}
 		}
@@ -1031,7 +1103,7 @@ static int handle_menu(void)
 		obj_do(rsctree_info);
 	}
 	else
-	if (m_buf[4] == SPI1)     /* Neues Spiel */
+	if (m_buf[4] == SPI_NEU)     /* Neues Spiel */
 	{
 	 if (bur_obj())
 	 {
@@ -1040,7 +1112,7 @@ static int handle_menu(void)
 	 }
 	}
 	else
-	if (m_buf[4] == SPI2)     /* Namen eingeben */
+	if (m_buf[4] == SPI_NAM)     /* Namen eingeben */
 	{
 	 memcpy(rsctree_names[NSP1].ob_spec.tedinfo->te_ptext, nsp1, 20);
 	 memcpy(rsctree_names[NSP2].ob_spec.tedinfo->te_ptext, nsp2, 20);
@@ -1056,12 +1128,12 @@ static int handle_menu(void)
 	 }
 	}
 	else
-	if (m_buf[4] == SPI4) /* Optionen */
+	if (m_buf[4] == SPI_OPT) /* Optionen */
 	{
 		handle_menu_options();
 	}
 	else
-	if (m_buf[4] == SPI3)
+	if (m_buf[4] == SPI_ENDE)
 	{
 		wind_update(END_MCTRL);
 		return 1;
@@ -1201,7 +1273,7 @@ static void anbau(void)
 {
 	short s;
 	char a[3];
-	
+
 	color(1);
 	vsf_interior(vdi_handle, 2);
 	vsf_style(vdi_handle, 9);
@@ -1209,7 +1281,7 @@ static void anbau(void)
 	v_gtext(vdi_handle, 220, 395, " Verbleibende Steine: 20 ");
 	s = 20;
 	graf_mouse(6,0);
-	
+
 	do
 	{
 		graf_mkstate(&ev);
@@ -1250,7 +1322,7 @@ static void anbau(void)
 
 
 /********************* Von Markt aufzurufende Routinen ***********************/
-static void build_oil_derrick(void)  /* Fîrderturm bauen */
+static void baue_foerderturm(void)
 {
    int x,y,yy,i,t;
    static const int turm[] =
@@ -1264,7 +1336,7 @@ static void build_oil_derrick(void)  /* Fîrderturm bauen */
    graf_mouse(M_OFF, NULL);
 
    for (t = 0; t < N_FOERDERTUERME; t++)
-   	if (foerdertuerme[n][t].x == -1)
+   	if (spieler_foerdertuerme[n][t].x == -1)
    		break;
 
    x=639*n+f*(bg[0]+20+30*t); y=380;
@@ -1277,7 +1349,7 @@ static void build_oil_derrick(void)  /* Fîrderturm bauen */
    y=yy;
    clr( x-29*n,y-70,30,70 );
    color(1);
-   draw(foerdertuerme[n][t].x = x, foerdertuerme[n][t].y = y, turm);
+   draw(spieler_foerdertuerme[n][t].x = x, spieler_foerdertuerme[n][t].y = y, turm);
    graf_mouse(M_ON, NULL);
 }
 
@@ -1291,8 +1363,10 @@ static void markt(void)
 	g1.g_x = ev.x;
 	g1.g_y = ev.y;
 	form_center(rsctree_status, &fgrect);
+
+	/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
 	save_screen();
-	form_dial(1, &g1, &fgrect);
+	form_dial(FMD_GROW, &g1, &fgrect);
 
 	for (a = 0; a < 6;a++)
 		zahl(SM1+a, p[a]);
@@ -1300,13 +1374,13 @@ static void markt(void)
 	do
 	{
 		for (t = k = 0; k < N_FOERDERTUERME;)
-			t += (foerdertuerme[n][k++].x > -1);
+			t += (spieler_foerdertuerme[n][k++].x > -1);
 
-		for (ko = k = 0; k < 10;)
-			ko += (ka[n][k++].x > -1);
+		for (ko = k = 0; k < N_KANONEN;)
+			ko += (spieler_kanonen[n][k++].x > -1);
 
-		for (k = 0; k < 10; k++)
-			if (bg[1 + k * 2] > -1 && ka[n][k].x == -1)
+		for (k = 0; k < N_KANONEN; k++)
+			if (bg[1 + k * 2] > -1 && spieler_kanonen[n][k].x == -1)
 			{
 			    graf_mouse(M_OFF, NULL);
 			    for (a = 1; a < 10; a++)
@@ -1316,29 +1390,36 @@ static void markt(void)
 			    if (a > 9)
 			    	break;
 			}
-		zahl( SH1,ge[n] ); zahl( SH2,t );
-		zahl( SH3,ko    ); zahl( SH4,wx[n]>-1 );
-		zahl( SH5,pu[n] ); zahl( SH6,ku[n] );
-		zahl( SH7,vo[n] ); zahl( SH8,st[n] );
+		zahl(ST_GELD, spieler_geld[n]);
+		zahl(ST_FOERD, t);
+		zahl(ST_GESCH, ko);
+		zahl(ST_FAHNE, wx[n] > -1);
+		zahl(ST_PULVR, spieler_pulver[n]);
+		zahl(ST_KUGEL, spieler_kugeln[n]);
+		zahl(ST_VOLK, spieler_volk[n]);
+		zahl(ST_STEUR, spieler_steuer[n]);
 
 		for (a = 0; a < 6; a++)
-			rsctree_status[SM1 + a].ob_state = 8 * (ge[n] < p[a] || !an_erl && !a ||
-		                                  a==1 && (bg[0]+t*30>265||t>4) || a==2 && k>9 || a==3 && wx[n]>-1 );
+		{
+			rsctree_status[SM1 + a].ob_state = 8 * (spieler_geld[n] < p[a] || !an_erl && !a ||
+			                                   (a == 1) && (bg[0] + t * 30 > 265 || t > 4) ||
+			                                   (a == 2) && (k > 9) || (a == 3) && (wx[n] > -1));
+		}
 
-		objc_draw(rsctree_status, 0, 5, &scr640x400);
+		objc_draw(rsctree_status, 0, 5, &desk_g);
 
 		a = form_do(rsctree_status, 0);
 		if (a >= 0)
 			rsctree_status[a].ob_state = 0;
 		if (a == SHK)
-			st[n] -= 2 * (st[n] > 0);
+			spieler_steuer[n] -= 2 * (spieler_steuer[n] > 0);
 		else
 		if (a == SHG)
-			st[n] += 2 * (st[n] < 100);
+			spieler_steuer[n] += 2 * (spieler_steuer[n] < 100);
 		else
-		if (a != FERTIG && a - SM1 >-1 && a - SM1 < 6)
+		if ((a != FERTIG) && (a - SM1 >-1) && (a - SM1 < 6))
 		{
-			ge[n]-=p[a - SM1];
+			spieler_geld[n] -= p[a - SM1];
 			if (a < SM5)
 			{
 				restore_screen();
@@ -1347,10 +1428,10 @@ static void markt(void)
 					anbau();
 				else
 				if (a == SM2)
-					build_oil_derrick();	/* Fîrderturm bauen */
+					baue_foerderturm();	/* Fîrderturm bauen */
 				else
 				if (a == SM3)
-					init_ka(k, 639 * n);
+					init_kanone(k, 639 * n);
 				else
 				if (a == SM4)
 				{
@@ -1363,8 +1444,8 @@ static void markt(void)
 			}
 			else
 			{
-				pu[n] += 30 * (a == SM5);
-				ku[n] += 2 * (a == SM6);
+				spieler_pulver[n] += 30 * (a == SM5);
+				spieler_kugeln[n] += 2 * (a == SM6);
 				drw_gpk(a - SM4);
 				drw_gpk(0);}
 			}
@@ -1372,7 +1453,7 @@ static void markt(void)
 
 	restore_screen();
 	drw_all();
-	form_dial(2, &g1, &fgrect);
+	form_dial(FMD_SHRINK, &g1, &fgrect);
 }
 
 
@@ -1386,45 +1467,58 @@ static void z_kn(void)
 
 static void z_ka(void)
 {
-   short i;
+	int i;
 
-   for( i=0;i<10;i++ ) if( ka[!n][i].x>-1 ) break;
-   if( i<10 )
-   {
-      do i=Random()%10; while( ka[!n][i].x==-1 );
-      zx=ka[!n][i].x+10; zy=ka[!n][i].y;
-   }
+	for (i = 0; i < N_KANONEN; i++)
+		if (spieler_kanonen[!n][i].x > -1)
+			break;
+	if (i < N_KANONEN)
+	{
+		do
+			i = ((int) Random() % N_KANONEN);
+		while (spieler_kanonen[!n][i].x == -1);
+
+		zx = spieler_kanonen[!n][i].x + 10;
+		zy = spieler_kanonen[!n][i].y;
+	}
 }
+
 
 static void z_ft(void)
 {
 	int i;
 
 	for (i = 0; i < N_FOERDERTUERME; i++)
-		if (foerdertuerme[!n][i].x >- 1)
+		if (spieler_foerdertuerme[!n][i].x >- 1)
 			break;
 	if (i < N_FOERDERTUERME)
 	{
-		zx = foerdertuerme[!n][i].x - 15 * f;
-		zy = foerdertuerme[!n][i].y - 10;
+		zx = spieler_foerdertuerme[!n][i].x - 15 * f;
+		zy = spieler_foerdertuerme[!n][i].y - 10;
 	}
 }
 
+
 static void z_ge(void)
 {
-   if( ge[!n]>100 )
-      { zx=!n*639-f*(bh[25]+bh[31]/2); zy=by[!n]-bh[26]; }
+	if (spieler_geld[!n] > 100)
+	{
+		zx = !n * 639 - f * (bh[25] + bh[31] / 2);
+		zy = by[!n] - bh[26];
+	}
 }
+
 
 static void z_pk(void)
 {
-   short i;
+	short i;
 
-   if( ku[!n] || pu[!n]>19 )
-   {
-      i=Random()&2;
-      zx=!n*639-f*(bh[27+i]+bh[33+i]/2); zy=by[!n]-bh[28+i];
-   }
+	if (spieler_kugeln[!n] || spieler_pulver[!n] > 19)
+	{
+		i = Random() & 2;
+		zx = !n * 639 - f * (bh[27 + i] + bh[33 + i] / 2);
+		zy = by[!n] - bh[28 + i];
+	}
 }
 
 
@@ -1435,49 +1529,50 @@ static int comp(void)
 	int i,t;
 	register double x2=0,x,y,vx2,vx,vy=0,wi;
 
-	st[n] = 16;
+	spieler_steuer[n] = 16;
 
-	for (i = 0; i < 10; i++)
-		if (ka[n][i].x >- 1)
+	for (i = 0; i < N_KANONEN; i++)
+		if (spieler_kanonen[n][i].x >- 1)
 			break;
 
-	if (pu[n] < 20 && ge[n] >= p[4])
+	if (spieler_pulver[n] < 20 && spieler_geld[n] >= p[4])
 	{
-		pu[n] += 30;
-		ge[n] -= p[4];
+		spieler_pulver[n] += 30;
+		spieler_geld[n] -= p[4];
 	}  /* Pulv. kaufen*/
 
-	if (!ku[n] && ge[n] >= p[5])
+	if (!spieler_kugeln[n] && spieler_geld[n] >= p[5])
 	{
-		ku[n] += 2;
-		ge[n] -= p[5];
+		spieler_kugeln[n] += 2;
+		spieler_geld[n] -= p[5];
 	}  /* Kug.  kaufen*/
 
-	if (i > 9 && ge[n] >= p[2])
+	if (i > 9 && spieler_geld[n] >= p[2])
 	{
-		init_ka(i = 0, 639 * n);
-		ge[n] -= p[2];
+		init_kanone(i = 0, 639 * n);
+		spieler_geld[n] -= p[2];
 	} /* Ka. kauf.*/
 
-	if ((foerdertuerme[n][0].x < 0 || foerdertuerme[n][1].x < 0 || foerdertuerme[n][2].x < 0) &&
-	    ge[n] >= p[1] && cw[n] > 2)
+	if ((spieler_foerdertuerme[n][0].x < 0 || spieler_foerdertuerme[n][1].x < 0 || spieler_foerdertuerme[n][2].x < 0) &&
+	    spieler_geld[n] >= p[1] && cw[n] > 2)
 	{
-		ge[n] -= p[1];
-		build_oil_derrick();
+		spieler_geld[n] -= p[1];
+		baue_foerderturm();
 	} /* Fîrderturm kaufen */
 
 	drw_all();
 
-	if ((i > 9) || pu[n] < 20 || !ku[n])
+	if ((i > 9) || spieler_pulver[n] < 20 || !spieler_kugeln[n])
 	{
 		return -1;
 	}
 
 	    /* Jetzt kommen die Berechnungen fÅr den Schuss: */
-	bh=burgen[spieler_burg[!n]];
+	bh = burgen[spieler_burg[!n]];
+
 	do
-		i = (int) (Random() % 10);
-	while (ka[n][i].x == -1);
+		i = (int) (Random() % N_KANONEN);
+	while (spieler_kanonen[n][i].x == -1);
 
 	zx = 639 * !n - f * (int)(Random() % bh[0]);
 	zy = by[!n];
@@ -1494,28 +1589,40 @@ static int comp(void)
 	  case 5: z_ka(); if( t<90 ) z_ft();
 	}
 
-	y=ka[n][i].y-10-zy;    t=49-cx[n]*16;   /* Berechnen der Distanz */
-	x=ka[n][i].x+9+8*f-zx -t/2+Random()%t; if( x<0 ) x=-x;
+	y = spieler_kanonen[n][i].y - 10 - zy;
+	t = 49 - cx[n] * 16;   /* Berechnen der Distanz */
+	x = spieler_kanonen[n][i].x+9+8*f-zx -t/2+Random()%t; if( x<0 ) x=-x;
 
-	wd=n? -wnd:wnd;
+	wd = n ? -wind : wind;
 
-	x2=-1;
-	for( vx=.5; vx<7 && ( x2<x || vy/3.5>vx ); )  /* Zeitberechnung bei */
+	x2 = -1;
+
+	for (vx = .5; vx < 7 && (x2 < x || vy / 3.5 > vx); )  /* Zeitberechnung bei */
 	{                              /* verschiedenen X-Geschwindigkeiten */
-	  vx+=.4;
-	  t=x2=0; vx2=vx;
-	  while( vx2>0 && x2<x )
-	     { x2+=vx2; vx2+=(wd/2-vx2)/5000; t++; }
-	  vy=y/t+.5*G*t;
+		vx += .4;
+		t = x2 = 0;
+		vx2 = vx;
+		while (vx2 > 0 && x2 < x)
+		{
+			x2 += vx2;
+			vx2 += (wd / 2 - vx2) / 5000;
+			t++;
+		}
+
+		vy = y / t +.5 * G * t;
 	}
 
-	if( n ) vx=-vx;
-	vvx=vx; vvy=vy;  /* Werte fÅr Schuss Åbergeben */
+	if (n)
+		vx = -vx;
+	vvx = vx;
+	vvy = vy;  /* Werte fÅr Schuss Åbergeben */
 
-	if( vx<0 ) vx=-vx;
-	wi=atan2(vy,vx);
-	ka[n][i].w=wi*P57;
-	ka[n][i].p=(int)(4.0*vx/cos(wi)-1.6);
+	if (vx < 0)
+		vx =- vx;
+
+	wi = atan2(vy, vx);
+	spieler_kanonen[n][i].w = wi * P57;
+	spieler_kanonen[n][i].p = (int)(4.0 * vx / cos(wi) - 1.6);
 
 	return i;
 }
@@ -1546,19 +1653,20 @@ static void koenig(void)
 	char a[300],*s[20],k,t,j,i;
 	static char *ltz[2];
 
-	for (j = k = 0; j < 10; j++)
-		k += ka[n][j].x > -1;
+	for (j = k = 0; j < N_KANONEN; j++)
+		k += spieler_kanonen[n][j].x > -1;
 
 	for (j = t = 0; j < N_FOERDERTUERME; j++)
-		t += foerdertuerme[n][j].x > -1;
+		t += spieler_foerdertuerme[n][j].x > -1;
 
-	if (!(Random()%20) || (kn[n] & 16) || ((kn[n]&15) > 9))
+	if (!(Random()%20) || (spieler_koenig[n] & 16) || ((spieler_koenig[n] & 15) > 9))
 	{
 		form_alert(1,"[0][Der Kînig hat keine Lust,   |dich zu sprechen.][Schade]");
 	}
 	else
 	{
-		kn8[46]=kn[n]>2559? 48+kn[n]/2560:32; kn8[47]=48+kn[n]%2560/256;
+		kn8[46] = (spieler_koenig[n] > 2559) ? (48 + spieler_koenig[n] / 2560) : 32;
+		kn8[47] = 48 + spieler_koenig[n] % 2560 / 256;
 
 		j = Random();
 		i = 2;
@@ -1567,15 +1675,33 @@ static void koenig(void)
 		if (j & 4)
 			s[i++] = kn14;
 
-		if( ge[n]>p[1]&&t<3 ) s[i++]=kn5;
-		if( st[n]>40&&vo[n]<bg[40]||st[n]>70 ) s[i++]=kn3;
-		if( wx[n]<0 ) s[i++]=kn9;
-		if( ge[n]>bg[37]&&vo[n]>bg[40]&&k>1 ) s[1]=t<2? kn1:kn2;
-		if( t>2 ) s[i++]=kn2;
-		if( k<1 && ge[n]<p[2] ) s[i++]=kn4;
-		if( (kn[n]&15)>4 ) s[i++]=s[i++]=s[i++]=kn7;
-		if( (kn[n]&15)>6 || !(Random()&7) && kn[n]>2048 ) s[i++]=s[i++]=kn8;
-		if( zug<4 ) s[1]=s[2]=s[(i=4)-1]=kn11;
+		if ((spieler_geld[n] > p[1]) && (t < 3))
+			s[i++] = kn5;
+
+		if ((spieler_steuer[n] > 40) && (spieler_volk[n] < bg[40]) || (spieler_steuer[n] > 70))
+			s[i++] = kn3;
+
+		if  (wx[n] < 0)
+			s[i++] = kn9;
+
+		if (spieler_geld[n] > bg[37] && spieler_volk[n] > bg[40] && k > 1)
+			s[1] = t < 2 ? kn1 : kn2;
+
+		if (t > 2)
+			s[i++] = kn2;
+
+		if (k < 1 && spieler_geld[n] < p[2])
+			s[i++] = kn4;
+
+		if ((spieler_koenig[n] & 15) > 4)
+			s[i++] = s[i++] = s[i++] = kn7;
+
+		if ((spieler_koenig[n] & 15) > 6 || !(Random() & 7) && (spieler_koenig[n] > 2048))
+			s[i++] = s[i++] = kn8;
+
+		if (zug < 4)
+			s[1] =s[2] = s[(i = 4) - 1] = kn11;
+
 		do
 			if (s[j = Random()%i] == ltz[n])
 				s[i++] = s[i++] = kn13;
@@ -1587,33 +1713,38 @@ static void koenig(void)
 		form_alert(1, a);
 	}
 
-	kn[n] |= 16;
-	kn[n] += 256;
-	if (~kn[n] & 15)
-		kn[n]++;
+	spieler_koenig[n] |= 16;
+	spieler_koenig[n] += 256;
+	if (~spieler_koenig[n] & 15)
+		spieler_koenig[n]++;
 }
 
 
 /************* Kanonenobjektbaum, Wahl von Winkel und Pulver *****************/
+/* TODO: Diese Routine wird nur bei Auflîsung 1280x960 monochrom erreicht,
+   nicht bei Farbe und auch nicht bei 640x400. Warum? */
 static int sch_obj(int k)
 {
 	/* Daten fÅr das MÑnnchen */
 	static const int fig[] =
 	{
-	 	0,0,15,20,30,20,20,15,10,0,10,-30,18,-18,20,-5,24,-6,
-	  20,-25,10,-40,0,-45, -10,-40,-20,-25,-24,-6,-20,-5,-18,-18,-10,-30,-10,0,
-	  -20,15,-30,20,-15,20, -1,-1
+		0,0,15,20,30,20,20,15,10,0,10,-30,18,-18,20,-5,24,-6,
+		20,-25,10,-40,0,-45, -10,-40,-20,-25,-24,-6,-20,-5,-18,-18,-10,-30,-10,0,
+		-20,15,-30,20,-15,20, -1,-1
 	};
 	GRECT g1;
 	GRECT g2 = {0, 0, 42, 18};
 	int i, wi,pv, xw,yw,xp,yp,xk,yk;
 	double s,c;
-	char *aw,*ap, fl=1;
+	char *aw, *ap, fl = 1;
+
+ /*printf("sch_obj\n"); */
 
 	aw = rsctree_shootparams[WINK].ob_spec.free_string;
 	ap = rsctree_shootparams[PULV].ob_spec.free_string;
 	ap[2] = '\0';
 
+	/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
 	save_screen();
 
 	form_center(rsctree_shootparams, &fgrect);
@@ -1623,27 +1754,33 @@ static int sch_obj(int k)
 	xk += 105 + f * 36;
 	yk += 102;
 
-	g1.g_x = ka[n][k].x + 10 * f;
-	g1.g_y = ka[n][k].y - 10;
+	g1.g_x = spieler_kanonen[n][k].x + 10 * f;
+	g1.g_y = spieler_kanonen[n][k].y - 10;
 	g1.g_w = 20;
 	g1.g_h = 14;
-	form_dial(1, &g1, &fgrect);
-	wi = ka[n][k].w;
-	pv = ka[n][k].p;
+	form_dial(FMD_GROW, &g1, &fgrect);
+	wi = spieler_kanonen[n][k].w;
+	pv = spieler_kanonen[n][k].p;
 
 	vsf_interior(vdi_handle, 1);
 
 	do
 	{
-		if( pv>pu[n] ) pv=pu[n];
-		*aw=48+wi/100; *(aw+1)=48+wi%100/10; *(aw+2)=48+wi%10;
+		if( pv>spieler_pulver[n] ) pv=spieler_pulver[n];
+		*aw=48+wi/100;
+		*(aw+1)=48+wi%100/10;
+		*(aw+2)=48+wi%10;
 		if(wi<100) { *aw=*(aw+1); *(aw+1)=*(aw+2); *(aw+2)=0; }
 		*ap=48+pv/10; *(ap+1)=48+pv%10;
-		if(pv<10)  { *ap=*(ap+1); *(ap+1)=0; }
+		if (pv < 10)
+		{
+			*ap = *(ap + 1);
+			*(ap + 1) = 0;
+		}
 
 		if( fl )
 		{
-			objc_draw(rsctree_shootparams, 0, 4, &scr640x400);
+			objc_draw(rsctree_shootparams, 0, 4, &desk_g);
 			graf_mouse(M_OFF, NULL);
 			color(1);
 			v_circle(vdi_handle, xk - 88 * f, yk - 60, 15);
@@ -1707,9 +1844,9 @@ static int sch_obj(int k)
 
 	restore_screen();
 
-	form_dial(2, &g1, &fgrect);
-	ka[n][k].w = wi;
-	ka[n][k].p = pv;
+	form_dial(FMD_SHRINK, &g1, &fgrect);
+	spieler_kanonen[n][k].w = wi;
+	spieler_kanonen[n][k].p = pv;
 	return i == SOK;
 }
 
@@ -1780,16 +1917,16 @@ static void schuss(/* Nr. der Kanone */ int k)
 	short v,c,a, j;
 
 	graf_mouse(M_OFF, NULL);
-	pu[n] -= ka[n][k].p;
-	ku[n]--;
+	spieler_pulver[n] -= spieler_kanonen[n][k].p;
+	spieler_kugeln[n]--;
 	drw_gpk(1);
 	drw_gpk(2);
 
-	x = ka[n][k].x + 9 + 8 * f;
-	y = ka[n][k].y - 10;
+	x = spieler_kanonen[n][k].x + 9 + 8 * f;
+	y = spieler_kanonen[n][k].y - 10;
 	c=2;
-	vx = (.4 + 0.25 * ka[n][k].p) * cos(ka[n][k].w / P57) * f;
-	vy = (.4 + 0.25 * ka[n][k].p) * sin(ka[n][k].w / P57);
+	vx = (.4 + 0.25 * spieler_kanonen[n][k].p) * cos(spieler_kanonen[n][k].w / P57) * f;
+	vy = (.4 + 0.25 * spieler_kanonen[n][k].p) * sin(spieler_kanonen[n][k].w / P57);
 
 	if (mod & (2 - n))
 	{
@@ -1805,15 +1942,18 @@ static void schuss(/* Nr. der Kanone */ int k)
 	kugel( (int)x,(int)y ); v=1;
 	while( x>3 && x<637 && y<396 &&  ( v || c ) )  /* Flugschleife */
 	{
-	  ox=x; oy=y; x+=vx; y-=vy;
-	  vy-=G; vx+=(wnd/2-vx)/5000;
-	  kugel( (int)ox,(int)oy );
-	  if( kugel( (int)x,(int)y ) )
-	     v=loc((int)x,(int)y)& loc((int)x-1,(int)y+1)& loc((int)x+1,(int)y+2);
-	  a=1000+2*y; if( a<30 ) a=30;
-	  Giaccess( 10,137 );    Giaccess( 244,135 );
-	  Giaccess( a&255,130 ); Giaccess( a>>8,131 );
-	  if( c ) c--;
+		ox=x; oy=y; x+=vx; y-=vy;
+		vy-=G; vx+=(wind/2-vx)/5000;
+		kugel( (int)ox,(int)oy );
+
+		if( kugel( (int)x,(int)y ) )
+			v=loc((int)x,(int)y)& loc((int)x-1,(int)y+1)& loc((int)x+1,(int)y+2);
+		a=1000+2*y; if( a<30 ) a=30;
+		Giaccess(10, 137);
+		Giaccess( 244,135 );
+		Giaccess( a&255,130 ); Giaccess( a>>8,131 );
+		if (c)
+			c--;
 	}
 
 	kugel((int) x, (int) y);
@@ -1821,63 +1961,92 @@ static void schuss(/* Nr. der Kanone */ int k)
 	color(0);
 	oldn = n;
 
-	if (!v) for( c=0;c<4;c++ )      /* Einschlag der Kugel */
-	{
-	  if( ox>6 && ox<634 ) v_circle(vdi_handle, (int)ox,(int)oy, 5 );
+	if (!v)
+		for (c = 0; c < 4; c++)      /* Einschlag der Kugel */
+		{
+			if ((ox > 6) && (ox < 634))
+				v_circle(vdi_handle, (int)ox, (int)oy, 5);
 
-	  baller(22+c*3);
+		  baller(22 + c * 3);
 
-	  for( n=0;n<2;n++ )    /* Treffer ? */
-	  {
-	     bg=burgen[spieler_burg[n]];
-	     if( Random()&1 && (n? x>639-bg[0] : x<bg[0]) && vo[n] ) vo[n]--;
-	     fn();
-	     for( j=0;j<10;j++ )
-	        if( ka[n][j].x<ox+2 && ka[n][j].x+22>ox && ka[n][j].x>-1 &&
-	            ka[n][j].y-16<oy && ka[n][j].y>oy )
-	        {
-	           clr( a=ka[n][j].x,v=ka[n][j].y-12,20,13 );
-	           expls( a+10,v+6,13,8,50 ); color(0);
-	           ka[n][j].x=-1;
-	        }
+		  for (n = 0; n < 2; n++)    /* Treffer ? */
+		  {
+			bg = burgen[spieler_burg[n]];
 
-	     for (j = 0; j < N_FOERDERTUERME; j++)
-	        if( foerdertuerme[n][j].x>-1 && drin( a=639*n+f*foerdertuerme[n][j].x,v=by[n]-foerdertuerme[n][j].y,
-	            30,37,2,(int)ox,(int)oy ) )
-	        {
-	           if( drin( a,v,30,37,-2,(int)ox,(int)oy ) )
-	           {
-	              expls((a=foerdertuerme[n][j].x-29*n)+15,(v=foerdertuerme[n][j].y-40)+20,15,20,120);
-	              clr( a,v,30,40 ); foerdertuerme[n][j].x=-1;
-	           }
-	           c=4;
-	        }
-	     if( ox>wx[n]-11 && ox<wx[n]+11 && oy>wy[n]-16 && oy<wy[n] && wx[n]>-1)
-	        { clr( wx[n]-10,wy[n]-15,20,15 ); wx[n]=-1; }
-	     if( drin( bg[21],bg[22],30,25,0,(int)ox,(int)oy ) )
-	     {
-	        end=n+17;
-	        expls( a=639*n+f*(bg[21]+15),v=by[n]-bg[22]-12,17,17,40 );
-	        v_circle(vdi_handle, a,v,17 );
-	        expls( a,v,17,17,200 ); c=4;
-	     }
-	     for( j=0;j<6;j+=2 )
-	        if( drin( bg[25+j],bg[26+j],a=bg[31+j],v=bg[32+j],3,
-	            (int)ox,(int)oy ) ) break;
-	     switch( j )
-	     {
-	        case 0: ge[n]-=Min(200,ge[n]); break;
-	        case 2: pu[n]=0; break;
-	        case 4: ku[n]-=Min(2,ku[n]);
-	     }
-	     if( j<6 )
-	     {
-	        expls( 639*n+f*(bg[25+j]+a/2),by[n]-bg[26+j]-v/2,
-	               a/2,v/2,60+100*(j==2) );
-	        drw_gpk(j/2); c=4;
-	     }
-	  }
-	  ox+=vx; oy-=vy;
+			if ((Random() & 1) && (n ? x > 639 - bg[0] : x < bg[0]) && spieler_volk[n])
+				spieler_volk[n]--;
+
+			fn();
+
+			for (j = 0; j < N_KANONEN; j++)
+		 		if ((spieler_kanonen[n][j].x < ox + 2) && (spieler_kanonen[n][j].x + 22 > ox) && (spieler_kanonen[n][j].x > -1) &&
+				    (spieler_kanonen[n][j].y - 16 < oy) && (spieler_kanonen[n][j].y > oy))
+		        {
+					clr(a = spieler_kanonen[n][j].x, v = spieler_kanonen[n][j].y - 12, 20, 13);
+					expls(a + 10, v + 6, 13, 8, 50);
+					color(COLOUR_WHITE);
+					spieler_kanonen[n][j].x = -1;
+		        }
+
+			for (j = 0; j < N_FOERDERTUERME; j++)
+				if ((spieler_foerdertuerme[n][j].x > -1) &&
+				    drin(a = 639 * n + f * spieler_foerdertuerme[n][j].x, v = by[n] - spieler_foerdertuerme[n][j].y,
+				         30, 37, 2,(int)ox,(int)oy))
+				{
+					if (drin(a, v, 30, 37, -2, (int)ox, (int)oy))
+					{
+						expls((a = spieler_foerdertuerme[n][j].x - 29 * n) + 15,
+						      (v = spieler_foerdertuerme[n][j].y - 40) + 20, 15, 20, 120);
+						clr(a, v, 30, 40);
+						spieler_foerdertuerme[n][j].x =- 1;
+					}
+
+					c = 4;
+				}
+
+			if ((ox > wx[n] - 11) && (ox < wx[n] + 11) && (oy > wy[n] - 16) && (oy < wy[n]) && (wx[n] > -1))
+			{
+				clr(wx[n] - 10, wy[n] - 15, 20, 15 );
+				wx[n] = -1;
+			}
+
+			if (drin(bg[21], bg[22], 30, 25, 0, (int)ox, (int)oy))
+			{
+				end = n + 17;
+				expls(a = 639 * n + f * (bg[21] + 15), v = by[n] - bg[22] - 12, 17, 17, 40);
+				v_circle(vdi_handle, a, v, 17);
+				expls(a, v, 17, 17, 200);
+				c = 4;
+			}
+
+			for (j = 0; j < 6; j += 2)
+				if (drin(bg[25 + j], bg[26 + j], a = bg[31 + j], v = bg[32 + j], 3,
+				    (int)ox, (int)oy))
+				    break;
+
+			switch (j)
+			{
+		        case 0:
+		        	spieler_geld[n] -= Min(200, spieler_geld[n]);
+		        	break;
+		        case 2:
+		        	spieler_pulver[n] = 0;
+		        	break;
+		        case 4:
+		        	spieler_kugeln[n] -= Min(2, spieler_kugeln[n]);
+			}
+
+			if (j < 6)
+			{
+				expls(639 * n + f * (bg[25 + j] + a / 2), by[n] - bg[26 + j] - v / 2,
+				       a / 2, v / 2, 60 + 100 * (j == 2));
+				drw_gpk(j / 2);
+				c = 4;
+			}
+		}
+
+		ox += vx;
+		oy -= vy;
 	}
 
 	n = oldn;
@@ -1898,18 +2067,18 @@ static void rechnen(void)
 	            pma[6]={ 302,707,498,200,89,91 },
 	            psp[6]={ 10,50,50,20,10,10 };     /* max. Preisschwankung */
 
-	j = st[n];
-	ge[n] += vo[n] * ((j > 65) ? (130 - j) : j) / (150 - (int) (Random() % 50));
-	vo[n] = vo[n] * (95 + (int) (Random() % 11) / 100) + (21 - j + ((int) Random() % 9)) * (8 + (int) (Random() % 5))/20;
-	if (vo[n] < 0)
+	j = spieler_steuer[n];
+	spieler_geld[n] += spieler_volk[n] * ((j > 65) ? (130 - j) : j) / (150 - (int) (Random() % 50));
+	spieler_volk[n] = spieler_volk[n] * (95 + (int) (Random() % 11) / 100) + (21 - j + ((int) Random() % 9)) * (8 + (int) (Random() % 5))/20;
+	if (spieler_volk[n] < 0)
 	{
-		vo[n] = 0;
+		spieler_volk[n] = 0;
 		end = n + 49;
 	}
 
 	for (j = 0; j < N_FOERDERTUERME;j++)
 	{
-		ge[n] += (40 + (int) (Random() % 31)) * (foerdertuerme[n][j].x > -1);
+		spieler_geld[n] += (40 + (int) (Random() % 31)) * (spieler_foerdertuerme[n][j].x > -1);
 	}
 
 	for (j = 0;j < 6; j++ )
@@ -1925,60 +2094,75 @@ static void rechnen(void)
 /******************************* Spielende ***********************************/
 static void ende(void)
 {
-   char s1[80],s2[80],s3[80],a,b,c;
-   void *sav_ssp;
+	char s1[80],s2[80],s3[80],a,b,c;
+	void *sav_ssp;
 
-   form_center(rsctree_winner, &fgrect);
-   rsctree_winner[0].ob_y = 30;
-   rsctree_winner[SG1].ob_spec.free_string = s1;
-   rsctree_winner[SG2].ob_spec.free_string = s2;
-   rsctree_winner[SG3].ob_spec.free_string = s3;
-   strcpy(s1, "!! ");
-   strcat(s1, (end & 2) ? l_nam : r_nam);
-   strcat(s1, " hat gewonnen !!" );
-   s2[0] = 0;
+	form_center(rsctree_winner, &fgrect);
+	rsctree_winner[0].ob_y = 30;
+	rsctree_winner[SG1].ob_spec.free_string = s1;
+	rsctree_winner[SG2].ob_spec.free_string = s2;
+	rsctree_winner[SG3].ob_spec.free_string = s3;
+	strcpy(s1, "!! ");
+	strcat(s1, (end & 2) ? l_nam : r_nam);
+	strcat(s1, " hat gewonnen !!" );
+	s2[0] = 0;
 
-   if (~end&64)
-   {
-      strcpy(s2,"( ");
-   }
-   strcat(s2, (end & 2) ? r_nam : l_nam);
-   if ((end & 240) < 48)
-   {
-      a = s2[strlen(s2) - 1];
-      strcat(s2, a == 's' || (a == 'S') ? "' " : "s ");
-   }
+	if (~end & 64)
+	{
+		strcpy(s2,"( ");
+	}
 
-   switch(end & 240)
-   {
-      case 16: strcat( s2,"Kînig wurde getroffen," );
-               strcpy( s3,"  daraufhin ergab sich dessen Volk. )" ); break;
-      case 32: strcat( s2,"Kînig hat aufgrund der" );
-               strcpy( s3,"  aussichtslosen Lage kapituliert. )" ); break;
-      case 48: strcat( s2," hat kein Volk mehr. )" ); s3[0]=0; break;
-      case 64: strcpy( s3,s2 );
-               strcpy( s2,"( Die maximale Rundenzahl ist erreicht.");
-               strcat( s3," befindet sich in der schlechteren Lage. )" );
-   }
-   objc_draw(rsctree_winner, 0, 7, &scr640x400);
+	strcat(s2, (end & 2) ? r_nam : l_nam);
 
-   for (a = 0; (a < 6) && strncmp(t_na[a], l_nam, 7); a++);
-   for (b = 0; (b < 6) && strncmp(t_na[b], r_nam, 7); b++);
-   if(a<6 && b<6 && a!=b)
-   {
-      if(~end&2) { c=a; a=b; b=c; }
-      t_gew[a][b]++; t_gew[b][8]++;
-      t_gew[a][9]=100*++t_gew[a][7]/++t_gew[a][6];
-      t_gew[b][9]=100*t_gew[b][7]/++t_gew[b][6];
-   }
-   graf_mouse(M_OFF, NULL);
-   sav_ssp = (void *) Super(NULL);
-   m_musik();
-   Super(sav_ssp);
-   graf_mouse(M_ON, NULL);  /* Musik... */
-   Giaccess(0, 138);
-   Giaccess(0, 139);
-   Giaccess(0, 140);
+	if ((end & 240) < 48)
+	{
+		a = s2[strlen(s2) - 1];
+		strcat(s2, a == 's' || (a == 'S') ? "' " : "s ");
+	}
+
+	switch(end & 240)
+	{
+	  case 16: strcat( s2,"Kînig wurde getroffen," );
+	           strcpy( s3,"  daraufhin ergab sich dessen Volk. )" ); break;
+	  case 32: strcat( s2,"Kînig hat aufgrund der" );
+	           strcpy( s3,"  aussichtslosen Lage kapituliert. )" ); break;
+	  case 48: strcat( s2," hat kein Volk mehr. )" ); s3[0]=0; break;
+	  case 64: strcpy( s3,s2 );
+	           strcpy( s2,"( Die maximale Rundenzahl ist erreicht.");
+	           strcat( s3," befindet sich in der schlechteren Lage. )" );
+	}
+	/* TODO: Hier kein form_dial()? */
+	objc_draw(rsctree_winner, 0, 7, &desk_g);
+
+	for (a = 0; (a < N_SPIELERNAMEN) && strncmp(tabelle_spielernamen[a], l_nam, 7); a++)
+		;
+
+	for (b = 0; (b < N_SPIELERNAMEN) && strncmp(tabelle_spielernamen[b], r_nam, 7); b++)
+		;
+
+	if((a < N_SPIELERNAMEN) && (b < N_SPIELERNAMEN) && (a != b))
+	{
+		if (~end & 2)
+		{
+			c = a;
+			a = b;
+			b = c;
+		}
+
+		tabelle_gewonnen[a][b]++;
+		tabelle_gewonnen[b][8]++;
+		tabelle_gewonnen[a][9] = 100 * ++tabelle_gewonnen[a][7] / ++tabelle_gewonnen[a][6];
+		tabelle_gewonnen[b][9] = 100 * tabelle_gewonnen[b][7] / ++tabelle_gewonnen[b][6];
+	}
+
+	graf_mouse(M_OFF, NULL);
+	sav_ssp = (void *) Super(NULL);
+	m_musik();
+	Super(sav_ssp);
+	graf_mouse(M_ON, NULL);  /* Musik... */
+	Giaccess(0, 138);
+	Giaccess(0, 139);
+	Giaccess(0, 140);
 }
 
 
@@ -1989,8 +2173,8 @@ static int ein_zug(void)
 
 	n = zug & 1;
 	fn();
-	kn[n] &= ~16;
-	wnd = wnd * 9 / 10 + Random() % 12 - 6;
+	spieler_koenig[n] &= ~16;
+	wind = wind * 9 / 10 + Random() % 12 - 6;
 
 	werdran(1);
 
@@ -2029,14 +2213,14 @@ static int ein_zug(void)
 		}
 		else
 		{
-			for (i = 0; i < 10; i++)
+			for (i = 0; i < N_KANONEN; i++)
 			{
-				if ((ka[n][i].x <= ev.x) && (ka[n][i].x + 20 >= ev.x) && (ka[n][i].x != -1) &&
-			    	(ka[n][i].y >= ev.y) && (ka[n][i].y - 14 <= ev.y))
+				if ((spieler_kanonen[n][i].x <= ev.x) && (spieler_kanonen[n][i].x + 20 >= ev.x) && (spieler_kanonen[n][i].x != -1) &&
+			    	(spieler_kanonen[n][i].y >= ev.y) && (spieler_kanonen[n][i].y - 14 <= ev.y))
 			    	break;
 			}
 
-			if (i > 9)
+			if (i >= N_KANONEN)
 			{
 				if (drin(bg[25], bg[26], bg[31], bg[32], 0, ev.x, ev.y) ||
 					drin(bg[27], bg[28], bg[33], bg[34], 0, ev.x, ev.y) ||
@@ -2055,13 +2239,13 @@ static int ein_zug(void)
 				}
 			}
 			else
-			if (pu[n] < 5)
+			if (spieler_pulver[n] < 5)
 			{
 				bing();
 				form_alert(0,"[0][Dein Pulver reicht nicht!][Abbruch]");
 			}
 			else
-			if (!ku[n])
+			if (!spieler_kugeln[n])
 			{
 				bing();
 				form_alert(0,"[0][Du hast keine Kugeln mehr!][Abbruch]");
@@ -2075,40 +2259,46 @@ static int ein_zug(void)
 	if (fl < 2)
 		schuss(i);
 
-	if (~kn[n] & 16)
-		kn[n] &= ~15;
+	if (~spieler_koenig[n] & 16)
+		spieler_koenig[n] &= ~15;
 	rechnen();
 	zug++;
 
-	for (i = 0; i < 10; i++)
-		if (ka[n][i].x > -1)
+	for (i = 0; i < N_KANONEN; i++)
+		if (spieler_kanonen[n][i].x > -1)
 			break;
 
 	n = zug & 1;
 	bg = burgen[spieler_burg[n]];
-	for (a = 0; a < 10; a++)
-		if (ka[n][a].x > -1)
+
+	for (a = 0; a < N_KANONEN; a++)
+		if (spieler_kanonen[n][a].x > -1)
 			break;
-		if (a == 10 && i<10 && bg[40]>vo[n] && ge[n]<p[2]/3 && au_kap &&
-		    foerdertuerme[n][0].x+foerdertuerme[n][1].x+foerdertuerme[n][2].x+foerdertuerme[n][3].x+foerdertuerme[n][4].x==-5)
-		{
-	 		end = n + 33;
-	 	}
 
-		if (!end && (zug / 2 >= max_rund))
-		{
-			static h[2];
-			for (n = 0; n < 2; n++)
-			{
-				h[n]=ge[n]+pu[n]*p[4]/30+ku[n]*p[5]/2+(wx[n]>-1)*p[3]+vo[n]*4;
-				for (i = 0; i < N_FOERDERTUERME; i++)
-					if (foerdertuerme[n][i].x >- 1)
-						h[n] += p[1];
-				for(i=0;i<10;i++) if( ka[n][i].x>-1 ) h[n]+=p[2];
-			}
+	if ((a == N_KANONEN) && (i < N_KANONEN) && (bg[40] > spieler_volk[n]) && (spieler_geld[n] < p[2]/3) && au_kap &&
+	    (spieler_foerdertuerme[n][0].x + spieler_foerdertuerme[n][1].x + spieler_foerdertuerme[n][2].x +
+	     spieler_foerdertuerme[n][3].x + spieler_foerdertuerme[n][4].x == -5))
+	{
+ 		end = n + 33;
+ 	}
 
-			end = 65 +(h[1] < h[0]);
+	if (!end && (zug / 2 >= max_rund))
+	{
+		static h[2];
+		for (n = 0; n < 2; n++)
+		{
+			h[n] = spieler_geld[n] + spieler_pulver[n] * p[4] / 30 +
+			       spieler_kugeln[n] * p[5] / 2 + (wx[n] > -1) * p[3] + spieler_volk[n] * 4;
+			for (i = 0; i < N_FOERDERTUERME; i++)
+				if (spieler_foerdertuerme[n][i].x >- 1)
+					h[n] += p[1];
+			for (i = 0; i < N_KANONEN; i++)
+				if (spieler_kanonen[n][i].x > -1)
+					h[n] += p[2];
 		}
+
+		end = 65 +(h[1] < h[0]);
+	}
 
 	if (end)
 	{

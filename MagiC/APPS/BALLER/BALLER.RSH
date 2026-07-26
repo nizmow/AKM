@@ -109,7 +109,7 @@ OBJECT rs_object[] =
          2,       -1,       -1, G_TITLE           ,   /* Object 7  */
   NONE, NORMAL, (LONG)" Ergebnisse ",
   0x001C, 0x0000, 0x000C, 0x0301,
-         0,        9,       33, G_IBOX            ,   /* Object 8  */
+         0,        9,       34, G_IBOX            ,   /* Object 8  */
   NONE, NORMAL, (LONG)0x00000000L,
   0x0000, 0x0301, 0x0050, 0x0017,
         18, MN_INFO         ,       17, G_BOX             ,   /* Object 9  */
@@ -139,69 +139,72 @@ OBJECT rs_object[] =
          9,       -1,       -1, G_STRING          ,   /* Object 17  */
   NONE, NORMAL, (LONG)"  Desk Accessory 6  ",
   0x0000, 0x0007, 0x0014, 0x0001,
-        24, SPI3            , SPI4            , G_BOX             ,   /* Object 18  */
+        25, SPI_NEU         , SPI_ENDE        , G_BOX             ,   /* Object 18  */
   NONE, NORMAL, (LONG)0x00FF1100L,
-  0x0008, 0x0000, 0x0014, 0x0005,
-  SPI1            ,       -1,       -1, G_STRING          ,   /* Object 19 SPI3 */
-  NONE, NORMAL, (LONG)"  Ende",
-  0x0000, 0x0004, 0x0014, 0x0001,
-        21,       -1,       -1, G_STRING          ,   /* Object 20 SPI1 */
-  NONE, NORMAL, (LONG)"  Neues Spiel ",
-  0x0000, 0x0000, 0x0014, 0x0001,
-  SPI2            ,       -1,       -1, G_STRING          ,   /* Object 21  */
-  NONE, DISABLED, (LONG)"--------------------",
-  0x0000, 0x0003, 0x0014, 0x0001,
-  SPI4            ,       -1,       -1, G_STRING          ,   /* Object 22 SPI2 */
-  NONE, NORMAL, (LONG)"  Namen der Spieler",
-  0x0000, 0x0001, 0x0014, 0x0001,
-        18,       -1,       -1, G_STRING          ,   /* Object 23 SPI4 */
-  NONE, NORMAL, (LONG)"  Optionen",
-  0x0000, 0x0002, 0x0014, 0x0001,
-        31, MOD1            , MOD5            , G_BOX             ,   /* Object 24  */
+  0x0008, 0x0000, 0x0017, 0x0006,
+        20,       -1,       -1, G_STRING          ,   /* Object 19 SPI_NEU */
+  NONE, NORMAL, (LONG)"  Neues Spiel...       ",
+  0x0000, 0x0000, 0x0017, 0x0001,
+  SPI_NAM         ,       -1,       -1, G_STRING          ,   /* Object 20  */
+  NONE, DISABLED, (LONG)"-----------------------",
+  0x0000, 0x0001, 0x0017, 0x0001,
+  SPI_OPT         ,       -1,       -1, G_STRING          ,   /* Object 21 SPI_NAM */
+  NONE, NORMAL, (LONG)"  Namen der Spieler... ",
+  0x0000, 0x0002, 0x0017, 0x0001,
+        23,       -1,       -1, G_STRING          ,   /* Object 22 SPI_OPT */
+  NONE, NORMAL, (LONG)"  Optionen...          ",
+  0x0000, 0x0003, 0x0017, 0x0001,
+  SPI_ENDE        ,       -1,       -1, G_STRING          ,   /* Object 23  */
+  NONE, DISABLED, (LONG)"-----------------------",
+  0x0000, 0x0004, 0x0017, 0x0001,
+        18,       -1,       -1, G_STRING          ,   /* Object 24 SPI_ENDE */
+  NONE, NORMAL, (LONG)"  Ende                 ",
+  0x0000, 0x0005, 0x0017, 0x0001,
+        32, MOD1            , MOD5            , G_BOX             ,   /* Object 25  */
   NONE, NORMAL, (LONG)0x00FF1100L,
   0x000F, 0x0000, 0x0016, 0x0006,
-  MOD2            ,       -1,       -1, G_STRING          ,   /* Object 25 MOD1 */
+  MOD2            ,       -1,       -1, G_STRING          ,   /* Object 26 MOD1 */
   NONE, CHECKED, (LONG)"  Spieler  - Spieler ",
   0x0000, 0x0000, 0x0016, 0x0001,
-  MOD3            ,       -1,       -1, G_STRING          ,   /* Object 26 MOD2 */
+  MOD3            ,       -1,       -1, G_STRING          ,   /* Object 27 MOD2 */
   NONE, NORMAL, (LONG)"  Spieler  - Computer",
   0x0000, 0x0001, 0x0016, 0x0001,
-  MOD4            ,       -1,       -1, G_STRING          ,   /* Object 27 MOD3 */
+  MOD4            ,       -1,       -1, G_STRING          ,   /* Object 28 MOD3 */
   NONE, NORMAL, (LONG)"  Computer - Spieler  ",
   0x0000, 0x0002, 0x0016, 0x0001,
-        29,       -1,       -1, G_STRING          ,   /* Object 28 MOD4 */
+        30,       -1,       -1, G_STRING          ,   /* Object 29 MOD4 */
   NONE, NORMAL, (LONG)"  Computer - Computer",
   0x0000, 0x0003, 0x0016, 0x0001,
-  MOD5            ,       -1,       -1, G_STRING          ,   /* Object 29  */
+  MOD5            ,       -1,       -1, G_STRING          ,   /* Object 30  */
   NONE, DISABLED, (LONG)"----------------------",
   0x0000, 0x0004, 0x0016, 0x0001,
-        24,       -1,       -1, G_STRING          ,   /* Object 30 MOD5 */
+        25,       -1,       -1, G_STRING          ,   /* Object 31 MOD5 */
   NONE, NORMAL, (LONG)"  Computer ausw\204hlen",
   0x0000, 0x0005, 0x0016, 0x0001,
-        33, REG             , REG             , G_BOX             ,   /* Object 31  */
+        34, REG             , REG             , G_BOX             ,   /* Object 32  */
   NONE, NORMAL, (LONG)0x00FF1100L,
-  0x0016, 0x0000, 0x000E, 0x0001,
-        31,       -1,       -1, G_STRING          ,   /* Object 32 REG */
-  NONE, NORMAL, (LONG)"  Spielregeln",
-  0x0000, 0x0000, 0x000E, 0x0001,
-         8, ERG1            , ERG4            , G_BOX             ,   /* Object 33  */
+  0x0016, 0x0000, 0x0011, 0x0001,
+        32,       -1,       -1, G_STRING          ,   /* Object 33 REG */
+  NONE, NORMAL, (LONG)"  Spielregeln... ",
+  0x0000, 0x0000, 0x0011, 0x0001,
+         8, ERG1            , ERG4            , G_BOX             ,   /* Object 34  */
   NONE, NORMAL, (LONG)0x00FF1100L,
-  0x001E, 0x0000, 0x0014, 0x0005,
-  ERG2            ,       -1,       -1, G_STRING          ,   /* Object 34 ERG1 */
-  NONE, NORMAL, (LONG)"  Namen eintragen",
-  0x0000, 0x0000, 0x0014, 0x0001,
-  ERG3            ,       -1,       -1, G_STRING          ,   /* Object 35 ERG2 */
-  NONE, NORMAL, (LONG)"  Tabelle laden",
-  0x0000, 0x0001, 0x0014, 0x0001,
-        37,       -1,       -1, G_STRING          ,   /* Object 36 ERG3 */
-  NONE, NORMAL, (LONG)"  Tabelle speichern",
-  0x0000, 0x0002, 0x0014, 0x0001,
-  ERG4            ,       -1,       -1, G_STRING          ,   /* Object 37  */
-  NONE, DISABLED, (LONG)"--------------------",
-  0x0000, 0x0003, 0x0014, 0x0001,
-        33,       -1,       -1, G_STRING          ,   /* Object 38 ERG4 */
-  LASTOB, NORMAL, (LONG)"  Tabelle zeigen",
-  0x0000, 0x0004, 0x0014, 0x0001,
+  0x001E, 0x0000, 0x0015, 0x0005,
+  ERG2            ,       -1,       -1, G_STRING          ,   /* Object 35 ERG1 */
+  NONE, NORMAL, (LONG)"  Namen eintragen... ",
+  0x0000, 0x0000, 0x0015, 0x0001,
+  ERG3            ,       -1,       -1, G_STRING          ,   /* Object 36 ERG2 */
+  NONE, NORMAL, (LONG)"  Tabelle laden      ",
+  0x0000, 0x0001, 0x0015, 0x0001,
+        38,       -1,       -1, G_STRING          ,   /* Object 37 ERG3 */
+  NONE, NORMAL, (LONG)"  Tabelle speichern  ",
+  0x0000, 0x0002, 0x0015, 0x0001,
+  ERG4            ,       -1,       -1, G_STRING          ,   /* Object 38  */
+  NONE, DISABLED, (LONG)"---------------------",
+  0x0000, 0x0003, 0x0015, 0x0001,
+        34,       -1,       -1, G_STRING          ,   /* Object 39 ERG4 */
+  LASTOB, NORMAL, (LONG)"  Tabelle zeigen...  ",
+  0x0000, 0x0004, 0x0015, 0x0001,
   
   /******** Tree 1 SCHUSS ****************************************************/
         -1, SOK             ,       11, G_BOX             ,   /* Object 0  */
@@ -457,34 +460,34 @@ OBJECT rs_object[] =
   FERTIG          ,        2, SHG             , G_BOX             ,   /* Object 1  */
   NONE, NORMAL, (LONG)0x00FF1100L,
   0x0001, 0x0001, 0x002B, 0x0005,
-  SH1             ,       -1,       -1, G_STRING          ,   /* Object 2  */
+  ST_GELD         ,       -1,       -1, G_STRING          ,   /* Object 2  */
   NONE, NORMAL, (LONG)"Du hast:",
   0x0011, 0x0000, 0x0008, 0x0001,
-  SH2             ,       -1,       -1, G_STRING          ,   /* Object 3 SH1 */
+  ST_FOERD        ,       -1,       -1, G_STRING          ,   /* Object 3 ST_GELD */
   NONE, NORMAL, (LONG)"Geld       10000",
   0x0002, 0x0001, 0x0010, 0x0001,
-  SH3             ,       -1,       -1, G_STRING          ,   /* Object 4 SH2 */
+  ST_GESCH        ,       -1,       -1, G_STRING          ,   /* Object 4 ST_FOERD */
   NONE, NORMAL, (LONG)"F\224rdert\201rme   10",
   0x0019, 0x0001, 0x0010, 0x0001,
-  SH4             ,       -1,       -1, G_STRING          ,   /* Object 5 SH3 */
+  ST_FAHNE        ,       -1,       -1, G_STRING          ,   /* Object 5 ST_GESCH */
   NONE, NORMAL, (LONG)"Gesch\201tze      5",
   0x0002, 0x0002, 0x0010, 0x0001,
-  SH5             ,       -1,       -1, G_STRING          ,   /* Object 6 SH4 */
+  ST_PULVR        ,       -1,       -1, G_STRING          ,   /* Object 6 ST_FAHNE */
   NONE, NORMAL, (LONG)"Windfahne      1",
   0x0019, 0x0002, 0x0010, 0x0001,
-  SH6             ,       -1,       -1, G_STRING          ,   /* Object 7 SH5 */
+  ST_KUGEL        ,       -1,       -1, G_STRING          ,   /* Object 7 ST_PULVR */
   NONE, NORMAL, (LONG)"Pulver       100",
   0x0002, 0x0003, 0x0010, 0x0001,
-  SH7             ,       -1,       -1, G_STRING          ,   /* Object 8 SH6 */
+  ST_VOLK         ,       -1,       -1, G_STRING          ,   /* Object 8 ST_KUGEL */
   NONE, NORMAL, (LONG)"Kugeln        15",
   0x0019, 0x0003, 0x0010, 0x0001,
-  SH8             ,       -1,       -1, G_STRING          ,   /* Object 9 SH7 */
+  ST_STEUR        ,       -1,       -1, G_STRING          ,   /* Object 9 ST_VOLK */
   NONE, NORMAL, (LONG)"Volk         200",
   0x0002, 0x0004, 0x0010, 0x0001,
-  SHG             , SHK             , SHK             , G_STRING          ,   /* Object 10 SH8 */
+  SHG             , SHK             , SHK             , G_STRING          ,   /* Object 10 ST_STEUR */
   NONE, NORMAL, (LONG)"Steuern in%  100",
   0x0019, 0x0004, 0x0010, 0x0001,
-  SH8             ,       -1,       -1, G_BOXCHAR         ,   /* Object 11 SHK */
+  ST_STEUR        ,       -1,       -1, G_BOXCHAR         ,   /* Object 11 SHK */
   TOUCHEXIT, NORMAL, (LONG) ((LONG)'\004' << 24)|0x00FF1100L,
   0x000C, 0x0000, 0x0001, 0x0001,
          1,       -1,       -1, G_BOXCHAR         ,   /* Object 12 SHG */
@@ -737,7 +740,7 @@ OBJECT rs_object[] =
   SELECTABLE|EXIT, NORMAL, (LONG)"Seite 3",
   0x002C, 0x0013, 0x000E, 0x0001,
          0,       -1,       -1, G_BUTTON          ,   /* Object 32 R12 */
-  SELECTABLE|EXIT|LASTOB, NORMAL, (LONG)"Seite 2",
+  SELECTABLE|DEFAULT|EXIT|LASTOB, NORMAL, (LONG)"Seite 2",
   0x001C, 0x0013, 0x000E, 0x0001,
   
   /******** Tree 10 REGEL2 ****************************************************/
@@ -829,7 +832,7 @@ OBJECT rs_object[] =
   SELECTABLE|EXIT, NORMAL, (LONG)"Fertig",
   0x003C, 0x0013, 0x000E, 0x0001,
   R21             ,       -1,       -1, G_BUTTON          ,   /* Object 29 R23 */
-  SELECTABLE|EXIT, NORMAL, (LONG)"Seite 3",
+  SELECTABLE|DEFAULT|EXIT, NORMAL, (LONG)"Seite 3",
   0x001C, 0x0013, 0x000E, 0x0001,
          0,       -1,       -1, G_BUTTON          ,   /* Object 30 R21 */
   SELECTABLE|EXIT|LASTOB, NORMAL, (LONG)"Seite 1",
@@ -846,14 +849,14 @@ OBJECT rs_object[] =
   NONE, NORMAL, (LONG)"( Seite 3 )",
   0x003C, 0x0001, 0x000B, 0x0001,
          4,       -1,       -1, G_STRING          ,   /* Object 3  */
-  NONE, NORMAL, (LONG)"Sollten Sie nicht schie\236en wollen,  oder",
-  0x0002, 0x0010, 0x0028, 0x0001,
+  NONE, NORMAL, (LONG)"Sollten Sie nicht schie\236en wollen oder",
+  0x0002, 0x0010, 0x0026, 0x0001,
          5,       -1,       -1, G_STRING          ,   /* Object 4  */
   NONE, NORMAL, (LONG)"Anbauen gibt Ihnen die M\224glichkeit, Ihre",
   0x0002, 0x0003, 0x0028, 0x0001,
          6,       -1,       -1, G_STRING          ,   /* Object 5  */
-  NONE, NORMAL, (LONG)"Durch  den  Erwerb von F\224rdert\201rmen,  k\224",
-  0x0002, 0x0004, 0x0028, 0x0001,
+  NONE, NORMAL, (LONG)"Durch  den  Erwerb von F\224rdert\201rmen k\224",
+  0x0002, 0x0004, 0x0026, 0x0001,
          7,       -1,       -1, G_STRING          ,   /* Object 6  */
   NONE, NORMAL, (LONG)"Einnahmen machen.",
   0x0002, 0x0005, 0x0011, 0x0001,
@@ -892,7 +895,7 @@ OBJECT rs_object[] =
   0x002A, 0x0003, 0x0014, 0x0001,
         19,       -1,       -1, G_STRING          ,   /* Object 18  */
   NONE, NORMAL, (LONG)"nnen Sie jede  Runde  zus\204tzliche",
-  0x002A, 0x0004, 0x0021, 0x0001,
+  0x0028, 0x0004, 0x0021, 0x0001,
         20,       -1,       -1, G_STRING          ,   /* Object 19  */
   NONE, NORMAL, (LONG)"nachkaufen m\201ssen.",
   0x002A, 0x0009, 0x0012, 0x0001,
@@ -921,7 +924,7 @@ OBJECT rs_object[] =
   NONE, NORMAL, (LONG)"n.",
   0x002A, 0x000F, 0x0002, 0x0001,
   R32             ,       -1,       -1, G_BUTTON          ,   /* Object 28 R3F */
-  SELECTABLE|EXIT, NORMAL, (LONG)"Fertig",
+  SELECTABLE|DEFAULT|EXIT, NORMAL, (LONG)"Fertig",
   0x003C, 0x0013, 0x000E, 0x0001,
   R31             ,       -1,       -1, G_BUTTON          ,   /* Object 29 R32 */
   SELECTABLE|EXIT, NORMAL, (LONG)"Seite 2",
@@ -931,7 +934,7 @@ OBJECT rs_object[] =
   0x001C, 0x0013, 0x000E, 0x0001,
         32,       -1,       -1, G_STRING          ,   /* Object 31  */
   NONE, NORMAL, (LONG)" im Moment keine Kanone haben, so",
-  0x002A, 0x0010, 0x0021, 0x0001,
+  0x0028, 0x0010, 0x0021, 0x0001,
         33,       -1,       -1, G_STRING          ,   /* Object 32  */
   NONE, NORMAL, (LONG)"klicken Sie zum Abschlu\236 Ihres Zuges auf",
   0x0002, 0x0011, 0x0028, 0x0001,
@@ -1036,17 +1039,17 @@ OBJECT rs_object[] =
 
 OBJECT *rs_trindex[] =
 { &rs_object[0],   /* Tree  0 MENUE            */
-  &rs_object[39],   /* Tree  1 SCHUSS           */
-  &rs_object[56],   /* Tree  2 INFOTREE         */
-  &rs_object[92],   /* Tree  3 BURG             */
-  &rs_object[104],   /* Tree  4 DRAN             */
-  &rs_object[112],   /* Tree  5 NAMEN            */
-  &rs_object[118],   /* Tree  6 STATUS           */
-  &rs_object[140],   /* Tree  7 SIEGER           */
-  &rs_object[150],   /* Tree  8 COMPUTER         */
-  &rs_object[179],   /* Tree  9 REGEL1           */
-  &rs_object[212],   /* Tree 10 REGEL2           */
-  &rs_object[243],   /* Tree 11 REGEL3           */
-  &rs_object[277],   /* Tree 12 EINTRAG          */
-  &rs_object[291]    /* Tree 13 OPTION           */
+  &rs_object[40],   /* Tree  1 SCHUSS           */
+  &rs_object[57],   /* Tree  2 INFOTREE         */
+  &rs_object[93],   /* Tree  3 BURG             */
+  &rs_object[105],   /* Tree  4 DRAN             */
+  &rs_object[113],   /* Tree  5 NAMEN            */
+  &rs_object[119],   /* Tree  6 STATUS           */
+  &rs_object[141],   /* Tree  7 SIEGER           */
+  &rs_object[151],   /* Tree  8 COMPUTER         */
+  &rs_object[180],   /* Tree  9 REGEL1           */
+  &rs_object[213],   /* Tree 10 REGEL2           */
+  &rs_object[244],   /* Tree 11 REGEL3           */
+  &rs_object[278],   /* Tree 12 EINTRAG          */
+  &rs_object[292]    /* Tree 13 OPTION           */
 };

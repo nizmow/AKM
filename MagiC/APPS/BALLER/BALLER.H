@@ -3,20 +3,20 @@
 #define MENUE            0   /* Menuebaum */
 #define MN_INFO          10  /* STRING in Baum MENUE */
 #define MN_ACC1          12  /* STRING in Baum MENUE */
-#define SPI3             19  /* STRING in Baum MENUE */
-#define SPI1             20  /* STRING in Baum MENUE */
-#define SPI2             22  /* STRING in Baum MENUE */
-#define SPI4             23  /* STRING in Baum MENUE */
-#define MOD1             25  /* STRING in Baum MENUE */
-#define MOD2             26  /* STRING in Baum MENUE */
-#define MOD3             27  /* STRING in Baum MENUE */
-#define MOD4             28  /* STRING in Baum MENUE */
-#define MOD5             30  /* STRING in Baum MENUE */
-#define REG              32  /* STRING in Baum MENUE */
-#define ERG1             34  /* STRING in Baum MENUE */
-#define ERG2             35  /* STRING in Baum MENUE */
-#define ERG3             36  /* STRING in Baum MENUE */
-#define ERG4             38  /* STRING in Baum MENUE */
+#define SPI_NEU          19  /* STRING in Baum MENUE */
+#define SPI_NAM          21  /* STRING in Baum MENUE */
+#define SPI_OPT          22  /* STRING in Baum MENUE */
+#define SPI_ENDE         24  /* STRING in Baum MENUE */
+#define MOD1             26  /* STRING in Baum MENUE */
+#define MOD2             27  /* STRING in Baum MENUE */
+#define MOD3             28  /* STRING in Baum MENUE */
+#define MOD4             29  /* STRING in Baum MENUE */
+#define MOD5             31  /* STRING in Baum MENUE */
+#define REG              33  /* STRING in Baum MENUE */
+#define ERG1             35  /* STRING in Baum MENUE */
+#define ERG2             36  /* STRING in Baum MENUE */
+#define ERG3             37  /* STRING in Baum MENUE */
+#define ERG4             39  /* STRING in Baum MENUE */
 
 #define SCHUSS           1   /* Formular/Dialog */
 #define SOK              1   /* BUTTON in Baum SCHUSS */
@@ -59,14 +59,14 @@
 #define NOK              4   /* BUTTON in Baum NAMEN */
 
 #define STATUS           6   /* Formular/Dialog */
-#define SH1              3   /* STRING in Baum STATUS */
-#define SH2              4   /* STRING in Baum STATUS */
-#define SH3              5   /* STRING in Baum STATUS */
-#define SH4              6   /* STRING in Baum STATUS */
-#define SH5              7   /* STRING in Baum STATUS */
-#define SH6              8   /* STRING in Baum STATUS */
-#define SH7              9   /* STRING in Baum STATUS */
-#define SH8              10  /* STRING in Baum STATUS */
+#define ST_GELD          3   /* STRING in Baum STATUS */
+#define ST_FOERD         4   /* STRING in Baum STATUS */
+#define ST_GESCH         5   /* STRING in Baum STATUS */
+#define ST_FAHNE         6   /* STRING in Baum STATUS */
+#define ST_PULVR         7   /* STRING in Baum STATUS */
+#define ST_KUGEL         8   /* STRING in Baum STATUS */
+#define ST_VOLK          9   /* STRING in Baum STATUS */
+#define ST_STEUR         10  /* STRING in Baum STATUS */
 #define SHK              11  /* BOXCHAR in Baum STATUS */
 #define SHG              12  /* BOXCHAR in Baum STATUS */
 #define FERTIG           13  /* BUTTON in Baum STATUS */
