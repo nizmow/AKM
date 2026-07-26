@@ -52,13 +52,13 @@ static const char st_ton[] =
      75, 77, 79, 80, 82, 84, 85, 87, 89, 91, 92, 94, 96 } ;
 
 /******************** Laden und Speicher reservieren *************************/
-void m_laden(char *string)
+void m_laden(char *fname)
 {
    int f_handle;
    long tsize;
 
-   f_handle = (int) Fopen(string, 0);
-   Fread( f_handle, 16, buffer );
+   f_handle = (int) Fopen(fname, 0);
+   Fread(f_handle, 16, buffer);
    tempo=buffer[2];
    max_abl=buffer[3];
    max_tkt=buffer[4];
@@ -70,13 +70,14 @@ void m_laden(char *string)
    	w_len=96;
 
    liste = (int *) Malloc((max_abl + 2) << 3);
-   tsize = w_len * 2 * (max_tkt + 2);
-   takte = (unsigned *) Malloc(tsize);
-   memset(takte, 0, tsize);
+   /*tsize = w_len * 2 * (max_tkt + 2);*/
+   tsize = (max_tkt + 1) * w_len * 2;
+   takte = (unsigned *) Malloc(tsize + 200);
+   memset(takte, 0, tsize + 200);
 
    Fread( f_handle, 36, buffer );
    Fread( f_handle, (max_abl + 1) << 3, liste );
-   Fread( f_handle, (max_tkt + 1) * w_len * 2, &takte[100] );
+   Fread( f_handle, tsize, &takte[100] );
    Fclose( f_handle );
 }
 
