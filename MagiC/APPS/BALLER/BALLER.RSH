@@ -158,7 +158,7 @@ OBJECT rs_object[] =
   NONE, DISABLED, (LONG)"-----------------------",
   0x0000, 0x0004, 0x0017, 0x0001,
         18,       -1,       -1, G_STRING          ,   /* Object 24 SPI_ENDE */
-  NONE, NORMAL, (LONG)"  Ende                 ",
+  NONE, NORMAL, (LONG)"  Ende              ^Q ",
   0x0000, 0x0005, 0x0017, 0x0001,
         32, MOD1            , MOD5            , G_BOX             ,   /* Object 25  */
   NONE, NORMAL, (LONG)0x00FF1100L,

@@ -35,7 +35,7 @@
 #define N_BURGEN 20					/* maximale Anzahl Burgen */
 #define P57       57.296
 #define G         0.02
-#define bing()    printf("\007");
+#define bing()    Bconout(2, '\x07');
 #define fn()      f = 1 - 2 * (n & 1);
 
 int ap_id;
@@ -105,7 +105,10 @@ int max_rund,
 char *l_nam;
 char *r_nam;
 
-char f, mod, end, txt[4], an_erl, mxin, au_kap;
+char f;
+/* 0 = Spieler/Spieler (default), 1 = Spieler/Computer, 2 = Computer/Spieler, 3 = Computer/Computer */
+char spiel_modus;
+char end, txt[4], an_erl, mxin, au_kap;
 char cw[2] = {2, 2};
 char cx[2] = {1, 1};
 char cn[7][8]=
@@ -775,6 +778,9 @@ static void werdran(char c)
 /************** Darstellung und Verwaltung eines Objektbaumes ****************/
 static int obj_do(OBJECT *tree)
 {
+#if 1
+	return do_dialog(tree);		/* aus GEMUT_MT fÅr MagiC, rettet Hintergrund */
+#else
 	int ret;
 	int fl = 0;
 	static GRECT g1 = {20, 20, 30, 20};
@@ -811,6 +817,7 @@ static int obj_do(OBJECT *tree)
 	restore_screen();
 	form_dial(FMD_SHRINK, &g1, &fgrect);
 	return ret;
+#endif
 }
 
 
@@ -1105,27 +1112,27 @@ static int handle_menu(void)
 	else
 	if (m_buf[4] == SPI_NEU)     /* Neues Spiel */
 	{
-	 if (bur_obj())
-	 {
-	    neues_spiel();
-	    werdran(1);
-	 }
+		if (bur_obj())
+		{
+			neues_spiel();
+			werdran(1);
+		}
 	}
 	else
 	if (m_buf[4] == SPI_NAM)     /* Namen eingeben */
 	{
-	 memcpy(rsctree_names[NSP1].ob_spec.tedinfo->te_ptext, nsp1, 20);
-	 memcpy(rsctree_names[NSP2].ob_spec.tedinfo->te_ptext, nsp2, 20);
-
-	 if (obj_do(rsctree_names) == NOK)
-	 {
-	    memcpy(nsp1, rsctree_names[NSP1].ob_spec.tedinfo->te_ptext, 20);
-	    memcpy(nsp2, rsctree_names[NSP2].ob_spec.tedinfo->te_ptext, 20);
-	    if (!end)
-	    {
-	    	werdran(1);
-	    }
-	 }
+		memcpy(rsctree_names[NSP1].ob_spec.tedinfo->te_ptext, nsp1, 20);
+		memcpy(rsctree_names[NSP2].ob_spec.tedinfo->te_ptext, nsp2, 20);
+		
+		if (obj_do(rsctree_names) == NOK)
+		{
+			memcpy(nsp1, rsctree_names[NSP1].ob_spec.tedinfo->te_ptext, 20);
+			memcpy(nsp2, rsctree_names[NSP2].ob_spec.tedinfo->te_ptext, 20);
+			if (!end)
+			{
+				werdran(1);
+			}
+		}
 	}
 	else
 	if (m_buf[4] == SPI_OPT) /* Optionen */
@@ -1140,9 +1147,10 @@ static int handle_menu(void)
 	}
 	else
 	if ((m_buf[4] >= MOD1) && (m_buf[4] <= MOD4))
-	{                          /* Spielmodus ( wer gegen wen ) */
-		menu_icheck(rsctree_menu, MOD1 + mod, 0);
-		mod = m_buf[4] - MOD1;
+	{
+		/* Spielmodus (wer gegen wen) */
+		menu_icheck(rsctree_menu, MOD1 + spiel_modus, 0);
+		spiel_modus = m_buf[4] - MOD1;
 		menu_icheck(rsctree_menu, m_buf[4], 1);
 	}
 	else
@@ -1162,10 +1170,10 @@ static int handle_menu(void)
 	}
 	else if( m_buf[4]==ERG2 )
 	{
-	 if (t_load())
-	 {
-	    form_alert(1,"[1][Kann BALLER.TAB nicht laden!][Abbruch]" );
-	 }
+		if (t_load())
+		{
+			form_alert(1,"[1][Kann BALLER.TAB nicht laden!][Abbruch]" );
+		}
 	}
 	else
 	if (m_buf[4] == ERG3)
@@ -1175,30 +1183,47 @@ static int handle_menu(void)
 	else
 	if (m_buf[4] == ERG4)
 	{
-	 save_screen();
-	 form_dial(1, &g2, &g3);
-	 tabelle();
-	 ev.bstate = 0;
-	 while(!ev.bstate)
-	 {
-	 	graf_mkstate(&ev);
-	 }
-	 restore_screen();
-	 form_dial(2, &g2, &g3);
+		save_screen();
+		form_dial(1, &g2, &g3);
+		tabelle();
+		ev.bstate = 0;
+		while(!ev.bstate)
+		{
+			graf_mkstate(&ev);
+		}
+		restore_screen();
+		form_dial(2, &g2, &g3);
 	}
 	if ((m_buf[4] >= MOD1) && (m_buf[4] <= MOD5))
 	{
-	 if (mod < 2)
-	 	l_nam = nsp1;
-	 else
-	 	l_nam = cn[cw[0]];
-	 if (mod & 1)
-	 	r_nam = cn[cw[1]];
-	 else
-	 	r_nam = nsp2;
-	 if (!end)
-	 	werdran(1);
+		if (spiel_modus < 2)
+		{
+			/* links ist ein Spieler */
+			l_nam = nsp1;
+		}
+		else
+		{
+			/* links ist ein Computer */
+			l_nam = cn[cw[0]];
+		}
+
+		if (spiel_modus & 1)
+		{
+			/* rechts ist ein Computer */
+			r_nam = cn[cw[1]];
+		}
+		else
+		{
+			/* rechts ist ein Spieler */
+			r_nam = nsp2;
+		}
+
+		if (!end)
+		{
+			werdran(1);
+		}
 	}
+
 	menu_tnormal(rsctree_menu, m_buf[3], 1);
 	wind_update(END_MCTRL);
 	return 0;
@@ -1209,23 +1234,39 @@ static int handle_menu(void)
 static int event(void)
 {
 	int wh;
+	int keycode = 0;
 	int dummy;
 	static const GRECT dummy_g = {0, 0, 0, 0};
 
 	wh = evnt_multi(
-					50,		/* evtypes */
+					MU_TIMER + MU_MESAG + MU_KEYBD + MU_BUTTON,		/* evtypes */
 					1,1,1,	/* nclicks, bmask, bstate */
 					0, &dummy_g,
 					0, &dummy_g,
 					m_buf,	/* message buffer */
 					300,		/* milliseconds */
 					&ev,		/* x, y, bstate, kstate */
-					&dummy,	/* keycode */
+					&keycode,
 					&dummy	/* nbclicks */
 					);
+	if (wh & MU_KEYBD)
+	{
+		if ((keycode & 0xff) == 17)		/* Ctrl-Q */
+			return 1;
+	}
+
 	if ((wh & MU_MESAG) && (m_buf[0] == MN_SELECTED))
 	{
 		return handle_menu();
+	}
+	
+	if (wh & MU_BUTTON)
+	{
+		/*printf("button\n");*/
+	}
+	else
+	{
+		ev.bstate = 0;
 	}
 
 	return 0;
@@ -1262,9 +1303,16 @@ static void zahl(int nr, int wert )
 /* Ermittelt, ob Punkt gesetzt ist */
 int loc(int x, int y)
 {
-   int a,b;
-   v_get_pixel(vdi_handle, x, y, &a, &b);
-   return a;
+	int pel;
+	int index;
+
+	/* pel ist der Inhalt des Bildspeichers,
+	   bei TrueColour die unteren 16 Bit */
+	/* index ist der Farbindex, bei HighColour -1 und bei
+	   TrueColour die oberen 16 Bit */
+	v_get_pixel(vdi_handle, x, y, &pel, &index);
+
+	return pel;		/* TODO: an alle Farbmodi anpassen */
 }
 
 
@@ -1288,17 +1336,17 @@ static void anbau(void)
 		if ((ev.bstate) && (n ? (ev.x > 624 - bg[0]) : (ev.x < bg[0] + 15) && (ev.y > 155)))
 		{
 			graf_mouse(M_OFF, NULL);
-			if (!(loc(ev.x, ev.y)         || loc(ev.x + 1, ev.y + 1) || loc(ev.x - 1, ev.y - 1)) &&
+			if (!(loc(ev.x, ev.y)      || loc(ev.x + 1, ev.y + 1) || loc(ev.x - 1, ev.y - 1)) &&
 			  (loc(ev.x + 3, ev.y - 1) || loc(ev.x + 3, ev.y + 1) || loc(ev.x - 3, ev.y - 1) || loc(ev.x - 3, ev.y + 1)||
 			   loc(ev.x + 1, ev.y + 2) || loc(ev.x - 1, ev.y + 2) || loc(ev.x + 1, ev.y - 2) || loc(ev.x - 1, ev.y - 2) ))
 			{
-				vswr_mode(vdi_handle, 4);
+				vswr_mode(vdi_handle, MD_ERASE);
 				xy[0] = ev.x - 2;
 				xy[1] = ev.y - 1;
 				xy[2] = ev.x + 2;
 				xy[3] = ev.y + 1;
 				v_bar(vdi_handle, xy);
-				vswr_mode(vdi_handle, 1);
+				vswr_mode(vdi_handle, MD_REPLACE);
 				s--;
 				a[0] = 48 + s / 10;
 				a[1] = 48 + s % 10;
@@ -1324,33 +1372,39 @@ static void anbau(void)
 /********************* Von Markt aufzurufende Routinen ***********************/
 static void baue_foerderturm(void)
 {
-   int x,y,yy,i,t;
-   static const int turm[] =
-   {
-      -4, 23,30,27,0,3,10,24,20,6,30,23,30,5,20,26,10,2,0,6,30,-9,
-	   8,0,8,31,9,34,11,36,14,37,15,37,18,36,20,34,21,31,21,29,20,26,18,24,15,23,
-	   14,23,11,24,9,26,8,29,-9, 14,23,15,37,-9, 10,25,19,35,-9, 10,35,19,25,-9,
-	   21,30,21,0,-9, -1
+	int x,y,yy,i,t;
+	static const int turm[] =
+	{
+		-4, 23,30,27,0,3,10,24,20,6,30,23,30,5,20,26,10,2,0,6,30,-9,
+		8,0,8,31,9,34,11,36,14,37,15,37,18,36,20,34,21,31,21,29,20,26,18,24,15,23,
+		14,23,11,24,9,26,8,29,-9, 14,23,15,37,-9, 10,25,19,35,-9, 10,35,19,25,-9,
+		21,30,21,0,-9, -1
 	};
 
-   graf_mouse(M_OFF, NULL);
+	graf_mouse(M_OFF, NULL);
 
-   for (t = 0; t < N_FOERDERTUERME; t++)
-   	if (spieler_foerdertuerme[n][t].x == -1)
-   		break;
+	for (t = 0; t < N_FOERDERTUERME; t++)
+		if (spieler_foerdertuerme[n][t].x == -1)
+			break;
 
-   x=639*n+f*(bg[0]+20+30*t); y=380;
-   do
-   {
-      while( loc(x,y) && loc(x+29*f,y--) );
-      yy=y;
-      for( i=0;i<40;i++,y-- ) if( loc(x,y) && loc(x+29*f,y) ) break;
-   } while( i<40 );
-   y=yy;
-   clr( x-29*n,y-70,30,70 );
-   color(1);
-   draw(spieler_foerdertuerme[n][t].x = x, spieler_foerdertuerme[n][t].y = y, turm);
-   graf_mouse(M_ON, NULL);
+	x = 639 * n + f * (bg[0] + 20 + 30 * t);
+	y = 380;
+	do
+	{
+		while (loc(x, y) && loc(x + 29 * f, y--))
+			;
+
+		yy = y;
+		for (i = 0; i < 40; i++,y--)
+			if (loc(x, y) && loc(x + 29 * f,y))
+				break;
+	} while (i < 40);
+
+	y = yy;
+	clr(x - 29 * n, y - 70, 30, 70);
+	color(COLOUR_BLACK);
+	draw(spieler_foerdertuerme[n][t].x = x, spieler_foerdertuerme[n][t].y = y, turm);
+	graf_mouse(M_ON, NULL);
 }
 
 
@@ -1721,10 +1775,14 @@ static void koenig(void)
 
 
 /************* Kanonenobjektbaum, Wahl von Winkel und Pulver *****************/
-/* TODO: Diese Routine wird nur bei Auflîsung 1280x960 monochrom erreicht,
-   nicht bei Farbe und auch nicht bei 640x400. Warum? */
 static int sch_obj(int k)
 {
+#if 1
+	void *flyinf;		/* MagiC-spezifisch */
+	void **p_flyinf;
+	int dummy;
+#endif
+
 	/* Daten fÅr das MÑnnchen */
 	static const int fig[] =
 	{
@@ -1744,10 +1802,17 @@ static int sch_obj(int k)
 	ap = rsctree_shootparams[PULV].ob_spec.free_string;
 	ap[2] = '\0';
 
+#if 1
+	flyinf = NULL;
+	p_flyinf = &flyinf;
+	form_center(rsctree_shootparams, &fgrect);
+	form_xdial(FMD_START, NULL, &fgrect, p_flyinf);
+#else
 	/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
 	save_screen();
-
 	form_center(rsctree_shootparams, &fgrect);
+#endif
+
 	objc_offset(rsctree_shootparams, WINK, &xw, &yw);
 	objc_offset(rsctree_shootparams, PULV, &xp, &yp);
 	objc_offset(rsctree_shootparams, KAST, &xk, &yk);
@@ -1817,7 +1882,11 @@ static int sch_obj(int k)
 			fl = 0;
 		}
 
+#if 1
+		i = 0x7f & form_xdo(rsctree_shootparams, 0, &dummy, NULL, flyinf);
+#else
 		i = form_do(rsctree_shootparams, 0);
+#endif
 		if (i >= 0)
 		{
 			rsctree_shootparams[i].ob_state = 0;
@@ -1842,15 +1911,20 @@ static int sch_obj(int k)
 		}
 	} while ((i != SOK) && (i != SAB));
 
+#if 1
+	form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
+#else
 	restore_screen();
-
 	form_dial(FMD_SHRINK, &g1, &fgrect);
+#endif
+
 	spieler_kanonen[n][k].w = wi;
 	spieler_kanonen[n][k].p = pv;
 	return i == SOK;
 }
 
 
+/* Tonausgabe fÅr den Kanonenschuû */
 static void baller(char r)
 {
 	static char s_bal[] =
@@ -1884,7 +1958,7 @@ static void expls(int x, int y, int w, int h, int d)
 	  		xy[j++] = y - h + h * (int) ((Random() & 511) / 256);
 		}
 		v_pline(vdi_handle, 2, xy + 28);
-		baller((d & 31) ^ 31);
+		baller((d & 31) ^ 31);		/* Tonausgabe */
 	}
 
 	for (i = 0; i < 32; i += 4)
@@ -1894,8 +1968,11 @@ static void expls(int x, int y, int w, int h, int d)
 	vswr_mode(vdi_handle, 1);
 }
 
+
+/* Kugel zeichnen aus fÅnf Linien, solange innerhalb des Spielbereichs */
 static int kugel(int x, int y)
 {
+	/* TODO: parametrisieren */
 	if ((x < 3) || (x > 637) || (y < 23))
 	{
 		return 0;
@@ -1924,42 +2001,69 @@ static void schuss(/* Nr. der Kanone */ int k)
 
 	x = spieler_kanonen[n][k].x + 9 + 8 * f;
 	y = spieler_kanonen[n][k].y - 10;
-	c=2;
 	vx = (.4 + 0.25 * spieler_kanonen[n][k].p) * cos(spieler_kanonen[n][k].w / P57) * f;
 	vy = (.4 + 0.25 * spieler_kanonen[n][k].p) * sin(spieler_kanonen[n][k].w / P57);
 
-	if (mod & (2 - n))
+	if (spiel_modus & (2 - n))
 	{
+		/* Der jeweilige Spieler (n = 0 oder 1) ist ein Computer */
 		vx = vvx;
 		vy = vvy;
 	}
 
-	color(1);
-	vswr_mode(vdi_handle, 3);
+	color(COLOUR_BLACK);
+	vswr_mode(vdi_handle, MD_XOR);
 
-	baller(0);
+	baller(0);	/* Tonausgabe */
 
-	kugel( (int)x,(int)y ); v=1;
-	while( x>3 && x<637 && y<396 &&  ( v || c ) )  /* Flugschleife */
+	kugel((int) x, (int) y);	/* Kugel zeichnen */
+
+	v = 1;	/* damit die Kugel erstmal losfliegt. Sollte obsolet sein. */
+	c = 2;	/* mindestens zwei SchleifendurchlÑufe  */
+
+	while((x > 3) && (x < 637) && (y < 396) && (v || c))  /* Flugschleife */
 	{
-		ox=x; oy=y; x+=vx; y-=vy;
-		vy-=G; vx+=(wind/2-vx)/5000;
-		kugel( (int)ox,(int)oy );
+		ox = x;
+		oy = y;
+		x += vx;
+		y -= vy;
+		vy -= G;
+		vx += (wind / 2 - vx) / 5000;
+		kugel((int) ox, (int) oy);		/* vorherige Kugel lîschen (durch XOR-Schreibmodus) */
 
-		if( kugel( (int)x,(int)y ) )
-			v=loc((int)x,(int)y)& loc((int)x-1,(int)y+1)& loc((int)x+1,(int)y+2);
-		a=1000+2*y; if( a<30 ) a=30;
-		Giaccess(10, 137);
-		Giaccess( 244,135 );
-		Giaccess( a&255,130 ); Giaccess( a>>8,131 );
+		if (kugel((int) x, (int) y))	/* neue Kugel zeichnen, wenn mîglich */
+		{
+			/* Kugel ist innerhalb des Spielbereichs gezeichnet worden. */
+			/* v = 1, wenn die drei getesteten Pixel alle gesetzt sind, sonst v = 0 */
+			v = loc((int) x,     (int) y) &
+			    loc((int) x - 1, (int) y + 1) &
+			    loc((int) x + 1, (int) y + 2);
+		}
+
+		/* Tonausgabe */
+		
+		a = 1000 + 2 * y;
+		if (a < 30)
+		{
+			a = 30;
+		}
+		Giaccess(10, 128 + 9);		/*  10 (0x0a) -> Register 9: volume channel B */
+		Giaccess(244,128 + 7);		/* 244 (0xf4) -> Register 7 */
+		Giaccess(a & 255, 128 + 2);	/* -> Register 2: frequency channel B */
+		Giaccess(a >> 8, 128 + 3);	/* -> Register 3: control step size channel B */
+
 		if (c)
+		{
 			c--;
+		}
+
+		evnt_timer(8);		/* warte soviele Millisekunden */
 	}
 
-	kugel((int) x, (int) y);
-	vswr_mode(vdi_handle, 1);
-	color(0);
-	oldn = n;
+	kugel((int) x, (int) y);	/* letzte Kugel lîschen (durch XOR-Schreibmodus) */
+	vswr_mode(vdi_handle, MD_REPLACE);
+	color(COLOUR_WHITE);
+	oldn = n;	/* ? */
 
 	if (!v)
 		for (c = 0; c < 4; c++)      /* Einschlag der Kugel */
@@ -1967,87 +2071,87 @@ static void schuss(/* Nr. der Kanone */ int k)
 			if ((ox > 6) && (ox < 634))
 				v_circle(vdi_handle, (int)ox, (int)oy, 5);
 
-		  baller(22 + c * 3);
+			baller(22 + c * 3);		/* Tonaugabe */
 
-		  for (n = 0; n < 2; n++)    /* Treffer ? */
-		  {
-			bg = burgen[spieler_burg[n]];
+			for (n = 0; n < 2; n++)    /* Treffer ? */
+			{
+				bg = burgen[spieler_burg[n]];
 
-			if ((Random() & 1) && (n ? x > 639 - bg[0] : x < bg[0]) && spieler_volk[n])
-				spieler_volk[n]--;
+				if ((Random() & 1) && (n ? x > 639 - bg[0] : x < bg[0]) && spieler_volk[n])
+					spieler_volk[n]--;
 
-			fn();
+				fn();
 
-			for (j = 0; j < N_KANONEN; j++)
-		 		if ((spieler_kanonen[n][j].x < ox + 2) && (spieler_kanonen[n][j].x + 22 > ox) && (spieler_kanonen[n][j].x > -1) &&
-				    (spieler_kanonen[n][j].y - 16 < oy) && (spieler_kanonen[n][j].y > oy))
-		        {
-					clr(a = spieler_kanonen[n][j].x, v = spieler_kanonen[n][j].y - 12, 20, 13);
-					expls(a + 10, v + 6, 13, 8, 50);
-					color(COLOUR_WHITE);
-					spieler_kanonen[n][j].x = -1;
-		        }
+				for (j = 0; j < N_KANONEN; j++)
+			 		if ((spieler_kanonen[n][j].x < ox + 2) && (spieler_kanonen[n][j].x + 22 > ox) && (spieler_kanonen[n][j].x > -1) &&
+					    (spieler_kanonen[n][j].y - 16 < oy) && (spieler_kanonen[n][j].y > oy))
+			        {
+						clr(a = spieler_kanonen[n][j].x, v = spieler_kanonen[n][j].y - 12, 20, 13);
+						expls(a + 10, v + 6, 13, 8, 50);
+						color(COLOUR_WHITE);
+						spieler_kanonen[n][j].x = -1;
+			        }
 
-			for (j = 0; j < N_FOERDERTUERME; j++)
-				if ((spieler_foerdertuerme[n][j].x > -1) &&
-				    drin(a = 639 * n + f * spieler_foerdertuerme[n][j].x, v = by[n] - spieler_foerdertuerme[n][j].y,
-				         30, 37, 2,(int)ox,(int)oy))
-				{
-					if (drin(a, v, 30, 37, -2, (int)ox, (int)oy))
+				for (j = 0; j < N_FOERDERTUERME; j++)
+					if ((spieler_foerdertuerme[n][j].x > -1) &&
+					    drin(a = 639 * n + f * spieler_foerdertuerme[n][j].x, v = by[n] - spieler_foerdertuerme[n][j].y,
+					         30, 37, 2,(int)ox,(int)oy))
 					{
-						expls((a = spieler_foerdertuerme[n][j].x - 29 * n) + 15,
-						      (v = spieler_foerdertuerme[n][j].y - 40) + 20, 15, 20, 120);
-						clr(a, v, 30, 40);
-						spieler_foerdertuerme[n][j].x =- 1;
+						if (drin(a, v, 30, 37, -2, (int)ox, (int)oy))
+						{
+							expls((a = spieler_foerdertuerme[n][j].x - 29 * n) + 15,
+							      (v = spieler_foerdertuerme[n][j].y - 40) + 20, 15, 20, 120);
+							clr(a, v, 30, 40);
+							spieler_foerdertuerme[n][j].x =- 1;
+						}
+	
+						c = 4;
 					}
 
+				if ((ox > wx[n] - 11) && (ox < wx[n] + 11) && (oy > wy[n] - 16) && (oy < wy[n]) && (wx[n] > -1))
+				{
+					clr(wx[n] - 10, wy[n] - 15, 20, 15 );
+					wx[n] = -1;
+				}
+
+				if (drin(bg[21], bg[22], 30, 25, 0, (int)ox, (int)oy))
+				{
+					end = n + 17;
+					expls(a = 639 * n + f * (bg[21] + 15), v = by[n] - bg[22] - 12, 17, 17, 40);
+					v_circle(vdi_handle, a, v, 17);
+					expls(a, v, 17, 17, 200);
 					c = 4;
 				}
 
-			if ((ox > wx[n] - 11) && (ox < wx[n] + 11) && (oy > wy[n] - 16) && (oy < wy[n]) && (wx[n] > -1))
-			{
-				clr(wx[n] - 10, wy[n] - 15, 20, 15 );
-				wx[n] = -1;
+				for (j = 0; j < 6; j += 2)
+					if (drin(bg[25 + j], bg[26 + j], a = bg[31 + j], v = bg[32 + j], 3,
+					    (int)ox, (int)oy))
+					    break;
+
+				switch (j)
+				{
+			        case 0:
+			        	spieler_geld[n] -= Min(200, spieler_geld[n]);
+			        	break;
+			        case 2:
+			        	spieler_pulver[n] = 0;
+			        	break;
+			        case 4:
+			        	spieler_kugeln[n] -= Min(2, spieler_kugeln[n]);
+				}
+
+				if (j < 6)
+				{
+					expls(639 * n + f * (bg[25 + j] + a / 2), by[n] - bg[26 + j] - v / 2,
+					       a / 2, v / 2, 60 + 100 * (j == 2));
+					drw_gpk(j / 2);
+					c = 4;
+				}
 			}
 
-			if (drin(bg[21], bg[22], 30, 25, 0, (int)ox, (int)oy))
-			{
-				end = n + 17;
-				expls(a = 639 * n + f * (bg[21] + 15), v = by[n] - bg[22] - 12, 17, 17, 40);
-				v_circle(vdi_handle, a, v, 17);
-				expls(a, v, 17, 17, 200);
-				c = 4;
-			}
-
-			for (j = 0; j < 6; j += 2)
-				if (drin(bg[25 + j], bg[26 + j], a = bg[31 + j], v = bg[32 + j], 3,
-				    (int)ox, (int)oy))
-				    break;
-
-			switch (j)
-			{
-		        case 0:
-		        	spieler_geld[n] -= Min(200, spieler_geld[n]);
-		        	break;
-		        case 2:
-		        	spieler_pulver[n] = 0;
-		        	break;
-		        case 4:
-		        	spieler_kugeln[n] -= Min(2, spieler_kugeln[n]);
-			}
-
-			if (j < 6)
-			{
-				expls(639 * n + f * (bg[25 + j] + a / 2), by[n] - bg[26 + j] - v / 2,
-				       a / 2, v / 2, 60 + 100 * (j == 2));
-				drw_gpk(j / 2);
-				c = 4;
-			}
+			ox += vx;
+			oy -= vy;
 		}
-
-		ox += vx;
-		oy -= vy;
-	}
 
 	n = oldn;
 	fn();
@@ -2170,6 +2274,7 @@ static void ende(void)
 static int ein_zug(void)
 {
 	int i,fl,a;
+	int fck;
 
 	n = zug & 1;
 	fn();
@@ -2181,25 +2286,42 @@ static int ein_zug(void)
 	do
 	{
 		fl = 0;
-		wind_update(END_MCTRL);
+		wind_update(END_MCTRL);			/* Bildschirm freigeben, damit die MenÅs funktionieren */
+		fck = !(spiel_modus & (2 - n));
 		do
 		{
+			/* Warte auf Mausklick oder MenÅ. Bearbeite MenÅ. */
+
 			if (event())
 			{
 				return 0;
 			}
 
+			/* OR Åber die zweite Bildschirmzeile, die ersten 480 Spalten */
+			/* TODO: Warum? */
+
 			for (a = i = 0; i < 60;)
 			{
 				a |= *(char *)(screenptr + 80 + i++);
 			}
+			a = 0;
+			/*
+			printf("ev.x/y/bstate = %3d/%3d/%d\n", ev.x, ev.y, ev.bstate);
+			printf("!(spiel_modus & (2 - n)) = %d\n", !(spiel_modus & (2 - n)));
+			printf("fck = %d\n", fck);
+			printf("(!ev.bstate && fck) = %d\n", (!ev.bstate && fck));
+			printf("a = %d\n", a);
+			printf("((!ev.bstate && fck) || a) = %d\n", ((!ev.bstate && fck) || a));
+			*/
+			/* Wenn spiel_modus = 0, dann
+			   !(spiel_modus & (2 - n)) == 1 */
 		}
-		while (!ev.bstate && !(mod & (2 - n)) || a);
+		while ((!ev.bstate && fck) || a);
 
 		wind_update(BEG_MCTRL);
 		bg = burgen[spieler_burg[n]];
 
-		if (mod & (2 - n))
+		if (spiel_modus & (2 - n))
 		{
 			graf_mouse(M_OFF, NULL);
 			i = comp();
@@ -2251,13 +2373,17 @@ static int ein_zug(void)
 				form_alert(0,"[0][Du hast keine Kugeln mehr!][Abbruch]");
 			}
 			else
+			{
 				fl = sch_obj(i);
+			}
 		}
 	} while (!fl);
 
 	werdran(0);
 	if (fl < 2)
+	{
 		schuss(i);
+	}
 
 	if (~spieler_koenig[n] & 16)
 		spieler_koenig[n] &= ~15;
@@ -2404,7 +2530,7 @@ int main(void)
 
 	l_nam = nsp1;
 	r_nam = nsp2;
-	mod = 0;
+	spiel_modus = 0;	/* Spieler gegen Spieler */
 	neues_spiel();
 	while (ein_zug())
 		;
