@@ -496,28 +496,28 @@ OBJECT rs_object[] =
         14,       -1,       -1, G_BUTTON          ,   /* Object 13 FERTIG */
   SELECTABLE|DEFAULT|EXIT, NORMAL, (LONG)"Fertig",
   0x0001, 0x000C, 0x002B, 0x0001,
-         0,       15, SM6             , G_BOX             ,   /* Object 14  */
+         0,       15, MA_KUGLN        , G_BOX             ,   /* Object 14  */
   NONE, NORMAL, (LONG)0x00FF1100L,
   0x0001, 0x0007, 0x002B, 0x0004,
-  SM1             ,       -1,       -1, G_STRING          ,   /* Object 15  */
+  MA_BAUEN        ,       -1,       -1, G_STRING          ,   /* Object 15  */
   NONE, NORMAL, (LONG)"Markt:",
   0x0012, 0x0000, 0x0006, 0x0001,
-  SM2             ,       -1,       -1, G_STRING          ,   /* Object 16 SM1 */
+  MA_FOERD        ,       -1,       -1, G_STRING          ,   /* Object 16 MA_BAUEN */
   SELECTABLE|EXIT, NORMAL, (LONG)"Anbauen      130",
   0x0002, 0x0001, 0x0010, 0x0001,
-  SM3             ,       -1,       -1, G_STRING          ,   /* Object 17 SM2 */
+  MA_KANON        ,       -1,       -1, G_STRING          ,   /* Object 17 MA_FOERD */
   SELECTABLE|EXIT, NORMAL, (LONG)"F\224rderturm   876",
   0x0019, 0x0001, 0x0010, 0x0001,
-  SM4             ,       -1,       -1, G_STRING          ,   /* Object 18 SM3 */
+  MA_FAHNE        ,       -1,       -1, G_STRING          ,   /* Object 18 MA_KANON */
   SELECTABLE|EXIT, NORMAL, (LONG)"Gesch\201tz     180",
   0x0002, 0x0002, 0x0010, 0x0001,
-  SM5             ,       -1,       -1, G_STRING          ,   /* Object 19 SM4 */
+  MA_PULVR        ,       -1,       -1, G_STRING          ,   /* Object 19 MA_FAHNE */
   SELECTABLE|EXIT, DISABLED, (LONG)"Windfahne    150",
   0x0019, 0x0002, 0x0010, 0x0001,
-  SM6             ,       -1,       -1, G_STRING          ,   /* Object 20 SM5 */
+  MA_KUGLN        ,       -1,       -1, G_STRING          ,   /* Object 20 MA_PULVR */
   SELECTABLE|EXIT, NORMAL, (LONG)"30 Pulver     90",
   0x0002, 0x0003, 0x0010, 0x0001,
-        14,       -1,       -1, G_STRING          ,   /* Object 21 SM6 */
+        14,       -1,       -1, G_STRING          ,   /* Object 21 MA_KUGLN */
   SELECTABLE|EXIT|LASTOB, NORMAL, (LONG)"2 Kugeln      30",
   0x0019, 0x0003, 0x0010, 0x0001,
   

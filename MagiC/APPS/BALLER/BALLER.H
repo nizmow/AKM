@@ -70,12 +70,12 @@
 #define SHK              11  /* BOXCHAR in Baum STATUS */
 #define SHG              12  /* BOXCHAR in Baum STATUS */
 #define FERTIG           13  /* BUTTON in Baum STATUS */
-#define SM1              16  /* STRING in Baum STATUS */
-#define SM2              17  /* STRING in Baum STATUS */
-#define SM3              18  /* STRING in Baum STATUS */
-#define SM4              19  /* STRING in Baum STATUS */
-#define SM5              20  /* STRING in Baum STATUS */
-#define SM6              21  /* STRING in Baum STATUS */
+#define MA_BAUEN         16  /* STRING in Baum STATUS */
+#define MA_FOERD         17  /* STRING in Baum STATUS */
+#define MA_KANON         18  /* STRING in Baum STATUS */
+#define MA_FAHNE         19  /* STRING in Baum STATUS */
+#define MA_PULVR         20  /* STRING in Baum STATUS */
+#define MA_KUGLN         21  /* STRING in Baum STATUS */
 
 #define SIEGER           7   /* Formular/Dialog */
 #define SG1              6   /* BUTTON in Baum SIEGER */

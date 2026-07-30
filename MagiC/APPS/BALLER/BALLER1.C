@@ -39,6 +39,7 @@
 #define fn()      f = 1 - 2 * (n & 1);
 
 int ap_id;
+int have_form_xdial = 0;
 char *screenptr;		/* von Logbase() */
 char *screenbuffer;		/* TODO: auflîsungsunabhÑngig machen */
 GRECT desk_g;			/* nutzbarer Bildschirm unterhalb der MenÅleiste */
@@ -130,6 +131,7 @@ static int gem_init(void)
 {
 	WORD dummy;
 	int i;
+	WORD ap_gout1;
 
 	ap_id = appl_init();
 	if (ap_id < 0)
@@ -153,6 +155,15 @@ static int gem_init(void)
 	screen_g.g_x = screen_g.g_y = 0;
 	screen_g.g_w = desk_g.g_x+desk_g.g_w;
 	screen_g.g_h = desk_g.g_y+desk_g.g_h;
+
+	/* Wird form_xdial() unterstÅtzt? */
+	if (appl_getinfo(14, &ap_gout1, NULL, NULL, NULL))
+	{
+		if (ap_gout1)
+		{
+			have_form_xdial = 1;
+		}
+	}
 
 	return 0;
 }
@@ -778,57 +789,66 @@ static void werdran(char c)
 /************** Darstellung und Verwaltung eines Objektbaumes ****************/
 static int obj_do(OBJECT *tree)
 {
-#if 1
-	return do_dialog(tree);		/* aus GEMUT_MT fÅr MagiC, rettet Hintergrund */
-#else
-	int ret;
-	int fl = 0;
-	static GRECT g1 = {20, 20, 30, 20};
-
-	if (tree == rsctree_names)
+	if (have_form_xdial)
 	{
-		fl = NSP1;
-		g1.g_x = 80;
+		return do_dialog(tree);		/* aus GEMUT_MT fÅr MagiC, rettet Hintergrund */
 	}
-	if (tree == rsctree_options)
+	else
 	{
-		fl = MAX_XX;
-		g1.g_x = 80;
+		int ret;
+		int fl = 0;
+		static GRECT g1 = {20, 20, 30, 20};
+	
+		if (tree == rsctree_names)
+		{
+			fl = NSP1;
+			g1.g_x = 80;
+		}
+		if (tree == rsctree_options)
+		{
+			fl = MAX_XX;
+			g1.g_x = 80;
+		}
+		if (tree == rsctree_computer)
+		{
+			g1.g_x = 150;
+		}
+		if (tree == rsctree_players)
+		{
+			fl = EI_N1;
+			g1.g_x = 260;
+		}
+	
+		/* Man beachte, daû wir hier FMD_START und FMD_FINISH weglassen, weil wir
+		   derzeit keine WM_REDRAW-Nachricht auslîsen mîchte, die wir nicht behandeln. */
+	
+		form_center(tree, &fgrect);
+		save_screen();
+		form_dial(FMD_GROW, &g1, &fgrect);
+		objc_draw(tree, 0, 5, &desk_g);
+		ret = form_do(tree, fl);
+		tree[ret].ob_state = 0;		/* SELECTED lîschen */
+		restore_screen();
+		form_dial(FMD_SHRINK, &g1, &fgrect);
+		return ret;
 	}
-	if (tree == rsctree_computer)
-	{
-		g1.g_x = 150;
-	}
-	if (tree == rsctree_players)
-	{
-		fl = EI_N1;
-		g1.g_x = 260;
-	}
-
-	/* Man beachte, daû wir hier FMD_START und FMD_FINISH weglassen, weil wir
-	   derzeit keine WM_REDRAW-Nachricht auslîsen mîchte, die wir nicht behandeln. */
-
-	form_center(tree, &fgrect);
-	save_screen();
-	form_dial(FMD_GROW, &g1, &fgrect);
-	objc_draw(tree, 0, 5, &desk_g);
-	ret = form_do(tree, fl);
-	tree[ret].ob_state = 0;		/* SELECTED lîschen */
-	restore_screen();
-	form_dial(FMD_SHRINK, &g1, &fgrect);
-	return ret;
-#endif
 }
 
 
 /********************* Neues Spiel: Auswahl der Burgen ***********************/
 static int bur_obj(void)
 {
+	void *flyinf;		/* MagiC-spezifisch, f_r form_xdial() */
+	void **p_flyinf;
+	int dummy;
 	static const GRECT g1 = {70, 20, 30, 20};
 
 	int i,ob0,ob1,oy0,oy1, x,y,w,h, ol[8];
 
-	oy0=by[0]; oy1=by[1]; ob0=spieler_burg[0]; ob1=spieler_burg[1];
+	oy0 = by[0];
+	oy1 = by[1];
+	ob0 = spieler_burg[0];
+	ob1 = spieler_burg[1];
 
 	rsctree_castles[BSP1].ob_spec.free_string = l_nam;
 	rsctree_castles[BSP2].ob_spec.free_string = r_nam;
@@ -844,9 +864,21 @@ static int bur_obj(void)
 	bx[1] = x + w;
 	by[1] = y+h;
 
-	/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
-	save_screen();
-	form_dial(FMD_GROW, &g1, &fgrect);
+
+	if (have_form_xdial)
+	{
+		/* form_xdial() sichert und restauriert den Bereich unter dem Dialog. */
+		flyinf = NULL;
+		p_flyinf = &flyinf;
+		form_xdial(FMD_START, NULL, &fgrect, p_flyinf);
+	}
+	else
+	{
+		/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
+		save_screen();
+		form_dial(FMD_GROW, &g1, &fgrect);
+	}
+
 	objc_draw(rsctree_castles, 0, 5, &desk_g);
 
 	/* alte Werte sichern */
@@ -866,7 +898,17 @@ static int bur_obj(void)
 	do
 	{
 		spieler_geld[0] = spieler_geld[1] = spieler_pulver[0] = spieler_pulver[1] = spieler_kugeln[0] = spieler_kugeln[1] = 9999;
-		i = form_do(rsctree_castles, 0);
+
+
+		if (have_form_xdial)
+		{
+			i = 0x7f & form_xdo(rsctree_castles, 0, &dummy, NULL, flyinf);
+		}
+		else
+		{
+			i = form_do(rsctree_castles, 0);
+		}
+
 		rsctree_castles[i].ob_state = 0;
 
 		if ((i == BL1) || (i == BR1))
@@ -893,8 +935,15 @@ static int bur_obj(void)
 	spieler_volk[0] = ol[6];
 	spieler_volk[1] = ol[7];
 
-	restore_screen();
-	form_dial(FMD_SHRINK, &g1, &fgrect);
+	if (have_form_xdial)
+	{
+		form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
+	}
+	else
+	{
+		restore_screen();
+		form_dial(FMD_SHRINK, &g1, &fgrect);
+	}
 
 	fn();
 	by[0] = oy0;
@@ -1038,29 +1087,76 @@ static void handle_menu_choose_computer(void)
 /* */
 static void handle_menu_help(void)
 {
+	void *flyinf;		/* MagiC-spezifisch, f_r form_xdial() */
+	void **p_flyinf;
+	int dummy;
 	static const GRECT g1 = {190, 20, 30, 20};
 	int a = 0, b;
-	OBJECT *c;
+	OBJECT *dialog;
 
 	/* Wir lassen hier FMD_START und FMD_FINISH weg, weil wir keine WM_REDRAW-Nachricht wollen */
 	form_center(rsctree_help1, &fgrect);
 	form_center(rsctree_help2, &fgrect);
 	form_center(rsctree_help3, &fgrect);
-	save_screen();
+
+	if (have_form_xdial)
+	{
+		/* form_xdial() sichert und restauriert den Bereich unter dem Dialog. */
+		flyinf = NULL;
+		p_flyinf = &flyinf;
+		form_xdial(FMD_START, NULL, &fgrect, p_flyinf);
+	}
+	else
+	{
+		/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
+		save_screen();
+	}
 	form_dial(FMD_GROW, &g1, &fgrect);
+
 	do
 	{
-		c = a ? ((a < 2) ? rsctree_help2 : rsctree_help3) : rsctree_help1;
-		objc_draw(c, 0, 5, &desk_g);
-		b = form_do(c, 0);
-		*(int *)(c + 24 * b + 10) = 0;
-		if( a==1 && b==R21 || a==2 && b==R31 ) { b=-1; a=0; }
-		if( a==0 && b==R12 || a==2 && b==R32 ) { b=-1; a=1; }
-		if( a==0 && b==R13 || a==1 && b==R23 ) { b=-1; a=2; }
+		dialog = a ? ((a < 2) ? rsctree_help2 : rsctree_help3) : rsctree_help1;
+		objc_draw(dialog, 0, 5, &desk_g);
+
+		if (have_form_xdial)
+		{
+			b = 0x7f & form_xdo(dialog, 0, &dummy, NULL, flyinf);
+		}
+		else
+		{
+			b = form_do(dialog, 0);
+		}
+		if (b >= 0)
+		{
+			dialog[b].ob_state = 0;
+		}
+
+		if ((a == 1) && (b == R21) || (a == 2) && (b == R31))
+		{
+			b = -1;
+			a = 0;
+		}
+		if ((a == 0) && (b == R12) || (a == 2) && (b == R32))
+		{
+			b = -1;
+			a = 1;
+		}
+		if ((a == 0) && (b == R13) || (a == 1) && (b == R23))
+		{
+			b = -1;
+			a = 2;
+		}
 	} while(b < 0);
 
-	restore_screen();
-	form_dial(FMD_FINISH, &g1, &fgrect);
+	if (have_form_xdial)
+	{
+		form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
+	}
+	else
+	{
+		restore_screen();
+		form_dial(FMD_SHRINK, &g1, &fgrect);
+	}
 }
 
 
@@ -1168,11 +1264,11 @@ static int handle_menu(void)
 	{
 		handle_menu_player_names();
 	}
-	else if( m_buf[4]==ERG2 )
+	else if (m_buf[4] == ERG2)
 	{
 		if (t_load())
 		{
-			form_alert(1,"[1][Kann BALLER.TAB nicht laden!][Abbruch]" );
+			form_alert(1,"[1][Kann BALLER.TAB nicht laden!][Abbruch]");
 		}
 	}
 	else
@@ -1183,16 +1279,40 @@ static int handle_menu(void)
 	else
 	if (m_buf[4] == ERG4)
 	{
-		save_screen();
-		form_dial(1, &g2, &g3);
-		tabelle();
+		void *flyinf;		/* MagiC-spezifisch, f_r form_xdial() */
+		void **p_flyinf;
+
+		if (have_form_xdial)
+		{
+			/* form_xdial() sichert und restauriert den Bereich unter dem Dialog. */
+			flyinf = NULL;
+			p_flyinf = &flyinf;
+			form_xdial(FMD_START, NULL, &fgrect, p_flyinf);
+		}
+		else
+		{
+			/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
+			save_screen();
+		}
+		form_dial(FMD_GROW, &g2, &g3);
+
+		tabelle();		/* zeichne die Tabelle per VDI */
+
 		ev.bstate = 0;
 		while(!ev.bstate)
 		{
 			graf_mkstate(&ev);
 		}
-		restore_screen();
-		form_dial(2, &g2, &g3);
+
+		if (have_form_xdial)
+		{
+			form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
+		}
+		else
+		{
+			restore_screen();
+		}
+		form_dial(FMD_SHRINK, &g2, &g3);
 	}
 	if ((m_buf[4] >= MOD1) && (m_buf[4] <= MOD5))
 	{
@@ -1284,18 +1404,18 @@ static int drin(int xk, int yk, int w, int h, int r, int x, int y)
 }
 
 
-/* fÅnfstellige Zahl, rechtsbÅndig, ohne fÅhrende Nullen */
-static void zahl(int nr, int wert )
+/* Schreibe fÅnfstellige Zahl, rechtsbÅndig, ohne fÅhrende Nullen, ab Offset 11 in das Objekt */
+static void write_val(OBJECT *tree, int obj, unsigned offs, int value)
 {
 	short i,a,b;
 	char *adr;
 
-	adr = rsctree_status[nr].ob_spec.free_string + 11;
+	adr = tree[obj].ob_spec.free_string + offs;
 	for (b = i = 0, a = 10000; i < 5; i++, a /= 10 )
 	{
-		*adr++ = 48 + wert / a - 16 * ((wert < a) && (i < 4) && (!b));
-		b |= wert / a;
-		wert %= a;
+		*adr++ = '0' + value / a - 16 * ((value < a) && (i < 4) && (!b));
+		b |= value / a;
+		value %= a;
 	}
 }
 
@@ -1408,9 +1528,16 @@ static void baue_foerderturm(void)
 }
 
 
+/* TODO: klappt noch nicht mit dem form_xdial und dem Anbauen, weil dabei
+ der gespeicherte Bildschirm verwendet wird. */
 static void markt(void)
 {
-	int a,k,ko,t;
+	void *flyinf;		/* MagiC-spezifisch, f_r form_xdial() */
+	void **p_flyinf;
+	int dummy;
+	int k,ko,t;
+	int i;
+	int obj;
 
 	GRECT g1 = { 0, 0, 30, 20 };
 
@@ -1419,13 +1546,27 @@ static void markt(void)
 	form_center(rsctree_status, &fgrect);
 
 	/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
-	save_screen();
+	if (have_form_xdial)
+	{
+		/* form_xdial() sichert und restauriert den Bereich unter dem Dialog. */
+		flyinf = NULL;
+		p_flyinf = &flyinf;
+		form_xdial(FMD_START, NULL, &fgrect, p_flyinf);
+	}
+	else
+	{
+		/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
+		save_screen();
+	}
 	form_dial(FMD_GROW, &g1, &fgrect);
 
-	for (a = 0; a < 6;a++)
-		zahl(SM1+a, p[a]);
+	/* 6 Elemente: Bauen, Fîrderturm, GeschÅtz, Windfahne, Pulver, Kugeln */
+	for (i = 0; i < 6; i++)
+	{
+		write_val(rsctree_status, MA_BAUEN + i, 11, p[i]);
+	}
 
-	do
+	for (;;)
 	{
 		for (t = k = 0; k < N_FOERDERTUERME;)
 			t += (spieler_foerdertuerme[n][k++].x > -1);
@@ -1437,77 +1578,129 @@ static void markt(void)
 			if (bg[1 + k * 2] > -1 && spieler_kanonen[n][k].x == -1)
 			{
 			    graf_mouse(M_OFF, NULL);
-			    for (a = 1; a < 10; a++)
-			    	if (loc(639 * n + (bg[1 + k * 2] + 5 + a) * f, by[n] - bg[2 + k * 2] - a))
+			    for (i = 1; i < 10; i++)
+			    	if (loc(639 * n + (bg[1 + k * 2] + 5 + i) * f, by[n] - bg[2 + k * 2] - i))
 			    		break;
 			    graf_mouse(M_ON, NULL);
-			    if (a > 9)
+			    if (i > 9)
 			    	break;
 			}
-		zahl(ST_GELD, spieler_geld[n]);
-		zahl(ST_FOERD, t);
-		zahl(ST_GESCH, ko);
-		zahl(ST_FAHNE, wx[n] > -1);
-		zahl(ST_PULVR, spieler_pulver[n]);
-		zahl(ST_KUGEL, spieler_kugeln[n]);
-		zahl(ST_VOLK, spieler_volk[n]);
-		zahl(ST_STEUR, spieler_steuer[n]);
+		
+		/* aktualisiere das Inventar im Dialog, d.h. wieviele Objekte der Spieler hat */
+		write_val(rsctree_status, ST_GELD,  11, spieler_geld[n]);
+		write_val(rsctree_status, ST_FOERD, 11, t);
+		write_val(rsctree_status, ST_GESCH, 11, ko);
+		write_val(rsctree_status, ST_FAHNE, 11, wx[n] > -1);
+		write_val(rsctree_status, ST_PULVR, 11, spieler_pulver[n]);
+		write_val(rsctree_status, ST_KUGEL, 11, spieler_kugeln[n]);
+		write_val(rsctree_status, ST_VOLK,  11, spieler_volk[n]);
+		write_val(rsctree_status, ST_STEUR, 11, spieler_steuer[n]);
 
-		for (a = 0; a < 6; a++)
+		for (i = 0; i < 6; i++)
 		{
-			rsctree_status[SM1 + a].ob_state = 8 * (spieler_geld[n] < p[a] || !an_erl && !a ||
-			                                   (a == 1) && (bg[0] + t * 30 > 265 || t > 4) ||
-			                                   (a == 2) && (k > 9) || (a == 3) && (wx[n] > -1));
+			rsctree_status[MA_BAUEN + i].ob_state = 8 * (spieler_geld[n] < p[i] || !an_erl && !i ||
+			                                   (i == 1) && (bg[0] + t * 30 > 265 || t > 4) ||
+			                                   (i == 2) && (k > 9) || (i == 3) && (wx[n] > -1));
 		}
 
 		objc_draw(rsctree_status, 0, 5, &desk_g);
 
-		a = form_do(rsctree_status, 0);
-		if (a >= 0)
-			rsctree_status[a].ob_state = 0;
-		if (a == SHK)
+		if (have_form_xdial)
+		{
+			obj = 0x7f & form_xdo(rsctree_status, 0, &dummy, NULL, flyinf);
+		}
+		else
+		{
+			obj = form_do(rsctree_status, 0);
+		}
+
+		if (obj >= 0)
+		{
+			rsctree_status[obj].ob_state = 0;
+		}
+		
+		if (obj == FERTIG)
+		{
+			break;		/* Dialog beenden */
+		}
+
+		if (obj == SHK)
 			spieler_steuer[n] -= 2 * (spieler_steuer[n] > 0);
 		else
-		if (a == SHG)
+		if (obj == SHG)
 			spieler_steuer[n] += 2 * (spieler_steuer[n] < 100);
 		else
-		if ((a != FERTIG) && (a - SM1 >-1) && (a - SM1 < 6))
+		if ((obj - MA_BAUEN > -1) && (obj - MA_BAUEN < 6))
 		{
-			spieler_geld[n] -= p[a - SM1];
-			if (a < SM5)
+			spieler_geld[n] -= p[obj - MA_BAUEN];
+			if (obj < MA_PULVR)
 			{
-				restore_screen();
-				drw_all();
-				if (a == SM1)
+				if (have_form_xdial)
+				{
+					form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
+				}
+				else
+				{
+					restore_screen();
+				}
+
+				drw_all();		/* warum? */
+
+				if (obj == MA_BAUEN)
+				{
 					anbau();
+				}
 				else
-				if (a == SM2)
-					baue_foerderturm();	/* Fîrderturm bauen */
+				if (obj == MA_FOERD)
+				{
+					baue_foerderturm();
+				}
 				else
-				if (a == SM3)
+				if (obj == MA_KANON)
+				{
 					init_kanone(k, 639 * n);
+				}
 				else
-				if (a == SM4)
+				if (obj == MA_FAHNE)
 				{
 					wx[n] = 639 * n + f * bg[23];
 					wy[n] = by[n] - bg[24];
 					werdran(1);
 				}
 
-				save_screen();
+				if (have_form_xdial)
+				{
+					flyinf = NULL;
+					p_flyinf = &flyinf;
+					form_xdial(FMD_START, NULL, &fgrect, p_flyinf);
+				}
+				else
+				{
+					save_screen();
+				}
 			}
 			else
 			{
-				spieler_pulver[n] += 30 * (a == SM5);
-				spieler_kugeln[n] += 2 * (a == SM6);
-				drw_gpk(a - SM4);
-				drw_gpk(0);}
+				spieler_pulver[n] += 30 * (obj == MA_PULVR);
+				spieler_kugeln[n] += 2 * (obj == MA_KUGLN);
+				drw_gpk(obj - MA_FAHNE);
+				drw_gpk(0);
 			}
-	} while (a != FERTIG);
+		}
+	}
 
-	restore_screen();
-	drw_all();
+	if (have_form_xdial)
+	{
+		form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
+	}
+	else
+	{
+		restore_screen();
+		form_dial(FMD_SHRINK, &g1, &fgrect);
+	}
 	form_dial(FMD_SHRINK, &g1, &fgrect);
+
+	drw_all();
 }
 
 
@@ -1777,11 +1970,10 @@ static void koenig(void)
 /************* Kanonenobjektbaum, Wahl von Winkel und Pulver *****************/
 static int sch_obj(int k)
 {
-#if 1
-	void *flyinf;		/* MagiC-spezifisch */
+	void *flyinf;		/* MagiC-spezifisch, fÅr form_xdial() */
 	void **p_flyinf;
 	int dummy;
-#endif
+
 
 	/* Daten fÅr das MÑnnchen */
 	static const int fig[] =
@@ -1802,16 +1994,19 @@ static int sch_obj(int k)
 	ap = rsctree_shootparams[PULV].ob_spec.free_string;
 	ap[2] = '\0';
 
-#if 1
-	flyinf = NULL;
-	p_flyinf = &flyinf;
 	form_center(rsctree_shootparams, &fgrect);
-	form_xdial(FMD_START, NULL, &fgrect, p_flyinf);
-#else
-	/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
-	save_screen();
-	form_center(rsctree_shootparams, &fgrect);
-#endif
+	if (have_form_xdial)
+	{
+		/* form_xdial() sichert und restauriert den Bereich unter dem Dialog. */
+		flyinf = NULL;
+		p_flyinf = &flyinf;
+		form_xdial(FMD_START, NULL, &fgrect, p_flyinf);
+	}
+	else
+	{
+		/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
+		save_screen();
+	}
 
 	objc_offset(rsctree_shootparams, WINK, &xw, &yw);
 	objc_offset(rsctree_shootparams, PULV, &xp, &yp);
@@ -1831,19 +2026,29 @@ static int sch_obj(int k)
 
 	do
 	{
-		if( pv>spieler_pulver[n] ) pv=spieler_pulver[n];
-		*aw=48+wi/100;
-		*(aw+1)=48+wi%100/10;
-		*(aw+2)=48+wi%10;
-		if(wi<100) { *aw=*(aw+1); *(aw+1)=*(aw+2); *(aw+2)=0; }
-		*ap=48+pv/10; *(ap+1)=48+pv%10;
+		if (pv > spieler_pulver[n])
+		{
+			pv = spieler_pulver[n];
+		}
+		*aw = 48 + wi / 100;
+		*(aw+1) =48 + wi % 100 / 10;
+		*(aw+2) =48 + wi % 10;
+		if (wi < 100)
+		{
+			*aw = *(aw+1);
+			*(aw+1) = *(aw+2);
+			*(aw+2) = 0;
+		}
+
+		*ap = 48 + pv / 10;
+		*(ap + 1) = 48 + pv % 10;
 		if (pv < 10)
 		{
 			*ap = *(ap + 1);
 			*(ap + 1) = 0;
 		}
 
-		if( fl )
+		if (fl)
 		{
 			objc_draw(rsctree_shootparams, 0, 4, &desk_g);
 			graf_mouse(M_OFF, NULL);
@@ -1882,15 +2087,19 @@ static int sch_obj(int k)
 			fl = 0;
 		}
 
-#if 1
-		i = 0x7f & form_xdo(rsctree_shootparams, 0, &dummy, NULL, flyinf);
-#else
-		i = form_do(rsctree_shootparams, 0);
-#endif
+		if (have_form_xdial)
+		{
+			i = 0x7f & form_xdo(rsctree_shootparams, 0, &dummy, NULL, flyinf);
+		}
+		else
+		{
+			i = form_do(rsctree_shootparams, 0);
+		}
 		if (i >= 0)
 		{
 			rsctree_shootparams[i].ob_state = 0;
 		}
+
 		wi -= 10 * (i == WL2) - 10 * (i == WR2) + (i == WL1) - (i == WR1);
 		if (wi < 0)
 		{
@@ -1911,12 +2120,15 @@ static int sch_obj(int k)
 		}
 	} while ((i != SOK) && (i != SAB));
 
-#if 1
-	form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
-#else
-	restore_screen();
-	form_dial(FMD_SHRINK, &g1, &fgrect);
-#endif
+	if (have_form_xdial)
+	{
+		form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
+	}
+	else
+	{
+		restore_screen();
+		form_dial(FMD_SHRINK, &g1, &fgrect);
+	}
 
 	spieler_kanonen[n][k].w = wi;
 	spieler_kanonen[n][k].p = pv;
@@ -2287,7 +2499,6 @@ static int ein_zug(void)
 	{
 		fl = 0;
 		wind_update(END_MCTRL);			/* Bildschirm freigeben, damit die MenÅs funktionieren */
-		fck = !(spiel_modus & (2 - n));
 		do
 		{
 			/* Warte auf Mausklick oder MenÅ. Bearbeite MenÅ. */
@@ -2305,6 +2516,7 @@ static int ein_zug(void)
 				a |= *(char *)(screenptr + 80 + i++);
 			}
 			a = 0;
+			fck = !(spiel_modus & (2 - n));
 			/*
 			printf("ev.x/y/bstate = %3d/%3d/%d\n", ev.x, ev.y, ev.bstate);
 			printf("!(spiel_modus & (2 - n)) = %d\n", !(spiel_modus & (2 - n)));
