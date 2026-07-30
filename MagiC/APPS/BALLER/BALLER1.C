@@ -1446,19 +1446,31 @@ int loc(int x, int y)
 }
 
 
-/* Anbauen */
+/* Anbauen. Dabei verwandelt sich der Mauszeiger in ein fettes Kreuz, und man h„lt die
+   linke Maustaste gedrckt und "malt" dabei Steine. Wenn alle Steine verbraucht sind
+   bzw. das Geld verbraucht ist, bricht der Vorgang abrupt ab. */
 static void anbau(void)
 {
-	short s;
-	char a[3];
+	void *flyinf;		/* MagiC-spezifisch, f_r form_xdial() */
+	void **p_flyinf;
+	/* static const GRECT g = { 220, 375, 25*8, 36 }; */
+	static const GRECT g = { 220, 362, 25*8, 36 };
+	int n_steine = 20;	/* Wir starten mit 20 Steinen */
+	color(COLOUR_BLACK);
+	vsf_interior(vdi_handle, FIS_PATTERN);		/* 2: Muster */
+	vsf_style(vdi_handle, 9);		/* Muster 2,9 ist eine Ziegelstein-Mauer */
 
-	color(1);
-	vsf_interior(vdi_handle, 2);
-	vsf_style(vdi_handle, 9);
+	if (have_form_xdial)
+	{
+		flyinf = NULL;
+		p_flyinf = &flyinf;
+		form_xdial(FMD_START, NULL, &g, p_flyinf);
+	}
+
+	/* Text */
 	v_gtext(vdi_handle, 280, 375, " Anbauen: " );
 	v_gtext(vdi_handle, 220, 395, " Verbleibende Steine: 20 ");
-	s = 20;
-	graf_mouse(6,0);
+	graf_mouse(THICK_CROSS, NULL);
 
 	do
 	{
@@ -1466,36 +1478,53 @@ static void anbau(void)
 		if ((ev.bstate) && (n ? (ev.x > 624 - bg[0]) : (ev.x < bg[0] + 15) && (ev.y > 155)))
 		{
 			graf_mouse(M_OFF, NULL);
+			/* loc() liefert 0 fr Wei und 1 fr Schwarz.
+			   Hier wird wohl geprft, ob an der Mausposition ein Stein gesetzt werden darf */
+
 			if (!(loc(ev.x, ev.y)      || loc(ev.x + 1, ev.y + 1) || loc(ev.x - 1, ev.y - 1)) &&
 			  (loc(ev.x + 3, ev.y - 1) || loc(ev.x + 3, ev.y + 1) || loc(ev.x - 3, ev.y - 1) || loc(ev.x - 3, ev.y + 1)||
 			   loc(ev.x + 1, ev.y + 2) || loc(ev.x - 1, ev.y + 2) || loc(ev.x + 1, ev.y - 2) || loc(ev.x - 1, ev.y - 2) ))
 			{
+				char a[3];
+
+				/* Male ein Reckteck mit Ziegelsteinmuster */
 				vswr_mode(vdi_handle, MD_ERASE);
 				xy[0] = ev.x - 2;
 				xy[1] = ev.y - 1;
 				xy[2] = ev.x + 2;
 				xy[3] = ev.y + 1;
 				v_bar(vdi_handle, xy);
+				
+				/* Aktualisiere den Schriftzug fr die Zahl der verbleibenden Steine */
 				vswr_mode(vdi_handle, MD_REPLACE);
-				s--;
-				a[0] = 48 + s / 10;
-				a[1] = 48 + s % 10;
+				n_steine--;
+				a[0] = '0' + n_steine / 10;
+				a[1] = '0' + n_steine % 10;
 				a[2] = 0;
 				v_gtext(vdi_handle, 396, 395, a);
 			}
 			graf_mouse(M_ON, NULL);
 		}
-	} while((s > 0) && (ev.bstate < 2));
+	} while((n_steine > 0) && (ev.bstate < 2));		/* Mit der rechten Maustaste abbrechen? */
 
-	/* TODO: aufl”sungsunabh„ngig machen */
-	for (s = 360; s < 400; s++)
+	if (have_form_xdial)
 	{
-		/* in 640x400x1: 80 Bytes pro Zeile */
-		/* Bildschirmzeilen 360..399, Spalten 208..319 aus dem Puffer in den Bildschirm kopieren */
-		memmove(screenptr + s * 80 + 26, screenbuffer + s * 80 + 26, 28);
+		form_xdial(FMD_FINISH, NULL, &g, p_flyinf);
+	}
+	else
+	{
+		int s;
+		for (s = 360; s < 400; s++)
+		{
+			/* in 640x400x1: 80 Bytes pro Zeile */
+			/* Bildschirmzeilen 360..399, Spalten 208..319 aus dem Puffer in den Bildschirm kopieren.
+			   Damit soll wohl der Text gel”scht werden.
+			   Der Text beginnt aber bei 220/375, nicht bei 208/360. Seltsam. */
+			memmove(screenptr + s * 80 + 26, screenbuffer + s * 80 + 26, 28);
+		}
 	}
 
-	graf_mouse(0, 0);
+	graf_mouse(ARROW, NULL);
 }
 
 
@@ -1646,7 +1675,9 @@ static void markt(void)
 			spieler_geld[n] -= preise[obj - MA_BAUEN];
 			if (obj < MA_PULVR)
 			{
-				/* Anbauen, F”rderturm, Geschtz, Windfahne */
+				/* Anbauen, F”rderturm, Geschtz, Windfahne:
+				   Dafr mu der Dialog erstmal geschlossen, also entfernt werden
+				   und nach der Aktion neu gezeichnet. */
 				if (have_form_xdial)
 				{
 					form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
