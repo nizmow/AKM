@@ -33,6 +33,15 @@
 #define N_KANONEN 10				/* maximale Anzahl Kanonen pro Spieler */
 #define BURGEN_DATEN_MAXLEN 5120	/* maximaler Anzahl Elemente fÅr alle Burgen */
 #define N_BURGEN 20					/* maximale Anzahl Burgen */
+
+#define N_PREISE 6					/* 6 Elemente: Bauen, Fîrderturm, GeschÅtz, Windfahne, Pulver, Kugeln */
+ #define PREIS_ANBAUEN 0
+ #define PREIS_FOERDERTURM 1
+ #define PREIS_GESCHUETZ 2
+ #define PREIS_WINDFAHNE 3
+ #define PREIS_PULVER 4
+ #define PREIS_KUGELN 5
+
 #define P57       57.296
 #define G         0.02
 #define bing()    Bconout(2, '\x07');
@@ -99,7 +108,7 @@ int ws,wc;
 int *bg, zug;
 int n;	/* Gerade aktiver Spieler, 0 oder 1. TODO: Bereich sicherstellen und sinnvoll umbenennen */
 int oldn;
-int p[6];
+int preise[N_PREISE];
 int max_rund,
       ftx,fty,ftw,fth,
       f_h;
@@ -638,9 +647,10 @@ static void neues_spiel(void)
 	spieler_steuer[0] = spieler_steuer[1] = 20;		/* 20% Steuersatz*/
 	spieler_koenig[0] = spieler_koenig[1] = 0;
 
-	for (i = 0; i < 6; i++)
+	/* zufÑllige Preise festlegen */
+	for (i = 0; i < N_PREISE; i++)
 	{
-		p[i] = (int) (pr[i] * (95 + Random() % 11) / 100);
+		preise[i] = (int) (pr[i] * (95 + Random() % 11) / 100);
 	}
 
 	bild();
@@ -1560,10 +1570,10 @@ static void markt(void)
 	}
 	form_dial(FMD_GROW, &g1, &fgrect);
 
-	/* 6 Elemente: Bauen, Fîrderturm, GeschÅtz, Windfahne, Pulver, Kugeln */
-	for (i = 0; i < 6; i++)
+	/* aktuelle Preise in den Dialog schreiben */
+	for (i = 0; i < N_PREISE; i++)
 	{
-		write_val(rsctree_status, MA_BAUEN + i, 11, p[i]);
+		write_val(rsctree_status, MA_BAUEN + i, 11, preise[i]);
 	}
 
 	for (;;)
@@ -1596,9 +1606,10 @@ static void markt(void)
 		write_val(rsctree_status, ST_VOLK,  11, spieler_volk[n]);
 		write_val(rsctree_status, ST_STEUR, 11, spieler_steuer[n]);
 
-		for (i = 0; i < 6; i++)
+		for (i = 0; i < N_PREISE; i++)
 		{
-			rsctree_status[MA_BAUEN + i].ob_state = 8 * (spieler_geld[n] < p[i] || !an_erl && !i ||
+			/* alles deaktivieren, was nicht erlaubt oder zu teuer ist? */
+			rsctree_status[MA_BAUEN + i].ob_state = 8 * (spieler_geld[n] < preise[i] || !an_erl && !i ||
 			                                   (i == 1) && (bg[0] + t * 30 > 265 || t > 4) ||
 			                                   (i == 2) && (k > 9) || (i == 3) && (wx[n] > -1));
 		}
@@ -1632,9 +1643,10 @@ static void markt(void)
 		else
 		if ((obj - MA_BAUEN > -1) && (obj - MA_BAUEN < 6))
 		{
-			spieler_geld[n] -= p[obj - MA_BAUEN];
+			spieler_geld[n] -= preise[obj - MA_BAUEN];
 			if (obj < MA_PULVR)
 			{
+				/* Anbauen, Fîrderturm, GeschÅtz, Windfahne */
 				if (have_form_xdial)
 				{
 					form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
@@ -1684,7 +1696,7 @@ static void markt(void)
 				spieler_pulver[n] += 30 * (obj == MA_PULVR);
 				spieler_kugeln[n] += 2 * (obj == MA_KUGLN);
 				drw_gpk(obj - MA_FAHNE);
-				drw_gpk(0);
+				drw_gpk(0);  /* Zeichne Geld */
 			}
 		}
 	}
@@ -1782,28 +1794,28 @@ static int comp(void)
 		if (spieler_kanonen[n][i].x >- 1)
 			break;
 
-	if (spieler_pulver[n] < 20 && spieler_geld[n] >= p[4])
+	if (spieler_pulver[n] < 20 && spieler_geld[n] >= preise[PREIS_PULVER])
 	{
 		spieler_pulver[n] += 30;
-		spieler_geld[n] -= p[4];
+		spieler_geld[n] -= preise[PREIS_PULVER];
 	}  /* Pulv. kaufen*/
 
-	if (!spieler_kugeln[n] && spieler_geld[n] >= p[5])
+	if (!spieler_kugeln[n] && spieler_geld[n] >= preise[PREIS_KUGELN])
 	{
 		spieler_kugeln[n] += 2;
-		spieler_geld[n] -= p[5];
+		spieler_geld[n] -= preise[PREIS_KUGELN];
 	}  /* Kug.  kaufen*/
 
-	if (i > 9 && spieler_geld[n] >= p[2])
+	if (i > 9 && spieler_geld[n] >= preise[PREIS_GESCHUETZ])
 	{
 		init_kanone(i = 0, 639 * n);
-		spieler_geld[n] -= p[2];
+		spieler_geld[n] -= preise[PREIS_GESCHUETZ];
 	} /* Ka. kauf.*/
 
 	if ((spieler_foerdertuerme[n][0].x < 0 || spieler_foerdertuerme[n][1].x < 0 || spieler_foerdertuerme[n][2].x < 0) &&
-	    spieler_geld[n] >= p[1] && cw[n] > 2)
+	    spieler_geld[n] >= preise[PREIS_FOERDERTURM] && cw[n] > 2)
 	{
-		spieler_geld[n] -= p[1];
+		spieler_geld[n] -= preise[PREIS_FOERDERTURM];
 		baue_foerderturm();
 	} /* Fîrderturm kaufen */
 
@@ -1922,7 +1934,7 @@ static void koenig(void)
 		if (j & 4)
 			s[i++] = kn14;
 
-		if ((spieler_geld[n] > p[1]) && (t < 3))
+		if ((spieler_geld[n] > preise[PREIS_FOERDERTURM]) && (t < 3))
 			s[i++] = kn5;
 
 		if ((spieler_steuer[n] > 40) && (spieler_volk[n] < bg[40]) || (spieler_steuer[n] > 70))
@@ -1937,7 +1949,7 @@ static void koenig(void)
 		if (t > 2)
 			s[i++] = kn2;
 
-		if (k < 1 && spieler_geld[n] < p[2])
+		if (k < 1 && spieler_geld[n] < preise[PREIS_GESCHUETZ])
 			s[i++] = kn4;
 
 		if ((spieler_koenig[n] & 15) > 4)
@@ -2375,33 +2387,43 @@ static void schuss(/* Nr. der Kanone */ int k)
 /********** Berechnen von Bevîlkerungszuwachs usw. nach jedem Zug ************/
 static void rechnen(void)
 {
-	int j;
-	static int pmi[6] =
+	int steuer;
+	int i;
+	static const int preise_max[N_PREISE] =
 	{
 		98,347,302,102,30,29
-	},   /* Preisgrenzen */
-	            pma[6]={ 302,707,498,200,89,91 },
-	            psp[6]={ 10,50,50,20,10,10 };     /* max. Preisschwankung */
+	};
+	static const int preise_min[N_PREISE] =
+	{
+		302,707,498,200,89,91
+	};
+	/* max. Preisschwankung */
+	static const int preise_maxdiff[N_PREISE] =
+	{
+		10,50,50,20,10,10
+	};     
 
-	j = spieler_steuer[n];
-	spieler_geld[n] += spieler_volk[n] * ((j > 65) ? (130 - j) : j) / (150 - (int) (Random() % 50));
-	spieler_volk[n] = spieler_volk[n] * (95 + (int) (Random() % 11) / 100) + (21 - j + ((int) Random() % 9)) * (8 + (int) (Random() % 5))/20;
+	steuer = spieler_steuer[n];
+	spieler_geld[n] += spieler_volk[n] * ((steuer > 65) ? (130 - steuer) : steuer) / (150 - (int) (Random() % 50));
+	/*printf("volk[%d]=%d", n, spieler_volk[n]);*/
+	spieler_volk[n] = spieler_volk[n] * (95 + (int) (Random() % 11)) / 100 + (21 - steuer + ((int) Random() % 9)) * (8 + (int) (Random() % 5)) / 20;
+	/*printf("->%d\n", spieler_volk[n]);*/
 	if (spieler_volk[n] < 0)
 	{
 		spieler_volk[n] = 0;
 		end = n + 49;
 	}
 
-	for (j = 0; j < N_FOERDERTUERME;j++)
+	for (i = 0; i < N_FOERDERTUERME; i++)
 	{
-		spieler_geld[n] += (40 + (int) (Random() % 31)) * (spieler_foerdertuerme[n][j].x > -1);
+		spieler_geld[n] += (40 + (int) (Random() % 31)) * (spieler_foerdertuerme[n][i].x > -1);
 	}
 
-	for (j = 0;j < 6; j++ )
+	for (i = 0; i < N_PREISE; i++)
 	{
-	  p[j] += psp[j] * ((int) (Random() % 99)) / 98 - psp[j] / 2;
-	  p[j] = Max(p[j], pmi[j]);
-	  p[j] = Min(p[j], pma[j]);
+		preise[i] += preise_maxdiff[i] * ((int) (Random() % 99)) / 98 - preise_maxdiff[i] / 2;
+		preise[i] = Max(preise[i], preise_max[i]);
+		preise[i] = Min(preise[i], preise_min[i]);
 	}
 	drw_gpk(0);
 }
@@ -2438,14 +2460,17 @@ static void ende(void)
 
 	switch(end & 240)
 	{
-	  case 16: strcat( s2,"Kînig wurde getroffen," );
-	           strcpy( s3,"  daraufhin ergab sich dessen Volk. )" ); break;
-	  case 32: strcat( s2,"Kînig hat aufgrund der" );
-	           strcpy( s3,"  aussichtslosen Lage kapituliert. )" ); break;
-	  case 48: strcat( s2," hat kein Volk mehr. )" ); s3[0]=0; break;
-	  case 64: strcpy( s3,s2 );
-	           strcpy( s2,"( Die maximale Rundenzahl ist erreicht.");
-	           strcat( s3," befindet sich in der schlechteren Lage. )" );
+	  case 16: strcat(s2, "Kînig wurde getroffen,");
+	           strcpy(s3, "  daraufhin ergab sich dessen Volk. )" );
+	           break;
+	  case 32: strcat(s2, "Kînig hat aufgrund der");
+	           strcpy(s3, "  aussichtslosen Lage kapituliert. )" ); break;
+	  case 48: strcat(s2, " hat kein Volk mehr.)" );
+	  			 s3[0] = 0;
+	  			 break;
+	  case 64: strcpy(s3, s2);
+	           strcpy(s2, "(Die maximale Rundenzahl ist erreicht.");
+	           strcat(s3, " befindet sich in der schlechteren Lage.)" );
 	}
 	/* TODO: Hier kein form_dial()? */
 	objc_draw(rsctree_winner, 0, 7, &desk_g);
@@ -2613,7 +2638,8 @@ static int ein_zug(void)
 		if (spieler_kanonen[n][a].x > -1)
 			break;
 
-	if ((a == N_KANONEN) && (i < N_KANONEN) && (bg[40] > spieler_volk[n]) && (spieler_geld[n] < p[2]/3) && au_kap &&
+	if ((a == N_KANONEN) && (i < N_KANONEN) && (bg[40] > spieler_volk[n]) &&
+	    (spieler_geld[n] < preise[PREIS_GESCHUETZ]/3) && au_kap &&
 	    (spieler_foerdertuerme[n][0].x + spieler_foerdertuerme[n][1].x + spieler_foerdertuerme[n][2].x +
 	     spieler_foerdertuerme[n][3].x + spieler_foerdertuerme[n][4].x == -5))
 	{
@@ -2625,17 +2651,17 @@ static int ein_zug(void)
 		static h[2];
 		for (n = 0; n < 2; n++)
 		{
-			h[n] = spieler_geld[n] + spieler_pulver[n] * p[4] / 30 +
-			       spieler_kugeln[n] * p[5] / 2 + (wx[n] > -1) * p[3] + spieler_volk[n] * 4;
+			h[n] = spieler_geld[n] + spieler_pulver[n] * preise[PREIS_PULVER] / 30 +
+			       spieler_kugeln[n] * preise[PREIS_KUGELN] / 2 + (wx[n] > -1) * preise[PREIS_WINDFAHNE] + spieler_volk[n] * 4;
 			for (i = 0; i < N_FOERDERTUERME; i++)
 				if (spieler_foerdertuerme[n][i].x >- 1)
-					h[n] += p[1];
+					h[n] += preise[PREIS_FOERDERTURM];
 			for (i = 0; i < N_KANONEN; i++)
 				if (spieler_kanonen[n][i].x > -1)
-					h[n] += p[2];
+					h[n] += preise[PREIS_GESCHUETZ];
 		}
 
-		end = 65 +(h[1] < h[0]);
+		end = 65 + (h[1] < h[0]);
 	}
 
 	if (end)
