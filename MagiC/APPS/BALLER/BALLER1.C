@@ -215,12 +215,21 @@ static int gem_init(void)
 
 	if ((work_out[0] < 640 - 1) || (work_out[1] < 400 - 1))
 	{
-		form_alert(1,"[1][Ballerburg ben”tigt mindestens 640x400 Pixel.][Abbruch]");
+		form_alert(1,"[1][Ballerburg ben”tigt mindestens|640x400 Pixel.][Abbruch]");
 		return -3;
 	}
 
 	/* Wird form_xdial() untersttzt? */
-	if (appl_getinfo(14, &ap_gout1, NULL, NULL, NULL))
+	/*
+	i = appl_getinfo(14, &ap_gout1, NULL, NULL, NULL);
+	printf(" appl_getinfo() -> %d \n", i);
+	Bconin(2);
+	exit(0);
+	*/
+
+	/* KAOS liefert f„lschlicherweise eine 1, EmuTOS wirft einen Fehlerdialog und liefert -1 */
+	/* TODO: MT_AES.C hat einen Fehler in MT_appl_getinfo(). Hier muž d.intout[] mit Null vorbesetzt werden, weil sonst Zufall drinsteht. */
+	if ((appl_getinfo(14, &ap_gout1, NULL, NULL, NULL) == 1) && (ap_gout1 == 1))
 	{
 		if (ap_gout1)
 		{
@@ -229,9 +238,10 @@ static int gem_init(void)
 	}
 	else
 	{
+		form_alert(1,"[1][Kein form_xdial()][OK]");
 		if ((work_out[0] != 640 - 1) || (work_out[1] != 400 - 1) || (work_out[13] != 2))
 		{
-			form_alert(1,"[1][Ballerburg ben”tigt unter TOS genau 640x400 monochrome Pixel.][Abbruch]");
+			form_alert(1,"[1][Ballerburg ben”tigt unter TOS|genau 640x400 monochrome Pixel.][Abbruch]");
 			return -3;
 		}
 	}
