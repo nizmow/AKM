@@ -59,10 +59,10 @@
 #define P57       57.296
 #define G         0.02
 #define bing()    Bconout(2, '\x07');
-#define fn()      f = 1 - 2 * (n & 1);
 
 int work_out_ext[57];
 int ap_id;
+int aes_version;
 int have_form_xdial = 0;
 char *screenptr = NULL;		/* nur fÅr TOS, von Logbase() */
 char *screenbuffer = NULL;	/* nur fÅr TOS, TODO: auflîsungsunabhÑngig machen */
@@ -145,9 +145,14 @@ OBJECT *rsctree_status;
 double vvx,vvy;
 int m_buf[8], xy[100];
 int ws,wc;
-int *bg;	/* gerade aktive Burg */
+int *bg;	/* gerade aktive Burg (tBurg *) */
 int zug;
-int n;	/* Gerade aktiver Spieler, 0 oder 1. TODO: Bereich sicherstellen und sinnvoll umbenennen */
+int n;		/*
+			   0: Zug des linken Spielers
+			   1: Zug des rechten Spielers
+			   2: linke Burg im Burgauswahldialog
+			   3: rechte Burg im Burgauswahldialog
+			*/
 int oldn;
 int preise[N_PREISE];
 int max_rund,
@@ -157,6 +162,7 @@ char *l_nam;
 char *r_nam;
 
 char f;
+#define fn()      f = 1 - 2 * (n & 1);		/* f = 1 fÅr die linke Burg und -1 fÅr die rechte */
 /* 0 = Spieler/Spieler (default), 1 = Spieler/Computer, 2 = Computer/Spieler, 3 = Computer/Computer */
 char spiel_modus;
 char end, txt[4], an_erl, mxin, au_kap;
@@ -170,7 +176,8 @@ char cn[7][8]=
 char nsp1[22] = "Hugo";
 char nsp2[22] = "Emil";
 
-int bx[2], by[2], wx[2], wy[2];		/* irgendwelche Koordinaten */
+int bx[2], by[2];		/* Positionen der beiden Burgen im Burgauswahldialog */
+int wx[2], wy[2];		/* irgendwelche Koordinaten */
 
 
 /*********************** Elementare  Grafikbefehle ***************************/
@@ -182,12 +189,16 @@ static int gem_init(void)
 	WORD dummy;
 	int i;
 	WORD ap_gout1;
+	int *aes_global;
 
 	ap_id = appl_init();
 	if (ap_id < 0)
 	{
 		return -1;
 	}
+	aes_global = _GemParBlk.global;
+	aes_version = aes_global[0];
+
 	vdi_handle = graf_handle(&dummy, &dummy, &dummy, &dummy);
 	for (i = 0; i < 10; i++)
 	{
@@ -204,6 +215,7 @@ static int gem_init(void)
 	n_planes = work_out_ext[4];
 
 	#if 0
+	printf(" aes_version  = 0x%04x \n", aes_version);
 	printf(" work_out[0]  = %d \n", work_out[0]);
 	printf(" work_out[1]  = %d \n", work_out[1]);
 	printf(" work_out[13] = %d \n", work_out[13]);
@@ -229,19 +241,17 @@ static int gem_init(void)
 
 	/* KAOS liefert fÑlschlicherweise eine 1, EmuTOS wirft einen Fehlerdialog und liefert -1 */
 	/* TODO: MT_AES.C hat einen Fehler in MT_appl_getinfo(). Hier muû d.intout[] mit Null vorbesetzt werden, weil sonst Zufall drinsteht. */
-	if ((appl_getinfo(14, &ap_gout1, NULL, NULL, NULL) == 1) && (ap_gout1 == 1))
+	/* Deshalb fragen wir vorher die AES-Version ab. */
+	if ((aes_version >= 0x0399) && (appl_getinfo(14, &ap_gout1, NULL, NULL, NULL) == 1) && (ap_gout1 == 1))
 	{
-		if (ap_gout1)
-		{
-			have_form_xdial = 1;
-		}
+		have_form_xdial = 1;
 	}
 	else
 	{
-		form_alert(1,"[1][Kein form_xdial()][OK]");
+		/* form_alert(1,"[1][Kein form_xdial()][OK]"); */
 		if ((work_out[0] != 640 - 1) || (work_out[1] != 400 - 1) || (work_out[13] != 2))
 		{
-			form_alert(1,"[1][Ballerburg benîtigt unter TOS|genau 640x400 monochrome Pixel.][Abbruch]");
+			form_alert(1,"[1][Kein form_xdial()!|Ballerburg benîtigt unter TOS|genau 640x400 monochrome Pixel.][Abbruch]");
 			return -3;
 		}
 	}
@@ -459,30 +469,34 @@ static int burgen_laden(void)
 
 
 /***************************** Zeichenroutine ********************************/
-void draw(int x, int y, int *a)
+/*
+   Arbeitet eine Reihe von Zeichenbefehlen ab, die als Folge von Zahlen
+   Åbergeben werden. Die Folge wird mit -1 beendet.
+ */
+void draw(int x, int y, const int *a)
 {
 	int i;
 	int fil = 1;
 
 	graf_mouse(M_OFF, NULL);
-	vsf_interior(vdi_handle, 2);
-	vsf_style(vdi_handle, 9);
+	vsf_interior(vdi_handle, FIS_PATTERN);	/* Mit Muster malen, und zwar ... */
+	vsf_style(vdi_handle, 9);				/* mit Ziegelsteinen */
 
 	while (*a != -1)
 	{
 		if (*a == -2)
 		{
-			vsf_interior(vdi_handle, *++a);
+			vsf_interior(vdi_handle, *++a);		/* Code (-2) leitet eine Muster-Definition ein. */
 			vsf_style(vdi_handle, *++a);
 		}
 		else
 		if (*a == -4)
 		{
-			fil = !fil;
+			fil = !fil;							/* (-4) wechselt zwischen gefÅllten und ungefÅllten Polygonen */
 		}
 		else
 		{
-			i = 0;
+			i = 0;								/* Polygon aufbauen und zeichnen */
 			while (*a > -1)
 			{
 				xy[i++] = x + *a++ * f;
@@ -511,16 +525,18 @@ void draw(int x, int y, int *a)
 static void init_kanone(int k, int xr)
 {
 	int x,y;
-	static const int kanon[] =
+	static const int kanone[] =
 	{
 		-2,1,1, 1,0,3,3,5,0,3,3,3,11,2,11,2,9,4,9,4,11,3,11,3,8,0,5,
 		3,8,6,5,3,8,3,3,-9, 11,0,13,2,15,0,16,0,17,1,17,2,15,4,19,8,16,11,8,3,-9,
 		-1
 	};
 
-	draw(x = xr + bg[1 + k * 2] * f, y = by[n & 1] - bg[2 + k * 2], kanon);
-	if (~n & 2)
+	/* Kanone zeichnen */
+	draw(x = xr + bg[1 + k * 2] * f, y = by[n & 1] - bg[2 + k * 2], kanone);
+	if (~n & 2)		/* 0->2 1->2 2->0 3->0 : Unnîtig kompliziert fÅr (n < 2) */
 	{
+		/* Wir sind nicht im Burgenauswahldialog: Kanone fÅr den Spieler initialisieren */
 		spieler_kanonen[n][k].x = x - 20 * n;
 		spieler_kanonen[n][k].y = y;
 		spieler_kanonen[n][k].w = 45;		/* Winkel */
@@ -532,8 +548,9 @@ static void init_kanone(int k, int xr)
 /* w: Geld (0), Pulver (1) oder Kugeln (2) zeichnen */
 static void drw_gpk(char w)
 {
-	int i,z, x,y, xr,yr, *a,xp,yp;
-	int m = n & 1;		/* sollte n nicht nur 0 oder 1 sein? */
+	int z, x,y, xr,yr, *a,xp,yp;
+	int menge;
+	int m = n & 1;		/* linke (m = 0) oder rechte (m = 1) Burg, also Spielernummer */
 	static const int sack[] =
 	{
 		-4, 1,1,1,4,2,5,2,0,3,0,3,8,2,8,4,8,3,8,3,6,4,6,4,0,5,0,
@@ -544,7 +561,7 @@ static void drw_gpk(char w)
 		-4, 2,0,6,0,8,3,8,5,6,8,2,8,0,5,0,3,2,0,3,0,3,3,2,4,3,5,3,8,
 		5,8,5,5,6,4,5,3,5,1,-9, -1
 	};
-	static const int kuge[] =
+	static const int kugel[] =
 	{
 		-2,1,1, 1,0,0,1,0,3,1,4,3,4,4,3,4,1,3,0,-9,-1
 	};
@@ -555,47 +572,56 @@ static void drw_gpk(char w)
 			a = sack;
 			xp = 7;
 			yp = 10;
-			i = (spieler_geld[m] + 149) / 150;
+			menge = (spieler_geld[m] + 149) / 150;
 			break;
 
 		case 1:
 			a = fass;
 			xp = yp = 9;
-			i = (spieler_pulver[m] + 29) / 30;
+			menge = (spieler_pulver[m] + 29) / 30;
 			break;
 
 		case 2:
-			a = kuge;
+			a = kugel;
 			xp = yp = 6;
-			i = spieler_kugeln[m];
+			menge = spieler_kugeln[m];
 	}
 
-	bg = burgen[spieler_burg[m]];
+	bg = burgen[spieler_burg[m]];		/* die Burg des Spielers, der am Zug ist */
 	w *= 2;
+	/* Im Burgenauswahldialog ist n = 2 oder 3 statt 0 oder 1 */
 	xr = (n & 2 ? bx[m] : 639 * m) + f * bg[25 + w];
 	yr = by[m] - bg[26 + w];
 
 	graf_mouse(M_OFF, NULL);
-	clr(xr - bg[31 + w] * m - !n, yr - bg[32 + w], bg[31 + w] + 1, bg[32 + w] + 1);
-	color(1);
 
-	for (y = z = 0; i > 0 && y < bg[32 + w]; y += yp)
-		for (x = 0; i > 0 && x < bg[31 + w]; x += xp, z++,i--)
+	/* Die Geldkammer erstmal lîschen, ihre Koordinaten liegen bei 25, 26, 31, 32 */
+	clr(xr - bg[31 + w] * m - !n, yr - bg[32 + w], bg[31 + w] + 1, bg[32 + w] + 1);
+	color(COLOUR_BLACK);
+
+	for (y = z = 0; menge > 0 && y < bg[32 + w]; y += yp)
+		for (x = 0; menge > 0 && x < bg[31 + w]; x += xp, z++,menge--)
 			draw(xr + f * x, yr - y, a);
 
 	graf_mouse(M_ON, NULL);
-	if (i > 0)    /* Maximalbetrag Åberschritten ? */
+
+	if (menge > 0)    /* Maximalbetrag Åberschritten ? */
+	{
 		switch (w)
 		{
 			case 0:
+				form_alert(1, "[1][Du hattest zuviel Geld.|Vermîgensteuer hat geregelt.][Gerne]");
 				spieler_geld[m] = z * 150;
 				break;
 			case 2:
+				form_alert(1, "[1][Du hast zuviel Pulver gekauft.|Jetzt ist Dein Geld weg.][Mist]");
 				spieler_pulver[m] = z * 30;
 				break;
 			case 4:
+				form_alert(1, "[1][Du hast zuviele Kugeln gekauft.|Kugeln weg, Geld weg.][Danke!]");
 				spieler_kugeln[m] = z;
 		}
+	}
 }
 
 
@@ -623,7 +649,7 @@ static void burg(int nn)
 	};
 	int i,xr;
 
-	oldn = n;		/* TODO: Das Chaos entwirren */
+	oldn = n;
 	n = nn;
 	fn();
 	xr = n & 2 ? (bx[n &= 1]) : (639 * n);
@@ -753,11 +779,23 @@ static void neues_spiel(void)
 }
 
 
+/* dreistellige Zahl a nach txt[] schreiben */
 void z_txt(int a)
 {
-   txt[0]=a/100+48; txt[1]=a%100/10+48; txt[2]=a%10+48;
-   if(a<100) { txt[0]=32; if(a<10) txt[1]=32; }
-   for(a=0;a<3;a++) txt[a]=txt[a]==48? 79: txt[a]==49? 108: txt[a];
+	txt[0] = a / 100 + '0';			/* Hunderterstellen */
+	txt[1] = a % 100 / 10 + '0';	/* Zehner */
+	txt[2] = a % 10 + '0';			/* Einer */
+	if (a < 100)
+	{
+		txt[0] = ' ';				/* fÅhrende Null weg */
+		if (a < 10)
+			txt[1] = '0';			/* fÅhrende Null weg */
+	}
+
+	/* Ersetze die Null durch ein groûes 'O' und die '1' durch ein kleines 'l' */
+	/* TODO: warrumm? Sieht unglich aus. */
+	for (a = 0; a < 3; a++)
+		txt[a] = txt[a] == '0' ? 79 : txt[a] == 49 ? 108 : txt[a];
 }
 
 
@@ -927,10 +965,10 @@ static int obj_do(OBJECT *tree)
 }
 
 
-/********************* Neues Spiel: Auswahl der Burgen ***********************/
+/********************* Neues Spiel: Dialog zur Auswahl der Burgen ***********************/
 static int bur_obj(void)
 {
-	void *flyinf;		/* MagiC-spezifisch, f_r form_xdial() */
+	void *flyinf;		/* MagiC-spezifisch, fÅr form_xdial() */
 	void **p_flyinf;
 	int dummy;
 	static const GRECT g1 = {70, 20, 30, 20};
@@ -942,20 +980,19 @@ static int bur_obj(void)
 	ob0 = spieler_burg[0];
 	ob1 = spieler_burg[1];
 
-	rsctree_castles[BSP1].ob_spec.free_string = l_nam;
+	rsctree_castles[BSP1].ob_spec.free_string = l_nam;	/* Namen der Spieler in den Dialog eintragen */
 	rsctree_castles[BSP2].ob_spec.free_string = r_nam;
 
 	form_center(rsctree_castles, &fgrect);
 
-	w = rsctree_castles[BK1].ob_width;
+	w = rsctree_castles[BK1].ob_width;			/* Grîûe des linken Burg-Objekts im Dialog */
 	h = rsctree_castles[BK1].ob_height;
-	objc_offset(rsctree_castles, BK1, &x, &y );
-	bx[0] = x;
+	objc_offset(rsctree_castles, BK1, &x, &y);	/* x/y = Position des linken Burg-Objekts im Dialog */
+	bx[0] = x;		/* linke untere Ecke der linken Burg im Dialog */
 	by[0] = y + h;
-	objc_offset(rsctree_castles, BK2, &x, &y);
-	bx[1] = x + w;
-	by[1] = y+h;
-
+	objc_offset(rsctree_castles, BK2, &x, &y);	/* x/y = Position des rechten Burg-Objekts im Dialog */
+	bx[1] = x + w;	/* rechte untere Ecke der rechten Burg im Dialog */
+	by[1] = y + h;
 
 	if (have_form_xdial)
 	{
@@ -968,9 +1005,8 @@ static int bur_obj(void)
 	{
 		/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
 		save_screen();
-		form_dial(FMD_GROW, &g1, &fgrect);
 	}
-
+	form_dial(FMD_GROW, &g1, &fgrect);
 	objc_draw(rsctree_castles, 0, 5, &desk_g);
 
 	/* alte Werte sichern */
@@ -983,14 +1019,14 @@ static int bur_obj(void)
 	ol[6] = spieler_volk[0];
 	ol[7] = spieler_volk[1];
 
-	/* TODO: sind Werte ungleich Null oder Eins erlaubt? */
-	burg(2);
-	burg(3);
+	burg(2);	/* male linke Burg im Burgenauswahldialog */
+	burg(3);	/* male rechte Burg */
 
 	do
 	{
-		spieler_geld[0] = spieler_geld[1] = spieler_pulver[0] = spieler_pulver[1] = spieler_kugeln[0] = spieler_kugeln[1] = 9999;
-
+		spieler_geld[0] = spieler_geld[1] = 0;
+		spieler_pulver[0] = spieler_pulver[1] = 0;
+		spieler_kugeln[0] = spieler_kugeln[1] = 9999;
 
 		if (have_form_xdial)
 		{
@@ -1089,22 +1125,23 @@ static void tabelle(void)
 
 	for (i = 0; i < N_SPIELERNAMEN; i++)
 	{
-	   for (j = 0; j < 10; j++)
-	   {
-	      z_txt(tabelle_gewonnen[i][j]);
-	      if ((j == 9) && (!tabelle_gewonnen[i][6]))
-	      {
-	      	txt[0] = 32;
-	      	txt[1] = '-';
-	      	txt[2] = 0;
-	      }
-	      v_gtext(vdi_handle, 176 + i * 72, 110 + j * 24 + 8 * (j > 5), txt);
-	      if (i == j)
-	      {
-	      	/* BUG: The colour parameter was missing */
-	         box(152 + i * 72, 92 + j * 24, 224 + i * 72, 116 + j * 24, 1);
-	      }
-	   }
+		for (j = 0; j < 10; j++)
+		{
+			z_txt(tabelle_gewonnen[i][j]);
+			if ((j == 9) && (!tabelle_gewonnen[i][6]))
+			{
+				txt[0] = 32;
+				txt[1] = '-';
+				txt[2] = 0;
+			}
+
+			v_gtext(vdi_handle, 176 + i * 72, 110 + j * 24 + 8 * (j > 5), txt);
+			if (i == j)
+			{
+				/* Parameter fÅr Farbe fehlte */
+				box(152 + i * 72, 92 + j * 24, 224 + i * 72, 116 + j * 24, 1);
+			}
+		}
 	}
 
 	v_gtext(vdi_handle, 64, 262, "\344  Spiele");
@@ -1136,7 +1173,7 @@ static void handle_menu_options(void)
 		au_kap = rsctree_options[A_KAP].ob_state;
 		an_erl = rsctree_options[A_ERL].ob_state;
 		mxin   =     rsctree_options[MAX_2].ob_state +
-		         2 * rsctree_options[MAX_XX].ob_state +		/* TODO: Why this? */
+		         2 * rsctree_options[MAX_XX].ob_state +		/* TODO: ? */
 		         3 * rsctree_options[MAX_NE].ob_state;
 		h = rsctree_options[MAX_XX].ob_spec.tedinfo->te_ptext;
 		max_rund = h[0] - '0';
@@ -1163,7 +1200,7 @@ static void handle_menu_choose_computer(void)
 		if (rsctree_computer[CN1 + cw[0]].ob_state)
 			break;
 
-	for (cw[1]=0; cw[1]<7; cw[1]++ )
+	for (cw[1]=0; cw[1] < 7; cw[1]++)
 		if (rsctree_computer[CN2 + cw[1]].ob_state)
 			break;
 
@@ -1179,14 +1216,13 @@ static void handle_menu_choose_computer(void)
 /* */
 static void handle_menu_help(void)
 {
-	void *flyinf;		/* MagiC-spezifisch, f_r form_xdial() */
+	void *flyinf;		/* MagiC-spezifisch, fÅr form_xdial() */
 	void **p_flyinf;
 	int dummy;
 	static const GRECT g1 = {190, 20, 30, 20};
 	int a = 0, b;
 	OBJECT *dialog;
 
-	/* Wir lassen hier FMD_START und FMD_FINISH weg, weil wir keine WM_REDRAW-Nachricht wollen */
 	form_center(rsctree_help1, &fgrect);
 	form_center(rsctree_help2, &fgrect);
 	form_center(rsctree_help3, &fgrect);
@@ -1247,8 +1283,8 @@ static void handle_menu_help(void)
 	else
 	{
 		restore_screen();
-		form_dial(FMD_SHRINK, &g1, &fgrect);
 	}
+	form_dial(FMD_SHRINK, &g1, &fgrect);
 }
 
 
@@ -1371,7 +1407,7 @@ static int handle_menu(void)
 	else
 	if (m_buf[4] == ERG4)
 	{
-		void *flyinf;		/* MagiC-spezifisch, f_r form_xdial() */
+		void *flyinf;		/* MagiC-spezifisch, fÅr form_xdial() */
 		void **p_flyinf;
 
 		if (have_form_xdial)
@@ -1406,6 +1442,7 @@ static int handle_menu(void)
 		}
 		form_dial(FMD_SHRINK, &g2, &g3);
 	}
+
 	if ((m_buf[4] >= MOD1) && (m_buf[4] <= MOD5))
 	{
 		if (spiel_modus < 2)
@@ -1450,8 +1487,9 @@ static int event(void)
 	int dummy;
 	static const GRECT dummy_g = {0, 0, 0, 0};
 
+	/* TODO: Warum war hier der Timer? */
 	wh = evnt_multi(
-					MU_TIMER + MU_MESAG + MU_KEYBD + MU_BUTTON,		/* evtypes */
+					/*MU_TIMER + */MU_MESAG + MU_KEYBD + MU_BUTTON,		/* evtypes */
 					1,1,1,	/* nclicks, bmask, bstate */
 					0, &dummy_g,
 					0, &dummy_g,
@@ -1471,7 +1509,9 @@ static int event(void)
 	{
 		return handle_menu();
 	}
-	
+
+	/* TODO: Warum auf ev.bstate testen und nicht auf MU_BUTTON? */
+
 	if (wh & MU_BUTTON)
 	{
 		/*printf("button\n");*/
@@ -1551,7 +1591,7 @@ int loc(int x, int y)
    bzw. das Geld verbraucht ist, bricht der Vorgang abrupt ab. */
 static void anbau(void)
 {
-	void *flyinf;		/* MagiC-spezifisch, f_r form_xdial() */
+	void *flyinf;		/* MagiC-spezifisch, fÅr form_xdial() */
 	void **p_flyinf;
 	/* static const GRECT g = { 220, 375, 25*8, 36 }; */
 	static const GRECT g = { 220, 362, 25*8, 36 };
@@ -1667,8 +1707,7 @@ static void baue_foerderturm(void)
 }
 
 
-/* TODO: klappt noch nicht mit dem form_xdial und dem Anbauen, weil dabei
- der gespeicherte Bildschirm verwendet wird. */
+/* Inventar anzeigen, kaufen und anbauen */
 static void markt(void)
 {
 	void *flyinf;		/* MagiC-spezifisch, f_r form_xdial() */
@@ -1705,6 +1744,7 @@ static void markt(void)
 		write_val(rsctree_status, MA_BAUEN + i, 11, preise[i]);
 	}
 
+	/* Kauf-Schleife */
 	for (;;)
 	{
 		int k;
@@ -1733,7 +1773,7 @@ static void markt(void)
 			    	break;
 			}
 		
-		/* aktualisiere das Inventar im Dialog, d.h. wieviele Objekte der Spieler hat */
+		/* aktualisiere das Inventar im Dialog, d.h. wieviel der Spieler davon hat */
 		write_val(rsctree_status, ST_GELD,  11, spieler_geld[n]);
 		write_val(rsctree_status, ST_FOERD, 11, n_foedertuerme);
 		write_val(rsctree_status, ST_GESCH, 11, n_kanonen);
@@ -1751,6 +1791,7 @@ static void markt(void)
 			                                   (i == 2) && (k > 9) || (i == 3) && (wx[n] > -1));
 		}
 
+		/* TODO: Hier wird immer der gesamte (!) Dialog neu gezeichnet statt nur das geÑnderte Objekt */
 		objc_draw(rsctree_status, 0, 5, &desk_g);
 
 		if (have_form_xdial)
@@ -1761,7 +1802,6 @@ static void markt(void)
 		{
 			obj = form_do(rsctree_status, 0);
 		}
-
 		if (obj >= 0)
 		{
 			rsctree_status[obj].ob_state = 0;
@@ -1780,7 +1820,10 @@ static void markt(void)
 		else
 		if ((obj - MA_BAUEN > -1) && (obj - MA_BAUEN < 6))
 		{
+			/* Anbauen, Fîrderturm, GeschÅtz, Windfahne, Pulver, Kugeln */
+			/* erstmal Geld ausgeben... */
 			spieler_geld[n] -= preise[obj - MA_BAUEN];
+
 			if (obj < MA_PULVR)
 			{
 				/* Anbauen, Fîrderturm, GeschÅtz, Windfahne:
@@ -1832,6 +1875,7 @@ static void markt(void)
 			}
 			else
 			{
+				/* Pulver und Kugeln erhîhen */
 				spieler_pulver[n] += 30 * (obj == MA_PULVR);
 				spieler_kugeln[n] += 2 * (obj == MA_KUGLN);
 				drw_gpk(obj - MA_FAHNE);
@@ -2701,7 +2745,7 @@ static int ein_zug(void)
 
 			if (event())
 			{
-				return 0;
+				return 0;	/* Programm Åber MenÅ oder ^Q beendet */
 			}
 
 			/* OR Åber die zweite Bildschirmzeile, die ersten 480 Spalten */
@@ -2876,9 +2920,9 @@ int main(void)
 	}
 
 	rsrc_gaddr(R_TREE, MENUE,    &rsctree_menu);
-	rsrc_gaddr(R_TREE, INFOTREE, &rsctree_info);
-	rsrc_gaddr(R_TREE, SCHUSS,   &rsctree_shootparams);
-	rsrc_gaddr(R_TREE, BURG,     &rsctree_castles);
+	rsrc_gaddr(R_TREE, T_INFO,   &rsctree_info);
+	rsrc_gaddr(R_TREE, T_SCHUSS, &rsctree_shootparams);
+	rsrc_gaddr(R_TREE, T_BURG,   &rsctree_castles);
 	rsrc_gaddr(R_TREE, NAMEN,    &rsctree_names);
 	rsrc_gaddr(R_TREE, DRAN,     &rsctree_move);
 	rsrc_gaddr(R_TREE, STATUS,   &rsctree_status);
@@ -2887,7 +2931,7 @@ int main(void)
 	rsrc_gaddr(R_TREE, REGEL1,   &rsctree_help1);
 	rsrc_gaddr(R_TREE, REGEL2,   &rsctree_help2);
 	rsrc_gaddr(R_TREE, REGEL3,   &rsctree_help3);
-	rsrc_gaddr(R_TREE, OPTION,   &rsctree_options);
+	rsrc_gaddr(R_TREE, OPTIONEN, &rsctree_options);
 	rsrc_gaddr(R_TREE, EINTRAG,  &rsctree_players);
 
 	for (i = 0; i < 6; i++)

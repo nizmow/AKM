@@ -206,7 +206,7 @@ OBJECT rs_object[] =
   LASTOB, NORMAL, (LONG)"  Tabelle zeigen...  ",
   0x0000, 0x0004, 0x0015, 0x0001,
   
-  /******** Tree 1 SCHUSS ****************************************************/
+  /******** Tree 1 T_SCHUSS ****************************************************/
         -1, SOK             ,       11, G_BOX             ,   /* Object 0  */
   NONE, NORMAL, (LONG)0x00031141L,
   0x0000, 0x0000, 0x0327, 0x0A0D,
@@ -259,7 +259,7 @@ OBJECT rs_object[] =
   LASTOB|TOUCHEXIT, NORMAL, (LONG)"\003\003",
   0x041A, 0x0400, 0x0702, 0x0001,
   
-  /******** Tree 2 INFOTREE ****************************************************/
+  /******** Tree 2 T_INFO ****************************************************/
         -1,        1,       35, G_BOX             ,   /* Object 0  */
   NONE, OUTLINED, (LONG)0x65031121L,
   0x0000, 0x0000, 0x004B, 0x0015,
@@ -294,14 +294,14 @@ OBJECT rs_object[] =
   NONE, NORMAL, (LONG)"Dieses Programm darf an  jeden weiterge-",
   0x0020, 0x0003, 0x0028, 0x0001,
         12,       -1,       -1, G_STRING          ,   /* Object 11  */
-  NONE, NORMAL, (LONG)"geben  werden. Vorraussetzung  daf\201r ist",
-  0x0020, 0x0004, 0x0028, 0x0001,
+  NONE, NORMAL, (LONG)"geben  werden. Voraussetzung  daf\201r ist",
+  0x0020, 0x0004, 0x0027, 0x0001,
         13,       -1,       -1, G_STRING          ,   /* Object 12  */
   NONE, NORMAL, (LONG)"allerdings, da\236 sich niemand damit durch",
   0x0020, 0x0005, 0x0028, 0x0001,
         14,       -1,       -1, G_STRING          ,   /* Object 13  */
-  NONE, NORMAL, (LONG)"Verkauf bereichert, und da\236 das Programm",
-  0x0020, 0x0006, 0x0028, 0x0001,
+  NONE, NORMAL, (LONG)"Verkauf bereichert und da\236 das Programm",
+  0x0020, 0x0006, 0x0027, 0x0001,
         15,       -1,       -1, G_STRING          ,   /* Object 14  */
   NONE, NORMAL, (LONG)"unver\204ndert bleibt.",
   0x0020, 0x0007, 0x0013, 0x0001,
@@ -336,8 +336,8 @@ OBJECT rs_object[] =
   NONE, NORMAL, (LONG)"- den eigentlichen Sourcecode ( bestehen",
   0x0002, 0x000E, 0x0028, 0x0001,
         26,       -1,       -1, G_STRING          ,   /* Object 25  */
-  NONE, NORMAL, (LONG)"d aus 2 Teilen )",
-  0x002A, 0x000E, 0x0010, 0x0001,
+  NONE, NORMAL, (LONG)"d aus zwei Teilen )",
+  0x002A, 0x000E, 0x0013, 0x0001,
         27,       -1,       -1, G_STRING          ,   /* Object 26  */
   NONE, NORMAL, (LONG)"- den Programmteil zum Laden und Abspiel",
   0x0002, 0x000F, 0x0028, 0x0001,
@@ -348,13 +348,13 @@ OBJECT rs_object[] =
   NONE, NORMAL, (LONG)"- eine ausf\201hrlichere Spielbeschreibung",
   0x0002, 0x0010, 0x0027, 0x0001,
         30,       -1,       -1, G_STRING          ,   /* Object 29  */
-  NONE, NORMAL, (LONG)"en der Musik-Editor Datei",
+  NONE, NORMAL, (LONG)"en der Musik-Editor-Datei",
   0x002A, 0x000F, 0x0019, 0x0001,
         31,       -1,       -1, G_STRING          ,   /* Object 30  */
   NONE, NORMAL, (LONG)"- Informationen, wie Sie  durch Erweiter",
   0x0002, 0x0011, 0x0028, 0x0001,
         32,       -1,       -1, G_STRING          ,   /* Object 31  */
-  NONE, NORMAL, (LONG)"n  der BALLER.DAT Datei leicht",
+  NONE, NORMAL, (LONG)"n  der BALLER.DAT-Datei leicht",
   0x002A, 0x0011, 0x001E, 0x0001,
         33,       -1,       -1, G_STRING          ,   /* Object 32  */
   NONE, NORMAL, (LONG)"  eigene Burgen kreieren k\224nnen",
@@ -369,7 +369,7 @@ OBJECT rs_object[] =
   SELECTABLE|DEFAULT|EXIT|LASTOB, NORMAL, (LONG)"OK",
   0x0035, 0x0013, 0x0014, 0x0001,
   
-  /******** Tree 3 BURG ****************************************************/
+  /******** Tree 3 T_BURG ****************************************************/
         -1, BSP1            ,       11, G_BOX             ,   /* Object 0  */
   NONE, OUTLINED, (LONG)0x750311C1L,
   0x0000, 0x0000, 0x0642, 0x0A0F,
@@ -485,7 +485,7 @@ OBJECT rs_object[] =
   NONE, NORMAL, (LONG)"Volk         200",
   0x0002, 0x0004, 0x0010, 0x0001,
   SHG             , SHK             , SHK             , G_STRING          ,   /* Object 10 ST_STEUR */
-  NONE, NORMAL, (LONG)"Steuern in%  100",
+  NONE, NORMAL, (LONG)"Steuern [%]  100",
   0x0019, 0x0004, 0x0010, 0x0001,
   ST_STEUR        ,       -1,       -1, G_BOXCHAR         ,   /* Object 11 SHK */
   TOUCHEXIT, NORMAL, (LONG) ((LONG)'\004' << 24)|0x00FF1100L,
@@ -674,8 +674,8 @@ OBJECT rs_object[] =
   NONE, NORMAL, (LONG)"Vor Spielbeginn sollte man zun\204chst die ",
   0x0002, 0x0008, 0x0028, 0x0001,
         11,       -1,       -1, G_STRING          ,   /* Object 10  */
-  NONE, NORMAL, (LONG)"den Modus festlegen,  d.h., ob Sie zu zw",
-  0x0002, 0x0009, 0x0028, 0x0001,
+  NONE, NORMAL, (LONG)"den Modus festlegen,  d.h. ob Sie zu zw",
+  0x0002, 0x0009, 0x0027, 0x0001,
         12,       -1,       -1, G_STRING          ,   /* Object 11  */
   NONE, NORMAL, (LONG)"den  Computer  ( Hier k\224nnen Sie auch di",
   0x0002, 0x000A, 0x0028, 0x0001,
@@ -716,8 +716,8 @@ OBJECT rs_object[] =
   NONE, NORMAL, (LONG)"Namen der Spieler eingeben  sowie",
   0x002A, 0x0008, 0x0021, 0x0001,
         25,       -1,       -1, G_STRING          ,   /* Object 24  */
-  NONE, NORMAL, (LONG)"eit spielen wollen, alleine gegen",
-  0x002A, 0x0009, 0x0021, 0x0001,
+  NONE, NORMAL, (LONG)"eit spielen wollen, allein gegen",
+  0x0029, 0x0009, 0x0020, 0x0001,
         26,       -1,       -1, G_STRING          ,   /* Object 25  */
   NONE, NORMAL, (LONG)"uschauen wollen und zwei Computer",
   0x002A, 0x000B, 0x0021, 0x0001,
@@ -986,7 +986,7 @@ OBJECT rs_object[] =
   SELECTABLE|RBUTTON|LASTOB, SHADOWED, (LONG)"Ergebnisse bleiben",
   0x0002, 0x0302, 0x001D, 0x0001,
   
-  /******** Tree 13 OPTION ****************************************************/
+  /******** Tree 13 OPTIONEN ****************************************************/
         -1,        1,       14, G_BOX             ,   /* Object 0  */
   NONE, OUTLINED, (LONG)0x00031141L,
   0x0000, 0x0000, 0x002A, 0x0010,
@@ -1039,9 +1039,9 @@ OBJECT rs_object[] =
 
 OBJECT *rs_trindex[] =
 { &rs_object[0],   /* Tree  0 MENUE            */
-  &rs_object[40],   /* Tree  1 SCHUSS           */
-  &rs_object[57],   /* Tree  2 INFOTREE         */
-  &rs_object[93],   /* Tree  3 BURG             */
+  &rs_object[40],   /* Tree  1 T_SCHUSS         */
+  &rs_object[57],   /* Tree  2 T_INFO           */
+  &rs_object[93],   /* Tree  3 T_BURG           */
   &rs_object[105],   /* Tree  4 DRAN             */
   &rs_object[113],   /* Tree  5 NAMEN            */
   &rs_object[119],   /* Tree  6 STATUS           */
@@ -1051,5 +1051,5 @@ OBJECT *rs_trindex[] =
   &rs_object[213],   /* Tree 10 REGEL2           */
   &rs_object[244],   /* Tree 11 REGEL3           */
   &rs_object[278],   /* Tree 12 EINTRAG          */
-  &rs_object[292]    /* Tree 13 OPTION           */
+  &rs_object[292]    /* Tree 13 OPTIONEN         */
 };

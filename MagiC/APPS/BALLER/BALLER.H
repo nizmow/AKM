@@ -18,34 +18,34 @@
 #define ERG3             37  /* STRING in Baum MENUE */
 #define ERG4             39  /* STRING in Baum MENUE */
 
-#define SCHUSS           1   /* Formular/Dialog */
-#define SOK              1   /* BUTTON in Baum SCHUSS */
-#define SAB              2   /* BUTTON in Baum SCHUSS */
-#define KAST             3   /* IBOX in Baum SCHUSS */
-#define WINK             6   /* BUTTON in Baum SCHUSS */
-#define WR1              7   /* BOXCHAR in Baum SCHUSS */
-#define WL1              8   /* BOXCHAR in Baum SCHUSS */
-#define WL2              9   /* BUTTON in Baum SCHUSS */
-#define WR2              10  /* BUTTON in Baum SCHUSS */
-#define PULV             12  /* BUTTON in Baum SCHUSS */
-#define PL1              13  /* BOXCHAR in Baum SCHUSS */
-#define PR1              14  /* BOXCHAR in Baum SCHUSS */
-#define PL2              15  /* BUTTON in Baum SCHUSS */
-#define PR2              16  /* BUTTON in Baum SCHUSS */
+#define T_SCHUSS         1   /* Formular/Dialog */
+#define SOK              1   /* BUTTON in Baum T_SCHUSS */
+#define SAB              2   /* BUTTON in Baum T_SCHUSS */
+#define KAST             3   /* IBOX in Baum T_SCHUSS */
+#define WINK             6   /* BUTTON in Baum T_SCHUSS */
+#define WR1              7   /* BOXCHAR in Baum T_SCHUSS */
+#define WL1              8   /* BOXCHAR in Baum T_SCHUSS */
+#define WL2              9   /* BUTTON in Baum T_SCHUSS */
+#define WR2              10  /* BUTTON in Baum T_SCHUSS */
+#define PULV             12  /* BUTTON in Baum T_SCHUSS */
+#define PL1              13  /* BOXCHAR in Baum T_SCHUSS */
+#define PR1              14  /* BOXCHAR in Baum T_SCHUSS */
+#define PL2              15  /* BUTTON in Baum T_SCHUSS */
+#define PR2              16  /* BUTTON in Baum T_SCHUSS */
 
-#define INFOTREE         2   /* Formular/Dialog */
+#define T_INFO           2   /* Formular/Dialog */
 
-#define BURG             3   /* Formular/Dialog */
-#define BSP1             1   /* BUTTON in Baum BURG */
-#define BSP2             2   /* BUTTON in Baum BURG */
-#define BL1              3   /* BOXCHAR in Baum BURG */
-#define BK1              4   /* BOX in Baum BURG */
-#define BK2              5   /* BOX in Baum BURG */
-#define BR1              6   /* BOXCHAR in Baum BURG */
-#define BL2              7   /* BOXCHAR in Baum BURG */
-#define BR2              8   /* BOXCHAR in Baum BURG */
-#define BAB              9   /* BUTTON in Baum BURG */
-#define BOK              10  /* BUTTON in Baum BURG */
+#define T_BURG           3   /* Formular/Dialog */
+#define BSP1             1   /* BUTTON in Baum T_BURG */
+#define BSP2             2   /* BUTTON in Baum T_BURG */
+#define BL1              3   /* BOXCHAR in Baum T_BURG */
+#define BK1              4   /* BOX in Baum T_BURG */
+#define BK2              5   /* BOX in Baum T_BURG */
+#define BR1              6   /* BOXCHAR in Baum T_BURG */
+#define BL2              7   /* BOXCHAR in Baum T_BURG */
+#define BR2              8   /* BOXCHAR in Baum T_BURG */
+#define BAB              9   /* BUTTON in Baum T_BURG */
+#define BOK              10  /* BUTTON in Baum T_BURG */
 
 #define DRAN             4   /* Formular/Dialog */
 #define DNAM             2   /* STRING in Baum DRAN */
@@ -114,12 +114,12 @@
 #define ER_LOE           12  /* BUTTON in Baum EINTRAG */
 #define ER_BLE           13  /* BUTTON in Baum EINTRAG */
 
-#define OPTION           13  /* Formular/Dialog */
-#define MAX_1            3   /* BUTTON in Baum OPTION */
-#define MAX_2            4   /* BUTTON in Baum OPTION */
-#define MAX_NE           5   /* BUTTON in Baum OPTION */
-#define MAX_XX           6   /* FBOXTEXT in Baum OPTION */
-#define A_ERL            9   /* BUTTON in Baum OPTION */
-#define A_VER            10  /* BUTTON in Baum OPTION */
-#define OP_OK            11  /* BUTTON in Baum OPTION */
-#define A_KAP            15  /* BUTTON in Baum OPTION */
+#define OPTIONEN         13  /* Formular/Dialog */
+#define MAX_1            3   /* BUTTON in Baum OPTIONEN */
+#define MAX_2            4   /* BUTTON in Baum OPTIONEN */
+#define MAX_NE           5   /* BUTTON in Baum OPTIONEN */
+#define MAX_XX           6   /* FBOXTEXT in Baum OPTIONEN */
+#define A_ERL            9   /* BUTTON in Baum OPTIONEN */
+#define A_VER            10  /* BUTTON in Baum OPTIONEN */
+#define OP_OK            11  /* BUTTON in Baum OPTIONEN */
+#define A_KAP            15  /* BUTTON in Baum OPTIONEN */
