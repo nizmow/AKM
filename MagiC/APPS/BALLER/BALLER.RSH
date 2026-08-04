@@ -488,11 +488,11 @@ OBJECT rs_object[] =
   NONE, NORMAL, (LONG)"Steuern [%]  100",
   0x0019, 0x0004, 0x0010, 0x0001,
   ST_STEUR        ,       -1,       -1, G_BOXCHAR         ,   /* Object 11 SHK */
-  TOUCHEXIT, NORMAL, (LONG) ((LONG)'\004' << 24)|0x00FF1100L,
-  0x000C, 0x0000, 0x0001, 0x0001,
+  TOUCHEXIT, NORMAL, (LONG) ((LONG)'\002' << 24)|0x00FF1100L,
+  0x070B, 0x0000, 0x0001, 0x0001,
          1,       -1,       -1, G_BOXCHAR         ,   /* Object 12 SHG */
-  TOUCHEXIT, NORMAL, (LONG) ((LONG)'\003' << 24)|0x00FF1100L,
-  0x0029, 0x0004, 0x0001, 0x0001,
+  TOUCHEXIT, NORMAL, (LONG) ((LONG)'\001' << 24)|0x00FF1100L,
+  0x0129, 0x0004, 0x0001, 0x0001,
         14,       -1,       -1, G_BUTTON          ,   /* Object 13 FERTIG */
   SELECTABLE|DEFAULT|EXIT, NORMAL, (LONG)"Fertig",
   0x0001, 0x000C, 0x002B, 0x0001,

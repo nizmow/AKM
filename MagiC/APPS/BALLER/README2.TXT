@@ -119,3 +119,14 @@ die korrigierte Orthographie original.
 
 Durch den ganzen Umbau k”nnten Fehler entstanden sein, insbesondere durch die 
 Klammerung der Operationen.
+
+
+nderungen
+----------
+
+2026-08-04:
+Der Berg ist bei entsprechend gengend Farben dunkelgrn oder grn.
+Der K”nig ist bei entsprechend gengend Farben blau.
+Vorr„te und Fahnen sind bei entsprechend gengend Farben rot.
+Die Steuer geht nicht mehr links und rechts, sondern rauf und runter.
+Die Steuer-Buttons einen Pixel versetzt.

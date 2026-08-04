@@ -24,8 +24,16 @@
 #define Min(a,b)  ((a)<(b)?(a):(b))
 #define Max(a,b)  ((a)>(b)?(a):(b))
 
+/* standard VDI colours */
 #define COLOUR_WHITE 0
 #define COLOUR_BLACK 1
+#define COLOUR_RED      2
+#define COLOUR_GREEN    3
+#define COLOUR_BLUE     4
+#define COLOUR_CYAN     5
+#define COLOUR_YELLOW   6
+#define COLOUR_MAGENTA  7
+#define COLOUR_DARK_GREEN 11
 
 #define N_SPIELER  2
 #define N_SPIELERNAMEN 6			/* im Dialog "Spielernamen fÅr die Tabelle" */
@@ -69,6 +77,7 @@ char *screenbuffer = NULL;	/* nur fÅr TOS, TODO: auflîsungsunabhÑngig machen */
 GRECT desk_g;				/* nutzbarer Bildschirm unterhalb der MenÅleiste */
 GRECT screen_g;				/* Gesamtgrîûe des Bildschirms */
 int n_planes;				/* Farbtiefe des Bildschirms, 1 fÅr monochrom */
+int n_colours;				/* 2 fÅr Monochrom */
 
 /* Beschreibung einer Burg als Folge von 16-Bit-Werten */
 typedef struct
@@ -211,6 +220,7 @@ static int gem_init(void)
 		appl_exit();
 		return -2;
 	}
+	n_colours = work_out[13];
 	vq_extnd(vdi_handle, 1, work_out_ext);
 	n_planes = work_out_ext[4];
 
@@ -249,7 +259,7 @@ static int gem_init(void)
 	else
 	{
 		/* form_alert(1,"[1][Kein form_xdial()][OK]"); */
-		if ((work_out[0] != 640 - 1) || (work_out[1] != 400 - 1) || (work_out[13] != 2))
+		if ((work_out[0] != 640 - 1) || (work_out[1] != 400 - 1) || (n_colours != 2))
 		{
 			form_alert(1,"[1][Kein form_xdial()!|Ballerburg benîtigt unter TOS|genau 640x400 monochrome Pixel.][Abbruch]");
 			return -3;
@@ -271,7 +281,7 @@ static void gbox(const GRECT *g, int colour)
 	pxy[0] = g->g_x;
 	pxy[1] = g->g_y;
 	pxy[2] = g->g_x + g->g_w - 1;
-	pxy[3] = g->g_x + g->g_h - 1;
+	pxy[3] = g->g_y + g->g_h - 1;
 	vsf_color(vdi_handle, colour);
 	v_bar(vdi_handle, pxy);
 }
@@ -533,6 +543,7 @@ static void init_kanone(int k, int xr)
 	};
 
 	/* Kanone zeichnen */
+	color(COLOUR_BLACK);
 	draw(x = xr + bg[1 + k * 2] * f, y = by[n & 1] - bg[2 + k * 2], kanone);
 	if (~n & 2)		/* 0->2 1->2 2->0 3->0 : Unnîtig kompliziert fÅr (n < 2) */
 	{
@@ -597,7 +608,8 @@ static void drw_gpk(char w)
 
 	/* Die Geldkammer erstmal lîschen, ihre Koordinaten liegen bei 25, 26, 31, 32 */
 	clr(xr - bg[31 + w] * m - !n, yr - bg[32 + w], bg[31 + w] + 1, bg[32 + w] + 1);
-	color(COLOUR_BLACK);
+
+	color((n_colours > 2) ? COLOUR_RED : COLOUR_BLACK);
 
 	for (y = z = 0; menge > 0 && y < bg[32 + w]; y += yp)
 		for (x = 0; menge > 0 && x < bg[31 + w]; x += xp, z++,menge--)
@@ -669,7 +681,7 @@ static void burg(int nn)
 	clr(xr + f * bg[21] - n * 30, by[n] - bg[22] - 25, 30, 25);
 
 	/* Der Kînig auf dem Thron */
-	color(COLOUR_BLACK);
+	color((n_colours > 4) ? COLOUR_BLUE : COLOUR_BLACK);
 	draw(xr + f * bg[21], by[n] - bg[22], thron);
 
 	/* Malt die normalerweise zwei Kanonen */
@@ -696,13 +708,13 @@ static void bild(void)
 	by[0] = (int) (Random() % 80 + 300 & ~3);
 	by[1] = (int) (Random() % 80 + 300 & ~3);
 
+	/* Den Berg zeichnen */
+
 	y = 400;
 	x1 = 0;
 	x2 = 2556;
-	color(COLOUR_BLACK);
+	color((n_colours > 2) ? ((n_colours > 8) ? COLOUR_DARK_GREEN : COLOUR_GREEN) : COLOUR_BLACK);
 	v1 = v2 = 2;
-
-	/* Den Berg zeichnen */
 
 	vsl_type(vdi_handle, USERLINE);
 
@@ -740,6 +752,8 @@ static void bild(void)
 	memset(spieler_kanonen, -1, sizeof(spieler_kanonen));
 	burg(0);	/* linke Burg */
 	burg(1);	/* rechte Burg */
+
+	color(COLOUR_BLACK);
 	v_gtext(vdi_handle, 276, 395, " Runde     ");
 	graf_mouse(M_ON, NULL);
 }
@@ -808,7 +822,8 @@ static void fahne(void)
 		if (wx[m] > -1)
 		{
 			clr(wx[m] - 10, wy[m] - 15, 20, 15);
-			color(COLOUR_BLACK);
+			color((n_colours > 2) ? COLOUR_RED : COLOUR_BLACK);
+
 			line(wx[m], wy[m], wx[m], wy[m] - 15);		/* Das mÅûte der Flaggenstock sein. */
 
 			if (m == n)
@@ -858,6 +873,7 @@ static void werdran(char c)
 
 		objc_draw(rsctree_move, 0, 4, &desk_g);		/* male links oder rechts oben den Dialog fÅr den Zug */
 
+		color((n_colours > 2) ? COLOUR_RED : COLOUR_BLACK);
 		c = (wind > 0) ? 1 : -1;
 		wk = c * wind/15.0;
 		wl = wk*.82;
@@ -1552,37 +1568,94 @@ static void write_val(OBJECT *tree, int obj, unsigned offs, int value)
 }
 
 
-/* Ermittelt, ob Punkt schwarz, also gesetzt ist */
-int loc(int x, int y)
+/* Routine fÅrs Schieûen */
+/* RÅckgabe 1 fÅr den invertierten Hintergrund (weiû -> schwarz), sonst 0 */
+/*
+  Hier wird erst die FlÑche der Kugel invertiert per XOR
+  und dann abgefragt. Dabei wird Weiû zu Schwarz, wir
+  mÅssen also auf Schwarz testen und nicht auf "nicht weiû".
+*/
+int loc2(int x, int y)
 {
-	int pel;
-	int index;
+	int pindex;
+	int vindex;
 
 	/* pel ist der Inhalt des Bildspeichers,
 	   bei TrueColour die unteren 16 Bit */
 	/* index ist der Farbindex, bei HighColour -1 und bei
 	   TrueColour die oberen 16 Bit */
-	v_get_pixel(vdi_handle, x, y, &pel, &index);
+	v_get_pixel(vdi_handle, x, y, &pindex, &vindex);
+	#if 0
+	printf("\x1b" "H" " %d/%d: pindex = 0x%04x, vindex = 0x%04x ", x, y, pindex, vindex);
+	Bconin(2);
+	#endif
 
 	if (n_planes == 32)
 	{
 		/* printf("index = 0x%04x, pel = 0x%04x ", index, pel); */
-		index &= 0x00ff;	/* obere 8 Bit lîschen, weil wir nur 24 Bit haben, nicht 32 */
+		vindex &= 0x00ff;	/* obere 8 Bit lîschen, weil wir nur 24 Bit haben, nicht 32 */
 		/* Weiû    ist index = 0x00ff und pel=0xffff */
 		/* Schwarz ist index = 0x0000 und pel=0x0000 */
-		return (index == 0) && (pel == 0);
+		return (vindex == 0) && (pindex == 0);		/* Schwarz */
 	}
 	else
 	if (n_planes == 16)
 	{
-		/* printf("index = 0x%04x, pel = 0x%04x ", index, pel); */
-		pel &= 0x7fff;	/* oberes Bit lîschen, weil wir nur 15 Bit haben, nicht 16 */
+		/* printf("index = 0x%04x, pel = 0x%04x ", vindex, pel); */
+		pindex &= 0x7fff;	/* oberes Bit lîschen, weil wir nur 15 Bit haben, nicht 16 */
 		/* Weiû    ist index = 0xffff und pel=0xffff */
 		/* Schwarz ist index = 0x0000 und pel=0x0000 */
-		return (pel == 0);
+		return (pindex == 0);		/* Schwarz */
 	}
 	else
-		return pel != 0;
+	{
+		return vindex == COLOUR_BLACK;
+	}
+}
+
+
+/* RÅckgabe 0 fÅr den Hintergrund (Bildschirmpunkt weiû), sonst 1 (Bildschirmpunkt nicht weiû) */
+/*
+
+ Diese Routine funktioniert fÅrs Fîrderturmbauen und fÅrs Anbauen
+ in allen Farbmodi.
+ Sie funktioniert fÅrs Schieûen in monochrom.
+ Sie funktioniert nicht fÅrs Schieûen in Farbe.
+
+*/
+int loc(int x, int y)
+{
+	int pindex;		/* hardware register index */
+	int vindex;		/* VDI colour index */
+
+	/* pel ist der Inhalt des Bildspeichers,
+	   bei TrueColour die unteren 16 Bit */
+	/* index ist der Farbindex, bei HighColour -1 und bei
+	   TrueColour die oberen 16 Bit */
+
+	v_get_pixel(vdi_handle, x, y, &pindex, &vindex);
+	/*printf("\x1b" "H" " %d/%d: pindex = 0x%04x, vindex = 0x%04x ", x, y, pindex, vindex);*/
+
+	if (n_planes == 32)
+	{
+		/* Weiû    ist pindex = 0xffff, vindex = 0x00ff */
+		/* Schwarz ist pindex = 0x0000, vindex = 0x0000 */
+		vindex &= 0x00ff;
+		return !((pindex == (int) 0xffff) && (vindex == 0x00ff));	/* nicht weiû */
+	}
+	else
+	if (n_planes == 16)
+	{
+		/* Weiû    ist pindex = 0x7fff, vindex = 0xffff */
+		/* Schwarz ist pindex = 0x0000, vindex = 0xffff */
+		pindex &= 0x7fff;	/* oberes Bit lîschen, weil wir nur 15 Bit haben, nicht 16 */
+		return !(pindex == 0x7fff); /* nicht weiû */
+	}
+	else
+	{
+		/* Wir haben eine Palette, Eintrag 0 ist Weiû */
+		return !(vindex == COLOUR_WHITE);
+	}
 }
 
 
@@ -2426,7 +2499,7 @@ static int kugel(int x, int y)
 }
 
 
-/********************************* Ein Schuss ********************************/
+/********************************* Ein Schuû ********************************/
 static void schuss(/* Nr. der Kanone */ int k)
 {
 	double x,y,ox,oy,vx,vy;
@@ -2474,9 +2547,9 @@ static void schuss(/* Nr. der Kanone */ int k)
 		{
 			/* Kugel ist innerhalb des Spielbereichs gezeichnet worden. */
 			/* v = 1, wenn die drei getesteten Pixel alle gesetzt sind, sonst v = 0 */
-			v = loc((int) x,     (int) y) &
-			    loc((int) x - 1, (int) y + 1) &
-			    loc((int) x + 1, (int) y + 2);
+			v = loc2((int) x,     (int) y) &
+			    loc2((int) x - 1, (int) y + 1) &
+			    loc2((int) x + 1, (int) y + 2);
 		}
 
 		/* Tonausgabe */
