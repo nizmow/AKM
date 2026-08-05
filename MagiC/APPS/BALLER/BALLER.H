@@ -123,3 +123,5 @@
 #define A_VER            10  /* BUTTON in Baum OPTIONEN */
 #define OP_OK            11  /* BUTTON in Baum OPTIONEN */
 #define A_KAP            15  /* BUTTON in Baum OPTIONEN */
+
+#define T_TABELL         14  /* Formular/Dialog */

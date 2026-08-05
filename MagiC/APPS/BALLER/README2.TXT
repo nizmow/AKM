@@ -130,3 +130,7 @@ Der K”nig ist bei entsprechend gengend Farben blau.
 Vorr„te und Fahnen sind bei entsprechend gengend Farben rot.
 Die Steuer geht nicht mehr links und rechts, sondern rauf und runter.
 Die Steuer-Buttons einen Pixel versetzt.
+
+2026-08-05:
+Quelltext noch etwas aufger„umt und die Anzeige der Tabelle repariert,
+die im Gegensatz zu den blichen Dialogen eine feste Bildschirmposition hat.

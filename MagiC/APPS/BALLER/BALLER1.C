@@ -150,6 +150,7 @@ OBJECT *rsctree_help2;
 OBJECT *rsctree_help3;
 OBJECT *rsctree_winner;
 OBJECT *rsctree_status;
+OBJECT *rsctree_tabelle;
 
 double vvx,vvy;
 int m_buf[8], xy[100];
@@ -347,6 +348,66 @@ static void cls(void)
 	graf_mouse(M_OFF, NULL);		/* graf_mouse() ist schachtelbar */
 	gbox(&desk_g, COLOUR_WHITE);	/* Bildschirm unterhalb der MenÅleiste lîschen */
 	graf_mouse(M_ON, NULL);
+}
+
+
+static void *flyinf;		/* MagiC-spezifisch, fÅr form_xdial() */
+static void **p_flyinf;
+
+/*
+ * Zentriert den Dialog und sichert das Bildschirmrechteck darunter.
+ * Als Nebenwirkung landet das Rechteck des Dialogs in der globalen
+ * Variablen fgrect.
+ * Malt eine "growbox" von g_grow nach fgrect.
+ */
+static void dialog_begin(OBJECT *tree, GRECT *g_grow)
+{
+	if (tree == rsctree_tabelle)
+	{
+		/* Hack fÅr die Tabelle, die per VDI an eine feste Position gemalt wird */
+		fgrect.g_x = tree[0].ob_x;
+		fgrect.g_y = tree[0].ob_y;
+		fgrect.g_w = tree[0].ob_width;
+		fgrect.g_h = tree[0].ob_height;
+	}
+	else
+	{
+		form_center(tree, &fgrect);
+	}
+	if (have_form_xdial)
+	{
+		/* form_xdial() sichert und restauriert den Bereich unter dem Dialog. */
+		flyinf = NULL;
+		p_flyinf = &flyinf;
+		form_xdial(FMD_START, NULL, &fgrect, p_flyinf);
+	}
+	else
+	{
+		/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
+		save_screen();
+	}
+	if (g_grow != NULL)
+	{
+		form_dial(FMD_GROW, g_grow, &fgrect);
+	}
+}
+
+
+/*
+ * Restauriert das Bildschirmrechteck unter dem Dialog.
+ * Malt eine "shrinkbox" von fgrect nach g_grow.
+ */
+static void dialog_end(GRECT *g_grow)
+{
+	if (have_form_xdial)
+	{
+		form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
+	}
+	else
+	{
+		restore_screen();
+	}
+	form_dial(FMD_SHRINK, g_grow, &fgrect);
 }
 
 
@@ -984,10 +1045,8 @@ static int obj_do(OBJECT *tree)
 /********************* Neues Spiel: Dialog zur Auswahl der Burgen ***********************/
 static int bur_obj(void)
 {
-	void *flyinf;		/* MagiC-spezifisch, fÅr form_xdial() */
-	void **p_flyinf;
 	int dummy;
-	static const GRECT g1 = {70, 20, 30, 20};
+	static const GRECT g_growbox = {70, 20, 30, 20};
 
 	int i,ob0,ob1,oy0,oy1, x,y,w,h, ol[8];
 
@@ -996,10 +1055,12 @@ static int bur_obj(void)
 	ob0 = spieler_burg[0];
 	ob1 = spieler_burg[1];
 
+	/* Dialog zeichnen */
+
 	rsctree_castles[BSP1].ob_spec.free_string = l_nam;	/* Namen der Spieler in den Dialog eintragen */
 	rsctree_castles[BSP2].ob_spec.free_string = r_nam;
 
-	form_center(rsctree_castles, &fgrect);
+	dialog_begin(rsctree_castles, &g_growbox);
 
 	w = rsctree_castles[BK1].ob_width;			/* Grîûe des linken Burg-Objekts im Dialog */
 	h = rsctree_castles[BK1].ob_height;
@@ -1010,19 +1071,6 @@ static int bur_obj(void)
 	bx[1] = x + w;	/* rechte untere Ecke der rechten Burg im Dialog */
 	by[1] = y + h;
 
-	if (have_form_xdial)
-	{
-		/* form_xdial() sichert und restauriert den Bereich unter dem Dialog. */
-		flyinf = NULL;
-		p_flyinf = &flyinf;
-		form_xdial(FMD_START, NULL, &fgrect, p_flyinf);
-	}
-	else
-	{
-		/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
-		save_screen();
-	}
-	form_dial(FMD_GROW, &g1, &fgrect);
 	objc_draw(rsctree_castles, 0, 5, &desk_g);
 
 	/* alte Werte sichern */
@@ -1079,15 +1127,7 @@ static int bur_obj(void)
 	spieler_volk[0] = ol[6];
 	spieler_volk[1] = ol[7];
 
-	if (have_form_xdial)
-	{
-		form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
-	}
-	else
-	{
-		restore_screen();
-		form_dial(FMD_SHRINK, &g1, &fgrect);
-	}
+	dialog_end(&g_growbox);
 
 	fn();
 	by[0] = oy0;
@@ -1104,12 +1144,13 @@ static int bur_obj(void)
 
 
 /**************************** Tabelle ****************************************/
-static void tabelle(void)
+/* Per VDI die Tabelle zeichnen */
+static void tabelle_zeichnen(void)
 {
 	int i,j;
 	graf_mouse(M_OFF, NULL);
 	vsf_interior(vdi_handle,0);
-	box(53, 56, 587, 343, 1);
+	box(53, 56, 587, 343, 1);		/* x/y/w/h = 53/56/535/288 */
 	box(55, 58, 585, 341, 1);
 	box(56, 59, 584, 340, 1);
 
@@ -1232,30 +1273,15 @@ static void handle_menu_choose_computer(void)
 /* */
 static void handle_menu_help(void)
 {
-	void *flyinf;		/* MagiC-spezifisch, fÅr form_xdial() */
-	void **p_flyinf;
 	int dummy;
-	static const GRECT g1 = {190, 20, 30, 20};
+	static const GRECT g_growbox = {190, 20, 30, 20};
 	int a = 0, b;
 	OBJECT *dialog;
 
-	form_center(rsctree_help1, &fgrect);
+
+	dialog_begin(rsctree_help1, &g_growbox);
 	form_center(rsctree_help2, &fgrect);
 	form_center(rsctree_help3, &fgrect);
-
-	if (have_form_xdial)
-	{
-		/* form_xdial() sichert und restauriert den Bereich unter dem Dialog. */
-		flyinf = NULL;
-		p_flyinf = &flyinf;
-		form_xdial(FMD_START, NULL, &fgrect, p_flyinf);
-	}
-	else
-	{
-		/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
-		save_screen();
-	}
-	form_dial(FMD_GROW, &g1, &fgrect);
 
 	do
 	{
@@ -1292,15 +1318,7 @@ static void handle_menu_help(void)
 		}
 	} while(b < 0);
 
-	if (have_form_xdial)
-	{
-		form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
-	}
-	else
-	{
-		restore_screen();
-	}
-	form_dial(FMD_SHRINK, &g1, &fgrect);
+	dialog_end(&g_growbox);
 }
 
 
@@ -1342,7 +1360,7 @@ static void handle_menu_player_names(void)
 static int handle_menu(void)
 {
 	static const GRECT g2 = {260, 20, 30, 20};
-	static const GRECT g3 = {48, 52, 548, 308};
+	/*static const GRECT g3 = {48, 52, 548, 308};*/
 
 	wind_update(BEG_MCTRL);
 	if (m_buf[4] == MN_INFO)
@@ -1423,40 +1441,27 @@ static int handle_menu(void)
 	else
 	if (m_buf[4] == ERG4)
 	{
-		void *flyinf;		/* MagiC-spezifisch, fÅr form_xdial() */
-		void **p_flyinf;
+		/*static const GRECT g_tabelle = { 53, 56, 535, 288 };*/
+		
+		rsctree_tabelle[0].ob_x = 53;
+		rsctree_tabelle[0].ob_y = 56;
+		dialog_begin(rsctree_tabelle, &g2);
 
-		if (have_form_xdial)
-		{
-			/* form_xdial() sichert und restauriert den Bereich unter dem Dialog. */
-			flyinf = NULL;
-			p_flyinf = &flyinf;
-			form_xdial(FMD_START, NULL, &fgrect, p_flyinf);
-		}
-		else
-		{
-			/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
-			save_screen();
-		}
-		form_dial(FMD_GROW, &g2, &g3);
-
-		tabelle();		/* zeichne die Tabelle per VDI */
+		tabelle_zeichnen();		/* zeichne die Tabelle per VDI */
 
 		ev.bstate = 0;
-		while(!ev.bstate)
+		while(!ev.bstate)			/* Warte auf Mausklick */
 		{
 			graf_mkstate(&ev);
 		}
 
-		if (have_form_xdial)
+		dialog_end(&g2);
+
+		ev.bstate = 1;
+		while(ev.bstate)			/* Warte auf Loslassen der Maustaste */
 		{
-			form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
+			graf_mkstate(&ev);
 		}
-		else
-		{
-			restore_screen();
-		}
-		form_dial(FMD_SHRINK, &g2, &g3);
 	}
 
 	if ((m_buf[4] >= MOD1) && (m_buf[4] <= MOD5))
@@ -1783,33 +1788,17 @@ static void baue_foerderturm(void)
 /* Inventar anzeigen, kaufen und anbauen */
 static void markt(void)
 {
-	void *flyinf;		/* MagiC-spezifisch, f_r form_xdial() */
-	void **p_flyinf;
 	int dummy;
 	int i;
 	int n_foedertuerme;
 	int n_kanonen;
 	int obj;
 
-	GRECT g1 = { 0, 0, 30, 20 };
+	GRECT g_growbox = { 0, 0, 30, 20 };
 
-	g1.g_x = ev.x;
-	g1.g_y = ev.y;
-	form_center(rsctree_status, &fgrect);
-
-	if (have_form_xdial)
-	{
-		/* form_xdial() sichert und restauriert den Bereich unter dem Dialog. */
-		flyinf = NULL;
-		p_flyinf = &flyinf;
-		form_xdial(FMD_START, NULL, &fgrect, p_flyinf);
-	}
-	else
-	{
-		/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
-		save_screen();
-	}
-	form_dial(FMD_GROW, &g1, &fgrect);
+	g_growbox.g_x = ev.x;
+	g_growbox.g_y = ev.y;
+	dialog_begin(rsctree_status, &g_growbox);
 
 	/* aktuelle Preise in den Dialog schreiben */
 	for (i = 0; i < N_PREISE; i++)
@@ -1902,14 +1891,7 @@ static void markt(void)
 				/* Anbauen, Fîrderturm, GeschÅtz, Windfahne:
 				   DafÅr muû der Dialog erstmal geschlossen, also entfernt werden
 				   und nach der Aktion neu gezeichnet. */
-				if (have_form_xdial)
-				{
-					form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
-				}
-				else
-				{
-					restore_screen();
-				}
+				dialog_end(&g_growbox);
 
 				drw_all();		/* warum? */
 
@@ -1935,16 +1917,7 @@ static void markt(void)
 					werdran(1);
 				}
 
-				if (have_form_xdial)
-				{
-					flyinf = NULL;
-					p_flyinf = &flyinf;
-					form_xdial(FMD_START, NULL, &fgrect, p_flyinf);
-				}
-				else
-				{
-					save_screen();
-				}
+				dialog_begin(rsctree_status, &g_growbox);
 			}
 			else
 			{
@@ -1957,16 +1930,7 @@ static void markt(void)
 		}
 	}
 
-	if (have_form_xdial)
-	{
-		form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
-	}
-	else
-	{
-		restore_screen();
-		form_dial(FMD_SHRINK, &g1, &fgrect);
-	}
-	form_dial(FMD_SHRINK, &g1, &fgrect);
+	dialog_end(&g_growbox);
 
 	drw_all();
 }
@@ -2268,8 +2232,6 @@ static void koenig(void)
 /************* Kanonenobjektbaum, Wahl von Winkel und Pulver *****************/
 static int sch_obj(int k)
 {
-	void *flyinf;		/* MagiC-spezifisch, fÅr form_xdial() */
-	void **p_flyinf;
 	int dummy;
 
 
@@ -2292,19 +2254,7 @@ static int sch_obj(int k)
 	ap = rsctree_shootparams[PULV].ob_spec.free_string;
 	ap[2] = '\0';
 
-	form_center(rsctree_shootparams, &fgrect);
-	if (have_form_xdial)
-	{
-		/* form_xdial() sichert und restauriert den Bereich unter dem Dialog. */
-		flyinf = NULL;
-		p_flyinf = &flyinf;
-		form_xdial(FMD_START, NULL, &fgrect, p_flyinf);
-	}
-	else
-	{
-		/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
-		save_screen();
-	}
+	dialog_begin(rsctree_shootparams, NULL);
 
 	objc_offset(rsctree_shootparams, WINK, &xw, &yw);
 	objc_offset(rsctree_shootparams, PULV, &xp, &yp);
@@ -2418,15 +2368,7 @@ static int sch_obj(int k)
 		}
 	} while ((i != SOK) && (i != SAB));
 
-	if (have_form_xdial)
-	{
-		form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
-	}
-	else
-	{
-		restore_screen();
-		form_dial(FMD_SHRINK, &g1, &fgrect);
-	}
+	dialog_end(&g1);
 
 	spieler_kanonen[n][k].w = wi;
 	spieler_kanonen[n][k].p = pv;
@@ -3006,6 +2948,7 @@ int main(void)
 	rsrc_gaddr(R_TREE, REGEL3,   &rsctree_help3);
 	rsrc_gaddr(R_TREE, OPTIONEN, &rsctree_options);
 	rsrc_gaddr(R_TREE, EINTRAG,  &rsctree_players);
+	rsrc_gaddr(R_TREE, T_TABELL, &rsctree_tabelle);
 
 	for (i = 0; i < 6; i++)
 	{

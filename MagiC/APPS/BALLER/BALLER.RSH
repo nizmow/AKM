@@ -1034,7 +1034,12 @@ OBJECT rs_object[] =
   0x0002, 0x0F0A, 0x0026, 0x0202,
         14,       -1,       -1, G_BUTTON          ,   /* Object 15 A_KAP */
   SELECTABLE|LASTOB, SHADOWED, (LONG)"K\224nig kann kapitulieren",
-  0x0001, 0x0900, 0x0024, 0x0001
+  0x0001, 0x0900, 0x0024, 0x0001,
+  
+  /******** Tree 14 T_TABELL ****************************************************/
+        -1,       -1,       -1, G_BOX             ,   /* Object 0  */
+  LASTOB, NORMAL, (LONG)0x00001100L,
+  0x0000, 0x0000, 0x0044, 0x0012
 };
 
 OBJECT *rs_trindex[] =
@@ -1051,5 +1056,6 @@ OBJECT *rs_trindex[] =
   &rs_object[213],   /* Tree 10 REGEL2           */
   &rs_object[244],   /* Tree 11 REGEL3           */
   &rs_object[278],   /* Tree 12 EINTRAG          */
-  &rs_object[292]    /* Tree 13 OPTIONEN         */
+  &rs_object[292],   /* Tree 13 OPTIONEN         */
+  &rs_object[308]    /* Tree 14 T_TABELL         */
 };
