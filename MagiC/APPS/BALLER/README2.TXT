@@ -134,3 +134,7 @@ Die Steuer-Buttons einen Pixel versetzt.
 2026-08-05:
 Quelltext noch etwas aufgerÑumt und die Anzeige der Tabelle repariert,
 die im Gegensatz zu den Åblichen Dialogen eine feste Bildschirmposition hat.
+
+2026-08-07
+Der Kînig hatte diverse Orthographieprobleme.
+Quelltext nochmal aufgerÑumt.

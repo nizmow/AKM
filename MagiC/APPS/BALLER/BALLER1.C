@@ -165,9 +165,9 @@ int n;		/*
 			*/
 int oldn;
 int preise[N_PREISE];
-int max_rund,
-      ftx,fty,ftw,fth,
-      f_h;
+int max_rund;
+int ftx, fty, ftw, fth;
+static int ballerdat_filehandle = -1;
 char *l_nam;
 char *r_nam;
 
@@ -320,7 +320,7 @@ static void box(int x, int y, int x2, int y2, int c)
 
 static void clr(int x, int y, int w, int h)
 {
-    box(x, y, x + w - 1, y + h - 1, 0);
+	box(x, y, x + w - 1, y + h - 1, 0);
 }
 
 
@@ -414,36 +414,40 @@ static void dialog_end(GRECT *g_grow)
 /********************** BALLER.TAB laden/speichern ***************************/
 static int t_load(void)
 {
-   if ((f_h = (int) Fopen("BALLER.TAB", 0)) < 0)
-   {
-       return 1;
-   }
-   Fread(f_h, 1, &an_erl);
-   Fread(f_h, 1, &au_kap);
-   Fread(f_h, 1, &mxin);
-   Fread(f_h, 3, rsctree_options[MAX_XX].ob_spec.tedinfo->te_ptext);
-   Fread(f_h, 2, &max_rund);
-   Fread(f_h, sizeof(tabelle_spielernamen), tabelle_spielernamen);
-   Fread(f_h, sizeof(tabelle_gewonnen), tabelle_gewonnen);
-   Fclose(f_h);
-   return 0;
+	int f_h;
+
+	if ((f_h = (int) Fopen("BALLER.TAB", 0)) < 0)
+	{
+		return 1;
+	}
+	Fread(f_h, 1, &an_erl);
+	Fread(f_h, 1, &au_kap);
+	Fread(f_h, 1, &mxin);
+	Fread(f_h, 3, rsctree_options[MAX_XX].ob_spec.tedinfo->te_ptext);
+	Fread(f_h, 2, &max_rund);
+	Fread(f_h, sizeof(tabelle_spielernamen), tabelle_spielernamen);
+	Fread(f_h, sizeof(tabelle_gewonnen), tabelle_gewonnen);
+	Fclose(f_h);
+	return 0;
 }
 
 static int t_save(void)
 {
-   if ((f_h = (int) Fcreate("BALLER.TAB", 0)) < 0)
-   {
-      return 1;
-   }
-   Fwrite(f_h, 1, &an_erl);
-   Fwrite(f_h, 1, &au_kap);
-   Fwrite(f_h, 1, &mxin);
-   Fwrite(f_h, 3, rsctree_options[MAX_XX].ob_spec.tedinfo->te_ptext);
-   Fwrite(f_h, 2, &max_rund);
-   Fwrite(f_h, sizeof(tabelle_spielernamen), tabelle_spielernamen);
-   Fwrite(f_h, sizeof(tabelle_gewonnen), tabelle_gewonnen);
-   Fclose(f_h);
-   return 0;
+	int f_h;
+
+	if ((f_h = (int) Fcreate("BALLER.TAB", 0)) < 0)
+	{
+	  return 1;
+	}
+	Fwrite(f_h, 1, &an_erl);
+	Fwrite(f_h, 1, &au_kap);
+	Fwrite(f_h, 1, &mxin);
+	Fwrite(f_h, 3, rsctree_options[MAX_XX].ob_spec.tedinfo->te_ptext);
+	Fwrite(f_h, 2, &max_rund);
+	Fwrite(f_h, sizeof(tabelle_spielernamen), tabelle_spielernamen);
+	Fwrite(f_h, sizeof(tabelle_gewonnen), tabelle_gewonnen);
+	Fclose(f_h);
+	return 0;
 }
 
 
@@ -451,7 +455,7 @@ static int t_save(void)
 static char zeichen(void)
 {
    char a;
-   Fread(f_h, 1, &a);
+   Fread(ballerdat_filehandle, 1, &a);
    return a;
 }
 
@@ -459,30 +463,31 @@ static char zeichen(void)
 /* liest eine Dezimalzahl von der Datei, Kommentare werden Åberlesen */
 long rdzahl(void)
 {
-   char a, sign = 1,rem = 0;    /* wird durch * umgeschaltet, und zeigt damit an, */
-                           /* ob man sich in einem Kommentar befindet */
-   long val = 0;
+	char a, sign = 1,rem = 0;    /* wird durch * umgeschaltet, und zeigt damit an, */
+	                       /* ob man sich in einem Kommentar befindet */
+	long val = 0;
 
-   do
-      if ((a = zeichen()) == '*')
-      {
-         rem = !rem;
-      }
-   while ((a != '-') && (a < '0') || (a > '9') || rem);
+	do
+	if ((a = zeichen()) == '*')
+	{
+		rem = !rem;
+	}
+	while ((a != '-') && (a < '0') || (a > '9') || rem);
 
-   if (a == '-' )
-   {
-      sign = -1;
-      a = zeichen();
-   }
+	if (a == '-' )
+	{
+		sign = -1;
+		a = zeichen();
+	}
 
-   while((a >= '0') && (a <= '9'))
-   {
-      val *= 10;
-      val += a - '0';
-      a = zeichen();
-   }
-   return sign * val;
+	while((a >= '0') && (a <= '9'))
+	{
+		val *= 10;
+		val += a - '0';
+		a = zeichen();
+	}
+
+	return sign * val;
 }
 
 
@@ -495,7 +500,7 @@ static int burgen_laden(void)
 
 	a = burgen_daten;
 	a_lim = burgen_daten + BURGEN_DATEN_MAXLEN;
-	if ((f_h = (int) Fopen("BALLER.DAT", 0)) < 0)
+	if ((ballerdat_filehandle = (int) Fopen("BALLER.DAT", 0)) < 0)
 	{
 		return 1;
 	}
@@ -534,7 +539,8 @@ static int burgen_laden(void)
 		}
 	}
 
-	Fclose(f_h);
+	Fclose(ballerdat_filehandle);
+	ballerdat_filehandle = -1;
 	return 0;
 }
 
@@ -898,7 +904,11 @@ static void fahne(void)
 
 
 /** Anzeige des Spielers, der am Zug ist, sowie Darstellung der Windfahnen ***/
-static void werdran(char c)
+/*
+ * c = 1: Dialog zeichnen
+ * c = 0: Dialog lîschen
+*/
+static void werdran(int c)
 {
 	int *a,i,x,y,w,h,c1,s1,c2,s2;
 	char *ad;
@@ -1238,7 +1248,7 @@ static void handle_menu_options(void)
 		{
 			max_rund = max_rund * 10 + h[1] - '0';
 			if (h[2])
-		    	max_rund = max_rund * 10 + h[2] - '0';
+				max_rund = max_rund * 10 + h[2] - '0';
 		}
 		if (!mxin)
 			max_rund = 20;
@@ -1373,7 +1383,7 @@ static int handle_menu(void)
 		if (bur_obj())
 		{
 			neues_spiel();
-			werdran(1);
+			werdran(1);			/* Dialog zeichnen */
 		}
 	}
 	else
@@ -1388,7 +1398,7 @@ static int handle_menu(void)
 			memcpy(nsp2, rsctree_names[NSP2].ob_spec.tedinfo->te_ptext, 20);
 			if (!end)
 			{
-				werdran(1);
+				werdran(1);		/* Dialog zeichnen */
 			}
 		}
 	}
@@ -1490,7 +1500,7 @@ static int handle_menu(void)
 
 		if (!end)
 		{
-			werdran(1);
+			werdran(1);		/* Dialog zeichnen */
 		}
 	}
 
@@ -1746,8 +1756,8 @@ static void anbau(void)
 }
 
 
-/********************* Von Markt aufzurufende Routinen ***********************/
-static void baue_foerderturm(void)
+/********************* Fîrderturm bauen ***********************/
+static int baue_foerderturm(void)
 {
 	int x,y,yy,i,t;
 	static const int turm[] =
@@ -1760,9 +1770,18 @@ static void baue_foerderturm(void)
 
 	graf_mouse(M_OFF, NULL);
 
+	/* Suche einen freien Platz in der Liste der FîrdertÅrme des Spielers */
 	for (t = 0; t < N_FOERDERTUERME; t++)
+	{
 		if (spieler_foerdertuerme[n][t].x == -1)
 			break;
+	}
+	if (t >= N_FOERDERTUERME)
+	{
+		return -1;		/* keiner mehr verfÅgbar */
+	}
+
+	/* Auf dem Bildschirm Platz fÅr den Fîrderturm suchen */
 
 	x = 639 * n + f * (bg[0] + 20 + 30 * t);
 	y = 380;
@@ -1782,6 +1801,8 @@ static void baue_foerderturm(void)
 	color(COLOUR_BLACK);
 	draw(spieler_foerdertuerme[n][t].x = x, spieler_foerdertuerme[n][t].y = y, turm);
 	graf_mouse(M_ON, NULL);
+
+	return 0;
 }
 
 
@@ -1793,6 +1814,7 @@ static void markt(void)
 	int n_foedertuerme;
 	int n_kanonen;
 	int obj;
+	int redraw_obj;
 
 	GRECT g_growbox = { 0, 0, 30, 20 };
 
@@ -1807,9 +1829,11 @@ static void markt(void)
 	}
 
 	/* Kauf-Schleife */
-	for (;;)
+	redraw_obj = 0;		/* Anfangs den gesamten Baum zeichnen */
+	do
 	{
 		int k;
+		GRECT g_object;
 
 		n_foedertuerme = 0;
 		for (i = 0; i < N_FOERDERTUERME;)
@@ -1824,17 +1848,19 @@ static void markt(void)
 		}
 
 		for (k = 0; k < N_KANONEN; k++)
+		{
 			if (bg[1 + k * 2] > -1 && spieler_kanonen[n][k].x == -1)
 			{
-			    graf_mouse(M_OFF, NULL);
-			    for (i = 1; i < 10; i++)
-			    	if (loc(639 * n + (bg[1 + k * 2] + 5 + i) * f, by[n] - bg[2 + k * 2] - i))
-			    		break;
-			    graf_mouse(M_ON, NULL);
-			    if (i > 9)
-			    	break;
+				graf_mouse(M_OFF, NULL);
+				for (i = 1; i < N_KANONEN; i++)
+					if (loc(639 * n + (bg[1 + k * 2] + 5 + i) * f, by[n] - bg[2 + k * 2] - i))
+						break;
+				graf_mouse(M_ON, NULL);
+				if (i > 9)
+					break;
 			}
-		
+		}
+
 		/* aktualisiere das Inventar im Dialog, d.h. wieviel der Spieler davon hat */
 		write_val(rsctree_status, ST_GELD,  11, spieler_geld[n]);
 		write_val(rsctree_status, ST_FOERD, 11, n_foedertuerme);
@@ -1853,8 +1879,13 @@ static void markt(void)
 			                                   (i == 2) && (k > 9) || (i == 3) && (wx[n] > -1));
 		}
 
-		/* TODO: Hier wird immer der gesamte (!) Dialog neu gezeichnet statt nur das geÑnderte Objekt */
-		objc_draw(rsctree_status, 0, 5, &desk_g);
+		/* Bestimme das Neuzeichnung-Rechteck */
+
+		objc_offset(rsctree_status, redraw_obj, &g_object.g_x, &g_object.g_y);
+		g_object.g_w = rsctree_status[redraw_obj].ob_width;
+		g_object.g_h = rsctree_status[redraw_obj].ob_height;
+
+		objc_draw(rsctree_status, 0, /* depth */ 5, &g_object);
 
 		if (have_form_xdial)
 		{
@@ -1869,66 +1900,78 @@ static void markt(void)
 			rsctree_status[obj].ob_state = 0;
 		}
 		
-		if (obj == FERTIG)
-		{
-			break;		/* Dialog beenden */
-		}
+		redraw_obj = 0;		/* im Zweifelsfall nÑchstes Mal den gesamten Dialog neu malen */
 
-		if (obj == SHK)
+		/* abhÑngig vom angeklickten Objekt Aktionen ausfÅhren */
+
+		switch (obj)
+		{
+			case FERTIG:
+				/* hier nichts weiter tun */
+				break;
+
+			case SHK:		/* Steuern runter */
 			spieler_steuer[n] -= 2 * (spieler_steuer[n] > 0);
-		else
-		if (obj == SHG)
+				redraw_obj = ST_STEUR;		/* nur die Steuern neu malen */
+				break;
+
+			case SHG:		/* Steuern rauf */
 			spieler_steuer[n] += 2 * (spieler_steuer[n] < 100);
-		else
-		if ((obj - MA_BAUEN > -1) && (obj - MA_BAUEN < 6))
-		{
-			/* Anbauen, Fîrderturm, GeschÅtz, Windfahne, Pulver, Kugeln */
-			/* erstmal Geld ausgeben... */
-			spieler_geld[n] -= preise[obj - MA_BAUEN];
+				redraw_obj = ST_STEUR;		/* nur die Steuern neu malen */
+				break;
 
-			if (obj < MA_PULVR)
-			{
-				/* Anbauen, Fîrderturm, GeschÅtz, Windfahne:
-				   DafÅr muû der Dialog erstmal geschlossen, also entfernt werden
-				   und nach der Aktion neu gezeichnet. */
+			case MA_PULVR:
+				spieler_geld[n] -= preise[PREIS_PULVER];
+				spieler_pulver[n] += 30;
+				drw_gpk(1);		/* Pulver und Geld in der Burg zeichnen */
+				drw_gpk(0);
+				break;
+
+			case MA_KUGLN:
+				spieler_geld[n] -= preise[PREIS_KUGELN];
+				spieler_kugeln[n] += 2;
+				drw_gpk(2);		/* Kugeln und Geld in der Burg zeichnen */
+				drw_gpk(0);
+				break;
+
+			/* Burg anbauen, dazu Dialog zwischenzeitlich beenden */
+			case MA_BAUEN:
 				dialog_end(&g_growbox);
-
-				drw_all();		/* warum? */
-
-				if (obj == MA_BAUEN)
-				{
-					anbau();
-				}
-				else
-				if (obj == MA_FOERD)
-				{
-					baue_foerderturm();
-				}
-				else
-				if (obj == MA_KANON)
-				{
-					init_kanone(k, 639 * n);
-				}
-				else
-				if (obj == MA_FAHNE)
-				{
-					wx[n] = 639 * n + f * bg[23];
-					wy[n] = by[n] - bg[24];
-					werdran(1);
-				}
-
+				anbau();
 				dialog_begin(rsctree_status, &g_growbox);
-			}
-			else
-			{
-				/* Pulver und Kugeln erhîhen */
-				spieler_pulver[n] += 30 * (obj == MA_PULVR);
-				spieler_kugeln[n] += 2 * (obj == MA_KUGLN);
-				drw_gpk(obj - MA_FAHNE);
-				drw_gpk(0);  /* Zeichne Geld */
-			}
+				break;
+
+			/* Fîrderturm bauen, dazu Dialog zwischenzeitlich beenden */
+			case MA_FOERD:
+				dialog_end(&g_growbox);
+				if (!baue_foerderturm())
+				{
+					/* hat geklappt, Geld ist ausgegeben */
+					spieler_geld[n] -= preise[PREIS_FOERDERTURM];
+				}
+				dialog_begin(rsctree_status, &g_growbox);
+				break;
+
+			/* Kanone kaufen, dazu Dialog zwischenzeitlich beenden */
+			case MA_KANON:
+				spieler_geld[n] -= preise[PREIS_GESCHUETZ];
+				dialog_end(&g_growbox);
+				init_kanone(k, 639 * n);
+				dialog_begin(rsctree_status, &g_growbox);
+				break;
+
+			/* Windfahne kaufen, dazu Dialog zwischenzeitlich beenden */
+			case MA_FAHNE:
+				spieler_geld[n] -= preise[PREIS_WINDFAHNE];
+				wx[n] = 639 * n + f * bg[23];
+				wy[n] = by[n] - bg[24];
+				dialog_end(&g_growbox);
+				werdran(1);		/* Dialog zeichnen */
+				dialog_begin(rsctree_status, &g_growbox);
+				break;
 		}
 	}
+	while(obj != FERTIG);
 
 	dialog_end(&g_growbox);
 
@@ -2046,7 +2089,7 @@ static int comp(void)
 		return -1;
 	}
 
-	    /* Jetzt kommen die Berechnungen fÅr den Schuss: */
+	/* Jetzt kommen die Berechnungen fÅr den Schuss: */
 	bh = burgen[spieler_burg[!n]];
 
 	do
@@ -2142,24 +2185,26 @@ static int comp(void)
 static void koenig(void)
 {
 	static char
-		kna[] = "[0][Der Kînig meint:             |'",
-		kne[]="'|][DemÅtig  zur Kenntnis genommen]",
-		kn0[]="Naja...| Nun gut...| Weiter so...",
-		kn1[]="Ich bin zufrieden| mit Ihren Leistungen!",
-		kn2[]="Hervorragend,| Weiter so!",
-		kn3[]="Vielleicht sollten Sie mal| die Steuern senken...",
-		kn4[]="Wenn Sie so weiter machen| werde ich Sie entlassen!",
-		kn5[]="Vielleicht mal 'nen| Fîrderturm kaufen...",
-		kn6[]="Sie sollten sich| gefÑlligst mehr MÅhe| geben!",
-		kn7[]="Sie brauchen nicht| jede Runde zu kommen.",
-		kn8[]="Wissen Sie eigentlich,| daû Sie mich bereits| xxmal besucht haben?",
-		kn9[]="Und Sie sind sich sicher,| daû Sie auch ohne eine| Windfahne zurecht kommen?",
-		kn10[]="Schîn, Sie zu sehen...",
-		kn11[]="Was soll ich denn in| so einer frÅhen Phase| schon sagen?",
-		kn12[]="Sie sollten mehr Geld| verdienen, FîrdertÅrme bauen| und den Gegner besiegen.",
-		kn13[]="Ich habe Ihnen nichts| neues zu sagen.",
-		kn14[]="Find' ich nett, daû| Sie mich mal besuchen!";
-	char a[300],*s[20],k,t,j,i;
+		kna[]  = "[0][Der Kînig meint:             |'",
+		kne[]  = "'|][DemÅtig zur Kenntnis genommen]",
+		kn0[]  = "Naja...| Nun gut...| Weiter so...",
+		kn1[]  = "Ich bin zufrieden| mit Ihren Leistungen!",
+		kn2[]  = "Hervorragend,| weiter so!",
+		kn3[]  = "Vielleicht sollten Sie mal| die Steuern senken...",
+		kn4[]  = "Wenn Sie so weitermachen,| werde ich Sie entlassen!",
+		kn5[]  = "Vielleicht mal 'nen| Fîrderturm kaufen...",
+		kn6[]  = "Sie sollten sich| gefÑlligst mehr MÅhe| geben!",
+		kn7[]  = "Sie brauchen nicht| jede Runde zu kommen.",
+		kn8[]  = "Wissen Sie eigentlich,| daû Sie mich bereits| xxmal besucht haben?",
+		kn9[]  = "Und Sie sind sich sicher,| daû Sie auch ohne eine| Windfahne zurechtkommen?",
+		kn10[] = "Schîn, Sie zu sehen...",
+		kn11[] = "Was soll ich denn in| so einer frÅhen Phase| schon sagen?",
+		kn12[] = "Sie sollten mehr Geld| verdienen, FîrdertÅrme bauen| und den Gegner besiegen.",
+		kn13[] = "Ich habe Ihnen nichts| Neues zu sagen.",
+		kn14[] = "Find' ich nett, daû| Sie mich mal besuchen!";
+	char a[300];
+	char *s[20];
+	char k,t,j,i;
 	static char *ltz[2];
 
 	for (j = k = 0; j < N_KANONEN; j++)
@@ -2170,7 +2215,7 @@ static void koenig(void)
 
 	if (!(Random()%20) || (spieler_koenig[n] & 16) || ((spieler_koenig[n] & 15) > 9))
 	{
-		form_alert(1,"[0][Der Kînig hat keine Lust,   |dich zu sprechen.][Schade]");
+		form_alert(1,"[0][Der Kînig hat keine Lust,| dich zu sprechen.][Schade]");
 	}
 	else
 	{
@@ -2539,12 +2584,12 @@ static void schuss(/* Nr. der Kanone */ int k)
 				for (j = 0; j < N_KANONEN; j++)
 			 		if ((spieler_kanonen[n][j].x < ox + 2) && (spieler_kanonen[n][j].x + 22 > ox) && (spieler_kanonen[n][j].x > -1) &&
 					    (spieler_kanonen[n][j].y - 16 < oy) && (spieler_kanonen[n][j].y > oy))
-			        {
+					{
 						clr(a = spieler_kanonen[n][j].x, v = spieler_kanonen[n][j].y - 12, 20, 13);
 						explosion(a + 10, v + 6, 13, 8, 50);
 						color(COLOUR_WHITE);
 						spieler_kanonen[n][j].x = -1;
-			        }
+					}
 
 				for (j = 0; j < N_FOERDERTUERME; j++)
 					if ((spieler_foerdertuerme[n][j].x > -1) &&
@@ -2554,7 +2599,7 @@ static void schuss(/* Nr. der Kanone */ int k)
 						if (drin(a, v, 30, 37, -2, (int)ox, (int)oy))
 						{
 							explosion((a = spieler_foerdertuerme[n][j].x - 29 * n) + 15,
-							      (v = spieler_foerdertuerme[n][j].y - 40) + 20, 15, 20, 120);
+							          (v = spieler_foerdertuerme[n][j].y - 40) + 20, 15, 20, 120);
 							clr(a, v, 30, 40);
 							spieler_foerdertuerme[n][j].x =- 1;
 						}
@@ -2584,20 +2629,21 @@ static void schuss(/* Nr. der Kanone */ int k)
 
 				switch (j)
 				{
-			        case 0:
-			        	spieler_geld[n] -= Min(200, spieler_geld[n]);
-			        	break;
-			        case 2:
-			        	spieler_pulver[n] = 0;
-			        	break;
-			        case 4:
-			        	spieler_kugeln[n] -= Min(2, spieler_kugeln[n]);
+					case 0:
+					  	spieler_geld[n] -= Min(200, spieler_geld[n]);
+						break;
+					case 2:
+						spieler_pulver[n] = 0;
+						break;
+					case 4:
+						spieler_kugeln[n] -= Min(2, spieler_kugeln[n]);
+						break;
 				}
 
 				if (j < 6)
 				{
 					explosion(639 * n + f * (bg[25 + j] + a / 2), by[n] - bg[26 + j] - v / 2,
-					       a / 2, v / 2, 60 + 100 * (j == 2));
+					          a / 2, v / 2, 60 + 100 * (j == 2));
 					drw_gpk(j / 2);
 					c = 4;
 				}
@@ -2631,7 +2677,7 @@ static void rechnen(void)
 	static const int preise_maxdiff[N_PREISE] =
 	{
 		10,50,50,20,10,10
-	};     
+	};
 
 	steuer = spieler_steuer[n];
 	spieler_geld[n] += spieler_volk[n] * ((steuer > 65) ? (130 - steuer) : steuer) / (150 - (int) (Random() % 50));
@@ -2690,18 +2736,28 @@ static void ende(void)
 
 	switch(end & 240)
 	{
-	  case 16: strcat(s2, "Kînig wurde getroffen,");
-	           strcpy(s3, "  daraufhin ergab sich dessen Volk. )" );
-	           break;
-	  case 32: strcat(s2, "Kînig hat aufgrund der");
-	           strcpy(s3, "  aussichtslosen Lage kapituliert. )" ); break;
-	  case 48: strcat(s2, " hat kein Volk mehr.)" );
-	  			 s3[0] = 0;
-	  			 break;
-	  case 64: strcpy(s3, s2);
-	           strcpy(s2, "(Die maximale Rundenzahl ist erreicht.");
-	           strcat(s3, " befindet sich in der schlechteren Lage.)" );
+		case 16:
+			strcat(s2, "Der Kînig wurde getroffen,");
+			strcpy(s3, "  daraufhin ergab sich dessen Volk. )" );
+			break;
+
+		case 32:
+			strcat(s2, "Der Kînig hat aufgrund der");
+			strcpy(s3, "  aussichtslosen Lage kapituliert. )" );
+			break;
+
+		case 48:
+			strcat(s2, " hat kein Volk mehr.)" );
+			s3[0] = 0;
+			break;
+
+		case 64:
+			strcpy(s3, s2);
+			strcpy(s2, "(Die maximale Rundenzahl ist erreicht.");
+			strcat(s3, " befindet sich in der schlechteren Lage.)" );
+			break;
 	}
+
 	/* TODO: Hier kein form_dial()? */
 	objc_draw(rsctree_winner, 0, 7, &desk_g);
 
@@ -2748,7 +2804,7 @@ static int ein_zug(void)
 	spieler_koenig[n] &= ~16;
 	wind = wind * 9 / 10 + Random() % 12 - 6;
 
-	werdran(1);
+	werdran(1);		/* Dialog zeichnen */
 
 	do
 	{
@@ -2782,8 +2838,7 @@ static int ein_zug(void)
 			printf("a = %d\n", a);
 			printf("((!ev.bstate && fck) || a) = %d\n", ((!ev.bstate && fck) || a));
 			*/
-			/* Wenn spiel_modus = 0, dann
-			   !(spiel_modus & (2 - n)) == 1 */
+			/* Wenn spiel_modus = 0, dann !(spiel_modus & (2 - n)) == 1 */
 		}
 		while ((!ev.bstate && fck) || a);
 
@@ -2808,7 +2863,7 @@ static int ein_zug(void)
 			{
 				if ((spieler_kanonen[n][i].x <= ev.x) && (spieler_kanonen[n][i].x + 20 >= ev.x) && (spieler_kanonen[n][i].x != -1) &&
 			    	(spieler_kanonen[n][i].y >= ev.y) && (spieler_kanonen[n][i].y - 14 <= ev.y))
-			    	break;
+					break;
 			}
 
 			if (i >= N_KANONEN)
@@ -2848,7 +2903,7 @@ static int ein_zug(void)
 		}
 	} while (!fl);
 
-	werdran(0);
+	werdran(0);		/* Dialog lîschen */
 	if (fl < 2)
 	{
 		schuss(i);
@@ -2985,7 +3040,7 @@ int main(void)
 		if (i == 1)
 			form_alert(1, "[1][Kann BALLER.DAT nicht finden.][Abbruch]");
 		else
-			form_alert(1, "[1][Zuviele oder zu groûe Burgen in BALLER.DAT][Abbruch]");
+			form_alert(1, "[1][Zuviele oder zu groûe|Burgen in BALLER.DAT][Abbruch]");
 		return 4;
 	}
 
