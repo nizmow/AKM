@@ -1,4 +1,4 @@
-baller.app
+baller.prg
 .C[-C]			; allow nested comments
 .C[-Iimport]	; .h search path
 .L[-S=$2000]   ; Stackgr”že auf 8 KByte setzen

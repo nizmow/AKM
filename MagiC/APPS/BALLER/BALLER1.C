@@ -72,10 +72,12 @@ int work_out_ext[57];
 int ap_id;
 int aes_version;
 int have_form_xdial = 0;
+#if 0
 char *screenptr = NULL;		/* nur fÅr TOS, von Logbase() */
 char *screenbuffer = NULL;	/* nur fÅr TOS, TODO: auflîsungsunabhÑngig machen */
+#endif
 GRECT desk_g;				/* nutzbarer Bildschirm unterhalb der MenÅleiste */
-GRECT screen_g;				/* Gesamtgrîûe des Bildschirms */
+GRECT screen_g;				/* Gesamtgrîûe des Bildschirms. TODO: wird nicht verwendet */
 int n_planes;				/* Farbtiefe des Bildschirms, 1 fÅr monochrom */
 int n_colours;				/* 2 fÅr Monochrom */
 
@@ -250,6 +252,8 @@ static int gem_init(void)
 	exit(0);
 	*/
 
+#if 1
+	/* zum Testen der TOS-Variante deaktivieren! */
 	/* KAOS liefert fÑlschlicherweise eine 1, EmuTOS wirft einen Fehlerdialog und liefert -1 */
 	/* TODO: MT_AES.C hat einen Fehler in MT_appl_getinfo(). Hier muû d.intout[] mit Null vorbesetzt werden, weil sonst Zufall drinsteht. */
 	/* Deshalb fragen wir vorher die AES-Version ab. */
@@ -257,6 +261,7 @@ static int gem_init(void)
 	{
 		have_form_xdial = 1;
 	}
+	#if 0
 	else
 	{
 		/* form_alert(1,"[1][Kein form_xdial()][OK]"); */
@@ -266,6 +271,8 @@ static int gem_init(void)
 			return -3;
 		}
 	}
+	#endif
+#endif
 
 	wind_get_grect(SCREEN, WF_WORKXYWH, &desk_g);
 	screen_g.g_x = screen_g.g_y = 0;
@@ -324,6 +331,7 @@ static void clr(int x, int y, int w, int h)
 }
 
 
+#if 0
 /* nur verwendet ohne form_xdial() */
 static void save_screen(void)
 {
@@ -340,6 +348,7 @@ static void restore_screen(void)
 	memcpy(screenptr, screenbuffer, 32000);
 	graf_mouse(M_ON, NULL);
 }
+#endif
 
 
 /* Lîscht den gesamten Bildschirm auûer der MenÅleiste */
@@ -354,6 +363,10 @@ static void cls(void)
 static void *flyinf;		/* MagiC-spezifisch, fÅr form_xdial() */
 static void **p_flyinf;
 
+static MFDB screenMFDB;		/* fÅr TOS, alle Felder sind Null, fÅr den Bildschirm */
+static MFDB bufferMFDB;		/* fÅr TOS, statt form_xdial() */
+#define MFDB_WW(w) (((w) + 15) >> 4)	/* Die Doku [https://freemint.github.io/tos.hyp/en/vdi_structures.html#MFDB] erzÑhlt Bullshit */
+
 /*
  * Zentriert den Dialog und sichert das Bildschirmrechteck darunter.
  * Als Nebenwirkung landet das Rechteck des Dialogs in der globalen
@@ -362,6 +375,8 @@ static void **p_flyinf;
  */
 static void dialog_begin(OBJECT *tree, GRECT *g_grow)
 {
+	int err = 0;
+
 	if (tree == rsctree_tabelle)
 	{
 		/* Hack fÅr die Tabelle, die per VDI an eine feste Position gemalt wird */
@@ -371,24 +386,80 @@ static void dialog_begin(OBJECT *tree, GRECT *g_grow)
 		fgrect.g_h = tree[0].ob_height;
 	}
 	else
+	if (tree != NULL)
 	{
 		form_center(tree, &fgrect);
 	}
+	else
+	{
+		fgrect = *g_grow;
+		g_grow = NULL;
+	}
+
 	if (have_form_xdial)
 	{
 		/* form_xdial() sichert und restauriert den Bereich unter dem Dialog. */
 		flyinf = NULL;
 		p_flyinf = &flyinf;
 		form_xdial(FMD_START, NULL, &fgrect, p_flyinf);
+		if (flyinf == NULL)
+		{
+			err = 1;
+		}
 	}
 	else
 	{
+		#if 1
+		long mem;
+
+		int pxy[8];
+		pxy[0] = fgrect.g_x;					/* Quelle: x1 */
+		pxy[1] = fgrect.g_y;					/* Quelle: y1 */
+		pxy[2] = fgrect.g_x + fgrect.g_w - 1;	/* Quelle: x2 */
+		pxy[3] = fgrect.g_y + fgrect.g_h - 1;	/* Quelle: y2 */
+		pxy[4] = 0;								/* Ziel: x1 */
+		pxy[5] = 0;								/* Ziel: y1 */
+		pxy[6] = fgrect.g_w - 1;				/* Ziel: x2 */
+		pxy[7] = fgrect.g_h - 1;				/* Ziel: y2 */
+
+		bufferMFDB.fd_w = fgrect.g_w;			/* wird vermutlich ignoriert */
+		bufferMFDB.fd_h = fgrect.g_h;
+		bufferMFDB.fd_wdwidth = MFDB_WW(bufferMFDB.fd_w);
+		/*bufferMFDB.fd_stand = 0; */
+		bufferMFDB.fd_nplanes = n_planes;		/* unbenutzt */
+		mem = bufferMFDB.fd_wdwidth << 4;		/* Pixel pro Pufferzeile */
+		mem *= bufferMFDB.fd_nplanes;			/* Bits pro Pufferzeile */
+		mem >>= 3;								/* Bytes pro Pufferzeile */
+		mem *= bufferMFDB.fd_h;					/* Bytes fÅr Puffer */
+		bufferMFDB.fd_addr = Malloc(mem);
+
+		if (bufferMFDB.fd_addr != NULL)
+		{
+			graf_mouse(M_OFF, NULL);
+	 		vro_cpyfm(vdi_handle, S_ONLY, pxy, &screenMFDB, &bufferMFDB);
+			graf_mouse(M_ON, NULL);
+	 	}
+	 	else
+	 	{
+	 		err = 1;
+	 	}
+ 
+ 		#else
+
 		/* Wir lassen FMD_START und FMD_FINISH weg, weil wir kein WM_REDRAW verarbeiten. */
 		save_screen();
+
+		#endif
 	}
+
 	if (g_grow != NULL)
 	{
 		form_dial(FMD_GROW, g_grow, &fgrect);
+	}
+	
+	if (err)
+	{
+		form_alert(1,"[1][Zuwenig Speicher!][OK]");
 	}
 }
 
@@ -404,10 +475,81 @@ static void dialog_end(GRECT *g_grow)
 		form_xdial(FMD_FINISH, NULL, &fgrect, p_flyinf);
 	}
 	else
+	if (bufferMFDB.fd_addr != NULL)
 	{
+		#if 1
+
+		int pxy[8];
+		pxy[0] = 0;								/* Quelle: x1 */
+		pxy[1] = 0;								/* Quelle: y1 */
+		pxy[2] = fgrect.g_w - 1;				/* Quelle: x2 */
+		pxy[3] = fgrect.g_h - 1;				/* Quelle: y2 */
+		pxy[4] = fgrect.g_x;					/* Ziel: x1 */
+		pxy[5] = fgrect.g_y;					/* Ziel: y1 */
+		pxy[6] = fgrect.g_x + fgrect.g_w - 1;	/* Ziel: x2 */
+		pxy[7] = fgrect.g_y + fgrect.g_h - 1;	/* Ziel: y2 */
+
+		graf_mouse(M_OFF, NULL);
+ 		vro_cpyfm(vdi_handle, S_ONLY, pxy, &bufferMFDB, &screenMFDB);
+		graf_mouse(M_ON, NULL);
+ 		Mfree(bufferMFDB.fd_addr);
+ 
+ 		#else
+
 		restore_screen();
+
+		#endif
 	}
-	form_dial(FMD_SHRINK, g_grow, &fgrect);
+	
+	if (g_grow != NULL)
+	{
+		form_dial(FMD_SHRINK, g_grow, &fgrect);
+	}
+}
+
+
+/************** Darstellung und Verwaltung eines Objektbaumes ****************/
+static int obj_do(OBJECT *tree)
+{
+	if (have_form_xdial)
+	{
+		return do_dialog(tree);		/* aus GEMUT_MT fÅr MagiC, rettet Hintergrund */
+	}
+	else
+	{
+		int ret;
+		int fl = 0;
+		static GRECT g1 = {20, 20, 30, 20};
+	
+		if (tree == rsctree_names)
+		{
+			fl = NSP1;
+			g1.g_x = 80;
+		}
+		if (tree == rsctree_options)
+		{
+			fl = MAX_XX;
+			g1.g_x = 80;
+		}
+		if (tree == rsctree_computer)
+		{
+			g1.g_x = 150;
+		}
+		if (tree == rsctree_players)
+		{
+			fl = EI_N1;
+			g1.g_x = 260;
+		}
+
+		dialog_begin(tree, &g1);
+		graf_mouse(M_OFF, NULL);
+		objc_draw(tree, 0, 5, &desk_g);
+		graf_mouse(M_ON, NULL);
+		ret = form_do(tree, fl);
+		tree[ret].ob_state = 0;		/* SELECTED lîschen */
+		dialog_end(&g1);
+		return ret;
+	}
 }
 
 
@@ -999,55 +1141,6 @@ static void werdran(int c)
 		graf_mouse(M_OFF, NULL);
 		clr(a[0], a[1], a[2], a[3]);
 		graf_mouse(M_ON, NULL);
-	}
-}
-
-
-/************** Darstellung und Verwaltung eines Objektbaumes ****************/
-static int obj_do(OBJECT *tree)
-{
-	if (have_form_xdial)
-	{
-		return do_dialog(tree);		/* aus GEMUT_MT fÅr MagiC, rettet Hintergrund */
-	}
-	else
-	{
-		int ret;
-		int fl = 0;
-		static GRECT g1 = {20, 20, 30, 20};
-	
-		if (tree == rsctree_names)
-		{
-			fl = NSP1;
-			g1.g_x = 80;
-		}
-		if (tree == rsctree_options)
-		{
-			fl = MAX_XX;
-			g1.g_x = 80;
-		}
-		if (tree == rsctree_computer)
-		{
-			g1.g_x = 150;
-		}
-		if (tree == rsctree_players)
-		{
-			fl = EI_N1;
-			g1.g_x = 260;
-		}
-	
-		/* Man beachte, daû wir hier FMD_START und FMD_FINISH weglassen, weil wir
-		   derzeit keine WM_REDRAW-Nachricht auslîsen mîchte, die wir nicht behandeln. */
-	
-		form_center(tree, &fgrect);
-		save_screen();
-		form_dial(FMD_GROW, &g1, &fgrect);
-		objc_draw(tree, 0, 5, &desk_g);
-		ret = form_do(tree, fl);
-		tree[ret].ob_state = 0;		/* SELECTED lîschen */
-		restore_screen();
-		form_dial(FMD_SHRINK, &g1, &fgrect);
-		return ret;
 	}
 }
 
@@ -1679,8 +1772,11 @@ int loc(int x, int y)
    bzw. das Geld verbraucht ist, bricht der Vorgang abrupt ab. */
 static void anbau(void)
 {
+#if 0
 	void *flyinf;		/* MagiC-spezifisch, fÅr form_xdial() */
 	void **p_flyinf;
+#endif
+
 	/* static const GRECT g = { 220, 375, 25*8, 36 }; */
 	static const GRECT g = { 220, 362, 25*8, 36 };
 	int n_steine = 20;	/* Wir starten mit 20 Steinen */
@@ -1688,12 +1784,16 @@ static void anbau(void)
 	vsf_interior(vdi_handle, FIS_PATTERN);		/* 2: Muster */
 	vsf_style(vdi_handle, 9);		/* Muster 2,9 ist eine Ziegelstein-Mauer */
 
+#if 1
+	dialog_begin(NULL, &g);
+#else
 	if (have_form_xdial)
 	{
 		flyinf = NULL;
 		p_flyinf = &flyinf;
 		form_xdial(FMD_START, NULL, &g, p_flyinf);
 	}
+#endif
 
 	/* Text */
 	v_gtext(vdi_handle, 280, 375, " Anbauen: " );
@@ -1735,6 +1835,9 @@ static void anbau(void)
 		}
 	} while((n_steine > 0) && (ev.bstate < 2));		/* Mit der rechten Maustaste abbrechen? */
 
+#if 1
+	dialog_end(NULL);
+#else
 	if (have_form_xdial)
 	{
 		form_xdial(FMD_FINISH, NULL, &g, p_flyinf);
@@ -1751,6 +1854,7 @@ static void anbau(void)
 			memmove(screenptr + s * 80 + 26, screenbuffer + s * 80 + 26, 28);
 		}
 	}
+#endif
 
 	graf_mouse(ARROW, NULL);
 }
@@ -3016,14 +3120,16 @@ int main(void)
 	rsctree_computer[CTS1 + 1].ob_state = SELECTED;
 	rsctree_computer[CTS2 + 1].ob_state = SELECTED;
 
+#if 0
 	if (!have_form_xdial)
 	{
 		screenbuffer = (char *) Malloc(32000L);		/* TODO: auflîsungsunabhÑngig machen */
 		screenptr = Logbase();
 	}
+#endif
 
 	burgen_daten = (int *) Malloc(BURGEN_DATEN_MAXLEN * sizeof(*burgen_daten));
-	if (((screenbuffer == NULL) && !have_form_xdial) || (burgen_daten == NULL))
+	if (/*((screenbuffer == NULL) && !have_form_xdial) || */ (burgen_daten == NULL))
 	{
 	   exit(form_alert(1,"[1][Zu wenig Speicher!][Abbruch]"));
 	}
@@ -3060,8 +3166,10 @@ int main(void)
 
 	t_save();
 
+#if 0
 	if (screenbuffer != NULL)
 		Mfree(screenbuffer);
+#endif
 	Mfree(burgen_daten);
 
 	menu_bar(rsctree_menu, 0);

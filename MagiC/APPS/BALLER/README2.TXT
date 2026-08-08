@@ -138,3 +138,13 @@ die im Gegensatz zu den blichen Dialogen eine feste Bildschirmposition hat.
 2026-08-07
 Der K”nig hatte diverse Orthographieprobleme.
 Quelltext nochmal aufger„umt.
+
+2026-08-08
+Fr TOS wird form_xdial() nachgebildet, mit vro_cpyfm(), damit l„uft das
+Programm auch unter TOS in (fast) beliebigen Aufl”sungen und in Farbe.
+BALLER.APP in BALLER.PRG umbenannt.
+Schreibfehler in der Anleitung behoben.
+TODO: Das Verlassen der Tabellenansicht dauert unter MagiC sehr lange, weil
+      der Mausklick nicht sofort erkannt wird, sondern erst nach l„ngerem
+      Drcken. Hier ist wohl etwas im "event handling" nicht ganz
+      TOS-kompatibel.

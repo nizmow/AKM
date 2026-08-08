@@ -162,25 +162,25 @@ OBJECT rs_object[] =
   0x0000, 0x0005, 0x0017, 0x0001,
         32, MOD1            , MOD5            , G_BOX             ,   /* Object 25  */
   NONE, NORMAL, (LONG)0x00FF1100L,
-  0x000F, 0x0000, 0x0016, 0x0006,
+  0x000F, 0x0000, 0x0018, 0x0006,
   MOD2            ,       -1,       -1, G_STRING          ,   /* Object 26 MOD1 */
-  NONE, CHECKED, (LONG)"  Spieler  - Spieler ",
-  0x0000, 0x0000, 0x0016, 0x0001,
+  NONE, CHECKED, (LONG)"  Spieler  - Spieler    ",
+  0x0000, 0x0000, 0x0018, 0x0001,
   MOD3            ,       -1,       -1, G_STRING          ,   /* Object 27 MOD2 */
-  NONE, NORMAL, (LONG)"  Spieler  - Computer",
-  0x0000, 0x0001, 0x0016, 0x0001,
+  NONE, NORMAL, (LONG)"  Spieler  - Computer   ",
+  0x0000, 0x0001, 0x0018, 0x0001,
   MOD4            ,       -1,       -1, G_STRING          ,   /* Object 28 MOD3 */
-  NONE, NORMAL, (LONG)"  Computer - Spieler  ",
-  0x0000, 0x0002, 0x0016, 0x0001,
+  NONE, NORMAL, (LONG)"  Computer - Spieler    ",
+  0x0000, 0x0002, 0x0018, 0x0001,
         30,       -1,       -1, G_STRING          ,   /* Object 29 MOD4 */
-  NONE, NORMAL, (LONG)"  Computer - Computer",
-  0x0000, 0x0003, 0x0016, 0x0001,
+  NONE, NORMAL, (LONG)"  Computer - Computer   ",
+  0x0000, 0x0003, 0x0018, 0x0001,
   MOD5            ,       -1,       -1, G_STRING          ,   /* Object 30  */
-  NONE, DISABLED, (LONG)"----------------------",
-  0x0000, 0x0004, 0x0016, 0x0001,
+  NONE, DISABLED, (LONG)"------------------------",
+  0x0000, 0x0004, 0x0018, 0x0001,
         25,       -1,       -1, G_STRING          ,   /* Object 31 MOD5 */
-  NONE, NORMAL, (LONG)"  Computer ausw\204hlen",
-  0x0000, 0x0005, 0x0016, 0x0001,
+  NONE, NORMAL, (LONG)"  Computer ausw\204hlen... ",
+  0x0000, 0x0005, 0x0018, 0x0001,
         34, REG             , REG             , G_BOX             ,   /* Object 32  */
   NONE, NORMAL, (LONG)0x00FF1100L,
   0x0016, 0x0000, 0x0011, 0x0001,
