@@ -7,16 +7,16 @@
 #define SPI_NAM          21  /* STRING in Baum MENUE */
 #define SPI_OPT          22  /* STRING in Baum MENUE */
 #define SPI_ENDE         24  /* STRING in Baum MENUE */
-#define MOD1             26  /* STRING in Baum MENUE */
-#define MOD2             27  /* STRING in Baum MENUE */
-#define MOD3             28  /* STRING in Baum MENUE */
-#define MOD4             29  /* STRING in Baum MENUE */
-#define MOD5             31  /* STRING in Baum MENUE */
-#define REG              33  /* STRING in Baum MENUE */
-#define ERG1             35  /* STRING in Baum MENUE */
-#define ERG2             36  /* STRING in Baum MENUE */
-#define ERG3             37  /* STRING in Baum MENUE */
-#define ERG4             39  /* STRING in Baum MENUE */
+#define M_MOD1           26  /* STRING in Baum MENUE */
+#define M_MOD2           27  /* STRING in Baum MENUE */
+#define M_MOD3           28  /* STRING in Baum MENUE */
+#define M_MOD4           29  /* STRING in Baum MENUE */
+#define M_MOD5           31  /* STRING in Baum MENUE */
+#define M_HILFE          33  /* STRING in Baum MENUE */
+#define M_ERG1           35  /* STRING in Baum MENUE */
+#define M_ERG2           36  /* STRING in Baum MENUE */
+#define M_ERG3           37  /* STRING in Baum MENUE */
+#define M_SHOWTB         39  /* STRING in Baum MENUE */
 
 #define T_SCHUSS         1   /* Formular/Dialog */
 #define SOK              1   /* BUTTON in Baum T_SCHUSS */

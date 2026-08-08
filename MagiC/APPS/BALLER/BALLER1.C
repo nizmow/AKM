@@ -331,6 +331,48 @@ static void clr(int x, int y, int w, int h)
 }
 
 
+/* Warte, bis die linke Maustaste gedrckt wurde */
+static void wait_for_button(void)
+{
+	#if 1
+	
+	/* so macht man es */
+	(void) evnt_button(/*nclicks */ 1, /*bmask*/ 1, /*bstate*/ 1, &ev);
+
+	#else
+
+	/* so war es im Originalprogramm */
+	do
+	{
+		graf_mkstate(&ev);
+	}
+	while(!ev.bstate);
+
+	#endif
+}
+
+
+/* Warte, bis die linke Maustaste losgelassen wurde */
+static void wait_for_button_release(void)
+{
+	#if 1
+
+	/* so macht man es */
+	(void) evnt_button(/*nclicks */ 1, /*bmask*/ 1, /*bstate*/ 0, &ev);
+
+	#else
+
+	/* so war es im Originalprogramm */
+	do
+	{
+		graf_mkstate(&ev);
+	}
+	while(ev.bstate);
+
+	#endif
+}
+
+
 #if 0
 /* nur verwendet ohne form_xdial() */
 static void save_screen(void)
@@ -1460,114 +1502,103 @@ static void handle_menu_player_names(void)
 }
 
 
-static int handle_menu(void)
+/*
+ Diese Funktion, die die Meneintr„ge behandelt, wird auch aufgerufen,
+ wenn das entsprechende Tastenkrzel eingegeben wurde, z.B. Alt-H fr den Hilfe-Dialog.
+*/
+static int handle_menu(int entry)
 {
 	static const GRECT g2 = {260, 20, 30, 20};
 	/*static const GRECT g3 = {48, 52, 548, 308};*/
 
 	wind_update(BEG_MCTRL);
-	if (m_buf[4] == MN_INFO)
+
+	switch (entry)
 	{
-		obj_do(rsctree_info);
-	}
-	else
-	if (m_buf[4] == SPI_NEU)     /* Neues Spiel */
-	{
-		if (bur_obj())
-		{
-			neues_spiel();
-			werdran(1);			/* Dialog zeichnen */
-		}
-	}
-	else
-	if (m_buf[4] == SPI_NAM)     /* Namen eingeben */
-	{
-		memcpy(rsctree_names[NSP1].ob_spec.tedinfo->te_ptext, nsp1, 20);
-		memcpy(rsctree_names[NSP2].ob_spec.tedinfo->te_ptext, nsp2, 20);
-		
-		if (obj_do(rsctree_names) == NOK)
-		{
-			memcpy(nsp1, rsctree_names[NSP1].ob_spec.tedinfo->te_ptext, 20);
-			memcpy(nsp2, rsctree_names[NSP2].ob_spec.tedinfo->te_ptext, 20);
-			if (!end)
+		case MN_INFO:
+			obj_do(rsctree_info);
+			break;
+
+		case SPI_NEU:
+			if (bur_obj())
 			{
-				werdran(1);		/* Dialog zeichnen */
+				neues_spiel();
+				werdran(1);			/* Dialog zeichnen */
 			}
-		}
-	}
-	else
-	if (m_buf[4] == SPI_OPT) /* Optionen */
-	{
-		handle_menu_options();
-	}
-	else
-	if (m_buf[4] == SPI_ENDE)
-	{
-		wind_update(END_MCTRL);
-		return 1;
-	}
-	else
-	if ((m_buf[4] >= MOD1) && (m_buf[4] <= MOD4))
-	{
-		/* Spielmodus (wer gegen wen) */
-		menu_icheck(rsctree_menu, MOD1 + spiel_modus, 0);
-		spiel_modus = m_buf[4] - MOD1;
-		menu_icheck(rsctree_menu, m_buf[4], 1);
-	}
-	else
-	if (m_buf[4] == MOD5)
-	{
-		/* Computer ausw„hlen */
-		handle_menu_choose_computer();
-	}
-	else if (m_buf[4] == REG)     /* Spielregeln */
-	{
-		handle_menu_help();
-	}
-	else
-	if (m_buf[4] == ERG1)
-	{
-		handle_menu_player_names();
-	}
-	else if (m_buf[4] == ERG2)
-	{
-		if (t_load())
-		{
-			form_alert(1,"[1][Kann BALLER.TAB nicht laden!][Abbruch]");
-		}
-	}
-	else
-	if (m_buf[4] == ERG3)
-	{
-		t_save();
-	}
-	else
-	if (m_buf[4] == ERG4)
-	{
-		/*static const GRECT g_tabelle = { 53, 56, 535, 288 };*/
-		
-		rsctree_tabelle[0].ob_x = 53;
-		rsctree_tabelle[0].ob_y = 56;
-		dialog_begin(rsctree_tabelle, &g2);
+			break;
 
-		tabelle_zeichnen();		/* zeichne die Tabelle per VDI */
+		case SPI_NAM:
+			memcpy(rsctree_names[NSP1].ob_spec.tedinfo->te_ptext, nsp1, 20);
+			memcpy(rsctree_names[NSP2].ob_spec.tedinfo->te_ptext, nsp2, 20);
 
-		ev.bstate = 0;
-		while(!ev.bstate)			/* Warte auf Mausklick */
-		{
-			graf_mkstate(&ev);
-		}
+			if (obj_do(rsctree_names) == NOK)
+			{
+				memcpy(nsp1, rsctree_names[NSP1].ob_spec.tedinfo->te_ptext, 20);
+				memcpy(nsp2, rsctree_names[NSP2].ob_spec.tedinfo->te_ptext, 20);
+				if (!end)
+				{
+					werdran(1);		/* Dialog zeichnen */
+				}
+			}
+			break;
 
-		dialog_end(&g2);
+		case SPI_OPT: /* Optionen */
+			handle_menu_options();
+			break;
 
-		ev.bstate = 1;
-		while(ev.bstate)			/* Warte auf Loslassen der Maustaste */
-		{
-			graf_mkstate(&ev);
-		}
+		case SPI_ENDE:
+			wind_update(END_MCTRL);
+			return 1;
+
+		case M_MOD1:
+		case M_MOD2:
+		case M_MOD3:
+		case M_MOD4:
+			/* Spielmodus (wer gegen wen) */
+			menu_icheck(rsctree_menu, M_MOD1 + spiel_modus, 0);
+			spiel_modus = entry - M_MOD1;
+			menu_icheck(rsctree_menu, entry, 1);
+			break;
+
+		case M_MOD5:
+			/* Computer ausw„hlen */
+			handle_menu_choose_computer();
+			break;
+
+		case M_HILFE:     /* Spielregeln */
+			handle_menu_help();
+			break;
+
+		case M_ERG1:
+			handle_menu_player_names();
+			break;
+
+		case M_ERG2:
+			if (t_load())
+			{
+				form_alert(1,"[1][Kann BALLER.TAB nicht laden!][Abbruch]");
+			}
+			break;
+
+		case M_ERG3:
+			t_save();
+			break;
+
+		case M_SHOWTB:
+			/*static const GRECT g_tabelle = { 53, 56, 535, 288 };*/
+			
+			rsctree_tabelle[0].ob_x = 53;
+			rsctree_tabelle[0].ob_y = 56;
+	
+			dialog_begin(rsctree_tabelle, &g2);
+			tabelle_zeichnen();		/* zeichne die Tabelle per VDI */
+			wait_for_button();
+			dialog_end(&g2);
+			wait_for_button_release();
+			break;
 	}
 
-	if ((m_buf[4] >= MOD1) && (m_buf[4] <= MOD5))
+	if ((entry >= M_MOD1) && (entry <= M_MOD5))
 	{
 		if (spiel_modus < 2)
 		{
@@ -1597,7 +1628,6 @@ static int handle_menu(void)
 		}
 	}
 
-	menu_tnormal(rsctree_menu, m_buf[3], 1);
 	wind_update(END_MCTRL);
 	return 0;
 }
@@ -1625,13 +1655,66 @@ static int event(void)
 					);
 	if (wh & MU_KEYBD)
 	{
-		if ((keycode & 0xff) == 17)		/* Ctrl-Q */
-			return 1;
+		/* printf("\x1bH" " 0x%08x ", keycode); */
+
+		switch (keycode)
+		{
+			/* Alt-E */
+			case 0x1200:
+				handle_menu(SPI_OPT);
+				break;
+
+			/* Ctrl-1 */
+			case 0x3920:
+				handle_menu(M_MOD1);
+				break;
+
+			/* Ctrl-2 */
+			case 0x0300:
+				handle_menu(M_MOD2);
+				break;
+
+			/* Ctrl-3 */
+			case 0x0413:
+				handle_menu(M_MOD3);
+				break;
+
+			/* Ctrl-4 */
+			case 0x0514:
+				handle_menu(M_MOD4);
+				break;
+
+			/* Ctrl-5 */
+			case 0x0615:
+				handle_menu(M_MOD5);
+				break;
+
+			/* Ctrl-H */
+			case 0x2308:
+				handle_menu(M_HILFE);
+				break;
+
+			/* Ctrl-N */
+			case 0x310e:
+				handle_menu(SPI_NEU);
+				break;
+
+			/* Ctrl-Q */
+			case 0x1011:
+				return 1;
+
+			/* Ctrl-T */
+			case 0x1414:
+				handle_menu(M_SHOWTB);
+				break;
+		}
 	}
 
 	if ((wh & MU_MESAG) && (m_buf[0] == MN_SELECTED))
 	{
-		return handle_menu();
+		int ret = handle_menu(m_buf[4]);
+		menu_tnormal(rsctree_menu, m_buf[3], 1);
+		return ret;
 	}
 
 	/* TODO: Warum auf ev.bstate testen und nicht auf MU_BUTTON? */

@@ -143,7 +143,7 @@ OBJECT rs_object[] =
   NONE, NORMAL, (LONG)0x00FF1100L,
   0x0008, 0x0000, 0x0017, 0x0006,
         20,       -1,       -1, G_STRING          ,   /* Object 19 SPI_NEU */
-  NONE, NORMAL, (LONG)"  Neues Spiel...       ",
+  NONE, NORMAL, (LONG)"  Neues Spiel...    ^N ",
   0x0000, 0x0000, 0x0017, 0x0001,
   SPI_NAM         ,       -1,       -1, G_STRING          ,   /* Object 20  */
   NONE, DISABLED, (LONG)"-----------------------",
@@ -152,7 +152,7 @@ OBJECT rs_object[] =
   NONE, NORMAL, (LONG)"  Namen der Spieler... ",
   0x0000, 0x0002, 0x0017, 0x0001,
         23,       -1,       -1, G_STRING          ,   /* Object 22 SPI_OPT */
-  NONE, NORMAL, (LONG)"  Optionen...          ",
+  NONE, NORMAL, (LONG)"  Optionen...       \007E ",
   0x0000, 0x0003, 0x0017, 0x0001,
   SPI_ENDE        ,       -1,       -1, G_STRING          ,   /* Object 23  */
   NONE, DISABLED, (LONG)"-----------------------",
@@ -160,51 +160,51 @@ OBJECT rs_object[] =
         18,       -1,       -1, G_STRING          ,   /* Object 24 SPI_ENDE */
   NONE, NORMAL, (LONG)"  Ende              ^Q ",
   0x0000, 0x0005, 0x0017, 0x0001,
-        32, MOD1            , MOD5            , G_BOX             ,   /* Object 25  */
+        32, M_MOD1          , M_MOD5          , G_BOX             ,   /* Object 25  */
   NONE, NORMAL, (LONG)0x00FF1100L,
-  0x000F, 0x0000, 0x0018, 0x0006,
-  MOD2            ,       -1,       -1, G_STRING          ,   /* Object 26 MOD1 */
-  NONE, CHECKED, (LONG)"  Spieler  - Spieler    ",
-  0x0000, 0x0000, 0x0018, 0x0001,
-  MOD3            ,       -1,       -1, G_STRING          ,   /* Object 27 MOD2 */
-  NONE, NORMAL, (LONG)"  Spieler  - Computer   ",
-  0x0000, 0x0001, 0x0018, 0x0001,
-  MOD4            ,       -1,       -1, G_STRING          ,   /* Object 28 MOD3 */
-  NONE, NORMAL, (LONG)"  Computer - Spieler    ",
-  0x0000, 0x0002, 0x0018, 0x0001,
-        30,       -1,       -1, G_STRING          ,   /* Object 29 MOD4 */
-  NONE, NORMAL, (LONG)"  Computer - Computer   ",
-  0x0000, 0x0003, 0x0018, 0x0001,
-  MOD5            ,       -1,       -1, G_STRING          ,   /* Object 30  */
-  NONE, DISABLED, (LONG)"------------------------",
-  0x0000, 0x0004, 0x0018, 0x0001,
-        25,       -1,       -1, G_STRING          ,   /* Object 31 MOD5 */
-  NONE, NORMAL, (LONG)"  Computer ausw\204hlen... ",
-  0x0000, 0x0005, 0x0018, 0x0001,
-        34, REG             , REG             , G_BOX             ,   /* Object 32  */
+  0x000F, 0x0000, 0x001B, 0x0006,
+  M_MOD2          ,       -1,       -1, G_STRING          ,   /* Object 26 M_MOD1 */
+  NONE, CHECKED, (LONG)"  Spieler  - Spieler    ^1 ",
+  0x0000, 0x0000, 0x001B, 0x0001,
+  M_MOD3          ,       -1,       -1, G_STRING          ,   /* Object 27 M_MOD2 */
+  NONE, NORMAL, (LONG)"  Spieler  - Computer   ^2 ",
+  0x0000, 0x0001, 0x001B, 0x0001,
+  M_MOD4          ,       -1,       -1, G_STRING          ,   /* Object 28 M_MOD3 */
+  NONE, NORMAL, (LONG)"  Computer - Spieler    ^3 ",
+  0x0000, 0x0002, 0x001B, 0x0001,
+        30,       -1,       -1, G_STRING          ,   /* Object 29 M_MOD4 */
+  NONE, NORMAL, (LONG)"  Computer - Computer   ^4 ",
+  0x0000, 0x0003, 0x001B, 0x0001,
+  M_MOD5          ,       -1,       -1, G_STRING          ,   /* Object 30  */
+  NONE, DISABLED, (LONG)"---------------------------",
+  0x0000, 0x0004, 0x001B, 0x0001,
+        25,       -1,       -1, G_STRING          ,   /* Object 31 M_MOD5 */
+  NONE, NORMAL, (LONG)"  Computer ausw\204hlen... ^5 ",
+  0x0000, 0x0005, 0x001B, 0x0001,
+        34, M_HILFE         , M_HILFE         , G_BOX             ,   /* Object 32  */
   NONE, NORMAL, (LONG)0x00FF1100L,
-  0x0016, 0x0000, 0x0011, 0x0001,
-        32,       -1,       -1, G_STRING          ,   /* Object 33 REG */
-  NONE, NORMAL, (LONG)"  Spielregeln... ",
-  0x0000, 0x0000, 0x0011, 0x0001,
-         8, ERG1            , ERG4            , G_BOX             ,   /* Object 34  */
+  0x0016, 0x0000, 0x0014, 0x0001,
+        32,       -1,       -1, G_STRING          ,   /* Object 33 M_HILFE */
+  NONE, NORMAL, (LONG)"  Spielregeln... ^H ",
+  0x0000, 0x0000, 0x0014, 0x0001,
+         8, M_ERG1          , M_SHOWTB        , G_BOX             ,   /* Object 34  */
   NONE, NORMAL, (LONG)0x00FF1100L,
-  0x001E, 0x0000, 0x0015, 0x0005,
-  ERG2            ,       -1,       -1, G_STRING          ,   /* Object 35 ERG1 */
-  NONE, NORMAL, (LONG)"  Namen eintragen... ",
-  0x0000, 0x0000, 0x0015, 0x0001,
-  ERG3            ,       -1,       -1, G_STRING          ,   /* Object 36 ERG2 */
-  NONE, NORMAL, (LONG)"  Tabelle laden      ",
-  0x0000, 0x0001, 0x0015, 0x0001,
-        38,       -1,       -1, G_STRING          ,   /* Object 37 ERG3 */
-  NONE, NORMAL, (LONG)"  Tabelle speichern  ",
-  0x0000, 0x0002, 0x0015, 0x0001,
-  ERG4            ,       -1,       -1, G_STRING          ,   /* Object 38  */
-  NONE, DISABLED, (LONG)"---------------------",
-  0x0000, 0x0003, 0x0015, 0x0001,
-        34,       -1,       -1, G_STRING          ,   /* Object 39 ERG4 */
-  LASTOB, NORMAL, (LONG)"  Tabelle zeigen...  ",
-  0x0000, 0x0004, 0x0015, 0x0001,
+  0x001E, 0x0000, 0x0017, 0x0005,
+  M_ERG2          ,       -1,       -1, G_STRING          ,   /* Object 35 M_ERG1 */
+  NONE, NORMAL, (LONG)"  Namen eintragen...   ",
+  0x0000, 0x0000, 0x0017, 0x0001,
+  M_ERG3          ,       -1,       -1, G_STRING          ,   /* Object 36 M_ERG2 */
+  NONE, NORMAL, (LONG)"  Tabelle laden        ",
+  0x0000, 0x0001, 0x0017, 0x0001,
+        38,       -1,       -1, G_STRING          ,   /* Object 37 M_ERG3 */
+  NONE, NORMAL, (LONG)"  Tabelle speichern    ",
+  0x0000, 0x0002, 0x0017, 0x0001,
+  M_SHOWTB        ,       -1,       -1, G_STRING          ,   /* Object 38  */
+  NONE, DISABLED, (LONG)"-----------------------",
+  0x0000, 0x0003, 0x0017, 0x0001,
+        34,       -1,       -1, G_STRING          ,   /* Object 39 M_SHOWTB */
+  LASTOB, NORMAL, (LONG)"  Tabelle zeigen... ^T ",
+  0x0000, 0x0004, 0x0017, 0x0001,
   
   /******** Tree 1 T_SCHUSS ****************************************************/
         -1, SOK             ,       11, G_BOX             ,   /* Object 0  */

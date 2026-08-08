@@ -148,3 +148,10 @@ TODO: Das Verlassen der Tabellenansicht dauert unter MagiC sehr lange, weil
       der Mausklick nicht sofort erkannt wird, sondern erst nach l„ngerem
       Drcken. Hier ist wohl etwas im "event handling" nicht ganz
       TOS-kompatibel.
+
+2026-08-09
+Ordentliche Abfrage auf Mausklick mittels evnt_button() statt "busy waiting" 
+via graf_mkstate(). Entlastet die CPU.
+Menbehandlung aufger„umt.
+Diverse Tastenkrzel fr Meneintr„ge.
+
