@@ -1,0 +1,10 @@
+ICX2RSC.PRG
+=
+tcmstart.o
+ICX2RSC.C
+SHELSORT.O
+pcstdlib.lib   ; standard lib
+pcextlib.lib   ; extended lib
+pctoslib.lib   ; TOS lib
+magxlib.lib	; MagiX lib
+tcgem2.lib	; AES/VDI lib

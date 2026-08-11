@@ -1,0 +1,187 @@
+
+
+          ; BEISPIELDATEI FöR ZUWEISUNG VON ICONS
+          ;       (C) ANDREAS KROMKE 1989-91
+          ; =====================================
+
+
+          ; Diese Datei enthÑlt die Iconzuweisungen fÅr KAOSDESK ab V2.00
+          ; Sie sollte zwecks öbersichtlichkeit alphabetisch geordnet sein,
+          ;  was aber nicht notwendig ist.
+          ; Diese Datei sollte im selben Verzeichnis liegen wie MKICONS.TOS.
+          ; Wird MKICONS.TOS gestartet, so wird diese Datei "compiliert" und
+          ;  in KAOSDESK.RSC und KDESKL.RSC eingebunden.
+
+
+FROM A:\KAOSDESK\ICNEDIT\ICONS     ; Defaultpfad fÅr Icondateien
+TO   A:\KAOSDESK                   ; Pfad von KAOSDESK.RSC und KDESKL.RSC
+
+ACC.ICD:                 ; Accessories
+     .ACC
+
+ACX.ICD:                 ; desaktivierte Accessories
+     .ACX
+
+ARCHIV.ICP:              ; Datenkompression, Archivierung
+     ARC
+     LHARC
+ARCHIV.ICD:
+     .ARC
+     .LZH
+
+ASSEMBLR.ICP:            ; Assembler
+     MAS
+     GFA-ASM
+     TURBOASS
+ASSEMBLR.ICD:
+     .S
+     .IS
+     .ASM
+
+AUS.ICP:                 ; Ausschaltprogramm "KILLRAM.TOS"
+
+AUSBILDG.ICP:            ; Ausbildung, Lernprogramme
+AUSBILDG.ICD:
+
+AUSGABE.ICP:             ; Ausgabe an Drucker o.Ñ.
+     OUTPUT
+     AUSDRUCK
+     PRINT
+AUSGABE.ICD:
+     .LIS
+
+BASIC.ICP:               ; BASIC- Compiler/Interpreter
+     GFABASIC
+BASIC.ICD:
+     .GFA
+     .BAS
+
+BIGSCRN.ICP:             ; "BigScreen" Groûbildschirmsimulator
+     BIGSCRN
+
+BOMB.ICP:                ; Debugger, Monitor
+     BUG
+     SID
+     SD
+     TEMPLMON
+
+BUCHHLTG.ICP:            ; Buchhaltung
+BUCHHLTG.ICD:
+
+C.ICD:                   ; 'C' Quelltexte
+     .C
+
+CAD.ICP:                 ; CAD- Programme
+CAD.ICD:
+
+CALAMUS.ICP:             ; "Calamus" DTP
+     CALAMUS
+CALAMUS.ICD:
+     .CDK
+
+COMMAND.ICP:             ; DOS- Kommandoshell
+     KCMD
+
+DATENBNK.ICP:            ; Datenbankprogramme
+     EXEC                ; Adimens EXEC.PRG
+     INIT                ; Adimens INIT.PRG
+DATENBNK.ICD:
+     .REC
+
+DFö.ICP:                 ; DFö- oder Terminalprogramme
+DFö.ICD:
+
+DSKKOPIE.ICP:            ; Disketten- Kopierprogramme
+
+DTP.ICP:                 ; DTP- Programme
+DTP.ICD:
+
+ELT.ICP:                 ; Platinenentwurf
+ELT.ICD:                 ; Platinen
+
+FNT.ICD:                 ; Fonts
+     .FNT
+
+GRAFIK.ICP:              ; GeschÑftsgrafik (Diagramme)
+GRAFIK.ICD:
+
+HARD_UTI.ICP:            ; Hilfsprogramme fÅr die Festplatte
+     WRPROT              ; Schreibschutzprogramm
+HARD_UTI.ICD:
+
+LIB.ICD:                 ; Bibliotheken fÅr den Linker
+     .LIB                ; Turbo C Bibliotheken
+
+MALEN.ICP:               ; Malprogramme (pixelorientiert)
+     DEGELITE
+     GEMPAINT
+     STAD
+MALEN.ICD:
+     .PC3
+     .PI3
+     .IMG
+     .PIC
+
+MULTIFKT.ICP:            ; Multifunktionsprogramme (etwa VIP,STEVE)
+MULTIFKT.ICD:
+
+O.ICD:                   ; Objektdateien
+     .O                  ; DR- Objektdateien
+
+PARK.ICP:                ; Parkprogramm fÅr Festplatten
+
+PC_EMU.ICP:              ; PC- Emulatoren
+     PC_SPEED
+
+PRJ.ICD:                 ; Linkerdateien
+     .PRJ                ; Projektdateien von Turbo C
+
+PROJEKT.ICP:             ; Projekte
+PROJEKT.ICD:
+
+RSC.ICP:                 ; Resource- Editor
+     RCS28K              ;  DR- Ressourceeditor V2.8 K
+     RCS                 ;  DR- Ressourdeeditor V1.x
+     RCP                 ;  Megamax- Resourceeditor
+     NRSC                ;  Kuma- Ressourceeditor
+RSC.ICD:
+     .RSC
+
+SPIEL.ICP:               ; Spiele
+SPIEL.ICD:
+
+TABKALK.ICP:             ; Tabellenkalkulation
+     LDWPOWER
+     KSPREAD
+     LOTUS123
+
+TEX.ICP:                 ; TeX
+TEX.ICD:
+
+TEXTVER.ICP:             ; Textverarbeitung
+     WORDPLUS
+     SIGNUM2
+     TEMPUS
+TEXTVER.ICD:
+     .DOC
+     .SDO
+     .SBK
+     .TXT
+
+TASTATUR.ICP:            ; Funktionstastenbelegung, Tastatureinstellung o.Ñ.
+
+TURBO_C.ICP:             ; "Turbo C" Compiler
+     TC
+     TCC
+
+UHR.ICP:                 ; residente Uhren o.Ñ.
+
+UTILITY.ICP:             ; Utility- Programme
+     KAOSDESK
+     ICNEDIT
+     MUTIL
+
+ZEICHNEN.ICP:            ; Zeichenprogramme (objektorientiert)
+     EASYDRAW
+ZEICHNEN.ICD:
+     .GEM

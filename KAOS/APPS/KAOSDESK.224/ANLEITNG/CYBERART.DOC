@@ -1,0 +1,118 @@
+070030303010000140006006006002000
+1CyberPUNG Actionware1
+2# / 21
+F0000000001
+9[....................................................]0010
+€Aufbruch  in  kybernetische  Welten  -  Echtzeit  Simulation  von  visuell 
+gesteuerten Bewegungen werden in Grundlagenprojekt erforscht.
+
+Stanford/Los Angeles (op) Wenn es um die Umsetzung bedeutender Grundlagen- 
+Forschungen  in  die  Realitaet geht, fallen immer wieder die Namen dreier 
+US-amerikanischer  Institute,  Stanford,  UCLA  und Berkley. Wie kuerzlich 
+bekannt wurde, kooperieren die Rennomier-Universitaeten mit so bedeutenden 
+Unternehmen  wie  AT&T,  Motorola,  National  Semiconductor,  Sun, Hewlett 
+Packard,  Atari,  Unisys,  einem  bedeutenden Anbieter fuer UNIX Betriebs- 
+systeme   und   Distributed  Processing  Incorporated,  einer  Gruppe  von 
+Studenten  und  Professoren,  die  bereits  einige  Jahre  im  Bereich der 
+Echtzeit-Expertensysteme arbeiten.
+
+Hinter  dem blumigen Namen CYBERPUNG ACTIONWARE PROJECT verbirgt sich eine 
+Herausforderung.  Es  handelt  sich  um  den  Versuch,  mit Hochleistungs- 
+rechenanlagen   modernster   Bauweise   sensorische  Eingaben  aller  Art, 
+insbesondere  aber  von  Tast-  und  Bildinformationen, in eine moeglichst 
+wirklichkeitsgetreue  Modellierung  der  Realitaet  umzusetzen.  Um  es zu 
+vereinfachen,  koennte  man  auch  sagen,  es  ist  der bisher umfassenste 
+Versuch,  einem Computer das Sehen und das Fuehlen, in Bezug auf Tastsinn, 
+zu ermoeglichen. CYBERPUNG hat nichts mit 'Ueber-die-Straenge-schlagen' zu 
+tun,  sondern  steht  fuer 'CYBERnetic approach to Physical Unification of 
+Numeric  and  Geometric  data'. Unter dem griffigen Wort 'Actionware' kann 
+man  kurzerhand  den Projektteil der Software rechnen, die zur Ausfuehrung 
+einer simulierten Bewegung dient.
+
+Dabei  geht  es  insbesondere  um  die  Verknuepfung  von  Bewegungsinter- 
+pretation  von Bildfolgen aufgrund bereits gesammelter Erfahrungswerte und 
+deren  Abgleich mit dem physikalisch modellierbaren Weltbild, in dem diese 
+Bewegung  stattfindet  -  also eine Umsetzung dieser Zusammenhaenge in ein 
+maschineninternes  Weltbild (Cyberspace). Primaerziel der Modellierung ist 
+eine   weitestgehende  Korrektheit  der  maschinellen  Interpretation  von 
+Bildeindruecken zu erreichen.
+
+Das  ehrgeizige  Projekt  vereinigt  einige  der im Hochtechnologiebereich 
+fuehrenden  US-Unternehmen  unter  einem  Dach  -  wobei das Auftreten des 
+Namens  Atari  die  Fachwelt ueberrascht und Anlass zu Spekulationen ueber 
+die  Arbeit  an  voellig  neuartigen  Workstations  gegeben hat. Mit einem 
+Erstetat   von  rund  50  Millionen  US-Dollar  darf  man  dieses  zu  den 
+bedeutenderen  Projekten der  US-amerikanischen Forschung zaehlen. Es wird 
+nahezu  jede  Technologie benutzt,  die  gut  und  teuer  ist.  Neben  der 
+herkoemmlichen Tastatur sind die Standardeingabemedien fuer das System der 
+sogenannte    Datenhandschuh    (DataGlove),   an   dem   einige   hundert 
+Bewegungssensoren  die Bewegung eines Programmiers mehrere hundert mal pro 
+Sekunde   aufzeichen   und   an   das  System  uebermitteln,  zum  anderen 
+stereoskopische  und,  eine  Neuheit,  quadroskopische  Videosensoren. Die 
+ersten   Experimente  mit  'Full-Body-Electric',  einer  Art  Ganzkoerper- 
+DataGlove, laufen bereits.
+
+Stanford  und Berkley verfuegen ueber umfangreiche Forschungsergebnisse im 
+Bau  von  Hochleistungs-Parallelrechnern.  Die  Connection-Machine ist ein 
+Bespiel   dafuer.   Auch   in   diesem   Projekt   wird   im  Prinzip  ein 
+leistungsfaehiger  Parallelrechner verwandt - allerdings ist diese Machine 
+bereits  vom  Ansatz  her  wesentlich  flexibler.  Der  Kern ist ein 65535 
+Prozessoren umfassender Hochleistungsrechner, der auf gleichartigen Boards 
+mit  dem  hochmodernen  Motorola  88100/88200  RISC  Chipset  beruht.  Der 
+Prozessortakt  auf  den  Boards  betraegt  immerhin  40  MHz  und  soll im 
+Endstadium  auf  60  MHz  erhoeht  werden. Die Verwaltung eines so grossen 
+Multi-Prozessor-Parrallelrechners erforderte die Entwicklung einer voellig 
+neuen  Systemverwaltung,  die  ebenfalls  teilweise in Hardware realisiert 
+€wurde.  Die  Aufteilung  der  kooperierenden  Prozesse  im System wird vom 
+Einzelprozessor mithilfe eines pseudointelligenten Betriebssystemkerns 
+erledigt,  der  QUIRK genannt wird. Die offenbar in einem Anflug von Humor 
+geschaffene  Abkuerzung steht fuer 'QUite Intelligent Realtime Kernal'. Um 
+den  Echtzeitanforderungen  gerecht  werden zu koennen, beruht die Pseudo- 
+Intelligenz  des  Systems  auf  dem  Einsatz  der  sogenannten 'unscharfen 
+Logik',  die  mit  einem teilweise in Hardware vorliegenden Entscheidungs- 
+system  das  Routing  der Information im Gesamtsystem optimieren. Der dazu 
+entwickelte  Chipset stammt aus den Labors von National Semiconductor, die 
+damit  die  absolut  neusten  japanischen Entwicklungen auf dem Gebiet der 
+FUZZY-Logic  nachvollziehen. Diese Technik ist momentan in aller Munde und 
+wird  voraussichtlich  noch  fuer viele Ueberraschungen gut sein. Tatsache 
+ist,  dass  die  Routing-Entscheidungen  dieses  Chipsets  gegenueber  der 
+vormaligen   Software-Loesung    um   den   Faktor   von   drei  bis  vier 
+Zehnerpotenzen  schneller  sind.  Die  erwartete  Gesamtrechenleistung des 
+Systems  uebertrifft  alle  bisher dagewesenen Ansaetze in jeder Hinsicht. 
+Sie liegt bei 1300 Gigainstruktionen pro Sekunde, kurz 1.3 kGIPS.
+
+Die  Bediener-  und  Programmierebene  des Systems ist sinnvollerweise auf 
+einem AT&T Unix System V Version 4 untergebracht. Allerdings wurde es fuer 
+die  sehr  speziellen  Aufgaben des Parallelrechners erforderlich, ein den 
+Aufgaben  gerecht  werdendes  Sprachkonzept zu entwickeln, das Konzept der 
+Sprache  ist  'Numeric  Operational  Programming'.  Kurzerhand  heisst die 
+Programmiersprache   zu   diesem  Konzept  schlicht  NOP  und  das  daraus 
+entwickelte Derivat, welches der Objektorientiertheit der zu bearbeitenden 
+Problemklassen    gerecht    wird,   entsprechend   NOP++.   An   weiteren 
+Entwicklungstools  existieren CASE-Tools, ein Kernal-Debugger, HEXPERT und 
+P-PROL, ein automatisch Parallelisierendes Prolog, zur Verfuegung.
+
+Das  System  ist,  bezogen auf die Auswertung visueller Information, ueber 
+die   Phase   des  tischtennisspielenden  Roboters  (ein  Projekt  der  TH 
+Darmstadt)   oder  der  automatischen  Verkehrsueberwachung  (Universitaet 
+Dortmund)   laengst  weit  hinaus.  Aufgrund  der  mit  neuronalen  Netzen 
+unterstuetzten   Speicherstrukturen,   die   dem   System   eine   gewisse 
+Lernfaehigkeit  geben,  ist  es  mittlerweile  bereits  in  der  Lage, ein 
+irgendwie  zu  ihm geworfenes rohes Ei zu lokalisieren, zu erkennen und so 
+aufzufangen, dass es nicht beschaedigt wird.
+
+Natuerlich  kann man sich jetzt fragen, was an dem Auffangen-koennen eines 
+rohen   Huehnereies   so   wichtig  ist,  dass  einige  der  weltgroessten 
+Elektronikkonzerne  einen  Anfangs-Etat  von  50 Millionen Dollar fuer das 
+Projekt  zur Verfuegung stellen. Nun - es duerfte wohl klar geworden sein, 
+dass  es  um  mehr  geht.  Es scheint vielmehr um einen Vorausgriff in die 
+Zukunft  der  Industrieanwendung der Kybernetik zu gehen - der Zukunft des 
+eigenverantwortlichen,  intelligenten  Arbeitsplatzroboters,  der aufgrund 
+seiner  Leistungsfaehigkeit  in  einem begrenzten Arbeitsplatz nahezu alle 
+Aufgaben  sehr  flexibel  ausfuehren  kann  -  und der ueberdies mit Hilfe 
+seiner  Lernfaehigkeit  viele  Ansaetze  zur  Leistungsteigerung ueber das 
+blosse  Optimieren  von Bewegungen hinaus besitzt. Dies koennte der Anfang 
+des  Einlaeutens  der fuenften industriellen Revolution sein - dem Einsatz 
+autonomer  kybernetischer  Automaten  als universelle Arbeitskraft bis zum 
+Facharbeiterniveau. Eine Perspektive, die Manchen erschaudern laesst.
+
