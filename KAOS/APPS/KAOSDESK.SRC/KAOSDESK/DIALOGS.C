@@ -213,6 +213,13 @@ void info_spec(int typ)
 	form_alert(1, alrts);
 }
 
+
+/****************************************************************
+*
+* Informationen Åber selektierte Diskette oder Festplatte anzeigen
+*
+****************************************************************/
+
 void info_disk(char *path, int typ)
 {
 	int lw;
@@ -243,7 +250,6 @@ void info_disk(char *path, int typ)
 
 	if (err == E_OK)
 		fname_int(altname, ziel);
-
 	else
 		*ziel = EOS;
 
@@ -454,6 +460,13 @@ void info_folder(char *path, MYDTA *f)
 	if (err < E_OK)
 		err_alert(err);
 }
+
+
+/****************************************************************
+*
+* Informationen Åber selektiertes Objekt anzeigen
+*
+****************************************************************/
 
 void dial_info(void)
 {

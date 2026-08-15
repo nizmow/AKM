@@ -22,21 +22,24 @@
 WINDOW fenster[ANZFENSTER+1];
 ICON *icon;
 APPLICATION *application;
+char *poolptr;		/* Zeiger auf Pool					*/
+char *poolfree;		/* Zeiger auf freien Teil des Pools	*/
+int	poolsize;		/* Anzahl freier Eintr„ge			*/
 
 int n_icons, n_apps;
 
 ICONFILE_HEADER iconfile_header;
 
 int  *icf_data;		/* Zeiger auf Speicherblock	*/
-int  *icf_pgmicn;		/* Daten fr Programmicons	*/
-int  *icf_daticn;		/* Daten fr Dateiicons		*/
-char *icf_pgms;		/* Programmnamen	*/
-char *icf_fils;		/* Dateitypen		*/
+int  *icf_pgmicn;	/* Daten fr Programmicons */
+int  *icf_daticn;	/* Daten fr Dateiicons */
+char *icf_pgms;		/* Programmnamen */
+char *icf_fils;		/* Dateitypen */
 
-char dirty_drives	[ANZDRIVES];
-DISKINFO dinfo		[ANZDRIVES];
+char dirty_drives[ANZDRIVES];
+DISKINFO dinfo[ANZDRIVES];
 
-const char *pgm_ver = "2.41";
+const char *pgm_ver = "2.42";
 
 int message[16];
 int work_out[57],work_in [12];	 /* VDI- Felder fr v_opnvwk() */
@@ -150,10 +153,13 @@ void ob_sel(OBJECT *tree, int which)
 { (tree+which)->ob_state |= SELECTED; }
 
 
+/****************************************************************
+*
+****************************************************************/
+
 static void open_work(void)
 {
 	register int i;
-
 
 	for (i = 0; i < 10; work_in[i++] = 1)
 		;
@@ -208,6 +214,7 @@ int icsel(int *rwnr, int *objn)
 			}
 		}
 	}
+
 	return (*rwnr != -2);						/* nix gefunden */
 }
 
@@ -440,7 +447,7 @@ static void modify_menu(void)
 
 void get_char_dim(void)
 {
-	int h,dummy;
+	int h, dummy;
 
 	switch(status.points)
 	{
@@ -476,6 +483,11 @@ void _ende(int code)
 	appl_exit();
 	Pterm0();
 }
+
+
+/****************************************************************
+*
+****************************************************************/
 
 void ende(void)
 {
@@ -534,72 +546,137 @@ void ende(void)
 
 static void do_menu(int title, int entry)
 {
-	int wnr,obj;
+	int wnr, obj;
 
 
 	switch(entry)
 	{
-     	case M_ABOUT:	dial_about();break;
-     	case M_OPEN:	if (1 == icsel(&wnr, &obj))
-     					dclick(wnr, obj, K_CTRL);
-					break;
-		case M_INFO:	dial_info();break;
-		case M_LOESCH: if (top_wnr() > 0)
-						dl_icns(top_wnr());
-					break;
-		case M_NEUORD: dial_neuord();break;
-		case M_SCHLFN: close_immed(top_wnr());break;
-		case M_SELALL: sel_all(top_wnr());break;
-		case M_DCOPY:  dial_cpydsk();break;
-		case M_FORMAT:	dial_format();break;
+     	case M_ABOUT:
+     		dial_about();
+     		break;
+
+     	case M_OPEN:
+     		if (1 == icsel(&wnr, &obj))
+     			dclick(wnr, obj, K_CTRL);
+			break;
+
+		case M_INFO:
+			dial_info();
+			break;
+
+		case M_LOESCH:
+			if (top_wnr() > 0)
+				dl_icns(top_wnr());
+			break;
+
+		case M_NEUORD:
+			dial_neuord();
+			break;
+
+		case M_SCHLFN:
+			close_immed(top_wnr());
+			break;
+
+		case M_SELALL:
+			sel_all(top_wnr());
+			break;
+
+		case M_DCOPY:
+			dial_cpydsk();
+			break;
+
+		case M_FORMAT:
+			dial_format();
+			break;
+
 #if MAGIXDESK == 0
-          case M_ENDE:	ende();break;
+		case M_ENDE:
+			ende();break;
 #endif
-          case M_ABILDR:
-          case M_ATEXT:	if (status.showtyp != entry)
-          			{
-          				status.showtyp = entry;
-          				upd_show();
-          			}
-          			break;
-          case M_10_PKT:
-          case M_9_PKT :
-          case M_8_PKT : if (status.points != entry)
-          			{
-          				status.points = entry;
-						get_char_dim();
-          				if (status.showtyp == M_ATEXT)
-	          				upd_show();
-          			}
-          			break;
-		case M_SPALTN: status.is_1col = !status.is_1col;
-					upd_col();break;
-          case M_ZGROES: status.is_groesse = !status.is_groesse;
-          			upd_is();break;
-          case M_ZDATUM: status.is_datum = !status.is_datum;
-          			upd_is();break;
-          case M_ZZEIT:  status.is_zeit = !status.is_zeit;
-          			upd_is();break;
-          case M_SNAME:
+		case M_ABILDR:
+		case M_ATEXT:
+			if (status.showtyp != entry)
+			{
+				status.showtyp = entry;
+				upd_show();
+			}
+			break;
+
+		case M_10_PKT:
+		case M_9_PKT:
+		case M_8_PKT:
+			if (status.points != entry)
+			{
+				status.points = entry;
+				get_char_dim();
+				if (status.showtyp == M_ATEXT)
+					upd_show();
+			}
+			break;
+
+		case M_SPALTN:
+			status.is_1col = !status.is_1col;
+			upd_col();
+			break;
+
+		case M_ZGROES:
+			status.is_groesse = !status.is_groesse;
+			upd_is();
+			break;
+
+		case M_ZDATUM:
+			status.is_datum = !status.is_datum;
+			upd_is();
+			break;
+
+		case M_ZZEIT:
+			status.is_zeit = !status.is_zeit;
+			upd_is();
+			break;
+
+		case M_SNAME:
 		case M_SDATUM:
 		case M_SGROES:
 		case M_STYP:
-		case M_SNICHT: if (status.sorttyp != entry)
-					{
-						status.sorttyp = entry;
-						upd_sort();
-					}
-					break;
-		case M_MASKE:  dial_maske();break;
-		case M_LAUFWE: dial_laufwe();break;
-		case M_ANWNDG: dial_anwndg();break;
-		case M_EINSTE: dial_einste();break;
-		case M_PRGRMS: dial_prgrms();break;
-		case M_ARBSIC: dial_arbsic();break;
-		case M_BLITTR: status.blitstate = !status.blitstate;
-					Blitmode(status.blitstate);break;
-          }
-     menu_tnormal(adr_hauptmen, title, 1);
+		case M_SNICHT:
+			if (status.sorttyp != entry)
+			{
+				status.sorttyp = entry;
+				upd_sort();
+			}
+			break;
+
+		case M_MASKE:
+			dial_maske();
+			break;
+
+		case M_LAUFWE:
+			dial_laufwe();
+			break;
+
+		case M_ANWNDG:
+			dial_anwndg();
+			break;
+
+		case M_EINSTE:
+			dial_einste();
+			break;
+
+		case M_PRGRMS:
+			dial_prgrms();
+			break;
+
+		case M_ARBSIC:
+			dial_arbsic();
+			break;
+
+		case M_BLITTR:
+			status.blitstate = !status.blitstate;
+			Blitmode(status.blitstate);
+			break;
+	}
+
+	menu_tnormal(adr_hauptmen, title, 1);
 }
 
 
@@ -623,6 +700,10 @@ static void _rsrc_load(char *fname)
 	}
 }
 
+
+/****************************************************************
+*
+****************************************************************/
 
 static void get_rsc(void)
 {
@@ -1069,6 +1150,398 @@ void redraw(int wnr, GRECT *neu)
 
 /****************************************************************
 *
+* Tastenbehandlung
+*
+****************************************************************/
+
+static int last_wasopen = -1;
+static int last_drvopen = -1;
+
+static void handle_key(EVNT *w_ev)
+{
+	int drv;
+	register int i, scancode;
+	int title, entry;
+
+
+	title = -1;
+	drv = w_ev->key & 0xff;
+	scancode = (w_ev->key >> 8) & 0xff;
+
+	/* ^SH-A..P */
+	if ((w_ev->kstate & K_CTRL) && (w_ev->kstate & (K_RSHIFT + K_LSHIFT)))
+	{
+		#if MAGIXDESK
+		if (drv >= 1 && drv <= 16)
+		{
+			reload_status(drv - 1);
+		}
+		#else
+		if (drv >= 1 && drv <= 16)
+		{
+			reload_status(TRUE, drv - 1);
+		}
+		#endif
+		w_ev->key = drv = 0;
+	}
+
+	/* Alt-n */
+	if ((w_ev->kstate & K_ALT) && (unsigned int) w_ev->key >= 0x7800 &&
+	    (unsigned int) w_ev->key <= 0x8100)
+	{
+		i = scancode - 0x77;
+		if (i != vdi_device);
+			change_res(i, 0);
+		w_ev->key = 0;
+	}
+
+	/* ^Fn */
+	if ((w_ev->kstate & K_CTRL) && (w_ev->key >= 0x3b00) &&
+		(w_ev->key <= 0x4600))
+	{
+		i = scancode - 0x3b;
+		starten("", '#\0'+i+4, 0, 0, w_ev->kstate & K_ALT);
+		w_ev->key = 0;
+	}
+
+	/* A..P */
+	for	(i = 0; i < n_icons; i++)
+		if (icon[i].isdisk == toupper(drv))
+			break;
+	if ((i < n_icons) && drv)
+	{
+		if (drv <= 'Z')
+		{
+			dsel_all();
+			ob_sel(fenster[0].pobj, i+1);
+			obj_malen(0, i+1);
+		}
+
+		if (last_wasopen == TRUE && last_drvopen == drv)
+		{
+			last_wasopen = FALSE;
+			if (drv <= 'Z')
+			{
+				dclick(0, i + 1, 0);
+			}
+			else
+			{
+				int wnr;
+
+				wnr = top_wnr();
+				if (wnr > 0 && fenster[wnr].path[0])
+				{
+					fenster[wnr].path[0] = toupper(drv);
+					fenster[wnr].path[3] = EOS;
+					upd_path(wnr, TRUE);
+				}
+			}
+		}
+		else
+		{
+			last_wasopen = TRUE;
+			last_drvopen = drv;
+		}
+	}
+	else
+	{
+		last_wasopen = FALSE;
+	}
+
+	switch (w_ev->key)
+	{
+/* Retrn */
+		case 0x1c0d:
+/* Enter */
+		case 0x720d:
+/* ^O    */
+		case 0x180f:
+			title = MM_DATEI;
+			entry = M_OPEN;
+			break;
+
+/* Tab   */
+		case 0x0f09:
+/* ^I    */
+		case 0x1709:
+			title = MM_DATEI;
+			entry = M_INFO;
+			break;
+
+/* ^L    */
+		case 0x260c:
+			title = MM_DATEI;
+			entry = M_LOESCH;
+			break;
+
+/* ^N    */
+		case 0x310e:
+			title = MM_DATEI;
+			entry = M_NEUORD;
+			break;
+
+/* ^U    */
+		case 0x1615:
+			title = MM_DATEI;
+			entry = M_SCHLFN;
+			break;
+
+/* ^A    */
+		case 0x1e01:
+			title = MM_DATEI;
+			entry = M_SELALL;
+			break;
+
+/* ^K    */
+		case 0x250b:
+			title = MM_DATEI;
+			entry = M_DCOPY;
+			break;
+
+#if MAGIXDESK==0
+/* ^Q    */
+		case 0x1011:
+			title = MM_DATEI;
+			entry = M_ENDE;
+			break;
+#endif
+
+/* Alt-B */
+		case 0x3000:
+			title = MM_ANZEI;
+			entry = M_ABILDR;
+			break;
+
+/* Alt-T */
+		case 0x1400:
+			title = MM_ANZEI;
+			entry = M_ATEXT;
+			break;
+
+/* Alt-H */
+		case 0x2300:
+			title = MM_ANZEI;
+			entry = M_SPALTN;
+			break;
+
+/* Alt-G */
+		case 0x2200:
+			title = MM_ANZEI;
+			entry = M_ZGROES;
+			break;
+
+/* Alt-D */
+		case 0x2000:
+			title = MM_ANZEI;
+			entry = M_ZDATUM;
+			break;
+
+/* Alt-Z */
+		case 0x1500:
+			title = MM_ANZEI;
+			entry = M_ZZEIT;
+			break;
+
+/* F1 */
+		case 0x3B00:
+			title = MM_SORT;
+			entry = M_SNAME;
+			break;
+
+/* F2 */
+		case 0x3C00:
+			title = MM_SORT;
+			entry = M_SDATUM;
+			break;
+
+/* F3 */
+		case 0x3D00:
+			title = MM_SORT;
+			entry = M_SGROES;
+			break;
+
+/* F4 */
+		case 0x3E00:
+			title = MM_SORT;
+			entry = M_STYP;
+			break;
+
+/* F5 */
+		case 0x3F00:
+			title = MM_SORT;
+			entry = M_SNICHT;
+			break;
+
+/* Alt-M */
+		case 0x3200:
+			title = MM_SORT;
+			entry = M_MASKE;
+			break;
+
+/* Alt-L */
+		case 0x2600:
+			title = MM_OPTIO;
+			entry = M_LAUFWE;
+			break;
+
+/* Alt-A */
+		case 0x1E00:
+			title = MM_OPTIO;
+			entry = M_ANWNDG;
+			break;
+
+/* Alt-E */
+		case 0x1200:
+			title = MM_OPTIO;
+			entry = M_EINSTE;
+			break;
+
+/* Alt-P */
+		case 0x1900:
+			title = MM_OPTIO;
+			entry = M_PRGRMS;
+			break;
+
+/* Alt-S */
+		case 0x1F00:
+			title = MM_OPTIO;
+			entry = M_ARBSIC;
+			break;
+
+/* SPACE	*/
+		case 0x3920:
+			dsel_all();
+			break;
+
+/* SH-INS	*/
+		case 0x5230:
+			status.resident = TRUE;
+			break;
+
+/* SH-DEL	*/
+		case 0x537f:
+			status.resident = FALSE;
+			break;
+
+/* Einfg */
+		case 0x5200:
+			fulled(top_wnr());
+			break;
+
+/* Pos1  */
+		case 0x4700:
+			arrowed(top_wnr(), -1);
+			break;
+
+/* SH-Pos1 */
+		case 0x4737:
+			arrowed(top_wnr(), -2);
+			break;
+
+/* Cursor up */
+		case 0x4800:
+			arrowed(top_wnr(), WA_UPLINE);
+			break;
+
+/* Cursor down */
+		case 0x5000:
+			arrowed(top_wnr(), WA_DNLINE);
+			break;
+
+/* SH-Cursor up */
+		case 0x4838:
+			arrowed(top_wnr(), WA_UPPAGE);
+			break;
+
+/* SH-Cursor dwn */
+		case 0x5032:
+			arrowed(top_wnr(), WA_DNPAGE);
+			break;
+
+/* Ctrl-B */
+		case 0x3002:
+			starten("", '#\0', 0, 0, w_ev->kstate & K_ALT);
+			break;
+
+/* Ctrl-E */
+		case 0x1205:
+			starten("", '#\3', 0, 0, w_ev->kstate & K_ALT);
+			break;
+
+/* Ctrl-W */
+		case 0x1117:
+		{
+			int w,i;
+
+			w = top_wnr();
+			if (w <= 0)
+				break;
+			i = w;
+			do
+			{
+				i++;
+				if (i > ANZFENSTER)
+					i = 1;
+				if (fenster[i].path[0])
+				{
+					topped(fenster[i].handle);
+					break;
+				}
+			}
+			while (i != w);
+		}
+			break;
+
+/* Esc */
+		case 0x011b:
+		{
+			int n;
+
+			wind_get_int(0, WF_TOP, &n);
+			n = hdl_to_fnr(n);
+			if (n < 0)
+				break;
+			n = fenster[n].path[0];
+			if (n < 'A' || n > 'P')
+				break;
+			dirty_drives[n - 'A'] = TRUE;
+		}
+			break;
+
+/* BS */
+		case 0x0e08:
+		{
+			int wnr;
+			wnr = top_wnr();
+			if (wnr > 0 && fenster[wnr].path[3])
+				closed(fenster[wnr].handle, w_ev->kstate);
+		}
+			break;
+
+/* Undo */
+		case 0x6100:
+		{
+			int wnr;
+			wnr = top_wnr();
+			if (wnr > 0 && fenster[wnr].path[3])
+			{
+				fenster[wnr].path[3] = '\0';
+				upd_path(wnr, FALSE);
+			}
+		}
+
+	}
+
+	if ((title >= 0) && !(((adr_hauptmen + entry) -> ob_state) & DISABLED))
+	{
+		menu_tnormal(adr_hauptmen, title, FALSE);
+		do_menu(title, entry);
+	}
+}
+
+
+/****************************************************************
+*
 * Hauptfunktion
 *
 ****************************************************************/
@@ -1077,9 +1550,7 @@ void main()
 {
 	EVNT w_ev;
 	int ev_mwhich;
-	int last_wasopen = -1;
-	int	last_drvopen = -1;
-	int	waitfor,drv;
+	int	waitfor;
 	int ltime;
 
 
@@ -1091,9 +1562,9 @@ void main()
 		upd_infos();
 		modify_menu();
 
-		/* Wenn ein Laufwerk mit Tastatur selektiert wurde, wird 200ms	*/
-		/* lang auf den zweiten Klick gewartet						*/
-		/* ------------------------------------------------------------- */
+		/* Wenn ein Laufwerk mit Tastatur selektiert wurde, wird 200ms */
+		/* lang auf den zweiten Klick gewartet.                        */
+		/* ----------------------------------------------------------- */
 
 		if (last_wasopen == -1 && !status.clock)
 		{
@@ -1167,227 +1638,7 @@ void main()
 
 		if (ev_mwhich & MU_KEYBD)
 		{
-			register int i, scancode;
-			int title, entry;
-
-
-			title = -1;
-			drv = w_ev.key & 0xff;
-			scancode = (w_ev.key >> 8) & 0xff;
-
-/* ^SH-A..P */	if ((w_ev.kstate & K_CTRL) && (w_ev.kstate & (K_RSHIFT + K_LSHIFT)))
-			{
-#if MAGIXDESK
-				if (drv >= 1 && drv <= 16)
-				{
-					reload_status(drv - 1);
-				}
-#else
-				if (drv >= 1 && drv <= 16)
-				{
-					reload_status(TRUE, drv - 1);
-				}
-#endif
-				w_ev.key = drv = 0;
-			}
-
-/* Alt-n */	if ((w_ev.kstate & K_ALT) && (unsigned int) w_ev.key >= 0x7800 &&
-									   (unsigned int) w_ev.key <= 0x8100)
-			{
-				i = scancode - 0x77;
-				if (i != vdi_device);
-					change_res(i, 0);
-				w_ev.key = 0;
-			}
-
-/* ^Fn */		if ((w_ev.kstate & K_CTRL) && (w_ev.key >= 0x3b00) &&
-									   w_ev.key <= 0x4600)
-			{
-				i = scancode - 0x3b;
-				starten("", '#\0'+i+4, 0, 0, w_ev.kstate & K_ALT);
-				w_ev.key = 0;
-			}
-/* A..P */	for	(i = 0; i < n_icons; i++)
-				if (icon[i].isdisk == toupper(drv))
-					break;
-			if ((i < n_icons) && drv)
-			{
-				if (drv <= 'Z')
-				{
-					dsel_all();
-					ob_sel(fenster[0].pobj, i+1);
-					obj_malen(0, i+1);
-				}
-
-				if (last_wasopen == TRUE && last_drvopen == drv)
-				{
-					last_wasopen = FALSE;
-					if (drv <= 'Z')
-					{
-						dclick(0, i + 1, 0);
-					}
-					else
-					{
-						int wnr;
-
-						wnr = top_wnr();
-						if (wnr > 0 && fenster[wnr].path[0])
-						{
-							fenster[wnr].path[0] = toupper(drv);
-							fenster[wnr].path[3] = EOS;
-							upd_path(wnr, TRUE);
-						}
-					}
-				}
-				else
-				{
-					last_wasopen = TRUE;
-					last_drvopen = drv;
-				}
-			}
-			else
-			{
-				last_wasopen = FALSE;
-			}
-
-			switch (w_ev.key)
-			{
-/* Retrn */		case 0x1c0d:
-/* Enter */		case 0x720d:
-/* ^O    */		case 0x180f:	title = MM_DATEI; entry = M_OPEN;	break;
-/* Tab   */		case 0x0f09:
-/* ^I    */		case 0x1709:	title = MM_DATEI; entry = M_INFO;	break;
-/* ^L    */		case 0x260c:	title = MM_DATEI; entry = M_LOESCH;break;
-/* ^N    */		case 0x310e:	title = MM_DATEI; entry = M_NEUORD;break;
-/* ^U    */		case 0x1615:	title = MM_DATEI; entry = M_SCHLFN;break;
-/* ^A    */		case 0x1e01:	title = MM_DATEI; entry = M_SELALL;break;
-/* ^K    */		case 0x250b:	title = MM_DATEI; entry = M_DCOPY;	break;
-#if MAGIXDESK==0
-/* ^Q    */		case 0x1011:	title = MM_DATEI; entry = M_ENDE;	break;
-#endif
-
-/* Alt-B */		case 0x3000:	title = MM_ANZEI; entry = M_ABILDR;break;
-/* Alt-T */		case 0x1400:	title = MM_ANZEI; entry = M_ATEXT;	break;
-/* Alt-H */		case 0x2300:	title = MM_ANZEI; entry = M_SPALTN;break;
-/* Alt-G */		case 0x2200:	title = MM_ANZEI; entry = M_ZGROES;break;
-/* Alt-D */		case 0x2000:	title = MM_ANZEI; entry = M_ZDATUM;break;
-/* Alt-Z */		case 0x1500:	title = MM_ANZEI; entry = M_ZZEIT;	break;
-
-/* F1 */			case 0x3B00:	title = MM_SORT;  entry = M_SNAME;	break;
-/* F2 */			case 0x3C00:	title = MM_SORT;  entry = M_SDATUM;break;
-/* F3 */			case 0x3D00:	title = MM_SORT;  entry = M_SGROES;break;
-/* F4 */			case 0x3E00:	title = MM_SORT;  entry = M_STYP;	break;
-/* F5 */			case 0x3F00:	title = MM_SORT;  entry = M_SNICHT;break;
-/* Alt-M */		case 0x3200:	title = MM_SORT;  entry = M_MASKE;	break;
-
-/* Alt-L */		case 0x2600:	title = MM_OPTIO; entry = M_LAUFWE;break;
-/* Alt-A */		case 0x1E00:	title = MM_OPTIO; entry = M_ANWNDG;break;
-/* Alt-E */		case 0x1200:	title = MM_OPTIO; entry = M_EINSTE;break;
-/* Alt-P */		case 0x1900:	title = MM_OPTIO; entry = M_PRGRMS;break;
-/* Alt-S */		case 0x1F00:	title = MM_OPTIO; entry = M_ARBSIC;break;
-
-/* SPACE	*/		case 0x3920:	dsel_all();
-							break;
-
-/* SH-INS	*/		case 0x5230:	status.resident = TRUE;
-							break;
-
-/* SH-DEL	*/		case 0x537f:	status.resident = FALSE;
-							break;
-
-/* Einfg */		case 0x5200:	fulled(top_wnr());
-							break;
-
-/* Pos1  */		case	0x4700:	arrowed(top_wnr(), -1);
-							break;
-
-/* SH-Pos1 */		case 0x4737:	arrowed(top_wnr(), -2);
-							break;
-
-/* Cursor up */	case 0x4800:	arrowed(top_wnr(), WA_UPLINE);
-							break;
-
-/* Cursor down */	case 0x5000:	arrowed(top_wnr(), WA_DNLINE);
-							break;
-
-/* SH-Cursor up */	case 0x4838:	arrowed(top_wnr(), WA_UPPAGE);
-							break;
-
-/* SH-Cursor dwn */	case 0x5032:	arrowed(top_wnr(), WA_DNPAGE);
-							break;
-
-/* Ctrl-B */		case 0x3002:	starten("", '#\0', 0, 0, w_ev.kstate & K_ALT);
-							break;
-
-/* Ctrl-E */		case 0x1205:	starten("", '#\3', 0, 0, w_ev.kstate & K_ALT);
-							break;
-
-/* Ctrl-W */		case 0x1117:{
-							int w,i;
-
-							w = top_wnr();
-							if (w <= 0)
-								break;
-							i = w;
-							do
-							{
-								i++;
-								if (i > ANZFENSTER)
-									i = 1;
-								if (fenster[i].path[0])
-								{
-									topped(fenster[i].handle);
-									break;
-								}
-							}
-							while (i != w);
-						}
-							break;
-
-/* Esc */			case 0x011b:
-					{
-							int n;
-
-							wind_get_int(0, WF_TOP, &n);
-							n = hdl_to_fnr(n);
-							if (n < 0)
-								break;
-							n = fenster[n].path[0];
-							if (n < 'A' || n > 'P')
-								break;
-							dirty_drives[n - 'A'] = TRUE;
-						}
-							break;
-
-/* BS */			case 0x0e08:
-					{
-							int wnr;
-
-							wnr = top_wnr();
-							if (wnr > 0 && fenster[wnr].path[3])
-								closed(fenster[wnr].handle, w_ev.kstate);
-					}
-							break;
-
-/* Undo */		case 0x6100:{
-							int wnr;
-
-							wnr = top_wnr();
-							if (wnr > 0 && fenster[wnr].path[3])
-							{
-								fenster[wnr].path[3] = '\0';
-								upd_path(wnr, FALSE);
-							}
-							
-						}
-			}
-			if ((title >= 0) && 
-				 !(((adr_hauptmen + entry) -> ob_state) & DISABLED)
-				)
-			{
-				menu_tnormal(adr_hauptmen, title, FALSE);
-				do_menu(title, entry);
-			}
+			handle_key(&w_ev);
 		}
 		else
 		{
@@ -1788,9 +2039,11 @@ int cdecl draw_userdef(PARMBLK *p)
 		clip_rect[3] = pxy[3];
 		vs_clip(vdi_handle, TRUE, pxy);
 	}
+
 	v_gtext(vdi_handle, p->pb_x, p->pb_y, t);
 	return p->pb_currstate;
 }
+
 
 USERBLK userblk = {draw_userdef, 0L};
 
@@ -1871,10 +2124,6 @@ void close_all_wind(void)
 *
 ****************************************************************/
 
-char	*poolptr;		/* Zeiger auf Pool					*/
-char	*poolfree;	/* Zeiger auf freien Teil des Pools	*/
-int	poolsize;		/* Anzahl freier Eintr„ge			*/
-
 void open_all_wind(void)
 {
 	register int i,j,set;
@@ -1918,15 +2167,16 @@ void open_all_wind(void)
 					sizeof(MYFNAME)
 				    ) + ANZFENSTER * sizeof(OBJECT);
 
-	poolptr 	= Malloc(ret);
-	poolfree	= poolptr;			/* frei ab Anfang */
+	poolptr = Malloc(ret);
+	poolfree = poolptr;			/* frei ab Anfang */
 
 	for	(i = 1; i <= ANZFENSTER; i++)
 	{
-		fenster[i].handle = -1;			/* unbenutzt			*/
-		fenster[i].alloc_offs = -1L; 		/* kein allozierter Speicher */
-		fenster[i].alloc_size = 0L; 		/* kein allozierter Speicher */
+		fenster[i].handle = -1;			/* unbenutzt */
+		fenster[i].alloc_offs = -1L; 	/* kein allozierter Speicher */
+		fenster[i].alloc_size = 0L; 	/* kein allozierter Speicher */
 	}
+
 	for	(set = FALSE,i = 1; i <= ANZFENSTER; i++)
 	{
 		j = i;
@@ -1945,6 +2195,7 @@ void open_all_wind(void)
 			err_alert(ret);
 		}
 	}
+
 	set_deflt_clip();
 	Mgraf_mouse(ARROW);
 }

@@ -70,7 +70,7 @@ int qbreak(void)
 
 /*********************************************************************
 *
-* Setzt das Dirty- Flag von Laufwerk <lw>.
+* Setzt das Dirty-Flag von Laufwerk <lw>
 *
 *********************************************************************/
 
@@ -88,7 +88,7 @@ void set_dirty(long err, char *path, char val)
 
 /*********************************************************************
 *
-* Ermittelt den Disknamen von Laufwerk <lw>.
+* Ermittelt den Disknamen von Laufwerk <lw>
 *
 *********************************************************************/
 
@@ -129,15 +129,20 @@ long GFdelete(char *path, char *name)
 
 	strcpy(all,path);
 	if (name)
-		strcat(all,name);
+	{
+		strcat(all, name);
+	}
+
 #if		COUNTRY==FRG
 	down_cnt(2, "lîsche Datei", all);
 #elif	COUNTRY==USA
 	down_cnt(2, "deleting file", all);
 #endif
+
 	doserr = Fdelete(all);
 	set_dirty(doserr, path, 1);
 	err_file = all;
+
 	return err_alert(doserr);
 }
 
@@ -156,7 +161,9 @@ long GDdelete(char *path, char *name)
 
 	strcpy(all,path);
 	if (name)
-		strcat(all,name);
+	{
+		strcat(all, name);
+	}
 #if		COUNTRY==FRG
 	down_cnt(2, "lîsche Ordner", all);
 #elif	COUNTRY==USA
@@ -206,6 +213,7 @@ static long does_exist(char *all, DTA *file)
 			 ((file->d_date == dta.d_date) && (file->d_time > dta.d_time)))
 		doserr = EFILNF;	/* Ñltere Datei: Åberbraten */
 	}
+
 	if (doserr == E_OK)
 		doserr = EACCDN;
 
@@ -297,7 +305,7 @@ long GFcreate(char *path, DTA *file)
 
 long GFrename(char *path, DTA *srcfile, char *zpath)
 {
-	char	alls[128],alld[128],oldname[14];
+	char alls[128],alld[128],oldname[14];
 	long doserr;
 	int ret, do_redraw;
 	char query = status.mode_ovwr;
@@ -314,13 +322,17 @@ long GFrename(char *path, DTA *srcfile, char *zpath)
 	{
 		strcpy(alld, zpath);
 		strcat(alld, srcfile->d_fname);
+
 		doserr = Frename(0, alls, alld);
 		if (doserr == EACCDN && query != OVERWRITE)
 		{
 			doserr = does_exist(alld, srcfile);
 			/* Datei schon gesichert: nur lîschen */
 			if (doserr == EACCDN && status.mode_ovwr == BACKUP)
+			{
 				return Fdelete(alls);
+			}
+
 			if (doserr == EFILNF)
 			{
 				doserr = EACCDN;
@@ -328,7 +340,7 @@ long GFrename(char *path, DTA *srcfile, char *zpath)
 			}
 		}
 
-		if (doserr == EACCDN && query == OVERWRITE)
+		if ((doserr == EACCDN) && (query == OVERWRITE))
 		{
 			doserr = Fdelete(alld);
 			set_dirty(doserr, alld, 1);
@@ -416,8 +428,8 @@ long GFcopy(char *path, DTA *srcfile, char *zpath)
 			break;
 		}
 
-		/* Im Backupmodus wird erst die Zieldatei geîffnet */
-		/* ----------------------------------------------- */
+		/* Im Backup-Modus wird erst die Zieldatei geîffnet */
+		/* ------------------------------------------------ */
 
 		if (dhdl < 0 && status.mode_ovwr == BACKUP)
 			lbytes = 0L;
@@ -425,7 +437,8 @@ long GFcopy(char *path, DTA *srcfile, char *zpath)
 		/* Ansonsten die Quelldatei gelesen und ggf. geîffnet */
 		/* -------------------------------------------------  */
 
-		else{
+		else
+		{
 #if		COUNTRY==FRG
 			down_cnt(2, "lese Datei", alls);
 #elif	COUNTRY==USA
@@ -530,7 +543,7 @@ long GFcopy(char *path, DTA *srcfile, char *zpath)
 
 long GDcreate(char *path, char *name)
 {
-	char	all[128];
+	char all[128];
 	long doserr;
 	int ret, do_redraw;
 
@@ -571,10 +584,7 @@ long GDcreate(char *path, char *name)
 
 /*********************************************************************
 *
-* DurchlÑuft einen Pfad und fÅhrt bei jeder gefundenen Datei
-* vorher ein Programm <before>, hinterher <after> aus.
-* Sind <before> und <after> == NULL, werden nur Informationen gesammelt.
-* gibt ggf. DOS- Fehlercode zurÅck.
+* Hilfsfunktion fÅr walk_path()
 *
 *********************************************************************/
 
@@ -588,7 +598,7 @@ static char *_path;
 static char *_mask;
 
 
-long _walk_path(void)
+static long _walk_path(void)
 {
 	DTA	dta;
 	int	dirlen;			/* Anzahl EintrÑge in diesem Verzeichnis */
@@ -693,10 +703,28 @@ long _walk_path(void)
 	}
 
 	if (errcode == EFILNF || errcode == ENMFIL)
+	{
 		errcode = E_OK;
+	}
+
+	if (errcode)
+	{
+		Cconws(_path);
+		Cconws("\r\n");
+	}
 
 	return err_alert(errcode);
 }
+
+
+/*********************************************************************
+*
+* DurchlÑuft einen Pfad und fÅhrt bei jeder gefundenen Datei
+* vorher ein Programm <before>, hinterher <after> aus.
+* Sind <before> und <after> == NULL, werden nur Informationen gesammelt.
+* gibt ggf. DOS- Fehlercode zurÅck.
+*
+*********************************************************************/
 
 long walk_path(char *path, long *clusters, long *nbytes,
 			long *hbytes, int *folders,

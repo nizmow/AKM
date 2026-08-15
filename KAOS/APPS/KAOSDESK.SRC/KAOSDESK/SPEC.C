@@ -572,34 +572,47 @@ long M_Floprd (void *buf, void *filler, int devno, int sectno, int trackno,
 
 /*********************************************************************
 *
-* Initialisiert ein Laufwerk
+* Initialisiert ein Laufwerk, d.h. lîscht es
 *
 *********************************************************************/
 
 static long init_disk(int dev)
 {
-	long doserr,buflen,fsizb,rsizb;
+	long doserr, buflen;
+	long fat_bytes, rootdir_bytes;
 	BPB	*bpb;
 	char *buf;
 
 
 	bpb = Getbpb(dev);
 	if (!bpb)
+	{
 		return EMEDIA;
+	}
 
-	fsizb = ((long) bpb->fsiz) * ((long) bpb->recsiz);
-	rsizb = ((long) bpb->rdlen) * ((long) bpb->recsiz);
-	buflen = fsizb+fsizb+rsizb;
+	if (bpb->fsiz == 0)
+	{
+		return EMEDIA;	/* FAT32 */
+	}
+
+	/* bei FAT32 ist fsiz = 0 */
+	fat_bytes = ((long) bpb->fsiz) * ((long) bpb->recsiz);
+	rootdir_bytes = ((long) bpb->rdlen) * ((long) bpb->recsiz);
+	buflen = fat_bytes + fat_bytes + rootdir_bytes;
+
 	buf = Malloc(buflen);
 	if (!buf)
 		return ENSMEM;
 
 	memset(buf, 0, buflen);
 
-	buf[0] = buf[fsizb] = (dev > 1) ? 0xf8 : 0xf9;		/* Mediabyte */
-	buf[1] = buf[2] = buf[fsizb+1] = buf[fsizb+2] = 0xff;
-	if (bpb->bflags & 1)							/* 16bit FAT */
-		buf[3] = buf[fsizb+3] = 0xff;
+	buf[0] = buf[fat_bytes] = (dev > 1) ? 0xf8 : 0xf9;		/* Mediabyte */
+	buf[1] = buf[2] = buf[fat_bytes + 1] = buf[fat_bytes + 2] = 0xff;
+	if (bpb->bflags & 1)
+	{
+		/* 16-Bit FAT */
+		buf[3] = buf[fat_bytes + 3] = 0xff;
+	}
 
 	/* FATs und Root lîschen */
 	/* --------------------- */
@@ -635,12 +648,13 @@ long format_floppy(int dev, unsigned sid, unsigned trk, unsigned spt, unsigned c
 		  int inter, int vtrk, int vsid,
 		  void (*counter)(int n), int is_logic, char *dname)
 {
-	register ctrack,cside,i,j;
-	int  interlv,versatz;
+	register ctrack, cside;
+	int i,j;
+	int interlv, versatz;
 	unsigned char *buf;
 	BPB *bpb;
 	long doserr;
-	int  secnos[100];		/* Sektornummern fÅr Versatz */
+	int secnos[100];		/* Sektornummern fÅr Versatz */
 
 
 	if ((clu == 0) || (clu != 1 && clu & 1))
@@ -768,6 +782,7 @@ long format_floppy(int dev, unsigned sid, unsigned trk, unsigned spt, unsigned c
 		buf[27] = sid / 256;
 		buf[26] = sid % 256;
 	}
+
 	buf[0] = 0xeb;
 	buf[1] = 0x34;
 	buf[2] = 0x90;
@@ -786,8 +801,12 @@ long format_floppy(int dev, unsigned sid, unsigned trk, unsigned spt, unsigned c
 		doserr = ERROR;
 		goto err;
 	}
+
 	for	(i = 3; i < 512; i++)
+	{
 		buf[i] = 0;
+	}
+
 	buf[0] = 0xf9;
 	buf[1] = buf[2] = 0xff;
 	doserr = Rwabs(3, buf, 1, 1, dev);		/* FAT 1 */
@@ -819,7 +838,7 @@ long format_floppy(int dev, unsigned sid, unsigned trk, unsigned spt, unsigned c
 *********************************************************************/
 
 long read_bootsec(int lw, long *ser, int *bps, int *spc,
-						int *res,	int *nfats, int *ndirs, int *nsects,
+						int *res, int *nfats, int *ndirs, int *nsects,
 						int *media, int *spf, int *spt, int *nsides,
 						int *nhid, int *exec)
 {
@@ -868,7 +887,7 @@ long read_bootsec(int lw, long *ser, int *bps, int *spc,
 
 long MDfree(DISKINFO *ds, int driveno)
 {
-	char	*buf;
+	char *buf;
 	BPB *bpb;
 	long doserr;
 	register unsigned int numcl;
@@ -879,11 +898,17 @@ long MDfree(DISKINFO *ds, int driveno)
 		return EDRIVE;
 
 	if ('HD' != disk_type(driveno) && 'FD' != disk_type(driveno))
+	{
+		/* Weder Floppy noch Festplatte -> GEMDOS verwenden */
 		return Dfree(ds, driveno + 1);
+	}
 
 	bpb = Getbpb(driveno);
 	if (!bpb)
-		return EMEDIA;
+	{
+		/* Kein BIOS-Laufwerk -> GEMDOS verwenden */
+		return Dfree(ds, driveno + 1);
+	}
 
 	buf = Malloc(((long) bpb->fsiz) * ((long) bpb->recsiz));
 	if (!buf)
@@ -905,7 +930,7 @@ long MDfree(DISKINFO *ds, int driveno)
 		goto err;
 	numcl = bpb->numcl;
 
-	/* 1. Fall: 16 Bit FAT */
+	/* 1. Fall: 16-Bit FAT */
 	/* ------------------- */
 
 	if ((bpb->bflags) & 1)
@@ -917,7 +942,7 @@ long MDfree(DISKINFO *ds, int driveno)
 				freecl++;
 	}
 
-	/* 2. Fall: 12 Bit FAT */
+	/* 2. Fall: 12-Bit FAT */
 	/* ------------------- */
 
 	else
@@ -998,7 +1023,9 @@ long label(int lw, char *name)
 			return retcode;
 	}
 	else
+	{
 		retcode = EFILNF;
+	}
 
 	if (retcode == EFILNF)
 #endif
@@ -1064,10 +1091,14 @@ long label(int lw, char *name)
 
 						fname_int(name, dirs->dir_name);
 						for	(j = (int) strlen(dirs->dir_name); j < 11; j++)
+						{
 							dirs->dir_name[j] = ' ';
+						}
 					}
 					else
+					{
 						dirs->dir_name[0] = DELETED;
+					}
 
 					dirs->dir_attr = F_VOLUME;
 					buffer->b_dirty = TRUE;
@@ -1276,7 +1307,7 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 			}
 			for	(ctrack = ltrack, cbuf = buf;
 			      ctrack < c_tracks;
-			      ctrack++, cbuf += spt*sid*512)
+			      ctrack++, cbuf += spt * sid * 512)
 			{
 #if		COUNTRY==FRG
 				feedb("Lese", ctrack);
@@ -1417,6 +1448,7 @@ void set_parent_paths(void)
 	p [0x37] = s[0x37];						/* Laufwerk kopieren	*/
 	s += 0x40;							/* auf Pfadhandles		*/
 	p += 0x40;
+
 	for	(i = 0; i < 16; i++)				/* Pfadhandles tauschen	*/
 	{
 		char tmp;
