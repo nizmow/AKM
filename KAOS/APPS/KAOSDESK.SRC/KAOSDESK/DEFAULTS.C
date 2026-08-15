@@ -6,32 +6,17 @@
 
 #define  PGM_I_VERSION	1
 
-#include <tos.h>
-#include <tosdefs.h>
-#include "k.h"
 #include <stdlib.h>
 #include <string.h>
-
-/* Externals aus ALLG.C */
-
-extern void Mgraf_mouse(int type);
-
-/* Externals aus KAOSDESK */
-
-extern void get_char_dim( void );
-extern long err_alert(long e);
-
-extern OBJECT *adr_prgrms;
-
-extern int deflt_topwnr;
-
-/* Externals aus WINDOWS */
-
-extern int 	top_wnr	( void );
+#include <tosdefs.h>
+#include <mgx_dos.h>	/* include before tos.h */
+#include <tos.h>
+#include "k.h"
 
 #if	MAGIXDESK==0
 static char *infdata;
 #endif
+
 
 /****************************************************************
 *
@@ -39,17 +24,16 @@ static char *infdata;
 *
 ****************************************************************/
 
-void load_icons( void )
+void load_icons(void)
 {
 	register char *buf;
-	extern char *_iconfile;		/* aus dem Startmodul */
 
 
 	/* Nachsehen, ob Icons im RSC versteckt sind */
 	/* ----------------------------------------- */
 
-	if	(NULL != (buf = _iconfile))
-		{
+	if (NULL != (buf = _iconfile))
+	{
 		memcpy(&iconfile_header, buf, sizeof(ICONFILE_HEADER));
 		buf += sizeof(ICONFILE_HEADER);
 		icf_data = (int *) buf;
@@ -58,8 +42,9 @@ void load_icons( void )
 		icf_pgms = buf + (0x70) * 
 			(iconfile_header.n_pgm_icons + iconfile_header.n_dat_icons);
 		icf_fils = icf_pgms + 9 * iconfile_header.n_pgm_names;
-		}
-	else icf_data = NULL;			/* keine Icons */
+	}
+	else
+		icf_data = NULL;			/* keine Icons */
 }
 
 
@@ -75,10 +60,10 @@ void recalc(int *wert, int old, int new)
 {
 	unsigned long tmp;
 
-	tmp    = (unsigned long) *wert;
-	tmp   *= new;
-	tmp   /= old;
-	*wert  = (int) tmp;
+	tmp = (unsigned long) *wert;
+	tmp *= new;
+	tmp /= old;
+	*wert = (int) tmp;
 }
 
 
@@ -87,7 +72,7 @@ void recalc(int *wert, int old, int new)
 * LÑdt bzw. setzt alle Defaults.
 * pass == 0: gmemptr initialisieren, d.h. n_icons, n_apps
 *            bestimmen und Speicher fÅr icon und application
-*		   allozieren
+*		     allozieren
 * pass == 1: Status  laden
 *
 ****************************************************************/
@@ -99,55 +84,66 @@ char inf_name[] = "A:\\MAGX.INF";
 char inf_name[] = "A:\\KAOSDESK.INF";
 #endif
 static char *s;
-static int scnlin( void )
+static int scnlin(void)
 {
-	while(1)
-		{
-		if	(!*s)
-			return(0);
-		if	(*s++ != '\r')
+	for (;;)
+	{
+		if (!*s)
+			return 0;
+		if (*s++ != '\r')
 			continue;
-		if	(*s++ != '\n')
-			return(0);
-		return(1);
-		}
+		if (*s++ != '\n')
+			return 0;
+		return 1;
+	}
 }
-static void scnstr( char *t )
+
+
+static void scnstr(char *t)
 {
-	while(*s == ' ')
+	while (*s == ' ')
 		s++;
-	while(*s != ' ' && *s != '\0' && *s != '\r' && *s != '\n')
+	while (*s != ' ' && *s != '\0' && *s != '\r' && *s != '\n')
 		*t++ = *s++;
 	*t = '\0';
 }
-static void scnbstr( char *t )
+
+
+static void scnbstr(char *t)
 {
-	while(*s == ' ')
+	while (*s == ' ')
 		s++;
-	while(*s != '\0' && *s != '\r' && *s != '\n')
+	while (*s != '\0' && *s != '\r' && *s != '\n')
 		*t++ = *s++;
 	*t = '\0';
 }
-static int scndez( void )
+
+
+static int scndez(void)
 {
-	while(*s == ' ')
+	while (*s == ' ')
 		s++;
-	return((int) strtol(s, &s, 10));
+	return (int) strtol(s, &s, 10);
 }
-static char scnflg( void )
+
+
+static char scnflg(void)
 {
 	char c;
 
-	while(*s == ' ')
+	while (*s == ' ')
 		s++;
-	if	(*s)
-		{
+	if (*s)
+	{
 		c = *s++ - '0';
-		return(c);
-		}
-	return(0);
+		return c;
+	}
+
+	return 0;
 }
-void load_status( int pass )
+
+
+void load_status(int pass)
 {
 	register int i,d,dx,dy,icw,ich;
 	char dummy_s[128];
@@ -160,26 +156,21 @@ void load_status( int pass )
 	int	ln_wind,ln_icns,ln_pgms,ln_apps;
 	register long drvs;
 	register int code;
-	extern int *aes_global;
-	extern int scrx,scry,scrw,scrh,gl_hhchar;
-	extern OBJECT *adr_ttppar;
-	extern OBJECT *adr_icons;
-	extern void init_icnobj(OBJECT *o, ICONBLK *icn, int typ, char *text);
 
 
 	Mgraf_mouse(HOURGLASS);
-	if	(!pass)
-		{
-		if	(gmemptr)
+	if (!pass)
+	{
+		if (gmemptr)
 			Mfree(gmemptr);
 		gmemptr = NULL;
 #if	DEBUG
 		icon = application = fenster[0].pobj = NULL;
 #endif
-		}
+	}
 
-	if	(pass)
-		{
+	if (pass)
+	{
 
 		/* zunÑchst sicherheitshalber Defaults setzen */
 		/* ------------------------------------------ */
@@ -218,50 +209,55 @@ void load_status( int pass )
 		fmtstat.clustsize	= 2;
 
 		for	(ln_wind = 1; ln_wind <= ANZFENSTER; ln_wind++)
-			{
-			fenster[ln_wind].shift   = 0;
-			fenster[ln_wind].out.g_x = 140+20*ln_wind;
-			fenster[ln_wind].out.g_y = scry+10*ln_wind;
+		{
+			fenster[ln_wind].shift = 0;
+			fenster[ln_wind].out.g_x = 140 + 20 * ln_wind;
+			fenster[ln_wind].out.g_y = desk_g.g_y + 10 * ln_wind;
 			fenster[ln_wind].out.g_w = 300;
-			fenster[ln_wind].out.g_h = 10*gl_hhchar;
+			fenster[ln_wind].out.g_h = 10 * gl_hhchar;
 			fenster[ln_wind].handle = -1;
 			fenster[ln_wind].path[0] = EOS;
 			fenster[ln_wind].maske[0] = EOS;
-			}
+		}
 
 		drvs = Drvmap();
 		ln_icns = d = 0;
-		while(drvs)
+		while (drvs)
+		{
+			if (drvs & 1)			/* Laufwerk existiert */
 			{
-			if	(drvs & 1)			/* Laufwerk existiert */
-				{
 				icon[ln_icns].isdisk = 'A' + d;
-				if	(ln_icns < 2)
+				if (ln_icns < 2)
 					icon[ln_icns].icontyp = I_FLPDSK;
-				else if	(ln_icns < 6)
-						icon[ln_icns].icontyp = I_HRDDSK;
-					else icon[ln_icns].icontyp = I_RAMDSK;
+				else
+				if (ln_icns < 6)
+					icon[ln_icns].icontyp = I_HRDDSK;
+				else
+					icon[ln_icns].icontyp = I_RAMDSK;
 				ln_icns++;
-				}
+			}
 			drvs >>= 1;
 			d++;
-			}
+		}
 
 		for	(d = ln_icns; ln_icns < n_icons; ln_icns++)
-			{
+		{
 			icon[ln_icns].isdisk = 0;
-			if	(ln_icns == d)
+			if (ln_icns == d)
 				icon[ln_icns].icontyp = I_DRUCKR;
-			else if	(ln_icns == d+1)
-					icon[ln_icns].icontyp = I_PAPIER;
-				else icon[ln_icns].icontyp = 0;
-			}
-		}	/* END IF (pass) */
-	else	{
+			else
+			if (ln_icns == d+1)
+				icon[ln_icns].icontyp = I_PAPIER;
+			else
+				icon[ln_icns].icontyp = 0;
+		}
+	}	/* END IF (pass) */
+	else
+	{
 		ln_wind = 1;
 		ln_icns = 40;
 		ln_apps = 30;
-		}
+	}
 
 	/* Jetzt die Inf- Datei aus dem AES- Puffer holen */
 	/* ---------------------------------------------- */
@@ -269,11 +265,11 @@ void load_status( int pass )
 #if	MAGIXDESK
 	len = shel_get(NULL, 0);	/* LÑnge des INF- Puffers ermitteln */
 	inf = Malloc((long) (len+1));
-	if	(inf == NULL)
-		{
+	if (inf == NULL)
+	{
 		err_alert(ENSMEM);
 		return;
-		}
+	}
 	inf[len] = EOS;
 	shel_get(inf, len);
 	s = inf+128;			/* Beginn der Desktop- Daten */
@@ -283,11 +279,11 @@ void load_status( int pass )
 
 	ln_wind = 1;					/* erstes Fenster */
 	ln_pgms = ln_apps = 0;
-	if	((s == NULL) || (*s == EOS))	/* keine Daten */
+	if ((s == NULL) || (*s == EOS))	/* keine Daten */
 		goto install;				/* ... dann Defaults verwenden */
 
-	if	(strncmp(s, "#_DSK", 5))
-		{
+	if (strncmp(s, "#_DSK", 5))
+	{
 		err:
 #if		COUNTRY==FRG
 		form_alert(1, "[3][Fehler auf INF- Datei!][Abbruch]");
@@ -295,42 +291,45 @@ void load_status( int pass )
 		form_alert(1, "[3][Error at INF file!][Abort]");
 #endif
 		goto install;
-		}
+	}
+
 	s += 5;					/* #_DSK Åberspringen */
 	scnstr(dummy_s);			/* "MAGXDESK */
 	scnstr(dummy_s);			/* Vxx.xx */
 	i_version = scndez();
-	if	(i_version != PGM_I_VERSION)
+	if (i_version != PGM_I_VERSION)
 		goto err;				/* falsche INF- Version */
-	if	(!scnlin())			/* Zeile #_DSK Åberspringen */
+	if (!scnlin())			/* Zeile #_DSK Åberspringen */
 		goto err;
 
 	/* Wir beginnen mit dem Einlesen */
 	/* ----------------------------- */
 
-	old_w = scrw;
-	old_h = scrh;
+	old_w = desk_g.g_w;
+	old_h = desk_g.g_h;
 	ln_icns = 0;		/* erstes Icon */
 
 	/* Die groûe Schleife fÅrs Einlesen */
 	/* -------------------------------- */
 
-	for(; *s; scnlin())
-		{
-		if	(strncmp(s, "#_D", 3))
+	for (; *s; scnlin())
+	{
+		if (strncmp(s, "#_D", 3))
 			continue;
-		s+=3;
-		if	(!*s || *s == '\r')
+
+		s += 3;
+
+		if (!*s || *s == '\r')
 			break;
 		code = (*s++) << 8;			/* Hibyte holen */
-		if	(!*s || *s == '\r')
+		if (!*s || *s == '\r')
 			break;
 		code |= *s++;				/* Lobyte holen */
 
 		switch(code)
-			{
+		{
 			case 'SW':
-				if	(!pass)
+				if (!pass)
 					break;
 				old_w = scndez();
 
@@ -344,11 +343,12 @@ void load_status( int pass )
 
 				status.points = (char) scndez();
 
-				if	(status.points == 8)
+				if (status.points == 8)
 					status.points = M_8_PKT;
-				else	if	(status.points == 9)
+				else	if (status.points == 9)
 					status.points = M_9_PKT;
-				else status.points = M_10_PKT;
+				else
+					status.points = M_10_PKT;
 
 				status.is_1col		= scnflg();
 				status.is_groesse	= scnflg();
@@ -371,7 +371,7 @@ void load_status( int pass )
 				break;
 
 			case 'FM':
-				if	(!pass)
+				if (!pass)
 					break;
 				fmtstat.tmpdrv		= scnflg() + '0';
 
@@ -385,26 +385,26 @@ void load_status( int pass )
 				break;
 
 			case 'WN':
-				if	(!pass || ln_wind > ANZFENSTER)
+				if (!pass || ln_wind > ANZFENSTER)
 					break;
 				fenster[ln_wind].out.g_x = scndez();
 				fenster[ln_wind].out.g_y = scndez();
 				fenster[ln_wind].out.g_w = scndez();
 				fenster[ln_wind].out.g_h = scndez();
-				if	(old_w != scrw)
-					{
-					recalc(&(fenster[ln_wind].out.g_x), old_w, scrw);
-					recalc(&(fenster[ln_wind].out.g_w), old_w, scrw);
-					}
-				if	(old_h != scrh)
-					{
-					recalc(&(fenster[ln_wind].out.g_y), old_h, scrh);
-					recalc(&(fenster[ln_wind].out.g_h), old_h, scrh);
-					}
-				fenster[ln_wind].out.g_x += scrx;
-				fenster[ln_wind].out.g_y += scry;
-				fenster[ln_wind].shift = scndez();
+				if (old_w != desk_g.g_w)
 				{
+					recalc(&(fenster[ln_wind].out.g_x), old_w, desk_g.g_w);
+					recalc(&(fenster[ln_wind].out.g_w), old_w, desk_g.g_w);
+				}
+				if (old_h != desk_g.g_h)
+				{
+					recalc(&(fenster[ln_wind].out.g_y), old_h, desk_g.g_h);
+					recalc(&(fenster[ln_wind].out.g_h), old_h, desk_g.g_h);
+				}
+				fenster[ln_wind].out.g_x += desk_g.g_x;
+				fenster[ln_wind].out.g_y += desk_g.g_y;
+				fenster[ln_wind].shift = scndez();
+			{
 				char buf[200];
 				char *name;
 
@@ -413,108 +413,108 @@ void load_status( int pass )
 				strcpy(fenster[ln_wind].maske, name);
 				*name = '\0';
 				strcpy(fenster[ln_wind].path, buf);
-				}
+			}
 				ln_wind++;
 				break;
 
 			case 'IC':
-				if	(pass)
-					{
+				if (pass)
+				{
 					icon[ln_icns].icontyp = scndez();
 					icon[ln_icns].isdisk = scnflg() + '0';
-					if	(icon[ln_icns].isdisk == '@')
+					if (icon[ln_icns].isdisk == '@')
 						icon[ln_icns].isdisk = 0;
 					(fenster[0].pobj+ln_icns+1)->ob_x = scndez();
 					(fenster[0].pobj+ln_icns+1)->ob_y = scndez();
-					if	(old_w != scrw)
-						recalc(&((fenster[0].pobj+ln_icns+1)->ob_x), old_w, scrw);
-					if	(old_h != scrh)
-						recalc(&((fenster[0].pobj+ln_icns+1)->ob_y), old_h, scrh);
-					(fenster[0].pobj+ln_icns+1)->ob_x += scrx;
-					(fenster[0].pobj+ln_icns+1)->ob_y += scry;
-					if	(icon[ln_icns].icontyp >= I_ORDNER)
+					if (old_w != desk_g.g_w)
+						recalc(&((fenster[0].pobj+ln_icns+1)->ob_x), old_w, desk_g.g_w);
+					if (old_h != desk_g.g_h)
+						recalc(&((fenster[0].pobj+ln_icns+1)->ob_y), old_h, desk_g.g_h);
+					(fenster[0].pobj+ln_icns+1)->ob_x += desk_g.g_x;
+					(fenster[0].pobj+ln_icns+1)->ob_y += desk_g.g_y;
+					if (icon[ln_icns].icontyp >= I_ORDNER)
 						scnstr(icon[ln_icns].text);
-					}
+				}
 
 				ln_icns++;
 				break;
 
 			case 'PG':
-				if	(!pass || ln_pgms >= ANZPROGRAMS)
+				if (!pass || ln_pgms >= ANZPROGRAMS)
 					break;
 				scnbstr(((adr_prgrms+PG_1+ln_pgms)->ob_spec.tedinfo)->te_ptext);
 				ln_pgms++;
 				break;
 
 			case 'AP':
-				if	(pass)
-					{
-					while(*s == ' ')
+				if (pass)
+				{
+					while (*s == ' ')
 						s++;
-					if	(s[0] && s[1])
+					if (s[0] && s[1])
 						memcpy(&(application[ln_apps].typ), s, 2L);
 					s += 2;
 					scnstr(application[ln_apps].path);
 					scnstr(application[ln_apps].ext1);
 					scnstr(application[ln_apps].ext2);
-					}
+				}
 				ln_apps++;
 				break;
 
 			case 'PP':
-				if	(!pass)
+				if (!pass)
 					break;
-				{
+			{
 				char	buf[200];
 				char *ziel1,*ziel2;
 
 				buf[0] = EOS;
-				if	(*s)
+				if (*s)
 					s++;
 				ziel1 = buf;
-				while((*s) && (*s != '\r') && (*s != '\n'))
+				while ((*s) && (*s != '\r') && (*s != '\n'))
 					*ziel1++ = *s++;
 				*ziel1 = EOS;
 				ziel1 = ((adr_ttppar+TTPPAR_1)->ob_spec.tedinfo)->te_ptext;
 				ziel2 = ((adr_ttppar+TTPPAR_2)->ob_spec.tedinfo)->te_ptext;
-				if	(buf[0])
-					{
+				if (buf[0])
+				{
 					strncpy(ziel1, buf, TTPLEN);
-					if	(strlen(buf) >= TTPLEN)
-						{
+					if (strlen(buf) >= TTPLEN)
+					{
 						ziel1[TTPLEN] = EOS;
 						strcpy(ziel2, buf + TTPLEN);
-						}
 					}
 				}
+			}
 				break;
-			} /* END CASE */
-		} /* END FOR */
+		} /* END CASE */
+	} /* END FOR */
 
 	install:
 #if	MAGIXDESK
 	Mfree(inf);
 #endif
 
-	if	(!pass)		/* wollte nur n_icons,n_apps bestimmen */
-		{
+	if (!pass)		/* wollte nur n_icons,n_apps bestimmen */
+	{
 		register OBJECT *o;
 
 
 		n_icons = ln_icns + PLUSICONS;
 		n_apps  = ln_apps + PLUSAPPS;
-		gmemptr = Malloc(sizeof(ICON)        * n_icons +
-					  sizeof(OBJECT)      * (n_icons+1) +
+		gmemptr = Malloc(sizeof(ICON) * n_icons +
+					  sizeof(OBJECT) * (n_icons+1) +
 					  sizeof(APPLICATION) * n_apps);
-		if	(!gmemptr)
-			{
+		if (!gmemptr)
+		{
 			err_alert(ENSMEM);
 			return;
-			}
-		fenster[0].shownum  = fenster[0].realnum = n_icons;
-		fenster[0].pobj = (OBJECT *)      gmemptr;
-		icon		  	 = (ICON   *)      (fenster[0].pobj + n_icons + 1);
-		application	 = (APPLICATION *) (icon + n_icons);
+		}
+		fenster[0].shownum = fenster[0].realnum = n_icons;
+		fenster[0].pobj = (OBJECT *) gmemptr;
+		icon = (ICON *) (fenster[0].pobj + n_icons + 1);
+		application = (APPLICATION *) (icon + n_icons);
 
 		/* Desktop- Hintergrund zusammenfummeln */
 		/* ------------------------------------ */
@@ -529,36 +529,38 @@ void load_status( int pass )
 		o->ob_flags = o->ob_state = 0;
 		icw = (adr_icons+I_FLPDSK)->ob_width + 1;
 		ich = (adr_icons+I_FLPDSK)->ob_height + 1;
-		dx = scrx;
-		dy = scry;
+
+		dx = desk_g.g_x;
+		dy = desk_g.g_y;
+
 		for	(i = 0; i < n_icons; i++)
-			{
+		{
 			o++;
 			o->ob_next = i+2;
 			o->ob_head = o->ob_tail = -1;
 			o->ob_x = dx;
 			o->ob_y = dy;
 			dx += icw;
-			if	(dx+icw > scrw)
-				{
-				dx = scrx;
+			if (dx + icw > desk_g.g_w)
+			{
+				dx = desk_g.g_x;
 				dy += ich;
-				if	(dy+ich > scrh)
-					dy = scry;
-				}
-			o->ob_flags = o->ob_state = 0;
+				if (dy + ich > desk_g.g_h)
+					dy = desk_g.g_y;
 			}
+			o->ob_flags = o->ob_state = 0;
+		}
 		o->ob_next = 0;
 		o->ob_flags = LASTOB;
 		return;
-		}
+	}
 
 	/* unbenutzte Fenster/Icons/Programme/Applikationen */
 	/* ------------------------------------------------ */
 
 	for	(; ln_wind <= ANZFENSTER; ln_wind++)
 		fenster[ln_wind].path[0] = EOS;
-	for	(; ln_icns <  n_icons;   ln_icns++)
+	for	(; ln_icns < n_icons; ln_icns++)
 		icon[ln_icns].icontyp = 0;
 	for	(; ln_pgms < ANZPROGRAMS; ln_pgms++)
 		*((adr_prgrms+PG_1+ln_pgms)->ob_spec.tedinfo)->te_ptext = EOS;
@@ -569,33 +571,33 @@ void load_status( int pass )
 	/* --------------------------------- */
 
 	for	(i = 0; i < n_icons; i++)
+	{
+		if (icon[i].icontyp != 0)
 		{
-		if	(icon[i].icontyp != 0)
-			{
-			extern int find_iconfile_pgm(char *fname);
-			extern int find_iconfile_dat(char *fname);
 			int typ;
 			char *txt,*name;
 
 
 			txt = icon[i].text;
 			typ = icon[i].icontyp;
-			if	(typ >= I_ORDNER)
-				{
+			if (typ >= I_ORDNER)
+			{
 				name = get_name(txt);
-				if	(typ == I_DATEI || typ >= DATICN_OFFS)
+				if (typ == I_DATEI || typ >= DATICN_OFFS)
 					icon[i].icontyp = find_iconfile_dat(name);
 				else
-				if	(typ == I_PROGRA || typ >= PGMICN_OFFS)
+				if (typ == I_PROGRA || typ >= PGMICN_OFFS)
 					icon[i].icontyp = find_iconfile_pgm(name);
-				}
-			else name = NULL;
-			init_icnobj(fenster[0].pobj + i+1, &icon[i].data, icon[i].icontyp, name);
-			if	(icon[i].isdisk)
-				icon[i].data.ib_char = icon[i].isdisk + 0x1000;
 			}
-		else (fenster[0].pobj + i+1)->ob_flags = HIDETREE;
+			else
+				name = NULL;
+			init_icnobj(fenster[0].pobj + i+1, &icon[i].data, icon[i].icontyp, name);
+			if (icon[i].isdisk)
+				icon[i].data.ib_char = icon[i].isdisk + 0x1000;
 		}
+		else
+			(fenster[0].pobj + i+1)->ob_flags = HIDETREE;
+	}
 
 	Mgraf_mouse(ARROW);
 	get_char_dim();
@@ -614,7 +616,7 @@ static void prtdez(int i)
 {
 	*s++ = ' ';
 	itoa(i, s, 10);
-	while(*s++)
+	while (*s++)
 		;
 	s--;
 }
@@ -622,9 +624,9 @@ static void prtflg(int i)
 {
 	*s++ = (i) ? '1' : '0';
 }
-static void prtstr(char *str)
+static void prtstr(const char *str)
 {
-	while((*s++ = *str++) != '\0')
+	while ((*s++ = *str++) != '\0')
 		;
 	s--;
 }
@@ -632,9 +634,6 @@ static void prtstr(char *str)
 static void status_to_ascii(char *inf)
 {
 	register int i;
-	extern int scrx,scry,scrw,scrh;
-	extern OBJECT *adr_ttppar;
-	extern char *pgm_ver;
 
 
 	s = inf;
@@ -673,15 +672,16 @@ static void status_to_ascii(char *inf)
 	/*	 status.resvd2								*/
 	/* --------------------------------------------------- */
 
-	prtdez(scrw);
-	prtdez(scrh);
+	prtdez(desk_g.g_w);
+	prtdez(desk_g.g_h);
 	prtdez(deflt_topwnr);
 	prtdez(status.sorttyp - M_SNAME);
 	*s++ = ' ';
 	prtflg(status.showtyp == M_ATEXT);
-	if	(status.points == M_8_PKT)
+	if (status.points == M_8_PKT)
 		i = 8;
-	else i = (status.points == M_9_PKT) ? 9 : 10;
+	else
+		i = (status.points == M_9_PKT) ? 9 : 10;
 	prtdez(i);
 	*s++ = ' ';
 	prtflg(status.is_1col);
@@ -730,52 +730,53 @@ static void status_to_ascii(char *inf)
 	/* ------------------------------------------------------ */
 
 	for	(i = 1; i <= ANZFENSTER; i++)
-		{
+	{
 		prtstr("#_DWN");
-		prtdez(fenster[i].out.g_x - scrx);
-		prtdez(fenster[i].out.g_y - scry);
+		prtdez(fenster[i].out.g_x - desk_g.g_x);
+		prtdez(fenster[i].out.g_y - desk_g.g_y);
 		prtdez(fenster[i].out.g_w);
 		prtdez(fenster[i].out.g_h);
-		if	(fenster[i].path[0])
-			{
+		if (fenster[i].path[0])
+		{
 			prtdez(fenster[i].shift);
 			*s++ = ' ';
 			prtstr(fenster[i].path );
 			prtstr(fenster[i].maske);
-			}
-		else prtdez(0);
+		}
+		else
+			prtdez(0);
 		*s++ = '\r';
 		*s++ = '\n';
-		}
+	}
 
 	/* "#_DIC typ c x y path" */
 	/* ---------------------- */
 
 	for	(i = 0; i < n_icons; i++)
-		{
-		if	(0 == icon[i].icontyp)
+	{
+		if (0 == icon[i].icontyp)
 			continue;
 		prtstr("#_DIC");
 		prtdez(icon[i].icontyp);
 		*s++ = ' ';
 		*s++ = (icon[i].isdisk) ? (icon[i].isdisk) : '@';
-		prtdez((fenster[0].pobj+i+1)->ob_x - scrx);
-		prtdez((fenster[0].pobj+i+1)->ob_y - scry);
-		if	(icon[i].icontyp >= I_ORDNER)
-			{
+		prtdez((fenster[0].pobj+i+1)->ob_x - desk_g.g_x);
+		prtdez((fenster[0].pobj+i+1)->ob_y - desk_g.g_y);
+		if (icon[i].icontyp >= I_ORDNER)
+		{
 			*s++ = ' ';
 			prtstr(icon[i].text);
-			}
+		}
 		*s++ = '\r';
 		*s++ = '\n';
-		}
+	}
 
 	/* "#_DAP path typ ext1 ext2" */
 	/* -------------------------- */
 
 	for	(i = 0; i < n_apps; i++)
-		{
-		if	(!application[i].path[0])
+	{
+		if (!application[i].path[0])
 			continue;
 		prtstr("#_DAP ");
 		*s++ = ((char *) (&(application[i].typ)))[0];
@@ -788,18 +789,18 @@ static void status_to_ascii(char *inf)
 		prtstr(application[i].ext2);
 		*s++ = '\r';
 		*s++ = '\n';
-		}
+	}
 
 	/* "#_DPG path */
 	/* ----------- */
 
 	for	(i = 0; i < ANZPROGRAMS; i++)
-		{
+	{
 		prtstr("#_DPG ");
 		prtstr(((adr_prgrms+PG_1+i)->ob_spec.tedinfo)->te_ptext);
 		*s++ = '\r';
 		*s++ = '\n';
-		}
+	}
 
 	/* "#_DPP line" */
 	/* ------------ */
@@ -824,46 +825,45 @@ void save_status(int is_inf)
 
 	Mgraf_mouse(HOURGLASS);
 	inf = (char *) Malloc(65536L);
-	if	(inf == NULL)
-		{
+	if (inf == NULL)
+	{
 		doserr = ENSMEM;
 		goto ende;
-		}
+	}
 
-	if	(is_inf)
-		{
+	if (is_inf)
+	{
 		doserr = Fopen(inf_name, RMODE_RW);
 		handle = (int) doserr;
-		if	(doserr == EFILNF)
-			{
+		if (doserr == EFILNF)
+		{
 			doserr = Fcreate(inf_name, 0);
 			handle = (int) doserr;
-			if	(doserr > E_OK)
-				{
-				extern char *os_ver_s;
+			if (doserr > E_OK)
+			{
 				char *os_ver_s2 = "#_MAG MAG!X v__.__\r\n#_CTR\r\n";
 
 				strncpy(os_ver_s2+13, os_ver_s+7, 5);
-				Fwrite( (int) doserr, strlen(os_ver_s2), os_ver_s2);
+				Fwrite((int) doserr, strlen(os_ver_s2), os_ver_s2);
 				Fseek(0L, handle, SEEK_SET);
-				}
 			}
-		if	(doserr < E_OK)
+		}
+		if (doserr < E_OK)
 			goto ende;
 		doserr = Fread(handle, 32768L, inf);
-		if	(doserr < E_OK)
+		if (doserr < E_OK)
 			goto ende;
 		s = inf;
-		while(strncmp(s, "#_CTR", 5))
+		while (strncmp(s, "#_CTR", 5))
+		{
+			if (!scnlin())
 			{
-			if	(!scnlin())
-				{
 				err2:
 				doserr = ERROR;
 				goto ende;			/* unerwartetes Dateiende */
-				}
 			}
-		if	(!scnlin())
+		}
+		if (!scnlin())
 			goto err2;
 		t = s;					/* Beginn der neuen Daten */
 		shel_get(s, 128);
@@ -871,15 +871,16 @@ void save_status(int is_inf)
 		status_to_ascii(t + 128);
 		Fseek(t - inf, handle, SEEK_SET);	/* Dateizeiger auf Kontrollfeld */
 		doserr = Fwrite(handle, 128 + strlen(t+128), t);
-		if	(doserr != 128 + strlen(t+128))
-			{
-			if	(doserr >= E_OK)
+		if (doserr != 128 + strlen(t+128))
+		{
+			if (doserr >= E_OK)
 				doserr = EWRITF;
 			goto ende;
-			}
-		Fshrink(handle);
 		}
-	else	{
+		Fshrink(handle);
+	}
+	else
+	{
 		unsigned int len;
 
 		doserr = E_OK;
@@ -888,29 +889,29 @@ void save_status(int is_inf)
 		inf[len] = EOS;
 		s = inf;
 		status_to_ascii(s + 128);
-		if	(!shel_put(inf, 128 + ((unsigned int) strlen(inf+128) + 1)))
+		if (!shel_put(inf, 128 + ((unsigned int) strlen(inf+128) + 1)))
 #if	COUNTRY == FRG
 			form_alert(1, "[3][öberlauf des AES- Puffers!][Abbruch]");
 #elif COUNTRY == USA
 			form_alert(1, "[3][Overflow in AES- buffer!][Cancel]");
 #endif
-		}
+	}
 
 	ende:
 
-	if	(handle > 0)
+	if (handle > 0)
 		Fclose(handle);
-	if	(inf)
+	if (inf)
 		Mfree(inf);
-	if	(!is_inf && gmemptr)
-		{
+	if (!is_inf && gmemptr)
+	{
 		Mfree(gmemptr);
 		gmemptr = NULL;
 #if	DEBUG
 		icon = application = fenster[0].pobj = NULL;
 #endif
-		}
-	if	(doserr < E_OK)
+	}
+	if (doserr < E_OK)
 		err_alert(doserr);
 	Mgraf_mouse(ARROW);
 }
@@ -924,43 +925,43 @@ void save_status(int is_inf)
 
 	Mgraf_mouse(HOURGLASS);
 	inf = (char *) Malloc(65536L);
-	if	(inf == NULL)
-		{
+	if (inf == NULL)
+	{
 		doserr = ENSMEM;
 		goto ende;
-		}
+	}
 
 	strcpy(inf_name + 12, (is_inf) ? "INF" : "TMP");
 	doserr = Fcreate(inf_name, 0);
-	if	(doserr < E_OK)
+	if (doserr < E_OK)
 		goto ende;
 	handle = (int) doserr;
 	s = inf;
 	deflt_topwnr = top_wnr();
 	status_to_ascii(inf);
 	doserr = Fwrite(handle, strlen(inf), inf);
-	if	(doserr != strlen(inf))
-		{
-		if	(doserr >= E_OK)
+	if (doserr != strlen(inf))
+	{
+		if (doserr >= E_OK)
 			doserr = EWRITF;
 		goto ende;
-		}
+	}
 
 	ende:
 
-	if	(handle > 0)
+	if (handle > 0)
 		Fclose(handle);
-	if	(inf)
+	if (inf)
 		Mfree(inf);
-	if	(!is_inf && gmemptr)
-		{
+	if (!is_inf && gmemptr)
+	{
 		Mfree(gmemptr);
 		gmemptr = NULL;
 #if	DEBUG
 		icon = application = fenster[0].pobj = NULL;
 #endif
-		}
-	if	(doserr < E_OK)
+	}
+	if (doserr < E_OK)
 		err_alert(doserr);
 	Mgraf_mouse(ARROW);
 }
@@ -975,7 +976,7 @@ void save_status(int is_inf)
 void reload_status(int drv)
 {
 	int	handle;
-	char	*inf;
+	char *inf;
 	char olddrv;
 	long doserr;
 
@@ -987,64 +988,63 @@ void reload_status(int drv)
 	#define _DRV 24
 #endif
 
-	extern void    close_all_wind( void );
-	extern void    open_all_wind( void );
-
 
 	Mgraf_mouse(HOURGLASS);
 	olddrv = inf_name[0];
-	if	(drv >= 0)
+	if (drv >= 0)
 		inf_name[0] = drv + 'A';
 	inf = (char *) Malloc(65536L);
-	if	(inf == NULL)
-		{
+	if (inf == NULL)
+	{
 		doserr = ENSMEM;
 		goto err;
-		}
+	}
 
 	doserr = Fopen(inf_name, RMODE_RD);
-	if	(doserr == EFILNF)
-		{
+	if (doserr == EFILNF)
+	{
 		errstr[_DRV] = inf_name[0];
-		if	(1 != form_alert(2, errstr))
-			{
+		if (1 != form_alert(2, errstr))
+		{
 			inf_name[0] = olddrv;
 			Mgraf_mouse(ARROW);
 			Mfree(inf);
 			return;
-			}
-		goto getit;
 		}
+		goto getit;
+	}
 	handle = (int) doserr;
-	if	(doserr < E_OK)
-		{
+	if (doserr < E_OK)
+	{
 		err:
 
-		if	(handle > 0)
+		if (handle > 0)
 			Fclose(handle);
 		Mgraf_mouse(ARROW);
 		err_alert(doserr);
-		if	(inf)
+		if (inf)
 			Mfree(inf);
 		return;
-		}
+	}
 	doserr = Fread(handle, 65535L, inf);
 	Fclose(handle);
-	if	(doserr < E_OK)
+	if (doserr < E_OK)
 		goto err;
 	inf[doserr] = EOS;
 	s = inf;
-	while(strncmp(s, "#_CTR", 5))
+	while (strncmp(s, "#_CTR", 5))
+	{
+		if (!scnlin())
 		{
-		if	(!scnlin())
-			{
 			err2:
 			doserr = ERROR;
 			goto err;			/* unerwartetes Dateiende */
-			}
 		}
-	if	(!scnlin())
+	}
+
+	if (!scnlin())
 		goto err2;
+
 	shel_put(s, (unsigned int) strlen(s) + 1);
 	getit:
 	Mfree(inf);
@@ -1057,7 +1057,7 @@ void reload_status(int drv)
 }
 
 #else
-void	reload_status(int is_inf, int drv)
+void reload_status(int is_inf, int drv)
 {
 	int	handle;
 	char	*inf;
@@ -1072,61 +1072,57 @@ void	reload_status(int is_inf, int drv)
 	#define _DRV 30
 #endif
 
-	extern void    close_all_wind( void );
-	extern void    open_all_wind( void );
-
-
 	strcpy(inf_name + 12, (is_inf) ? "INF" : "TMP");
 	Mgraf_mouse(HOURGLASS);
 	olddrv = inf_name[0];
-	if	(drv >= 0)
+	if (drv >= 0)
 		inf_name[0] = drv + 'A';
 	doserr = (long) Malloc(-1L);
-	if	(doserr < 65536L)
+	if (doserr < 65536L)
 		goto memerr;
 	inf = Malloc(doserr);				/* grîûten Block holen */
-	if	(!inf)
+	if (!inf)
 		goto memerr;
 	Mshrink(0, inf, 32768L);				/* obere HÑlfte freigeben */
 	infdata = (char *) Malloc(32768L);		/* Block holen */
 	Mfree(inf);						/* untere HÑlfte freigeben */
-	if	(infdata == NULL)
-		{
+	if (infdata == NULL)
+	{
 		memerr:
 		doserr = ENSMEM;
 		goto err;
-		}
+	}
 
 	doserr = Fopen(inf_name, RMODE_RD);
-	if	(doserr == EFILNF)
-		{
+	if (doserr == EFILNF)
+	{
 		Mfree(infdata);
 		infdata = NULL;
 		errstr[_DRV] = inf_name[0];
-		if	((gmemptr) && (1 != form_alert(2, errstr)))
-			{
+		if ((gmemptr) && (1 != form_alert(2, errstr)))
+		{
 			inf_name[0] = olddrv;
 			Mgraf_mouse(ARROW);
 			return;
-			}
-		goto getit;
 		}
+		goto getit;
+	}
 	handle = (int) doserr;
-	if	(doserr < E_OK)
-		{
+	if (doserr < E_OK)
+	{
 		err:
 
-		if	(handle > 0)
+		if (handle > 0)
 			Fclose(handle);
 		Mgraf_mouse(ARROW);
 		err_alert(doserr);
-		if	(infdata)
+		if (infdata)
 			Mfree(infdata);
 		return;
-		}
+	}
 	doserr = Fread(handle, 32767L, infdata);
 	Fclose(handle);
-	if	(doserr < E_OK)
+	if (doserr < E_OK)
 		goto err;
 	infdata[doserr] = EOS;
 	s = infdata;
@@ -1135,7 +1131,7 @@ void	reload_status(int is_inf, int drv)
 	close_all_wind();
 	load_status(0);
 	load_status(1);
-	if	(infdata)
+	if (infdata)
 		Mfree(infdata);
 	infdata = NULL;
 	open_all_wind();

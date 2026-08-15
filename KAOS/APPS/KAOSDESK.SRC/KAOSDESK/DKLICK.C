@@ -8,29 +8,13 @@
 *
 *********************************************************************/
 
-#include <tos.h>
-#include "k.h"
-#include <tosdefs.h>
 #include <string.h>
 #include <vdi.h>
+#include <mgx_dos.h>	/* include before tos.h */
+#include <tos.h>
+#include <tosdefs.h>
+#include "k.h"
 
-extern OBJECT *adr_prgrms;
-
-extern void dsel_all( void );
-extern void obj_malen(int wnr, int index);
-
-extern int 	obj_to_path(int wnr, int obj, char *path, MYDTA **f);
-extern void    close_all_wind( void );
-extern void    open_all_wind( void );
-extern void    upd_path	(int wnr, int free_flag);
-extern long 	opn_wnd	(int wnr, int fast);
-extern long    err_alert(long e);
-extern void	ob_sel		(OBJECT *tree, int which);
-extern void	ob_dsel		(OBJECT *tree, int which);
-extern int	selected		(OBJECT *tree, int which);
-extern int 	walk_sel		(int wnr, int (*tue)(int wnr, int obj));
-
-extern void Mgraf_mouse(int type);
 
 /****************************************************************
 *
@@ -47,19 +31,19 @@ APPLICATION *file_to_defapp(char *filepath)
 
 	s = get_name(filepath);
 	s = strchr(s, '.');
-	if	(s)
-		{
+	if (s)
+	{
 		s++;
 		for	(a = application; a < application + n_apps; a++)
-			{
-			if	(a -> path[0] && (!strcmp(s, (a -> ext1)) ||
+		{
+			if (a -> path[0] && (!strcmp(s, (a -> ext1)) ||
 							   !strcmp(s, (a -> ext2))
-							  )
-				)
-				return(a);
-			}
+							  ))
+			return a;
 		}
-	return(NULL);
+	}
+
+	return NULL;
 }
 
 
@@ -78,14 +62,15 @@ APPLICATION *find_defapp(char *pgmpath)
 	register APPLICATION *a;
 	register char *s;
 
-
 	s = get_name(pgmpath);
+
 	for	(a = application; a < application + n_apps; a++)
-		{
-		if	(!strcmp(s, get_name(a -> path)))
-			return(a);
-		}
-	return(NULL);
+	{
+		if (!strcmp(s, get_name(a -> path)))
+			return a;
+	}
+
+	return NULL;
 }
 
 
@@ -117,48 +102,55 @@ APPLICATION *find_defapp(char *pgmpath)
 int obj_typ(int wnr, int obj, char *path, MYDTA **f, int *typ)
 {
 	int ret;
-	extern int suffixtyp(char *s);
-	char	mpath[200];
+	char mpath[200];
 
 
 	*typ = '__';
-	if	(path == NULL)
+	if (path == NULL)
 		path = mpath;
 	*path = EOS;
 	ret = obj_to_path(wnr, obj, path, f);
-	if	(ret == 0)						/* Datei */
-		{
+
+	if (ret == 0)						/* Datei */
+	{
 		APPLICATION *a = NULL;
 
 		*typ = suffixtyp(path);
-		if	(*typ == '_T')
+
+		if (*typ == '_T')
 			a = file_to_defapp(path);
-		else if	((*typ & 0xff) == 'P')
+		else
+			if ((*typ & 0xff) == 'P')
 				a = find_defapp(path);
-		if	(a)
+		if (a)
 			*typ = a -> typ;
-		return(ret);
-		}
-	if	(obj == 0)
-		{
+
+		return ret;
+	}
+
+	if (obj == 0)
+	{
 		*typ = '_F';
-		return(ret);
-		}
-	if	(wnr == 0)
-		{
+		return ret;
+	}
+
+	if (wnr == 0)
+	{
 		switch(icon[obj-1].icontyp)
-			{
+		{
 			case I_ORDNER: *typ = '_O';break;
 			case I_FLPDSK: *typ = 'FD';break;
 			case I_HRDDSK: *typ = 'HD';break;
 			case I_RAMDSK: *typ = 'RD';break;
 			case I_PAPIER:	*typ = 'P_';break;
 			case I_DRUCKR:	*typ = 'D_';break;
-			}
-		return(ret);
 		}
+
+		return ret;
+	}
+
 	*typ = '_O';
-	return(ret);
+	return ret;
 }
 
 
@@ -169,80 +161,83 @@ int obj_typ(int wnr, int obj, char *path, MYDTA **f, int *typ)
 * RÅckgabe 1: Icon nach Aktion wieder deselektieren.
 *
 * Textdateien: CTRL		in Texteditor laden
-* 			ALT		anzeigen
+* 			   ALT		anzeigen
 *
 * Programme:   CTRL		immer Parameter holen (TTP)
-*			ALT		im Multitaskingmodus starten
+*			   ALT		im Multitaskingmodus starten
 *
 *********************************************************************/
 
 int dclick(int wnr, int obj, int kbsh)
 {
-	int		ret,typ;
-	int		styp;
-	char		path[200];
-	MYDTA	*file;
-	void		opn_newwnd(char *path);
-	void		prt_icns(int wnr, int print);
-	void		starten(char *path, int typ, int wnr, int obj, int kbsh);
+	int ret,typ;
+	int styp;
+	char path[200];
+	MYDTA *file;
 
 
 	path[0] = EOS;
 	ret = obj_typ(wnr, obj, path, &file, &typ);
-	if	(strlen(path) > 127)
-		{
+	if (strlen(path) > 127)
+	{
 		err_alert(EPTHOV);
-		return(0);
-		}
-	if	(ret < 0)
-		{
+		return 0;
+	}
+
+	if (ret < 0)
+	{
 		switch(typ)
-			{
+		{
 			case 'D_':
+			case 'P_':
 #if		COUNTRY==FRG
-			case 'P_': form_alert(1, "[3][Drucker und Papierkorb lassen|"
+				form_alert(1, "[3][Drucker und Papierkorb lassen|"
 								"sich nicht îffnen.][Abbruch]");
 #elif	COUNTRY==USA
-			case 'P_': form_alert(1, "[3][Printer and Trash cannot|"
+				form_alert(1, "[3][Printer and Trash cannot|"
 								"be opened.][Abort]");
 #endif
-					 break;
-			default  : err_alert(EINTRN);
-					 break;
-			}
-		return(0);
+				break;
+
+			default:
+				err_alert(EINTRN);
+				break;
 		}
+
+		return 0;
+	}
 
 	/* Doppelklick auf Pfad (Ordner oder Disk) */
 	/* --------------------------------------- */
 
-	if	(ret == 1)
-		{
+	if (ret == 1)
+	{
 
 		/* Doppelklick auf Icon. Neues Fenster îffnen */
 		/* ------------------------------------------ */
 	
-		if	(wnr == 0)
-			{
+		if (wnr == 0)
+		{
 			opn_newwnd(path);
-			return(0);
-			}
+			return 0;
+		}
 
 		/* Doppelklick auf Ordner in Fenster		 */
 		/* ------------------------------------------ */
 	
-		if	(typ == '_O')
+		if (typ == '_O')
+		{
+			if (kbsh & K_ALT)
 			{
-			if	(kbsh & K_ALT)
-				{
 				opn_newwnd(path);
-				}
-			else	{
+			}
+			else
+			{
 				strcpy(fenster[wnr].path, path);
 				upd_path(wnr, FALSE);
-				}
 			}
 		}
+	}
 
 	/* Doppelklick auf Datei (Programm oder Textdatei oder ... ) 	*/
 	/*  1) Datei ist kein Programm, CTRL gedrÅckt:				*/
@@ -253,40 +248,45 @@ int dclick(int wnr, int obj, int kbsh)
 	/*		starten										*/
 	/* ------------------------------------------------------------- */
 
-	else {
+	else
+	{
 		styp = suffixtyp(path);
 
-		if	(((styp & 0x5f) != 'P') && (kbsh & K_CTRL))
-			{
+		if (((styp & 0x5f) != 'P') && (kbsh & K_CTRL))
+		{
 
 			/* CTRL+ALT mit Textdatei: Anzeigen		*/
 			/* ----------------------------------------- */
 
-			if	(kbsh & K_ALT)
+			if (kbsh & K_ALT)
 				prt_icns(wnr, 0);
 
 			/* CTRL mit Textdatei: Editor starten		*/
 			/* ----------------------------------------- */
 
-			else	{
+			else
+			{
 				strcpy(path, ((adr_prgrms+PG_4)->ob_spec.tedinfo)->te_ptext);
 				typ = suffixtyp(path);
 				starten(path, typ, 0, 0, kbsh & ~K_CTRL);
-				}
-			return(0);
 			}
-		if	(typ == '_T')
-			{
-			prt_icns(wnr, 0);
-			return(0);
-			}
-	 	if	(((typ & 0x5f) == 'P') || ((typ & 0xff) == 'B'))
-	 		{
-			starten(path, typ, wnr, obj, kbsh);
-			return(kbsh & K_ALT);
-			}
+			return 0;
 		}
-	return(0);
+
+		if (typ == '_T')
+		{
+			prt_icns(wnr, 0);
+			return 0;
+		}
+
+	 	if (((typ & 0x5f) == 'P') || ((typ & 0xff) == 'B'))
+	 	{
+			starten(path, typ, wnr, obj, kbsh);
+			return kbsh & K_ALT;
+		}
+	}
+
+	return 0;
 }
 
 
@@ -303,20 +303,20 @@ void opn_newwnd(char *path)
 
 
 	for	(wnr = 1; wnr <= ANZFENSTER; wnr++)
+	{
+		if (fenster[wnr].path[0] == EOS)
 		{
-		if	(fenster[wnr].path[0] == EOS)
-			{
 			/* Maske ist "*.*" 				*/
 			/* ------------------------------- */
 		
 			strcpy(fenster[wnr].maske, "*.*");
 		
-			/* Pfad  ist schon festgelegt		*/
+			/* Pfad ist schon festgelegt		*/
 			/* ------------------------------- */
 		
 			strcpy(fenster[wnr].path, path);
 			ret = opn_wnd(wnr, FALSE);
-			if	(ret == ENOWND)
+			if (ret == ENOWND)
 				goto err_wnd;
 			err_alert(ret);
 			return;
@@ -338,35 +338,35 @@ void opn_newwnd(char *path)
 *
 ****************************************************************/
 
-unsigned char waitkey( void )
+unsigned char waitkey(void)
 {
 	int dummy,st;
 	int was0 = FALSE;
-	extern int vdi_handle;
 
-	while(TRUE)
-		{
-		if	(Bconstat(CON))
-			return((unsigned char) Bconin(CON));
+	for (;;)
+	{
+		if (Bconstat(CON))
+			return (unsigned char) Bconin(CON);
+
 		vq_mouse(vdi_handle, &st, &dummy, &dummy);
-		if	(!(st & 3))
+		if (!(st & 3))
 			was0 = TRUE;
-		if	(!was0)
+		if (!was0)
 			continue;
-		if	(st & 1)			/* linke Maustaste */
-			return(' ');
-		if	(st & 2)			/* rechte Maustaste */
-			return('Q');
-		}
+		if (st & 1)			/* linke Maustaste */
+			return ' ';
+		if (st & 2)			/* rechte Maustaste */
+			return 'Q';
+	}
 }
 
 void str_conout(char *s, int len)
 {
-	while(len--)
+	while (len--)
 		Bconout(CON, *s++);
 }
 
-void init_vt52( void )
+void init_vt52(void)
 {
 	str_conout("\x1b" "E"		/* Clear- Home				*/
 		 	 "\x1b" "b\xff"	/* Schriftfarbe schwarz		*/
@@ -376,61 +376,66 @@ void init_vt52( void )
 		 	 "\x1b" "v", 14);	/* Automatischer öberlauf ein */
 }
 
-void exit_vt52( void )
+void exit_vt52(void)
 {
-	extern int scrx, scry, scrw, scrh;			/* Maûe fÅr Hintergrund */
+	GRECT g;
 
 	str_conout("\x1b" "H" "\x1b" "f", 4);	/* Home, Cursor aus */
-	form_dial(FMD_FINISH, 0,0,0,0, 0, 0, scrx+scrw, scry+scrh);
+	g.g_x = 0;
+	g.g_y = 0;
+	g.g_w = desk_g.g_x + desk_g.g_w;
+	g.g_h = desk_g.g_y + desk_g.g_h;
+	form_dial(FMD_FINISH, NULL, &g);
 }
 
 int show_file(char *path)
 {
 	char *buf;
-	int  mode = FALSE;
-	int  handle = 0;
-	int  ypos = 0;
+	int mode = FALSE;
+	int handle = 0;
+	int ypos = 0;
 	unsigned char t;
 	long doserr,lbytes;
 	const long bsize = 4*1024L;
-	extern OBJECT *adr_hauptmen;
 
 
 
 	Mgraf_mouse(HOURGLASS);
-	if	(NULL == (buf = Malloc(bsize)))
+	if (NULL == (buf = Malloc(bsize)))
 		doserr = ENSMEM;
-	else doserr = Fopen(path, RMODE_RD);
+	else
+		doserr = Fopen(path, RMODE_RD);
 
-	if	(doserr >= E_OK)
-		{
+	if (doserr >= E_OK)
+	{
 		handle = (int) doserr;
 		Mgraf_mouse(M_OFF);
 		init_vt52();
-		do	{
+		do
+		{
 			fillbuf:
 
 			doserr = Fread(handle, bsize, buf);
-			if	(doserr > 0)
-				{
+			if (doserr > 0)
+			{
 				char c;
-				int  s;
+				int s;
 
 				for	(lbytes = 0; lbytes < doserr; lbytes++)
-					{
-					while(Kbshift(-1) & (K_LSHIFT | K_RSHIFT))
+				{
+					while (Kbshift(-1) & (K_LSHIFT | K_RSHIFT))
 						mode = TRUE;
 					c = buf[lbytes];
 					s = (int) Bconstat(CON);
-					if	(s || (!mode && c == '\n'))
-						{
+					if (s || (!mode && c == '\n'))
+					{
 						mode = FALSE;
 						ypos++;
-						if	(s || ypos > 22)
-							{
-							long  fpos;
+						if (s || ypos > 22)
+						{
+							long fpos;
 
-							if	(!s)
+							if (!s)
 #if		COUNTRY==FRG
 								str_conout("\r\n--Mehr-- "
 #elif	COUNTRY==USA
@@ -438,12 +443,13 @@ int show_file(char *path)
 #endif
 										 "\x1b" "e", 13);
 							t = waitkey();
-							if	(!s)
+							if (!s)
 								str_conout("\x1b" "l", 2);
-							if	(t >= 'a')
+							if (t >= 'a')
 								t &= 0x5f;
+
 							switch(t)
-								{
+							{
 								case 3:
 								case 'Q':
 								case 'N': doserr = EBREAK;
@@ -459,67 +465,73 @@ int show_file(char *path)
 "------------------------------------------------------------------------------"
 "\r\n\n", 84);
 										fpos = Fseek(0L, handle, 1);
-										if	(fpos < E_OK)
-											{
+										if (fpos < E_OK)
+										{
 											doserr = EBREAK;
 											break;
-											}
+										}
+
 										fpos += lbytes - doserr;
 										fpos += (t == '+') ? 4096L : -4096L;
-										if	(fpos < 0)
+										if (fpos < 0)
 											fpos = 0;
 										fpos = Fseek(fpos, handle, 0);
-										if	(fpos < E_OK && fpos != ERANGE)
-											{
+										if (fpos < E_OK && fpos != ERANGE)
+										{
 											doserr = EBREAK;
 											break;
-											}
+										}
+
 										ypos = 0;
 										goto fillbuf;
-								default:  ypos = 22;
-								}
-							if	(doserr == EBREAK)
-								break;
-							if	(!s)
-								continue;
+								default: ypos = 22;
 							}
+
+							if (doserr == EBREAK)
+								break;
+							if (!s)
+								continue;
 						}
+					}
 
 					/* Anpassung fÅr Wordplus- Codierung */
 					/* --------------------------------- */
 
-					if	(c == 0x1c || c == 0x1d || c == 0x1e)
+					if (c == 0x1c || c == 0x1d || c == 0x1e)
 						c = ' ';
 					Bconout(CON, c);
-					}
 				}
 			}
-		while(doserr > 0); 
 		}
+		while (doserr > 0); 
+	}
 
-	if	(doserr < E_OK)
+	if (doserr < E_OK)
 		err_alert(doserr);
-	else {
+	else
+	{
 		str_conout("\r\n--EOF-- " "\x1b" "e", 12);
 		t = waitkey();
-		if	(t == '-')
-			{
+		if (t == '-')
+		{
 			lbytes = doserr = 0L;
 			goto back;
 			}
 		}
 
-	if	(buf)
+	if (buf)
 		Mfree(buf);
-	if	(handle)
-		{
+
+	if (handle)
+	{
 		Fclose(handle);
 		exit_vt52();
 		menu_bar(adr_hauptmen, TRUE);
 		graf_mouse(M_ON, NULL);
-		}
+	}
+
 	Mgraf_mouse(ARROW);
-	return(0);
+	return 0;
 }
 
 
@@ -531,67 +543,75 @@ int show_file(char *path)
 
 int print_file(char *path)
 {
-			char	*buf;
-	register	char *s;
-	int		handle = 0;
-	int		ohandle = 0;
-	const	long bsize = 1024L;
-			long	doserr;
-	extern int qbreak( void );		/* von FILES.C */
-
+	char *buf;
+	register char *s;
+	int handle = 0;
+	int ohandle = 0;
+	const long bsize = 1024L;
+	long doserr;
 
 
 	Mgraf_mouse(HOURGLASS);
-	if	(NULL == (buf = Malloc(bsize)))
+	if (NULL == (buf = Malloc(bsize)))
 		doserr = ENSMEM;
-	else doserr = Fopen(path, RMODE_RD);
-	if	(doserr < E_OK)
+
+	else
+		doserr = Fopen(path, RMODE_RD);
+
+	if (doserr < E_OK)
 		goto ende;
+
 	handle = (int) doserr;
 	doserr = Fopen("PRN:", RMODE_WR);
-	if	(doserr < E_OK)
+	if (doserr < E_OK)
 		goto ende;
+
 	ohandle = (int) doserr;
 
-
-	do	{
-		if	(qbreak())
-			{
+	do
+	{
+		if (qbreak())
+		{
 			doserr = EBREAK;
 			break;
-			}
+		}
+
 		_appl_yield();
 		doserr = Fread(handle, bsize, buf);
 		_appl_yield();
-		if	(doserr < 0)
+
+		if (doserr < 0)
 			break;
 
 		for	(s = buf; s < buf + doserr; s++)
+		{
+			if (qbreak())
 			{
-			if	(qbreak())
-				{
 				doserr = EBREAK;
 				break;
-				}
+			}
+
 			_appl_yield();
-			if	(1L != Fwrite(ohandle, 1L, s))
-				{
+
+			if (1L != Fwrite(ohandle, 1L, s))
+			{
 				doserr = EWRITF;
 				break;
-				}
 			}
 		}
-	while(doserr > 0);
+	}
+	while (doserr > 0);
 
 	ende:
-	if	(buf)
+	if (buf)
 		Mfree(buf);
-	if	(handle)
+	if (handle)
 		Fclose(handle);
-	if	(ohandle)
+	if (ohandle)
 		Fclose(ohandle);
 	Mgraf_mouse(ARROW);
-	return((int) err_alert(doserr));
+
+	return (int) err_alert(doserr);
 }
 
 
@@ -615,42 +635,43 @@ void get_param(char *pgm, int wnr, int obj, char *tail)
 	rettc = *endppath;
 	*endppath = EOS;
 	for	(iwnr = 0; iwnr <= ANZFENSTER; iwnr++)
-		{
-		if	(iwnr && !fenster[iwnr].path[0])
+	{
+		if (iwnr && !fenster[iwnr].path[0])
 			continue;				/* Fenster unbenutzt */
 		tree = fenster[iwnr].pobj;
-		if	((i = (tree -> ob_head)) > 0)
-			{
+		if ((i = (tree -> ob_head)) > 0)
+		{
 			for	(; i <= (tree -> ob_tail); i++)
-				{
-				if	(wnr == iwnr && i == obj)
+			{
+				if (wnr == iwnr && i == obj)
 					continue;		/* Das Programm selbst */
-				if	(!((tree+i)->ob_flags & HIDETREE) && selected(tree, i))
-					{
+				if (!((tree+i)->ob_flags & HIDETREE) && selected(tree, i))
+				{
 					char rettc1;
 					char *e;
-					int  isne;
+					int isne;
 
-					if	(obj_to_path(iwnr, i, path, NULL))
+					if (obj_to_path(iwnr, i, path, NULL))
 						continue;		/* Keine Datei */
 					e = get_name(path);
 					rettc1 = *e;
-					if	(!rettc1)
+					if (!rettc1)
 						continue;		/* Nullname */
 					*e = EOS;
 					isne = strcmp(pgm, path);
 					*e = rettc1;
-					if	(isne)
+					if (isne)
 						e = path;
-					if	(strlen(tail) + strlen(e) + 1 > 127)
+					if (strlen(tail) + strlen(e) + 1 > 127)
 						continue;		/* Zu lang */
-					if	(*tail)		/* Nicht Anfang */
+					if (*tail)		/* Nicht Anfang */
 						strcat(tail, " ");
 					strcat(tail, e);
-					}
 				}
 			}
 		}
+	}
+
 	*endppath = rettc;
 }
 
@@ -670,53 +691,56 @@ void get_param(char *pgm, int wnr, int obj, char *tail)
 long setpath(char *program, int stdpath, int isover)
 {
 	long doserr;
-	char	rett,*endp;
+	char rett;
+	char *endp;
 	char *path;
 	register int i,top;
-#if	MAGIXDESK == 0
-	extern int isgem2;
-#endif
-	extern int top_wnr( void );
-	extern void set_parent_paths( void );
-
 
 
 	top = top_wnr();		/* Nummer des obersten Fensters */
-	if	(!stdpath)		/* Programm- Pfad */
-		{
+	if (!stdpath)		/* Programm- Pfad */
+	{
 		endp = get_name(program);
 		rett = *endp;
 		*endp = EOS;
-		if	(program[0] && program[1] == ':')
+		if (program[0] && program[1] == ':')
 			Dsetdrv(program[0] - 'A');
-		if	(program < endp)
+		if (program < endp)
 			doserr = Dsetpath(program);
-		else doserr = E_OK;
+		else
+			doserr = E_OK;
 		*endp = rett;
-		}
-	else {				/* KAOSDESK- Pfad */
+	}
+	else
+	{
+		/* KAOSDESK- Pfad */
 		for	(i = 1; i <= ANZFENSTER; i++)
-			{
+		{
 			path = fenster[i].path;
-			if	(i != top && (*path))
+			if (i != top && (*path))
 				Dsetpath(path);
-			}
-		if	(top > 0)
-			{
+		}
+
+		if (top > 0)
+		{
 			path = fenster[top].path;
-			if	(*path)
-				{
+			if (*path)
+			{
 				Dsetdrv (path[0] - 'A');
 				Dsetpath(path);
-				}
 			}
-		doserr = E_OK;
 		}
+
+		doserr = E_OK;
+
+	}
+
 #if	MAGIXDESK == 0
-	if	(isover == SHW_CHAIN && !isgem2)	/* KAOSDESK wird verlassen */
+	if (isover == SHW_CHAIN && !isgem2)	/* KAOSDESK wird verlassen */
 		set_parent_paths();
 #endif
-	return(err_alert(doserr));
+
+	return err_alert(doserr);
 }
 
 
@@ -734,28 +758,13 @@ long setpath(char *program, int stdpath, int isover)
 
 void starten(char *path, int typ, int wnr, int obj, int kbsh)
 {
-	char 	*pgm = fenster[0].path;		/* genÅgend Platz hier */
-	int 		stdpath;			/* Flag: in Fensterpfaden starten */
-	COMMAND 	param;
-	int 		isgr,doex,isover;
-	char		*program;
-	char		*execpath;		/* In diesem Pfad starten */
-	long  	doserr;
-
-
-	extern int vdi_handle;
-#if	MAGIXDESK
-	extern void res_exec( void );
-#else
-	extern int ismagix;
-	extern long	res_exec(int doex, int isgr, char *program,
-		  			    COMMAND *param, char *envptr);
-#endif
-	extern char *err_file;
-	extern int  suffixtyp(char *s);
-	extern int  dial_ttppar(char *pgm, char *par);
-	extern void save_status(int is_inf);
-
+	char *pgm = fenster[0].path;		/* genÅgend Platz hier */
+	int stdpath;			/* Flag: in Fensterpfaden starten */
+	COMMAND param;
+	int isgr,doex,isover;
+	char *program;
+	char *execpath;		/* In diesem Pfad starten */
+	long doserr;
 
 
 	/* Parameter fÅr "KAOSDESK resident" oder "nichtresident"	*/
@@ -766,15 +775,18 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 	doex = TRUE;
 #if	MAGIXDESK
 	isover = SHW_CHAIN;
-	if	(status.resident)
+
+	if (status.resident)
 		kbsh ^= K_ALT;				/* MAGIX: ggf. per Default parallel */
-	if	(kbsh & K_ALT)
+
+	if (kbsh & K_ALT)
 		isover = SHW_PARALLEL;		/* MAGIX: Multitasking EXEC */
-	if	((typ & 0xff) == 'p')
-		{
+
+	if ((typ & 0xff) == 'p')
+	{
 		isover = SHW_SINGLE;		/* MagiX: single mode */
-		typ   &= 0xff5f;
-		}
+		typ &= 0xff5f;
+	}
 #else
 	isover = !status.resident;
 #endif
@@ -785,14 +797,15 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 	/* getrennte Parameter enthÑlt, abspalten und Åbernehmen	*/
 	/* -------------------------------------------------------- */
 
-	if	(NULL != (program = strchr(pgm, ' ')))
-		{
+	if (NULL != (program = strchr(pgm, ' ')))
+	{
 		*program++ = EOS;
-		while(*program == ' ')
+		while (*program == ' ')
 			program++;
 		strcpy(param.command_tail, program);
-		}
-	else	param.command_tail[0] = EOS;
+	}
+	else
+		param.command_tail[0] = EOS;
 
 	/* Festlegen, ob das Programm im eigenen Pfad gestartet werden 	*/
 	/* soll und ob bei BTP- die manuelle Parametereingabe	erzwungen	*/
@@ -800,54 +813,62 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 	/* ------------------------------------------------------------- */
 
 	stdpath = ((typ & 0xff00) == '#\0');
-	if	(typ == 'PB')
+	if (typ == 'PB')
 		kbsh |= K_CTRL;
 
 	/* Falls es sich um eine Batchdatei handelt, deren Namen als	*/
 	/* Parameter und den des Batchprozessors als Programmnamen.		*/
 	/* ------------------------------------------------------------- */
 
-	if	((typ & 0x005f) == 'B' || (typ & 0xff00) == '#\0')	/* Batch */
-		{
+	if ((typ & 0x005f) == 'B' || (typ & 0xff00) == '#\0')	/* Batch */
+	{
 		int objnr;
 
-		if	((typ & 0x005f) == 'B')
-			{
+		if ((typ & 0x005f) == 'B')
+		{
 			objnr = PG_1;
 			execpath = path;	/* Batchdatei bestimmt Standardpfad */
-			}
-		else	objnr = (typ & 0x00ff) + PG_1;
-		if	(objnr > PG_14)
+		}
+		else
+			objnr = (typ & 0x00ff) + PG_1;
+
+		if (objnr > PG_14)
 			objnr = PG_1;
+
 		program = ((adr_prgrms+objnr)->ob_spec.tedinfo)->te_ptext;
-		if	(program[0] == '*')
-			{
+
+		if (program[0] == '*')
+		{
 			stdpath = FALSE;		/* Parameter Åbernehmen */
 			program++;
-			}
+		}
+
 		strcpy(param.command_tail, pgm);
 		strcpy(pgm, program);
 		typ = suffixtyp(program);
-		}
-	else {
+	}
+	else
+	{
 
 		/* Falls es sich um keine ausfÅhrbare Datei handelt, wird	*/
 		/* die Defaultapplikation eingesetzt.					*/
 		/* -------------------------------------------------------- */
 
-		if	((suffixtyp(pgm) & 0x5f) != 'P')	/* nicht ausfÅhrbar */
-			{
+		if ((suffixtyp(pgm) & 0x5f) != 'P')	/* nicht ausfÅhrbar */
+		{
 			APPLICATION *a;
 
 			a = file_to_defapp(pgm);
-			if	(!a)
+			if (!a)
 				return;
+
 			strcpy(param.command_tail, pgm);
 			strcpy(pgm, a -> path);
-			if	(((a -> typ & 0xff) == 'p') && (isover == SHW_PARALLEL))
+
+			if (((a -> typ & 0xff) == 'p') && (isover == SHW_PARALLEL))
 				isover = SHW_SINGLE;
-			}
 		}
+	}
 
 	/* Grafikapplikationen (GEM) haben die Kennung 'GP'			*/
 	/* ------------------------------------------------------------- */
@@ -858,7 +879,7 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 	/* Parameter Åbernommen (nicht bei Batchprozessor Åber ^B).		*/
 	/* ------------------------------------------------------------- */
 
-	if	(!stdpath)
+	if (!stdpath)
 		get_param(pgm, wnr, obj, param.command_tail);
 
 	/* Parameter werden manuell geholt, wenn dies mit CTRL erzwungen	*/
@@ -866,21 +887,21 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 	/* Programm ist und sonst keine Parameter vorliegen			*/
 	/* ------------------------------------------------------------- */
 
-	if	((kbsh & K_CTRL) || (((typ & 0xff00) == 'P\0') && !param.command_tail[0]))
-		{
-		if	(!dial_ttppar(pgm, param.command_tail))
+	if ((kbsh & K_CTRL) || (((typ & 0xff00) == 'P\0') && !param.command_tail[0]))
+	{
+		if (!dial_ttppar(pgm, param.command_tail))
 			return;
-		}
+	}
 
 	param.length = (char) strlen(param.command_tail);
-	if	(param.length < 126)
-		{
+	if (param.length < 126)
+	{
 		param.command_tail[param.length] = '\r';
 		param.command_tail[param.length + 1] = EOS;
-		}
+	}
 
 	err_file = pgm;
-	if	(setpath(execpath, stdpath, isover))
+	if (setpath(execpath, stdpath, isover))
 		return;
 
 	/* Nachsehen, ob die Datei Åberhaupt existiert	*/
@@ -888,37 +909,39 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 
 	err_file = pgm;
 	doserr = Fattrib(pgm, RMODE_RD, 0);
-	if	(doserr < E_OK)
-		{
+	if (doserr < E_OK)
+	{
 		err_alert(doserr);
 		return;
-		}
+	}
 
 	/* Im Fall "Multitasking starten" wird einfach der Aufruf		*/
 	/* gemacht, und KAOSDESK lÑuft weiter						*/
 	/* ------------------------------------------------------------- */
 
 	err_file = NULL;
-	if	(isover == SHW_PARALLEL)
-		{
-		extern int ap_id;
+	if (isover == SHW_PARALLEL)
+	{
 		char *name,*apnamp;
 		char apname[9];
 		int	msg[8];
-		int  i;
+		int i;
 		/* Wenn mîglich, VA_START aufrufen */
 		
 		name = get_name(pgm);
 		apnamp = apname;
 		for	(i = 0; i < 8; i++)
-			{
-			if	(*name == '.' || *name == EOS)
+		{
+			if (*name == '.' || *name == EOS)
 				*apnamp++ = ' ';
-			else *apnamp++ = *name++;
-			}
+			else
+				*apnamp++ = *name++;
+		}
+
 		*apnamp = EOS;
-		if	((i = appl_find(apname)) >= 0)
-			{
+
+		if ((i = appl_find(apname)) >= 0)
+		{
 			/* Programm lÑuft schon ! */
 			msg[0] = VA_START;
 			msg[1] = ap_id;
@@ -927,11 +950,12 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 			param.command_tail[param.length] = EOS;
 			appl_write(i, 16, msg);
 			return;
-			}
-		if	(!shel_write(1, isgr, 100, pgm, (char *) &param))
+		}
+
+		if (!shel_write(1, isgr, 100, pgm, (char *) &param))
 			err_alert(ENSMEM);
 		return;
-		}
+	}
 
 	/* In jedem Fall werden alle Fenster geschlossen und gelîscht,	*/
 	/* um Speicher fÅr das aufrufende Programm freizumachen		*/
@@ -945,7 +969,7 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 
 #if	MAGIXDESK
 	save_status(FALSE);
-	if	(isover == SHW_CHAIN)
+	if (isover == SHW_CHAIN)
 		/* Pfade an den Parent weiterreichen: */
 		shel_write(doex, isgr, SHW_SINGLE, pgm, (char *) &param);
 	shel_write(doex, isgr, isover, pgm, (char *) &param);
@@ -953,8 +977,8 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 	wind_update(END_UPDATE);
 	res_exec();
 #else
-	if	(isover)
-		{
+	if (isover)
+	{
 		save_status(FALSE);
 		shel_write(doex, isgr, TRUE, pgm, (char *) &param);
 		v_clsvwk(vdi_handle);
@@ -962,12 +986,13 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 		wind_update(END_UPDATE);
 		appl_exit();
 		Pterm0();
-		}
+	}
+
 	wind_update(END_UPDATE);
 	doserr = res_exec(doex, isgr, pgm, &param, NULL);
 	wind_update(BEG_UPDATE);
 
-	if	(0 == (doserr & 0xffff0000L))
+	if (0 == (doserr & 0xffff0000L))
 		err_file = (char *) -1L;
 	err_alert(doserr);
 	open_all_wind();

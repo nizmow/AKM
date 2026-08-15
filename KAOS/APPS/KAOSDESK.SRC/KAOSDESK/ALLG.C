@@ -6,7 +6,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stddef.h>
+#include <mgx_dos.h>	/* include before tos.h */
 #include <tos.h>
 #include <tosdefs.h>
 #include "k.h"
@@ -15,7 +15,7 @@
 #define TIMESEP	':'
 
 
-#if	MAGIXDESK==0
+#if	MAGIXDESK == 0
 
 /****************************************************************
 *
@@ -23,68 +23,69 @@
 *
 ****************************************************************/
 
-char *err_string(int e)
+const char *err_string(int e)
 {
-	static char *errs[] =
-				{
-				"Allgemeiner Fehler",
-				"Laufwerk nicht bereit",
-				"Unbekanntes Kommando",
-				"CRC- Fehler",
-				"Kommando nicht mîglich",
-				"Spur nicht gefunden",
-				"Unbekanntes Medium",
-				"Sektor nicht gefunden",
-				"Kein Papier",
-				"Schreibfehler",
-				"Lesefehler",
-				"Disk schreibgeschÅtzt",
-				"unerlaubter Diskwechsel",
-				"unbekanntes GerÑt",
-				"Defekte Sektoren",
+	static const char *errs[] =
+	{
+		"Allgemeiner Fehler",
+		"Laufwerk nicht bereit",
+		"Unbekanntes Kommando",
+		"CRC- Fehler",
+		"Kommando nicht mîglich",
+		"Spur nicht gefunden",
+		"Unbekanntes Medium",
+		"Sektor nicht gefunden",
+		"Kein Papier",
+		"Schreibfehler",
+		"Lesefehler",
+		"Disk schreibgeschÅtzt",
+		"unerlaubter Diskwechsel",
+		"unbekanntes GerÑt",
+		"Defekte Sektoren",
 
-				"UngÅltiger DOS-Aufruf",
-				"Datei nicht gefunden",
-				"Pfad nicht gefunden",
-				"Keine Handles mehr",
-				"Zugriff unmîglich",
-				"UngÅltiges Handle",
-				"Zuwenig Speicher",
-				"UngÅltiger Speicherblock",
-				"UngÅltiges Laufwerk",
-				"Nicht dasselbe Laufwerk",
-				"Keine weiteren Dateien",
-				"UngÅltiger Fseek- Bereich",
-				"Interner Fehler",
-				"Datei nicht ausfÅhrbar",
-				"Mshrink- Fehler",
+		"UngÅltiger DOS-Aufruf",
+		"Datei nicht gefunden",
+		"Pfad nicht gefunden",
+		"Keine Handles mehr",
+		"Zugriff unmîglich",
+		"UngÅltiges Handle",
+		"Zuwenig Speicher",
+		"UngÅltiger Speicherblock",
+		"UngÅltiges Laufwerk",
+		"Nicht dasselbe Laufwerk",
+		"Keine weiteren Dateien",
+		"UngÅltiger Fseek- Bereich",
+		"Interner Fehler",
+		"Datei nicht ausfÅhrbar",
+		"Mshrink- Fehler",
 
-				"User break",
-				"68000- Exception",
+		"User break",
+		"68000- Exception",
 
-				"Pfad zu tief",
-				};
+		"Pfad zu tief",
+	};
 
-	static char errn[] =
-				{
-				ERROR,EDRVNR,EUNCMD,E_CRC,EBADRQ,E_SEEK,EMEDIA,
-				ESECNF,EPAPER,EWRITF,EREADF,EWRPRO,E_CHNG,
-				EUNDEV,EBADSF,
-				EINVFN,EFILNF,EPTHNF,ENHNDL,
-				EACCDN,EIHNDL,ENSMEM,EIMBA,EDRIVE,ENSAME,
-				ENMFIL,ERANGE,EINTRN,EPLFMT,EGSBF,
-				EBREAK,EXCPT,
-				EPTHOV
-				};
+	static const char errn[] =
+	{
+		ERROR,EDRVNR,EUNCMD,E_CRC,EBADRQ,E_SEEK,EMEDIA,
+		ESECNF,EPAPER,EWRITF,EREADF,EWRPRO,E_CHNG,
+		EUNDEV,EBADSF,
+		EINVFN,EFILNF,EPTHNF,ENHNDL,
+		EACCDN,EIHNDL,ENSMEM,EIMBA,EDRIVE,ENSAME,
+		ENMFIL,ERANGE,EINTRN,EPLFMT,EGSBF,
+		EBREAK,EXCPT,
+		EPTHOV
+	};
 
 	register int i;
 
 	for	(i = 0; i < sizeof(errn); i++)
-		{
-		if	(e == (int) errn[i])
-			return(errs[i]);
-		}
-	return(NULL);
+	{
+		if (e == (int) errn[i])
+			return errs[i];
+	}
+
+	return NULL;
 }
 
 
@@ -100,51 +101,56 @@ char *err_file;
 
 long err_alert(long e)
 {
-	extern int ismagix;
-
-
-	if	(ismagix)
-		{
+	if (ismagix)
+	{
 		form_xerr(e, err_file);
-		}
-	else	{
-		char *alrts;
+	}
+	else
+	{
+		const char *alrts;
 		char s[90];
 
-		if	(e == E_OK || (int) (e) == (int) (EBREAK))
-			{
+		if (e == E_OK || (int) (e) == (int) (EBREAK))
+		{
 			err_file = NULL;
-			return(e);
-			}
-		if	(e == EDRIVE || e == ENSMEM || e == ENHNDL)
+			return e;
+		}
+		if (e == EDRIVE || e == ENSMEM || e == ENHNDL)
+		{
 			form_error((int) ((~e)-30));
-		else {
+		}
+		else
+		{
 			alrts = err_string((int) e);
-			if	(!alrts)
+			if (!alrts)
 				alrts = "TOS- Fehler";
 			strcpy(s, "[3][");
-			if	(err_file == (char *) -1L)
+			if (err_file == (char *) -1L)
 				strcpy(s+4, "Programm gab zurÅck :|");
-			else if	(err_file)
+			else
+			if (err_file)
+			{
+				if (err_file[0] != EOS && err_file[1] == ':')
 				{
-				if	(err_file[0] != EOS && err_file[1] == ':')
-					{
 					s[4] = err_file[0];
 					s[5] = ':';
 					s[6] = EOS;
-					}
+				}
+
 				strcat(s, get_name(err_file));
 				strcat(s, "|");
-				}
+			}
+
 			strcat(s, alrts);
 			strcat(s, "| |(Fehler #");
 			itoa((int) e, s+strlen(s), 10);
 			strcat(s, ")|][Abbruch]");
 			form_alert(1, s);
-			}
 		}
+	}
+
 	err_file = NULL;
-	return(e);
+	return e;
 }
 #else
 
@@ -154,7 +160,7 @@ long err_alert(long e)
 {
 	form_xerr(e, err_file);
 	err_file = NULL;
-	return(e);
+	return e;
 }
 #endif
 
@@ -171,13 +177,14 @@ char *get_name(char *path)
 	register char *n;
 
 	n = strrchr(path, '\\');
-	if	(!n)
-		{
-		if	((*path) && (path[1] == ':'))
+	if (!n)
+	{
+		if ((*path) && (path[1] == ':'))
 			path += 2;
-		return(path);
-		}
-	return(n + 1);
+		return path;
+	}
+
+	return n + 1;
 }
 
 
@@ -187,14 +194,14 @@ char *get_name(char *path)
 *
 *********************************************************************/
 
-void  Mgraf_mouse(int type)
+void Mgraf_mouse(int type)
 {
 	static int last = ARROW;
 
-	if	(type == 0x1000)
+	if (type == 0x1000)
 		type = last;
 	graf_mouse(ABS(type), NULL);
-	if	(type >= 0 && type != 0x1000 && type != M_ON && type != M_OFF)
+	if (type >= 0 && type != 0x1000 && type != M_ON && type != M_OFF)
 		last = type;
 }
 
@@ -261,15 +268,16 @@ void time_to_str(char *s, unsigned int time)
 
 void drv_to_str(char *s, char c)
 {
-	while(*s)
+	while (*s)
+	{
+		if (s[1] == ':')		/* nÑchstes Zeichen ist ':' */
 		{
-		if	(s[1] == ':')		/* nÑchstes Zeichen ist ':' */
-			{
 			*s = c;
 			break;
-			}
-		s++;
 		}
+
+		s++;
+	}
 }
 
 
@@ -284,22 +292,24 @@ char *print_ul(unsigned long z, char *p)
 {
 	register char *s;
 	register int len;
-	char	hilfs[20];
+	char hilfs[20];
 
 
 	ultoa(z, hilfs, 10);
 	s = hilfs;
 	*p++ = *s++;
 	len = (int) strlen(s);
-	while(len > 0)
-		{
-		if	(len % 3 == 0)
+
+	while (len > 0)
+	{
+		if (len % 3 == 0)
 			*p++ = '.';
 		*p++ = *s++;
 		len--;
-		}
+	}
+
 	*p = '\0';
-	return(p);
+	return p;
 }
 
 
@@ -313,34 +323,40 @@ void fname_int(char *s, char *d)
 {
 	register char *p = d;
 
-	while(*s && *s != '.')			/* Name */
+	while (*s && *s != '.')			/* Name */
 		*p++ = *s++;
-	if	(*s)						/* Punkt */
+	if (*s)						/* Punkt */
 		s++;
-	if	(*s)						/* Extension */
-		{
-		while(p < d+8)
+	if (*s)						/* Extension */
+	{
+		while (p < d+8)
 			*p++ = ' ';
-		while(*s)
+		while (*s)
 			*p++ = *s++;
-		}
+	}
+
 	*p = '\0';
 }
+
 
 void fname_ext(char *s, char *d)
 {
 	register char *p = s;
 
-	while(*p && p < s+8)
-		{
-		if	(*p != ' ')
+	while (*p && p < s+8)
+	{
+		if (*p != ' ')
 			*d++ = *p++;
-		else p++;
-		}
-	if	(*p)
+		else
+			p++;
+	}
+
+	if (*p)
 		*d++ = '.';
-	while(*p)
+
+	while (*p)
 		*d++ = *p++;
+
 	*d = '\0';
 }
 
@@ -358,21 +374,22 @@ void fname_ext(char *s, char *d)
 int suffixtyp(char *s)
 {
 	s = strrchr(s, '.');
-	if	(s)
-		{
+	if (s)
+	{
 		s++;
-		if	(!strcmp(s, "PRG") || !strcmp(s, "APP"))
-			return('GP');
-		if	(!strcmp(s, "TOS"))
-			return('_P');
-		if	(!strcmp(s, "TTP"))
-			return('PP');
-		if	(!strcmp(s, "BAT"))
-			return('_B');
-		if	(!strcmp(s, "BTP"))
-			return('PB');
-		}
-	return('_T');
+		if (!strcmp(s, "PRG") || !strcmp(s, "APP"))
+			return 'GP';
+		if (!strcmp(s, "TOS"))
+			return '_P';
+		if (!strcmp(s, "TTP"))
+			return 'PP';
+		if (!strcmp(s, "BAT"))
+			return '_B';
+		if (!strcmp(s, "BTP"))
+			return 'PB';
+	}
+
+	return '_T';
 }
 
 
@@ -382,32 +399,39 @@ int suffixtyp(char *s)
 *
 *********************************************************************/
 
-int  fname_match(char *fname, char *fmask)
+int fname_match(char *fname, char *fmask)
 {
-	if	(fmask[0] == '*' && fmask[1] == '.' && fmask[2] == '*')
-		return(1);
-	while(*fmask && *fname)
+	if (fmask[0] == '*' && fmask[1] == '.' && fmask[2] == '*')
+	{
+		return 1;
+	}
+
+	while (*fmask && *fname)
+	{
+		if (*fmask == '?')
 		{
-		if	(*fmask == '?')
-			{
 			fmask++;
-			if	(*fname != '.')
+			if (*fname != '.')
 				fname++;
 			continue;
-			}
-		if	(*fmask == '*')
-			{
+		}
+
+		if (*fmask == '*')
+		{
 			fmask++;
-			while(*fmask && *fmask != '.')
+			while (*fmask && *fmask != '.')
 				fmask++;
-			while(*fname && *fname != '.')
+			while (*fname && *fname != '.')
 				fname++;
 			continue;
-			}
-		if	(*fmask != *fname)
-			return(0);
+		}
+
+		if (*fmask != *fname)
+			return 0;
+
 		fmask++;
 		fname++;
-		}
-	return(*fmask == *fname);
+	}
+
+	return *fmask == *fname;
 }

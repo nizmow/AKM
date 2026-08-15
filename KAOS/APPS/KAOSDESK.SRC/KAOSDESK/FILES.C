@@ -6,33 +6,17 @@
 *
 *********************************************************************/
 
-#include <tos.h>
-#include "k.h"
 #include <string.h>
 #include <stdlib.h>
+#include <mgx_dos.h>	/* include before tos.h */
+#include <tos.h>
 #include <tosdefs.h>
+#include "k.h"
 
 static int _move_flag;
 static long _bsize;			/* Puffergrîûe fÅrs Kopieren */
 static char *_zielpath;
-static void down_cnt( int ord, char *aktion, char *path );
-
-/* Externals aus KAOSDESK */
-
-extern OBJECT *adr_cpmvdl;
-extern char	*err_file;
-extern long    err_alert(long e);
-extern int	selected	 (OBJECT *tree, int which);
-extern void 	ob_sel_dsel(OBJECT *tree, int which, int sel);
-extern void	ob_dsel	 (OBJECT *tree, int which);
-extern void	ob_sel	 (OBJECT *tree, int which);
-extern void	objs_hide	 (OBJECT *tree, ...);
-extern void	objs_unhide(OBJECT *tree, ...);
-
-/* Extern aus ALLG */
-
-extern void Mgraf_mouse(int type);
-
+static void down_cnt(int ord, char *aktion, char *path);
 
 
 /****************************************************************
@@ -47,18 +31,18 @@ int disk_type(int drvnr)
 
 	drvnr += 'A';
 	for	(i = 0; i < n_icons; i++)
+	{
+		if (icon[i].isdisk == drvnr)
 		{
-		if	(icon[i].isdisk == drvnr)
-			{
 			switch(icon[i].icontyp)
-				{
-				case I_FLPDSK: return('FD');
-				case I_HRDDSK: return('HD');
-				case I_RAMDSK: return('RD');
-				}
+			{
+				case I_FLPDSK: return 'FD';
+				case I_HRDDSK: return 'HD';
+				case I_RAMDSK: return 'RD';
 			}
 		}
-	return('\0\0');		/* undefiniert */
+	}
+	return '\0\0';		/* undefiniert */
 }
 
 
@@ -68,18 +52,19 @@ int disk_type(int drvnr)
 *
 *********************************************************************/
 
-int qbreak( void )
+int qbreak(void)
 {
-	if	((Kbshift(-1) & (K_LSHIFT | K_RSHIFT)) == (K_LSHIFT | K_RSHIFT))
-		{
+	if ((Kbshift(-1) & (K_LSHIFT | K_RSHIFT)) == (K_LSHIFT | K_RSHIFT))
+	{
 #if		COUNTRY==FRG
-		if	(1 == form_alert(1, "[1][Vorgang abbrechen ?][  JA  | NEIN ]"))
+		if (1 == form_alert(1, "[1][Vorgang abbrechen ?][  JA  | NEIN ]"))
 #elif	COUNTRY==USA
-		if	(1 == form_alert(1, "[1][Stop process ?][  YES  | NO ]"))
+		if (1 == form_alert(1, "[1][Stop process ?][  YES  | NO ]"))
 #endif
-			return(TRUE);
-		}
-	return(FALSE);
+			return TRUE;
+	}
+
+	return FALSE;
 }
 
 
@@ -91,13 +76,13 @@ int qbreak( void )
 
 void set_dirty(long err, char *path, char val)
 {
-	if	(err != EWRPRO && err != EDRIVE && err != EFILNF &&
+	if (err != EWRPRO && err != EDRIVE && err != EFILNF &&
 	 	 err != EPTHNF && err != EACCDN)
-	 	{
-	 	if	(dirty_drives[path[0] - 'A'] == 1)
+	 {
+	 	if (dirty_drives[path[0] - 'A'] == 1)
 	 		return;		/* schon "dirty" */
 		dirty_drives[path[0] - 'A'] = val;
-		}
+	}
 }
 
 
@@ -118,12 +103,15 @@ long read_dname(int lw, char *name)
 	Fsetdta(&dta);
 	path[0] = lw + 'A';
 	strcpy(path+1, ":\\*.*");
+
 	doserr = Fsfirst(path, F_VOLUME);
-	if	(doserr != E_OK)
+	if (doserr != E_OK)
 		*name = EOS;
-	else strcpy(name, dta.d_fname);
+	else
+		strcpy(name, dta.d_fname);
+
 	Fsetdta(olddta);
-	return(doserr);
+	return doserr;
 }
 
 
@@ -140,7 +128,7 @@ long GFdelete(char *path, char *name)
 
 
 	strcpy(all,path);
-	if	(name)
+	if (name)
 		strcat(all,name);
 #if		COUNTRY==FRG
 	down_cnt(2, "lîsche Datei", all);
@@ -150,7 +138,7 @@ long GFdelete(char *path, char *name)
 	doserr = Fdelete(all);
 	set_dirty(doserr, path, 1);
 	err_file = all;
-	return(err_alert(doserr));
+	return err_alert(doserr);
 }
 
 
@@ -164,11 +152,10 @@ long GDdelete(char *path, char *name)
 {
 	char all[128];
 	long doserr;
-	extern void free_drive(int drv);
 
 
 	strcpy(all,path);
-	if	(name)
+	if (name)
 		strcat(all,name);
 #if		COUNTRY==FRG
 	down_cnt(2, "lîsche Ordner", all);
@@ -176,16 +163,19 @@ long GDdelete(char *path, char *name)
 	down_cnt(2, "deleting folder", all);
 #endif
 	doserr = Ddelete(all);
-	if	(doserr == EACCDN || doserr == ENSMEM)
-		{
+	if (doserr == EACCDN || doserr == ENSMEM)
+	{
 		free_drive(path[0] - 'A');	/* GEMDOS- Speicher freigeben */
 		doserr = Ddelete(all);		/* und nochmal versuchen */
-		}
-	if	(doserr == ENSMEM)			/* Fehler von KAOS 1.2 */
+	}
+
+	if (doserr == ENSMEM)			/* Fehler von KAOS 1.2 */
 		doserr = EACCDN;
+
 	set_dirty(doserr, path, 1);
 	err_file = all;
-	return(err_alert(doserr));
+
+	return err_alert(doserr);
 }
 
 
@@ -205,22 +195,21 @@ static long does_exist(char *all, DTA *file)
 	long doserr;
 
 
-	if	(status.mode_ovwr == OVERWRITE)
-		return(EFILNF);
+	if (status.mode_ovwr == OVERWRITE)
+		return EFILNF;
 
 	Fsetdta(&dta);
 	doserr = Fsfirst(all, 0x37);
-	if	(doserr == E_OK && status.mode_ovwr == BACKUP)
-		{
-		if	( (file->d_date  > dta.d_date) ||
-			 ((file->d_date == dta.d_date) && (file->d_time > dta.d_time))
-			)
+	if (doserr == E_OK && status.mode_ovwr == BACKUP)
+	{
+		if ((file->d_date > dta.d_date) ||
+			 ((file->d_date == dta.d_date) && (file->d_time > dta.d_time)))
 		doserr = EFILNF;	/* Ñltere Datei: Åberbraten */
-		}
-	if	(doserr == E_OK)
+	}
+	if (doserr == E_OK)
 		doserr = EACCDN;
 
-	return(doserr);
+	return doserr;
 }
 
 /*********************************************************************
@@ -242,54 +231,60 @@ long GFcreate(char *path, DTA *file)
 	unsigned int attr;
 	int ret, do_redraw;
 	char query = (status.mode_ovwr != OVERWRITE);
-	extern int dial_datexi(char *name, int move_flag, int *do_redraw);
 
 
 	attr = file->d_attrib;
 	attr &= ~F_RDONLY;
-	do	{
+	do
+	{
 		strcpy(all, path);
 		strcat(all, file->d_fname);
-		if	(query)
-			{
+		if (query)
+		{
 			query = FALSE;
 			/* prÅfen, ob Datei schon existiert */
 			doserr = does_exist(all, file);
 			/* ernste Diskettenfehler: sofort abbrechen */
-			if	(doserr != EACCDN && doserr != EFILNF)
-				{
-				err_file = all;
-				return(err_alert(doserr));
-				}
-			/* Datei ist schon gesichert, Åberspringen */
-			if	(doserr == EACCDN && status.mode_ovwr == BACKUP)
-				return(E_OK);
-			if	(doserr == EFILNF)
-				doserr = Fcreate(all, attr);
-			}
-		else doserr = Fcreate(all, attr);
-		if	(doserr == EACCDN)
+			if (doserr != EACCDN && doserr != EFILNF)
 			{
+				err_file = all;
+				return err_alert(doserr);
+			}
+
+			/* Datei ist schon gesichert, Åberspringen */
+			if (doserr == EACCDN && status.mode_ovwr == BACKUP)
+				return E_OK;
+
+			if (doserr == EFILNF)
+				doserr = Fcreate(all, attr);
+		}
+		else
+			doserr = Fcreate(all, attr);
+
+		if (doserr == EACCDN)
+		{
 			strcpy(oldname, file->d_fname);
 			ret = dial_datexi(file->d_fname, _move_flag, &do_redraw);
-			if	(strcmp(file->d_fname, oldname))
+			if (strcmp(file->d_fname, oldname))
 				query = TRUE;
-			if	(do_redraw)
+			if (do_redraw)
 				down_cnt(-1, NULL, NULL);
-			if	(ret == 0)		/* öberspringen */
-				return(E_OK);
-			if	(ret < 0)			/* Abbruch */
-				return(EBREAK);
-			}
+			if (ret == 0)		/* öberspringen */
+				return E_OK;
+			if (ret < 0)			/* Abbruch */
+				return EBREAK;
 		}
-	while(doserr == EACCDN);
+	}
+	while (doserr == EACCDN);
+
 	set_dirty(doserr, path, 1);
-	if	(doserr < E_OK)
-		{
+	if (doserr < E_OK)
+	{
 		err_file = all;
 		err_alert(doserr);
-		}
-	return(doserr);
+	}
+
+	return doserr;
 }
 
 
@@ -306,7 +301,6 @@ long GFrename(char *path, DTA *srcfile, char *zpath)
 	long doserr;
 	int ret, do_redraw;
 	char query = status.mode_ovwr;
-	extern int dial_datexi(char *name, int move_flag, int *do_redraw);
 
 
 	strcpy(alls, path);
@@ -316,55 +310,60 @@ long GFrename(char *path, DTA *srcfile, char *zpath)
 #elif	COUNTRY==USA
 	down_cnt(2, "moving file", alls);
 #endif
-	do	{
+	do
+	{
 		strcpy(alld, zpath);
 		strcat(alld, srcfile->d_fname);
 		doserr = Frename(0, alls, alld);
-		if	(doserr == EACCDN && query != OVERWRITE)
-			{
+		if (doserr == EACCDN && query != OVERWRITE)
+		{
 			doserr = does_exist(alld, srcfile);
 			/* Datei schon gesichert: nur lîschen */
-			if	(doserr == EACCDN && status.mode_ovwr == BACKUP)
-				return(Fdelete(alls));
-			if	(doserr == EFILNF)
-				{
+			if (doserr == EACCDN && status.mode_ovwr == BACKUP)
+				return Fdelete(alls);
+			if (doserr == EFILNF)
+			{
 				doserr = EACCDN;
 				query = OVERWRITE;
-				}
-			}
-		if	(doserr == EACCDN && query == OVERWRITE)
-			{
-			doserr = Fdelete(alld);
-			set_dirty(doserr, alld, 1);
-			if	(doserr != E_OK && doserr != EACCDN)
-				{
-				err_file = alld;
-				return(err_alert(doserr));
-				}
-			if	(doserr == E_OK)
-				doserr = Frename(0, alls, alld);
-			set_dirty(doserr, alld, 1);
-			}
-		else set_dirty(doserr, alld, 2);
-		query = FALSE;
-		if	(doserr == EACCDN)
-			{
-			strcpy(oldname, srcfile->d_fname);
-			ret = dial_datexi(srcfile->d_fname, TRUE, &do_redraw);
-			if	(strcmp(srcfile->d_fname, oldname))
-				query = TRUE;
-			if	(do_redraw)
-				down_cnt(-1, NULL, NULL);
-			if	(ret == 0)		/* öberspringen */
-				return(E_OK);
-			if	(ret < 0)			/* Abbruch */
-				return(doserr);
 			}
 		}
-	while(doserr == EACCDN);
+
+		if (doserr == EACCDN && query == OVERWRITE)
+		{
+			doserr = Fdelete(alld);
+			set_dirty(doserr, alld, 1);
+			if (doserr != E_OK && doserr != EACCDN)
+			{
+				err_file = alld;
+				return err_alert(doserr);
+			}
+
+			if (doserr == E_OK)
+				doserr = Frename(0, alls, alld);
+			set_dirty(doserr, alld, 1);
+		}
+		else
+			set_dirty(doserr, alld, 2);
+
+		query = FALSE;
+		if (doserr == EACCDN)
+		{
+			strcpy(oldname, srcfile->d_fname);
+			ret = dial_datexi(srcfile->d_fname, TRUE, &do_redraw);
+			if (strcmp(srcfile->d_fname, oldname))
+				query = TRUE;
+			if (do_redraw)
+				down_cnt(-1, NULL, NULL);
+			if (ret == 0)		/* öberspringen */
+				return E_OK;
+			if (ret < 0)			/* Abbruch */
+				return doserr;
+		}
+	}
+	while (doserr == EACCDN);
 
 	err_file = alls;
-	return(err_alert(doserr));
+	return err_alert(doserr);
 }
 
 
@@ -387,15 +386,18 @@ long GFcopy(char *path, DTA *srcfile, char *zpath)
 	/* Speicher holen, Quellpfad zusammenstellen */
 	/* ----------------------------------------- */
 
-	if	(qbreak())
-		return(EBREAK);
+	if (qbreak())
+		return EBREAK;
+
 	bsize = _bsize;
-	if	(bsize <= 0L)
+	if (bsize <= 0L)
 		bsize = (long) Malloc(-1L) - 4096L;
-	if	(bsize > 65536L && status.use_fldl)
+
+	if (bsize > 65536L && status.use_fldl)
 		bsize -= 32768L;		/* Platz fÅr FlyDials */
-	if	(bsize < 4096L || (NULL == (buf = Malloc(bsize))))
-		return(err_alert(ENSMEM));
+
+	if (bsize < 4096L || (NULL == (buf = Malloc(bsize))))
+		return err_alert(ENSMEM);
 
 	dhdl = shdl = -1;			/* Dateien sind noch nicht geîffnet */
 
@@ -405,60 +407,61 @@ long GFcopy(char *path, DTA *srcfile, char *zpath)
 	/* Kopierschleife */
 	/* -------------- */
 
-	do	{
-		if	(qbreak())
-			{
+	do
+	{
+		if (qbreak())
+		{
 			abbruch:
 			doserr = EBREAK;
 			break;
-			}
+		}
 
 		/* Im Backupmodus wird erst die Zieldatei geîffnet */
 		/* ----------------------------------------------- */
 
-		if	(dhdl < 0 && status.mode_ovwr == BACKUP)
+		if (dhdl < 0 && status.mode_ovwr == BACKUP)
 			lbytes = 0L;
 
 		/* Ansonsten die Quelldatei gelesen und ggf. geîffnet */
 		/* -------------------------------------------------  */
 
-		else	{
+		else{
 #if		COUNTRY==FRG
 			down_cnt(2, "lese Datei", alls);
 #elif	COUNTRY==USA
 			down_cnt(2, "reading file", alls);
 #endif
-			if	(shdl < 0)
-				{
+			if (shdl < 0)
+			{
 				doserr = Fopen(alls, RMODE_RD);
-				if	(((int) doserr) == -4)	/* NUL: */
+				if (((int) doserr) == -4)	/* NUL: */
 					doserr = EACCDN;
-				if	(doserr < E_OK)
+				if (doserr < E_OK)
 					goto source_error;
 				shdl = (int) doserr;
-				}
+			}
 			doserr = Fread(shdl, bsize, buf);
-			if	(doserr < E_OK)
-				{
+			if (doserr < E_OK)
+			{
 				source_error:
 				err_file = alls;
 				break;			/* Fehler beim Lesen */
-				}
-			if	(doserr >= E_OK && doserr < bsize)
-				{
+			}
+			if (doserr >= E_OK && doserr < bsize)
+			{
 				Fclose(shdl);
 				shdl = -2;			/* Flag fÅr das Ende */
-				}
-			if	(qbreak())
+			}
+			if (qbreak())
 				goto abbruch;
 			lbytes = doserr;			/* soviele Bytes sind gelesen */
-			}
+		}
 
 		/* Die Zieldatei wird geîffnet */
 		/* --------------------------- */
 
-		if	(dhdl < 0)
-			{
+		if (dhdl < 0)
+		{
 			strcpy(alld, zpath);
 			strcat(alld, srcfile->d_fname);
 #if		COUNTRY==FRG
@@ -469,52 +472,52 @@ long GFcopy(char *path, DTA *srcfile, char *zpath)
 			doserr = GFcreate(zpath, srcfile);
 			strcpy(alld, zpath);
 			strcat(alld, srcfile->d_fname);	/* Name ggf. geÑndert */
-			if	(doserr <= E_OK)	/* < 0: Fehler oder Abbruch */
+			if (doserr <= E_OK)	/* < 0: Fehler oder Abbruch */
 				break;			/* = 0: öberspringen 	   */
 			dhdl = (int) doserr;
-			}
+		}
 
 		/* <lbytes> gelesene Bytes werden geschrieben */
 		/* ------------------------------------------ */
 
-		if	(lbytes)
-			{
+		if (lbytes)
+		{
 #if		COUNTRY==FRG
 			down_cnt(2, "schreibe Datei", alld);
 #elif	COUNTRY==USA
 			down_cnt(2, "writing file", alld);
 #endif
 			doserr = Fwrite(dhdl, lbytes, buf);
-			if	(doserr < E_OK)
+			if (doserr < E_OK)
 				err_file = alld;
-			if	(doserr >= 0L && doserr < lbytes)
-				{
+			if (doserr >= 0L && doserr < lbytes)
+			{
 #if		COUNTRY==FRG
 				form_alert(1, "[3][Zieldisk voll!][Abbruch]");
 #elif	COUNTRY==USA
 				form_alert(1, "[3][Destination disk full!][Abort]");
 #endif
 				doserr = -1L;
-				}
 			}
 		}
-	while(shdl != -2 && doserr >= E_OK);
+	}
+	while (shdl != -2 && doserr >= E_OK);
 
-	if	(doserr > E_OK)
+	if (doserr > E_OK)
 		doserr = E_OK;
-	if	(shdl > 0)
+	if (shdl > 0)
 		Fclose(shdl);
-	if	(dhdl > 0)
-		{
+	if (dhdl > 0)
+	{
 		Fdatime((DOSTIME *) &(srcfile->d_time), dhdl, RMODE_WR);
 		Fclose(dhdl);
-		}
-	if	(dhdl > 0 && doserr != E_OK && doserr != EWRPRO && doserr != EDRVNR)
+	}
+	if (dhdl > 0 && doserr != E_OK && doserr != EWRPRO && doserr != EDRVNR)
 		Fdelete(alld);
 	Mfree(buf);
-	if	(err_file)
+	if (err_file)
 		err_alert(doserr);
-	return(doserr);
+	return doserr;
 }
 
 
@@ -530,10 +533,10 @@ long GDcreate(char *path, char *name)
 	char	all[128];
 	long doserr;
 	int ret, do_redraw;
-	extern int dial_ordexi(char *name, int *do_redraw);
 
 
-	do	{
+	do
+	{
 		strcpy(all, path);
 		strcat(all, name);
 #if		COUNTRY==FRG
@@ -542,23 +545,27 @@ long GDcreate(char *path, char *name)
 		down_cnt(2, "creating folder", all);
 #endif
 		doserr = Dcreate(all);
-		if	(doserr == EACCDN)
-			{
-			if	(status.mode_ovwr == BACKUP)
-				return(E_OK);		/* Bei BACKUP immer benutzen */
+		if (doserr == EACCDN)
+		{
+			if (status.mode_ovwr == BACKUP)
+				return E_OK;		/* Bei BACKUP immer benutzen */
+
 			ret = dial_ordexi(name, &do_redraw);
-			if	(do_redraw)
+			if (do_redraw)
 				down_cnt(-1, NULL, NULL);
-			if	(ret == 0)		/* Benutzen */
-				return(E_OK);
-			if	(ret < 0)			/* Abbruch */
-				return(EBREAK);
-			}
+
+			if (ret == 0)		/* Benutzen */
+				return E_OK;
+
+			if (ret < 0)			/* Abbruch */
+				return EBREAK;
 		}
-	while(doserr == EACCDN);
+	}
+	while (doserr == EACCDN);
+
 	set_dirty(doserr, path, 1);
 	err_file = all;
-	return(err_alert(doserr));
+	return err_alert(doserr);
 }
 
 
@@ -572,16 +579,16 @@ long GDcreate(char *path, char *name)
 *********************************************************************/
 
 static long _nbytes,_hbytes;
-static int  _nfiles,_hfiles,_folders;
+static int _nfiles,_hfiles,_folders;
 static long (*_before)(char *path, DTA *file);
 static long (*_after) (char *path, DTA *file);
-static int  depth, _attr_msk;
+static int depth, _attr_msk;
 static long _clsize, _clusters;
 static char *_path;
 static char *_mask;
 
 
-static long _walk_path( void )
+long _walk_path(void)
 {
 	DTA	dta;
 	int	dirlen;			/* Anzahl EintrÑge in diesem Verzeichnis */
@@ -592,93 +599,103 @@ static long _walk_path( void )
 	errcode = strlen(_path);
 	endp = _path + errcode;
 	depth++;
-	if	(depth > 8 || errcode > 116)
-		{
+	if (depth > 8 || errcode > 116)
+	{
 		err_alert(EPTHOV);
 		depth--;
-		return(E_OK);
-		}
-	if	(qbreak())
-		return(EBREAK);
+		return E_OK;
+	}
+
+	if (qbreak())
+		return EBREAK;
+
 	Fsetdta(&dta);
 	strcpy(endp, _mask);
 	dirlen = 0;
 	errcode = Fsfirst(_path, _attr_msk);
-	while(errcode == E_OK)
+	while (errcode == E_OK)
+	{
+		if (qbreak())
+			return EBREAK;
+
+		if (dta.d_fname[0] == '.')
 		{
-		if	(qbreak())
-			return(EBREAK);
-		if	(dta.d_fname[0] == '.')
-			{
-			if	(dta.d_fname[1] == '.' || dta.d_fname[1] == EOS)
+			if (dta.d_fname[1] == '.' || dta.d_fname[1] == EOS)
 				goto next;
-			}
+		}
 
-		if	(_before != NULL)
-			{
+		if (_before != NULL)
+		{
 			*endp = EOS;
-			if	(E_OK != (errcode = _before(_path, &dta)))
-				return(errcode);
-			}
+			if (E_OK != (errcode = _before(_path, &dta)))
+				return errcode;
+		}
 
-		if	(dta.d_attrib & F_SUBDIR)
-			{
+		if (dta.d_attrib & F_SUBDIR)
+		{
 			_folders++;
 			strcpy(endp, dta.d_fname);
 			strcat(endp, "\\");
 			errcode = _walk_path();	/* REKURSION */
 			*endp = EOS;
-			if	(errcode)
-				return(errcode);
-			}
-		else {
-			if	(dta.d_attrib & (F_HIDDEN | F_SYSTEM))
-				{
+			if (errcode)
+				return errcode;
+		}
+		else
+		{
+			if (dta.d_attrib & (F_HIDDEN | F_SYSTEM))
+			{
 				_hfiles++;
 				_hbytes += dta.d_length;
-				}
-			else {
+			}
+			else
+			{
 				_nfiles++;
 				_nbytes += dta.d_length;
-				}
-			if	(_clsize)
-				{
-				_clusters += dta.d_length/_clsize;
-				if	(dta.d_length % _clsize)
-					_clusters++;	/* auf ganze Cluster aufrunden */
-				}
 			}
 
-		if	(errcode == E_OK && _after != NULL)
+			if (_clsize)
 			{
+				_clusters += dta.d_length/_clsize;
+				if (dta.d_length % _clsize)
+					_clusters++;	/* auf ganze Cluster aufrunden */
+			}
+		}
+
+		if (errcode == E_OK && _after != NULL)
+		{
 			*endp = EOS;
-			if	(E_OK != (errcode = _after(_path, &dta)))
-				return(errcode);
-			}			/* "User break" */
+			if (E_OK != (errcode = _after(_path, &dta)))
+				return errcode;
+		}			/* "User break" */
 
 		next:
 		dirlen++;
-		if	(qbreak())
-			return(EBREAK);
-		if	(errcode == E_OK)
-			{
+		if (qbreak())
+			return EBREAK;
+		if (errcode == E_OK)
+		{
 			Fsetdta(&dta);
 			errcode = Fsnext();
-			}
-		} /* ENDWHILE */
+		}
+	} /* ENDWHILE */
+
 	depth--;
-	if	(_clsize && endp > _path+3)		/* nicht Root */
-		{
+
+	if (_clsize && endp > _path+3)		/* nicht Root */
+	{
 		long dirn;
 
 		dirn = dirlen << 5;			/* 32 Bytes pro Eintrag */
 		_clusters += dirn/_clsize;
-		if	(dirn % _clsize)
+		if (dirn % _clsize)
 			_clusters++;
-		}
-	if	(errcode == EFILNF || errcode == ENMFIL)
+	}
+
+	if (errcode == EFILNF || errcode == ENMFIL)
 		errcode = E_OK;
-	return(err_alert(errcode));
+
+	return err_alert(errcode);
 }
 
 long walk_path(char *path, long *clusters, long *nbytes,
@@ -696,7 +713,7 @@ long walk_path(char *path, long *clusters, long *nbytes,
 	_before	= before;
 	_after	= after;
 	_attr_msk = attr_msk;
-	_clsize   = clsize;
+	_clsize = clsize;
 	_path = path;
 	_mask = "*.*";
 	cache_on(path);
@@ -708,7 +725,7 @@ long walk_path(char *path, long *clusters, long *nbytes,
 	*folders  = _folders;		/* Anzahl Ordner */
 	*nfiles   = _nfiles;		/* Anzahl normale Dateien */
 	*hfiles   = _hfiles;		/* Anzahl versteckte Dateien */
-	return(errcode);
+	return errcode;
 }
 
 
@@ -729,65 +746,67 @@ static long err;
 static long n_clu,n_siz;
 static int  n_dat,n_ord;
 static int  is_cpmvdl = FALSE;
-static int cx, cy, cw, ch;
+static GRECT cg;
 static void *cnf_flyinf;
 
-void end_confirm( void )
+void end_confirm(void)
 {
-	if	(is_cpmvdl)
-		{
-		form_xdial(FMD_FINISH, 0,0,0,0, cx, cy, cw, ch, &cnf_flyinf);
+	if (is_cpmvdl)
+	{
+		form_xdial(FMD_FINISH, NULL, &cg, &cnf_flyinf);
 		is_cpmvdl = FALSE;
-		}
+	}
 }
 
-static void down_cnt( int ord, char *aktion, char *path )
+static void down_cnt(int ord, char *aktion, char *path)
 {
-			int  obj,cnt;
-	extern	char *get_name(char *path);
-	extern	void subobj_draw(OBJECT *tree, int obj, int n, char *s);
+	int  obj, cnt;
 
 
-	if	(!is_cpmvdl)
+	if (!is_cpmvdl)
 		return;
-	if	(ord == -1)
-		{
-		objc_draw(adr_cpmvdl, ROOT, MAX_DEPTH, cx, cy, cw, ch);
+	if (ord == -1)
+	{
+		objc_draw(adr_cpmvdl, ROOT, MAX_DEPTH, &cg);
 		return;
-		}
-	if	(ord == 2)
-		{
+	}
+	if (ord == 2)
+	{
 		char *s,*t;
 
 		s = (adr_cpmvdl+CPMVD_DT)->ob_spec.free_string;
 		t = get_name(path);
-		if	(*path != *s || s[1] != ':' || strcmp(s+2, t))
-			{
+		if (*path != *s || s[1] != ':' || strcmp(s+2, t))
+		{
 			*s++ = *path;			/* Laufwerk */
 			*s++ = ':';
 			strcpy(s, t);
 			subobj_draw(adr_cpmvdl, CPMVD_DT, -1, NULL);
-			}
+		}
 		s = (adr_cpmvdl+CPMVD_AK)->ob_spec.free_string;
-		if	(strcmp(s, aktion))
+		if (strcmp(s, aktion))
 			subobj_draw(adr_cpmvdl, CPMVD_AK, -1, aktion);
 		return;
-		}
+	}
 
-	if	(ord >= 0)
+	if (ord >= 0)
+	{
+		if (ord)
 		{
-		if	(ord)
-			{
 			obj = CPMVDL_O;
 			cnt = --n_ord;
-			}
-		else {
+		}
+		else
+		{
 			obj = CPMVDL_D;
 			cnt = --n_dat;
-			}
-		subobj_draw(adr_cpmvdl, obj, cnt, NULL);
 		}
+
+		subobj_draw(adr_cpmvdl, obj, cnt, NULL);
+	}
 }
+
+
 /* #include <stdio.h> */
 static int info_obj(int wnr, int obj)
 {
@@ -796,52 +815,56 @@ static int info_obj(int wnr, int obj)
 	DTA	dta;
 	long clusters;
 	long dummy;
-	int  folders,nfiles,hfiles,ret;
-	extern int obj_to_path(int wnr, int obj, char *path, MYDTA **f);
+	int folders,nfiles,hfiles,ret;
 
 
-	if	(0 > (ret = obj_to_path(wnr, obj, path, &f)))
-		return(0);
-	if	(ret == 0)		/* Datei */
-		{
+	if (0 > (ret = obj_to_path(wnr, obj, path, &f)))
+		return 0;
+
+	if (ret == 0)		/* Datei */
+	{
 		n_dat++;
-		if	(n_siz)
+		if (n_siz)
+		{
+			if (f)			/* Datei im Fenster */
 			{
-			if	(f)			/* Datei im Fenster */
-				{
 				clusters = f->filesize / n_siz;
-				if	(f->filesize % n_siz)
+				if (f->filesize % n_siz)
 					clusters++;
-				}
-			else	{			/* Datei auf dem Desktop */
+			}
+			else
+			{			/* Datei auf dem Desktop */
 				Mgraf_mouse(HOURGLASS);
 				Fsetdta(&dta);
 				err = Fsfirst(path, 0x37);
 				Mgraf_mouse(ARROW);
-				if	(err != E_OK)
-					{
+
+				if (err != E_OK)
+				{
 					err_alert(err);
-					return((int) err);
-					}
-				clusters = dta.d_length / n_siz;
-				if	(dta.d_length % n_siz)
-					clusters++;
+					return (int) err;
 				}
+
+				clusters = dta.d_length / n_siz;
+				if (dta.d_length % n_siz)
+					clusters++;
 			}
 		}
-	else {
-		if	(path[3])		/* Ordner */
+	}
+	else
+	{
+		if (path[3])		/* Ordner */
 			n_ord++;
 		err = walk_path(path, &clusters, &dummy, &dummy,&folders,
 					 &nfiles, &hfiles, 0x37, n_siz, 0L, 0L);
 		n_dat += nfiles+hfiles;
 		n_ord += folders;
-		}
+	}
 /*	printf("%ld ",clusters); */
 	/* Verschieben auf demselben Laufwerk benîtigt keinen Speicher */
-	if	((!_move_flag) || (path[0] != _zielpath[0]))
+	if ((!_move_flag) || (path[0] != _zielpath[0]))
 		n_clu += clusters;
-	return((int) err);
+	return (int) err;
 }
 
 
@@ -864,88 +887,106 @@ static int info_obj(int wnr, int obj)
 
 long confirm(int wnr, int function, int ja, char *zielpfad)
 {
-	extern int walk_sel(int wnr, int (*tue)(int wnr, int obj));
 	int exitbutton,dst_drive,dummy;
 	long st;
-	char	*titel,*titelobj;
+	char *titel,*titelobj;
 
 
-	if	(!ja)
-		{
+	if (!ja)
+	{
 		is_cpmvdl = FALSE;
-		return(E_OK);
-		}
+		return E_OK;
+	}
+
 	dst_drive = zielpfad[0] - 'A';
+
 	/* Nur Speicherplatz prÅfen, wenn gewÅnscht */
-	if	(!status.check_free)
+
+	if (!status.check_free)
 		dst_drive = -1;
+
 	/* Bytes pro Cluster merken */
-	if	(dst_drive >= 0)
+	if (dst_drive >= 0)
+	{
+		if (!dinfo[dst_drive].b_clsiz || Mediach(dst_drive))
 		{
-		if	(!dinfo[dst_drive].b_clsiz || Mediach(dst_drive))
-			{
 			Mgraf_mouse(HOURGLASS);
 			st = Dfree(&dinfo[dst_drive], dst_drive+1);
 			Mgraf_mouse(ARROW);
-			if	(st)
-				return(st);
-			}
-		n_siz = dinfo[dst_drive].b_secsiz * dinfo[dst_drive].b_clsiz;
+			if (st)
+				return st;
 		}
-	else n_siz = 0L;
+		n_siz = dinfo[dst_drive].b_secsiz * dinfo[dst_drive].b_clsiz;
+	}
+	else
+		n_siz = 0L;
+
 	is_cpmvdl = TRUE;
 	_zielpath = zielpfad;
 	_move_flag = FALSE;
 	switch(function)
-		{
+	{
+		case 0:
 #if		COUNTRY==FRG
-		case 0: titel = "Lîsche";
+			titel = "Lîsche";
 #elif	COUNTRY==USA
-		case 0: titel = "Delete";
+			titel = "Delete";
 #endif
-					 objs_hide(adr_cpmvdl, CPMVD_MD, 0);
-					 break;
+			objs_hide(adr_cpmvdl, CPMVD_MD, 0);
+			break;
+
+		case 1:
 #if		COUNTRY==FRG
-		case 1: titel = "Kopiere"; goto unhide;
+			titel = "Kopiere";
 #elif	COUNTRY==USA
-		case 1: titel = "Copy"; goto unhide;
+			titel = "Copy";
 #endif
+			goto unhide;
+
+		case 2:
 #if		COUNTRY==FRG
-		case 2: titel = "Verschiebe";
+			titel = "Verschiebe";
 #elif	COUNTRY==USA
-		case 2: titel = "Move";
+			titel = "Move";
 #endif
-					 _move_flag = TRUE;
-					 unhide:
-					 objs_unhide(adr_cpmvdl, CPMVD_MD, 0);
-					 ob_sel_dsel(adr_cpmvdl, CPMVD_KB, status.mode_ovwr == CONFIRM);
-					 ob_sel_dsel(adr_cpmvdl, CPMVD_KA, status.mode_ovwr == BACKUP);
-					 ob_sel_dsel(adr_cpmvdl, CPMVD_KU, status.mode_ovwr == OVERWRITE);
-					 break;
-		}
+			_move_flag = TRUE;
+			unhide:
+			objs_unhide(adr_cpmvdl, CPMVD_MD, 0);
+			ob_sel_dsel(adr_cpmvdl, CPMVD_KB, status.mode_ovwr == CONFIRM);
+			ob_sel_dsel(adr_cpmvdl, CPMVD_KA, status.mode_ovwr == BACKUP);
+			ob_sel_dsel(adr_cpmvdl, CPMVD_KU, status.mode_ovwr == OVERWRITE);
+			break;
+	}
+
 	(adr_cpmvdl+CPMVD_AK)->ob_spec.free_string[0] = EOS;
 	(adr_cpmvdl+CPMVD_DT)->ob_spec.free_string[0] = EOS;
 	(adr_cpmvdl+CPMVDL_B)->ob_spec.free_string[0] = EOS;
+
 	n_dat = n_ord = 0;
 	n_clu = 0L;
 	Mgraf_mouse(HOURGLASS);
 	err = E_OK;
 	walk_sel(wnr, info_obj);			/* Dateien zusammensuchen */
 	Mgraf_mouse(ARROW);
-	if	(err)
-		{
+
+	if (err)
+	{
 		is_cpmvdl = FALSE;
-		return(err);
-		}
-	if	(n_dat == 0 && n_ord == 0)
-		{
+		return err;
+	}
+
+	if (n_dat == 0 && n_ord == 0)
+	{
 		is_cpmvdl = FALSE;
-		return(1);
-		}
+		return 1;
+	}
+
 	ultoa(n_dat, (adr_cpmvdl+CPMVDL_D)->ob_spec.free_string, 10);
 	ultoa(n_ord, (adr_cpmvdl+CPMVDL_O)->ob_spec.free_string, 10);
-	if	(n_siz)
+
+	if (n_siz)
 		ultoa((n_clu*n_siz)/1024L, (adr_cpmvdl+CPMVDL_B)->ob_spec.free_string, 10);
+
 	titelobj = (adr_cpmvdl+CPMVDL_T)->ob_spec.free_string;
 	strcpy(titelobj, titel);
 #if		COUNTRY==FRG
@@ -953,36 +994,41 @@ long confirm(int wnr, int function, int ja, char *zielpfad)
 #elif	COUNTRY==USA
 	strcat(titelobj, " Files");
 #endif
-	form_center(adr_cpmvdl, &cx, &cy, &cw, &ch);
+	form_center(adr_cpmvdl, &cg);
 	cnf_flyinf = NULL;
-	form_xdial(FMD_START, 0,0,0,0, cx, cy, cw, ch,
-		      (status.use_fldl) ? &cnf_flyinf : NULL);
-	objc_draw(adr_cpmvdl, ROOT, MAX_DEPTH, cx, cy, cw, ch);
+	form_xdial(FMD_START, NULL, &cg, (status.use_fldl) ? &cnf_flyinf : NULL);
+	objc_draw(adr_cpmvdl, ROOT, MAX_DEPTH, &cg);
 	exitbutton = 0x7f & form_xdo(adr_cpmvdl, 0, &dummy, NULL, cnf_flyinf);
 	ob_dsel(adr_cpmvdl, exitbutton);
-	if	(exitbutton != CPMVD_OK)
-		return(1);				/* Abbruch */
-	if	(function == 1 || function == 2)
-		{
-		if		(selected(adr_cpmvdl, CPMVD_KB))
-				status.mode_ovwr = CONFIRM;
-		else if	(selected(adr_cpmvdl, CPMVD_KA))
-				status.mode_ovwr = BACKUP;
-		else		status.mode_ovwr = OVERWRITE;
-		}
-	if	(function > 0 && dst_drive >= 0 &&
+
+	if (exitbutton != CPMVD_OK)
+		return 1;				/* Abbruch */
+
+	if (function == 1 || function == 2)
+	{
+		if (selected(adr_cpmvdl, CPMVD_KB))
+			status.mode_ovwr = CONFIRM;
+		else
+		if (selected(adr_cpmvdl, CPMVD_KA))
+			status.mode_ovwr = BACKUP;
+		else
+			status.mode_ovwr = OVERWRITE;
+	}
+
+	if (function > 0 && dst_drive >= 0 &&
 		 n_clu > dinfo[dst_drive].b_free && status.mode_ovwr != BACKUP)
-		{
+	{
 #if		COUNTRY==FRG
-		if	(2 == form_alert(2, "[2][Zuwenig Platz auf dem|Ziellaufwerk!]"
+		if (2 == form_alert(2, "[2][Zuwenig Platz auf dem|Ziellaufwerk!]"
 						"[OK|Abbruch]"))
 #elif	COUNTRY==USA
-		if	(2 == form_alert(2, "[2][Insufficient free space at|destination disk!]"
+		if (2 == form_alert(2, "[2][Insufficient free space at|destination disk!]"
 						"[OK|Cancel]"))
 #endif
 			err = EBREAK;
-		}
-	return(err);
+	}
+
+	return err;
 }
 
 
@@ -998,16 +1044,17 @@ static long after_delete(char *path, DTA *file)
 	long doserr;
 
 
-	if	((file->d_attrib) & F_SUBDIR)
-		{
+	if ((file->d_attrib) & F_SUBDIR)
+	{
 		doserr = GDdelete(path, file->d_fname);
 		down_cnt(1, NULL, NULL);
-		}
-	else	{
+	}
+	else
+	{
 		doserr = GFdelete(path, file->d_fname);
 		down_cnt(0, NULL, NULL);
-		}
-	return(doserr);
+	}
+	return doserr;
 }
 
 
@@ -1018,27 +1065,30 @@ static long after_delete(char *path, DTA *file)
 *
 *********************************************************************/
 
-int delete(char *path, int ispath)
+int delete_files(char *path, int ispath)
 {
-	long dummy,doserr;
-	int  idummy;
+	long dummy, doserr;
+	int idummy;
 	char *endp = path + strlen(path);
 
-	if	(ispath)
-		{
+	if (ispath)
+	{
 		doserr = walk_path(path, &dummy, &dummy, &dummy,&idummy,
 					 &idummy, &idummy, 0x37, 0L, 0L, after_delete);
-		if	(doserr || !path[3])
-			return((int) doserr);
+		if (doserr || !path[3])
+			return (int) doserr;
+
 		endp[-1] = EOS;
 		doserr = GDdelete(path, NULL);
 		down_cnt(1, NULL, NULL);
-		}
-	else {
+	}
+	else
+	{
 		doserr = GFdelete(path, NULL);
 		down_cnt(0, NULL, NULL);
-		}
-	return((int) doserr);
+	}
+
+	return (int) doserr;
 }
 
 
@@ -1056,41 +1106,48 @@ static long before_cpmv(char *path, DTA *file)
 	char old_mode_ovwr;
 
 
-	if	(qbreak())
-		return(EBREAK);
-	if	((file->d_attrib) & F_SUBDIR)
-		{
+	if (qbreak())
+		return EBREAK;
+
+	if ((file->d_attrib) & F_SUBDIR)
+	{
 		doserr = GDcreate(_zielpath, file->d_fname);
 		strcat(_zielpath, file->d_fname);
 		strcat(_zielpath, "\\");
 		down_cnt(1, NULL, NULL);
-		return(doserr);
-		}
-	strcpy(all,path);
-	strcat(all,file->d_fname);
+		return doserr;
+	}
+
+	strcpy(all, path);
+	strcat(all, file->d_fname);
 
 	/* Wenn eine Datei in sich selbst kopiert oder verschoben werden */
 	/* soll, wird die Sicherheitsabfrage automatisch eingeschaltet	*/
 	/* ------------------------------------------------------------- */
 
 	old_mode_ovwr = status.mode_ovwr;
-	if	(!strcmp(path, _zielpath))
+	if (!strcmp(path, _zielpath))
 		status.mode_ovwr = CONFIRM;
-	if	(_move_flag && _zielpath[0] == path[0])
+
+	if (_move_flag && _zielpath[0] == path[0])
 		doserr = GFrename(path, file, _zielpath);
-	else doserr = GFcopy  (path, file, _zielpath);
+	else
+		doserr = GFcopy(path, file, _zielpath);
 	status.mode_ovwr = old_mode_ovwr;
-	if	(doserr)
-		return(doserr);
-	if	(_move_flag && _zielpath[0] != path[0])
-		{
+	if (doserr)
+		return doserr;
+
+	if (_move_flag && _zielpath[0] != path[0])
+	{
 		doserr = Fdelete(all);
 		set_dirty(doserr, all, 1);
-		}
+	}
+
 	down_cnt(0, NULL, NULL);
-	if	(doserr != E_OK)
+	if (doserr != E_OK)
 		err_file = all;
-	return(err_alert(doserr));
+
+	return err_alert(doserr);
 }
 
 
@@ -1109,19 +1166,23 @@ static long after_cpmv(char *path, DTA *file)
 	register char *endp = path + strlen(path);
 
 
-	if	(qbreak())
-		return(EBREAK);
-	if	(!(file->d_attrib & F_SUBDIR))
-		return(E_OK);
-	if	(_move_flag)
+	if (qbreak())
+		return EBREAK;
+
+	if (!(file->d_attrib & F_SUBDIR))
+		return E_OK;
+
+	if (_move_flag)
 		doserr = GDdelete(path, file->d_fname);
-	else doserr = E_OK;
+	else
+		doserr = E_OK;
 
 	endp = _zielpath + strlen(_zielpath);
 	*(--endp) = EOS;
 	endp = strrchr(_zielpath, '\\');
 	*(++endp) = EOS;		/* Ordner entfernen */
-	return(doserr);
+
+	return doserr;
 }
 
 
@@ -1133,10 +1194,10 @@ static long after_cpmv(char *path, DTA *file)
 *
 *********************************************************************/
 
-int  copy_move(char *quell, char *ziel, int move_flag, int ispath)
+int copy_move_files(char *quell, char *ziel, int move_flag, int ispath)
 {
 	long dummy,doserr;
-	int  idummy;
+	int idummy;
 	char *endp = quell + strlen(quell);
 	char *lastb = strrchr(quell, '\\');
 	char *zendp = ziel + strlen(ziel);
@@ -1150,68 +1211,72 @@ int  copy_move(char *quell, char *ziel, int move_flag, int ispath)
 	/* ------------------------------------------------------------- */
 
 	_bsize = -1L;			/* Pufferspeicher ganz */
-	if	(('RD' == disk_type(quell[0] - 'A')) ||
-		 ('RD' == disk_type( ziel[0] - 'A')))
+	if (('RD' == disk_type(quell[0] - 'A')) ||
+		 ('RD' == disk_type(ziel[0] - 'A')))
 			_bsize = 20480L;
 	
 	/* 1. Fall: Pfad, also Ordner oder Root */
 	/* ------------------------------------ */
 
-	if	(ispath)
+	if (ispath)
+	{
+		if (ziel == strstr(ziel, quell))
 		{
-		if	(ziel == strstr(ziel, quell))
-			{
 #if		COUNTRY==FRG
 			form_alert(1, "[3][UngÅltige Kopieranweisung!][Abbruch]");
 #elif	COUNTRY==USA
 			form_alert(1, "[3][Invalid copy operation!][Cancel]");
 #endif
-			return(0);
-			}
+			return 0;
+		}
 
 		/* 1.1 Fall: Ordner, also Ordner auf Zielpfad erstellen */
 		/* ---------------------------------------------------- */
 
-		if	(quell[3])
-			{
-			char	name[14];
+		if (quell[3])
+		{
+			char name[14];
 
 			endp[-1] = EOS;
 			strcpy(name, strrchr(quell, '\\') + 1);
 			endp[-1] = '\\';
 			doserr = GDcreate(ziel, name);
-			if	(doserr)
-				return((int) doserr);
+			if (doserr)
+				return (int) doserr;
+
 			down_cnt(1, NULL, NULL);
 			strcat(ziel, name);
 			strcat(ziel, "\\");
-			}
+		}
+
 		doserr = walk_path(quell, &dummy, &dummy, &dummy, &idummy,
 					 &idummy, &idummy, 0x37, 0L, before_cpmv, after_cpmv);
-		if	(doserr || !quell[3])
-			{
+		if (doserr || !quell[3])
+		{
 			*zendp = EOS;
-			return((int) doserr);
-			}
-		endp[-1] = EOS;
-		if	(move_flag)
-			doserr = GDdelete(quell, NULL);
+			return (int) doserr;
 		}
+
+		endp[-1] = EOS;
+		if (move_flag)
+			doserr = GDdelete(quell, NULL);
+	}
 
 	/* 2. Fall: Nur eine Datei */
 	/* ----------------------- */
 
-	else {
+	else
+	{
 		DTA	dta;
 
 		Fsetdta(&dta);
 		doserr = Fsfirst(quell, 0x37);
-		if	(doserr != E_OK)
-			return((int) err_alert(doserr));
+		if (doserr != E_OK)
+			return (int) err_alert(doserr);
 		*(++lastb) = EOS;
 		doserr = before_cpmv(quell, &dta);
-		}
+	}
 
 	*zendp = EOS;
-	return((int) doserr);
+	return (int) doserr;
 }

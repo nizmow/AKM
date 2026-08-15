@@ -1,0 +1,44 @@
+/* Resource Datei Indizes fÅr MAGXDESL */
+
+#define HAUPTMEN 0   /* Menuebaum */
+#define MM_DESK  3   /* TITLE in Baum HAUPTMEN */
+#define MM_DATEI 4   /* TITLE in Baum HAUPTMEN */
+#define MM_ANZEI 5   /* TITLE in Baum HAUPTMEN */
+#define MM_SORT  6   /* TITLE in Baum HAUPTMEN */
+#define MM_OPTIO 7   /* TITLE in Baum HAUPTMEN */
+#define MM_SMODE 8   /* STRING in Baum HAUPTMEN */
+#define MM_TIMES 9   /* STRING in Baum HAUPTMEN */
+#define M_ABOUT  12  /* STRING in Baum HAUPTMEN */
+#define M_OPEN   21  /* STRING in Baum HAUPTMEN */
+#define M_INFO   22  /* STRING in Baum HAUPTMEN */
+#define M_LOESCH 23  /* STRING in Baum HAUPTMEN */
+#define M_NEUORD 25  /* STRING in Baum HAUPTMEN */
+#define M_SCHLFN 26  /* STRING in Baum HAUPTMEN */
+#define M_SELALL 27  /* STRING in Baum HAUPTMEN */
+#define M_FORMAT 29  /* STRING in Baum HAUPTMEN */
+#define M_DCOPY  30  /* STRING in Baum HAUPTMEN */
+#define M_ENDE   31  /* STRING in Baum HAUPTMEN */
+#define M_XXXXXY 32  /* BOX in Baum HAUPTMEN */
+#define M_ABILDR 33  /* STRING in Baum HAUPTMEN */
+#define M_ATEXT  34  /* STRING in Baum HAUPTMEN */
+#define M_10_PKT 36  /* STRING in Baum HAUPTMEN */
+#define M_9_PKT  37  /* STRING in Baum HAUPTMEN */
+#define M_8_PKT  38  /* STRING in Baum HAUPTMEN */
+#define M_SPALTN 40  /* STRING in Baum HAUPTMEN */
+#define M_ZGROES 41  /* STRING in Baum HAUPTMEN */
+#define M_ZDATUM 42  /* STRING in Baum HAUPTMEN */
+#define M_ZZEIT  43  /* STRING in Baum HAUPTMEN */
+#define M_XXXXX  44  /* BOX in Baum HAUPTMEN */
+#define M_SNAME  45  /* STRING in Baum HAUPTMEN */
+#define M_SDATUM 46  /* STRING in Baum HAUPTMEN */
+#define M_SGROES 47  /* STRING in Baum HAUPTMEN */
+#define M_STYP   48  /* STRING in Baum HAUPTMEN */
+#define M_SNICHT 49  /* STRING in Baum HAUPTMEN */
+#define M_MASKE  51  /* STRING in Baum HAUPTMEN */
+#define M_XXXXXX 52  /* BOX in Baum HAUPTMEN */
+#define M_LAUFWE 53  /* STRING in Baum HAUPTMEN */
+#define M_ANWNDG 54  /* STRING in Baum HAUPTMEN */
+#define M_EINSTE 56  /* STRING in Baum HAUPTMEN */
+#define M_PRGRMS 57  /* STRING in Baum HAUPTMEN */
+#define M_ARBSIC 58  /* STRING in Baum HAUPTMEN */
+#define M_BLITTR 60  /* STRING in Baum HAUPTMEN */

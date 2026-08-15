@@ -4,6 +4,15 @@
 *
 *********************************************************************/
 
+#include <stdio.h>		/* fÅr tmpnam() */
+#include <string.h>
+#include <mgx_dos.h>	/* include before tos.h */
+#include <tos.h>
+#include <tosdefs.h>
+#include <vdi.h>
+#include "k.h"
+
+
 #define HICOL 0
 #define hicol 7
 
@@ -55,29 +64,6 @@ typedef struct ____bcb {
 } BCB;
 
 
-#include <tos.h>
-#include "k.h"
-#include <vdi.h>
-#include <tosdefs.h>
-#include <string.h>
-
-extern int qbreak( void );
-extern int disk_type(int drvnr);
-
-/* Externals aus DKLICK */
-
-extern void init_vt52( void );
-extern void exit_vt52( void );
-extern void str_conout(char *s, int len);
-
-/* Externals aus KAOSDESK */
-
-extern long    err_alert(long e);
-extern int  	vdi_handle;
-
-/* extern aus ALLG */
-
-extern void Mgraf_mouse(int type);
 
 #define Dskopen(d)	gemdos(201, d)		/* Cache ein */
 #define Dskclose(d)	gemdos(202, d)		/* Cache aus */
@@ -96,31 +82,111 @@ extern void Mgraf_mouse(int type);
 *********************************************************************/
 
 #if	MAGIXDESK
+
 char *os_ver_s = "Mag!X v__.__  vom __.__.____";
+
 #else
+
 static unsigned long *p_cookies;
 static SYSHDR *syshdr;
 static char *apname;
 static int sysver;
 static int is_rom_aes;
 static unsigned long kaos_date;
+
 #endif
-static AESVARS *aesvars;
+
+/* magix.h geht geht nicht */
+
+typedef struct
+{
+	/* Dies ist die Variable, auf die das Cookie und auch der   */
+	/* osheader zeigen. Die ersten drei Variablen sind in jedem */
+	/* TOS vorhanden.                                           */
+	long magic;                   /* muû $87654321 sein         */
+	void *membot;                 /* Ende der AES- Variablen    */
+	void *aes_start;              /* Startadresse               */
+	/* KAOS */
+	long magic2;                  /* ist 'MAGX' oder 'KAOS'     */
+	long date;                    /* Erstelldatum, $ddmmyyyy    */
+	/* Mit <res> und <txt> kann man die Angaben in magx.inf     */
+	/* Åberladen, <txt> ist die Fonthîhe fÅr den groûen AES-    */
+	/* Font, und zwar in Pixeln. <txt> = 0 Åbernimmt den Wert   */
+	/* aus magx.inf                                             */
+	void (*chgres)(int res, int txt);  /* Auflîsung Ñndern      */
+	/* Hier klinkt sich magxdesk.app ein.                       */
+	long (**shel_vector)(void);   /* ROM- Desktop               */
+	/* Dies ist das Bootlaufwerk, auf dem magx.inf liegt        */
+	char *aes_bootdrv;            /* Hierhin kommt DESKTOP.INF  */
+	int  *vdi_device;             /* vom AES benutzter Treiber  */
+	void **nvdi_workstation;      /* vom AES benutzte Workst.   */
+	/* Die folgenden beiden Variablen waren fÅr KAOSDESK, um    */
+	/* festzustellen, ob das gestartete Programm seinerseits    */
+	/* einen shel_write() gemacht hatte.                        */
+	int  *shelw_doex;             /* letztes <doex> fÅr App #0  */
+	int  *shelw_isgr;             /* letztes <isgr> fÅr App #0  */
+	/* MAG!X */
+	int  version;                 /* etwa $0200 fÅr V 2.0       */
+	int  release;                 /* 0=‡ 1=· 2=‚ 3=release      */
+	void *_basepage;              /* Basepage des AES           */
+	/* Der ZÑhler zeigt, ob AES die Maus aus- oder eingeschal-  */
+	/* tet hat. Bei einem Wert von 0 ist die Maus sichtbar      */
+	int  *moff_cnt;               /* globaler MauszeigerzÑhler  */
+	/* den folgenden Wert erhÑlt man auch mit shel_get(-1)      */
+	long shel_buf_len;            /* LÑnge des Shell- Puffers   */
+	void *shel_buf;               /* Zeiger auf Shell- Puffer   */
+	/* Liste der wartenden Applikationen. Die suspend_list,     */
+	/* die erst ab Mag!X 2.0 existiert, ist leider noch nicht   */
+	/* von auûen zugÑnglich. Die suspend_list enthÑlt die       */
+	/* Programme, die ihre Rechenzeit verbraucht haben.         */
+	void *notready_list;         /* wartende Applikationen     */
+	void *menu_app;              /* menÅbesitzende Applikation */
+	OBJECT **menutree;            /* aktiver MenÅbaum           */
+	OBJECT **desktree;            /* aktiver Desktophintergrund */
+	int  *desktree_1stob;         /*  dessen erstes Objekt      */
+	void *dos_magic;          /* öbergabestruktur fÅrs DOS  */
+	/* Zeiger auf folgende Struktur:                            */
+	/*   int  maxwindn;      Anzahl mîglicher Fenster           */
+	/*   int  topwhdl;       Handle des aktiven Fensters        */
+	/*   int  whdlx[maxwindn];    Fensterliste, oben->unten     */
+	/*        negative Handles gehîren eingefrorenen Apps.      */
+	/*   WINDOWS *windx;     Zeiger auf die Fenstertabelle      */
+	void *windowinfo;             /* versch. Fensterinfos       */
+	/* Installationsvektor fÅr alternative Dateiauswahl,        */
+	/* wird von Selectric verwendet. Kein TRAP nîtig!           */
+	int  (**p_fsel)(char *pth, char *name, int *but, char *title);
+	/* Umschaltung des prÑemptiven Multitaskings, Parameter:    */
+	/*   d0.lo     Ticks fÅr Scheibe                            */
+	/*   d0.hi     Hintergrund- PrioritÑt, z.B. 32 => 1:32      */
+	/* d0 = -1L deaktiviert das prÑemptive Multitasking         */
+	/* d0.lo <= -2 oder d0.hi <= -2 Ñndert den Wert nicht       */
+	/* Der alte Wert wird zurÅckgegeben.                        */
+	long (*ctrl_timeslice) (long settings);
+	void *topwind_app;           /* App. des obersten Fensters */
+	void *mouse_app;             /* menÅbesitzende Applikation */
+	void *keyb_app;              /* tastaturbesitzende Appl.   */
+	void *suspend_list;
+	short install_drv;
+	char kernel_path[16];
+	void *xp_mode;
+	long dummy;
+} AESVARS_LIGHT;
+
+static AESVARS_LIGHT *aesvars;
+
 #if	HICOL
 static int hicol;			/* hîchster Farbwert (7=ST,15=STE/TT) */
 #endif
 
-void get_syshdr( void )
+void get_syshdr(void)
 {
-	extern char inf_name[];
-	extern int *aes_global;
 #if	HICOL
 	int col;
 #endif
 
 #if	MAGIXDESK
-	aesvars = *((AESVARS **) (aes_global+11));
-	if	(aesvars->magic2 != 'MAGX')
+	aesvars = *((AESVARS_LIGHT **) (aes_global+11));
+	if (aesvars->magic2 != 'MAGX')
 		Pterm(-1);
 	inf_name[0] = *(aesvars->aes_bootdrv) + 'A';
 
@@ -129,7 +195,7 @@ void get_syshdr( void )
 	os_ver_s[10] = (((aesvars->version) >> 4) & 0xf) +'0';
 	os_ver_s[11] = (((aesvars->version)     ) & 0xf) +'0';
 
-	if	(aesvars->release < 3)
+	if (aesvars->release < 3)
 		os_ver_s[12] = *("‡·‚" + (aesvars->release));
 
 	os_ver_s[18] = (((aesvars->date) >> 28)      ) + '0';
@@ -144,8 +210,6 @@ void get_syshdr( void )
 	long oldssp;
 	unsigned long	kaos_vgl_date;		/* in der Form jjjjmmtt */
 	unsigned long	*cookie;
-	extern int ismagix;
-	extern   BASPAG *_BasPag;
 
 
 	/* Umschalten in den Supervisormodus */
@@ -154,25 +218,25 @@ void get_syshdr( void )
 
 	/* syshdr, sysver und aesvars holen */
 
-	syshdr    = (SYSHDR *)  (* _SYSBASE);
-	sysver    = syshdr->os_version;
-	aesvars 	= (AESVARS *) syshdr->os_magic;
+	syshdr  = (SYSHDR *)  (* _SYSBASE);
+	sysver  = syshdr->os_version;
+	aesvars = (AESVARS_LIGHT *) syshdr->os_magic;
 	ismagix	= iskgem && aesvars->magic2 == 'MAGX';
 
 	/* p_cookies und kaos_date holen */
 
 	p_cookies = cookie = (unsigned long *) (* P_COOKIES);
 	kaos_date = 0L;
-	while(p_cookies && *cookie)
+	while (p_cookies && *cookie)
+	{
+		if (*cookie == 'KAOS')
 		{
-		if	(*cookie == 'KAOS')
-			{
 			cookie++;
 			kaos_date = *cookie;
 			break;
-			}
-		cookie += 2;
 		}
+		cookie += 2;
+	}
 
 	/* Wenn wir vom ROM-AES gestartet wurden: is_rom_aes */
 
@@ -184,19 +248,19 @@ void get_syshdr( void )
 	kaos_vgl_date |= kaos_date >> 24L;				/* jjjj00tt */
 	kaos_vgl_date |= (kaos_date >> 8L) & 0xff00L;	/* jjjjmmtt */
 
-	if	(!iskgem || (kaos_vgl_date < 0x19910112L))
+	if (!iskgem || (kaos_vgl_date < 0x19910112L))
 		aesvars = NULL;
-	if	(sysver == 0x0104 && syshdr->os_gendat != 0x04061989L)
+	if (sysver == 0x0104 && syshdr->os_gendat != 0x04061989L)
 		sysver = 0x0105;
 	Super((char *) oldssp);
 
-	if	(isgem2)
-		{
+	if (isgem2)
+	{
 		apname = *((char **) (aes_global+11));
 		apname += 0xe94+12;
-		if	(memcmp(apname, "KAOSDESK", 8L))
+		if (memcmp(apname, "KAOSDESK", 8L))
 			apname = NULL;
-		}
+	}
 	else	apname = NULL;
 #endif
 
@@ -217,10 +281,10 @@ void get_syshdr( void )
 
 int change_res(int dev, int txt)
 {
-	if	(!aesvars)
-		return(0);
+	if (!aesvars)
+		return 0;
 	aesvars->chgres(dev, txt);
-	return(1);
+	return 1;
 }
 
 
@@ -233,12 +297,13 @@ int change_res(int dev, int txt)
 
 static int c_val(unsigned char c)
 {
-	if	(c >= '0' && c < '0'+16)
-		return(c - '0');			/* nur "dezimal" */
-	return(0);
+	if (c >= '0' && c < '0'+16)
+		return (c - '0');			/* nur "dezimal" */
+	return 0;
 }
 
-void set_colors( void )
+
+void set_colors(void)
 {
 	unsigned char *buf,*bufp;
 	int rgb[3];
@@ -247,56 +312,64 @@ void set_colors( void )
 
 
 	Blitmode(status.blitstate);
-	if	(NULL == (buf = Malloc(8192L)))
+	if (NULL == (buf = Malloc(8192L)))
 		return;
 	shel_get((char *) buf, 8192);
 	bufp = buf;
-	while(bufp < buf+8192L)
+	while (bufp < buf+8192L)
+	{
+		if (*bufp == '#')
 		{
-		if	(*bufp == '#')
-			{
 			bufp++;
-			if	(*bufp == 'c')
-				{
+			if (*bufp == 'c')
+			{
 				bufp++;
 				for	(i = 0; i < 16; i++)
-					{
+				{
 					for	(j = 0; j < 3; j++)
 						rgb[j] = (1000 * c_val(*bufp++)) / hicol;
 					vs_color(vdi_handle, i, rgb);
-					}
-				evnt_dclick(c_val(*bufp++), RMODE_WR);
+				}
+				/* set double click rate */
+				evnt_dclick(c_val(*bufp++), 1);
 
 				oldssp = Super(0L);
-				if	(*bufp++ != '0')
+
+				if (*bufp++ != '0')
 					*CONTERM |= 1;
-				else *CONTERM &= ~1;
-				if	(*bufp++ != '0')
+				else
+					*CONTERM &= ~1;
+
+				if (*bufp++ != '0')
 					*CONTERM |= 4;
-				else *CONTERM &= ~4;
+				else
+					*CONTERM &= ~4;
+
 				Super((char *) oldssp);
 				i = 10 * c_val(*bufp++) + c_val(*bufp++);	/* Verzîgerung */
 				j = 10 * c_val(*bufp++) + c_val(*bufp++);	/* Wiederholrate */
 				Kbrate(i, j);
-				}
-			else if	(*bufp == 'b')
-				{
+			}
+			else
+			if (*bufp == 'b')
+			{
 				bufp++;
 				j = 0;
 				for	(i = 0; i < 6; i++)
-					{
+				{
 					j >>= 1;					/* weiterschieben  */
-					if	(*bufp++ != '0')		/* Bit ggf. setzen */
+					if (*bufp++ != '0')		/* Bit ggf. setzen */
 						j |= 0x20;
-					}
-				Setprt(j);
 				}
+				Setprt(j);
 			}
+		}
 		bufp = (unsigned char *) strchr((char *) bufp, '\n');
-		if	(bufp == NULL)
+		if (bufp == NULL)
 			break;
 		bufp++;
-		}
+	}
+
 	Mfree(buf);
 }
 #endif
@@ -312,15 +385,15 @@ long cache_on(char *path)
 {
 	long doserr;
 
-	if	(status.use_cache)
-		{
-		Mgraf_mouse( - HOURGLASS );
+	if (status.use_cache)
+	{
+		Mgraf_mouse(-HOURGLASS);
 		doserr = Dskopen(path[0] - 'A');
-		Mgraf_mouse( 0x1000 );
-		if	(doserr != EINVFN && doserr != EDRIVE)
-			return(err_alert(doserr));
-		}
-	return(E_OK);
+		Mgraf_mouse(0x1000);
+		if (doserr != EINVFN && doserr != EDRIVE)
+			return err_alert(doserr);
+	}
+	return E_OK;
 }
 
 
@@ -334,15 +407,16 @@ long cache_off(char *path)
 {
 	long doserr;
 
-	if	(status.use_cache)
-		{
-		Mgraf_mouse( - HOURGLASS );
+	if (status.use_cache)
+	{
+		Mgraf_mouse(-HOURGLASS);
 		doserr = Dskclose(path[0] - 'A');
-		Mgraf_mouse( 0x1000 );
-		if	(doserr != EINVFN && doserr != EDRIVE && doserr < E_OK)
-			return(err_alert(doserr));
-		}
-	return(E_OK);
+		Mgraf_mouse(0x1000);
+		if (doserr != EINVFN && doserr != EDRIVE && doserr < E_OK)
+			return err_alert(doserr);
+	}
+
+	return E_OK;
 }
 
 
@@ -352,19 +426,19 @@ long cache_off(char *path)
 *
 ****************************************************************/
 
-static long free_mediach( void )
+static long free_mediach(void)
 {
-	return(2L);
+	return 2L;
 }
 
-static long free_rw( void )
+static long free_rw(void)
 {
-	return(E_CHNG);
+	return E_CHNG;
 }
 
-static long free_bpb( void )
+static long free_bpb(void)
 {
-	return(0L);
+	return 0L;
 }
 
 void free_drive(int drv)
@@ -395,14 +469,14 @@ void free_drive(int drv)
 *
 *********************************************************************/
 
-long memsize( void )
+long memsize(void)
 {
-	long oldssp,phystop;
+	long oldssp, phystop;
 
 	oldssp = Super(0L);
 	phystop = * ((long *) 0x42e);
 	Super((char *) oldssp);
-	return(phystop);
+	return phystop;
 }
 
 
@@ -420,11 +494,8 @@ long memsize( void )
 
 int tryagain(long *doserr, int drv)
 {
-#if	MAGIXDESK==0
-	extern char *err_string(int e);
-#endif
 	int ret;
-	char *s;
+	const char *s;
 	static char alerts[] =
 #if		COUNTRY==FRG
 		" auf X:][Abbruch|Nochmal|Weiter]";
@@ -437,38 +508,39 @@ int tryagain(long *doserr, int drv)
 	alerts[5] = 'A' + drv;
 #if MAGIXDESK==0
 	s = err_string((int) *doserr);
-	if	(s == NULL)
+	if (s == NULL)
 #if		COUNTRY==FRG
 		s = "Diskettenfehler";
 #elif	COUNTRY==USA
 		s = "disk error";
 #endif
 #else
-	s = (((DOSVARS *) Sconfig(SC_VARS, 0L))->err_to_str)((char) (*doserr));
+	s = (((DOSVARS *) Sconfig(SC_DOSVARS, 0L))->err_to_str)((char) (*doserr));
 #endif
 	strcpy(buf, "[2][");
 	strcat(buf, s);
 	strcat(buf, alerts);
 	ret = form_alert(2, buf);
-	if	(ret == 1)		/* Abbruch */
-		return(0);
-	if	(ret == 2)		/* Wiederholen */
-		return(1);
+	if (ret == 1)		/* Abbruch */
+		return 0;
+	if (ret == 2)		/* Wiederholen */
+		return 1;
 	*doserr = E_OK;		/* Ignorieren */
-	return(0);
+	return 0;
 }
 
-long M_Flopfmt( void *buf, void *filler, int devno, int spt, int trackno,
-			 int sideno, int interlv, int virgin )
+long M_Flopfmt(void *buf, void *filler, int devno, int spt, int trackno,
+			 int sideno, int interlv, int virgin)
 {
 	long doserr;
 
-	do	{
+	do
+	{
 		doserr = Flopfmt(buf, filler, devno, spt, trackno, sideno,
 					  interlv, 0x87654321L, virgin);
-		}
-	while(doserr != E_OK && tryagain(&doserr, devno));
-	return(doserr);
+	}
+	while (doserr != E_OK && tryagain(&doserr, devno));
+	return doserr;
 }
 
 long M_Flopwr(void *buf, void *filler, int devno, int sectno, int trackno,
@@ -476,11 +548,12 @@ long M_Flopwr(void *buf, void *filler, int devno, int sectno, int trackno,
 {
 	long doserr;
 
-	do	{
+	do
+	{
 		doserr = Flopwr(buf, filler, devno, sectno, trackno, sideno, count);
-		}
-	while(doserr != E_OK && tryagain(&doserr, devno));
-	return(doserr);
+	}
+	while (doserr != E_OK && tryagain(&doserr, devno));
+	return doserr;
 }
 
 long M_Floprd (void *buf, void *filler, int devno, int sectno, int trackno,
@@ -488,11 +561,12 @@ long M_Floprd (void *buf, void *filler, int devno, int sectno, int trackno,
 {
 	long doserr;
 
-	do	{
+	do
+	{
 		doserr = Floprd(buf, filler, devno, sectno, trackno, sideno, count);
-		}
-	while(doserr != E_OK && tryagain(&doserr, devno));
-	return(doserr);
+	}
+	while (doserr != E_OK && tryagain(&doserr, devno));
+	return doserr;
 }
 
 
@@ -505,25 +579,26 @@ long M_Floprd (void *buf, void *filler, int devno, int sectno, int trackno,
 static long init_disk(int dev)
 {
 	long doserr,buflen,fsizb,rsizb;
-	long label(int lw, char *name);
 	BPB	*bpb;
-	char	*buf;
+	char *buf;
 
 
 	bpb = Getbpb(dev);
-	if	(!bpb)
-		return(EMEDIA);
+	if (!bpb)
+		return EMEDIA;
+
 	fsizb = ((long) bpb->fsiz) * ((long) bpb->recsiz);
 	rsizb = ((long) bpb->rdlen) * ((long) bpb->recsiz);
 	buflen = fsizb+fsizb+rsizb;
 	buf = Malloc(buflen);
-	if	(!buf)
-		return(ENSMEM);
+	if (!buf)
+		return ENSMEM;
+
 	memset(buf, 0, buflen);
 
 	buf[0] = buf[fsizb] = (dev > 1) ? 0xf8 : 0xf9;		/* Mediabyte */
 	buf[1] = buf[2] = buf[fsizb+1] = buf[fsizb+2] = 0xff;
-	if	(bpb->bflags & 1)							/* 16bit FAT */
+	if (bpb->bflags & 1)							/* 16bit FAT */
 		buf[3] = buf[fsizb+3] = 0xff;
 
 	/* FATs und Root lîschen */
@@ -533,7 +608,7 @@ static long init_disk(int dev)
 	doserr = Rwabs(1, buf, 2*bpb->fsiz + bpb->rdlen, 1, dev);
 
 	Mfree(buf);
-	return(doserr);
+	return doserr;
 }
 
 
@@ -556,7 +631,7 @@ static long init_disk(int dev)
 *
 *********************************************************************/
 
-long format(int dev, unsigned sid, unsigned trk, unsigned spt, unsigned clu,
+long format_floppy(int dev, unsigned sid, unsigned trk, unsigned spt, unsigned clu,
 		  int inter, int vtrk, int vsid,
 		  void (*counter)(int n), int is_logic, char *dname)
 {
@@ -566,26 +641,25 @@ long format(int dev, unsigned sid, unsigned trk, unsigned spt, unsigned clu,
 	BPB *bpb;
 	long doserr;
 	int  secnos[100];		/* Sektornummern fÅr Versatz */
-	extern long read_dname(int lw, char *name);
 
 
-	if	((clu == 0) || (clu != 1 && clu & 1))
-		return(EMEDIA);		/* ungerade Clustergrîûe */
+	if ((clu == 0) || (clu != 1 && clu & 1))
+		return EMEDIA;		/* ungerade Clustergrîûe */
 
-	if	(is_logic)
+	if (is_logic)
+	{
+		if (!dname[0])
 		{
-		if	(!dname[0])
-			{
 			doserr = read_dname(dev, dname);
-			if	(doserr != EFILNF && doserr != E_OK)
-				return(doserr);
-			}
-		doserr = init_disk(dev);
-		goto set_dname;
+			if (doserr != EFILNF && doserr != E_OK)
+				return doserr;
 		}
+		doserr = init_disk(dev);
+		goto l_set_dname;
+	}
 		
-	if	(dev != 0 && dev != 1)
-		return(EUNCMD);
+	if (dev != 0 && dev != 1)
+		return EUNCMD;
 
 	/* ggf. Standardwerte eintragen */
 	/* ============================ */
@@ -593,7 +667,7 @@ long format(int dev, unsigned sid, unsigned trk, unsigned spt, unsigned clu,
 	vtrk  %= spt;
 	vsid  %= spt;
 	inter %= spt;
-	if	(!inter)
+	if (!inter)
 		inter = 1;
 
 	/* Erst ab TOS 1.2 kann man die Sektornummern selbst angeben */
@@ -609,8 +683,8 @@ long format(int dev, unsigned sid, unsigned trk, unsigned spt, unsigned clu,
 	/* ------------------ */
 
 	buf = Malloc((long) (20480L));	/* 8k fÅr DD, 16k fÅr HD */
-	if	(!buf)
-		return(ENSMEM);
+	if (!buf)
+		return ENSMEM;
 
 	/* Sektornummerliste initialisieren */
 	/* -------------------------------- */
@@ -620,62 +694,62 @@ long format(int dev, unsigned sid, unsigned trk, unsigned spt, unsigned clu,
 
 	i = 0;						/* Beginne mit Sektor 1 */
 	for	(j = 1; j <= spt; j++)		/* diese Nummern werden vergeben */
+	{
+		while (secnos[i])			/* schon belegt */
 		{
-		while(secnos[i])			/* schon belegt */
-			{
 			i++;					/* daher einfach weiterschalten */
 			i %= spt;
-			}
+		}
 		secnos[i] = j;				/* neue Sektornummer eintragen */
 		i += inter;
 		i %= spt;					/* nÑchster Sektor */
-		}
+	}
 
 	/* Disk formatieren */
 	/* ---------------- */
 
 	for	(ctrack = trk - 1; ctrack >= 0; ctrack--)
-		{
+	{
 		for	(cside = sid - 1; cside >= 0; cside--)
+		{
+			if (qbreak())
 			{
-			if	(qbreak())
-				{
 				doserr = EBREAK;
 				goto err;
-				}
+			}
 
 			doserr = M_Flopfmt(buf, secnos, dev, spt, ctrack, cside,
 						    interlv, (ctrack < 10) ? 0 : 0xe5e5);
 
-			if	(doserr != E_OK)
+			if (doserr != E_OK)
 				goto err;
 
 			/* Seiten- bzw. Spurversatz */
 
 			versatz = (cside) ? vsid : vtrk;
 			for	(i = 0; i < spt; i++)
-				{
-				if	((secnos[i] += versatz) > spt)
+			{
+				if ((secnos[i] += versatz) > spt)
 					secnos[i] -= spt;
-				}
 			}
-		counter(ctrack);
 		}
+		counter(ctrack);
+	}
 
 	/* Bootsektor erstellen und schreiben */
 	/* ---------------------------------- */
 
 	i = 0;
-	if	(spt == 9 && trk == 80 && clu == 2)
-		{
-		if	(sid == 2)				/* Standardtyp 3 */
+	if (spt == 9 && trk == 80 && clu == 2)
+	{
+		if (sid == 2)				/* Standardtyp 3 */
 			i = 3;
-		if	(sid == 1)				/* Standardtyp 2 */
+		if (sid == 1)				/* Standardtyp 2 */
 			i = 2;
-		}
+	}
 	Protobt(buf, 0x01000000L, (i) ? i : 3, FALSE);
-	if	(!i)
-		{
+	if (!i)
+	{
 		unsigned int nsects,spf;
 		unsigned char media;
 
@@ -693,31 +767,31 @@ long format(int dev, unsigned sid, unsigned trk, unsigned spt, unsigned clu,
 		buf[24] = spt % 256;
 		buf[27] = sid / 256;
 		buf[26] = sid % 256;
-		}
+	}
 	buf[0] = 0xeb;
 	buf[1] = 0x34;
 	buf[2] = 0x90;
 	buf[3] = 0x4e;        			/* Charlie lÑût grÅûen */
 	Protobt(buf, -1L, -1, FALSE);		/* nicht ausfÅhrbar */
 	doserr = M_Flopwr(buf, NULL, dev, 1, 0, 0, 1);
-	if	(doserr)
+	if (doserr)
 		goto err;
 
 	/* FATs initialisieren */
 	/* ------------------- */
 
 	bpb = Getbpb(dev);
-	if	(bpb == NULL)
-		{
+	if (bpb == NULL)
+	{
 		doserr = ERROR;
 		goto err;
-		}
+	}
 	for	(i = 3; i < 512; i++)
 		buf[i] = 0;
 	buf[0] = 0xf9;
 	buf[1] = buf[2] = 0xff;
 	doserr = Rwabs(3, buf, 1, 1, dev);		/* FAT 1 */
-	if	(doserr == E_OK)
+	if (doserr == E_OK)
 		doserr = Rwabs(3, buf, 1, bpb->fsiz + 1, dev);
 	err:
 
@@ -730,11 +804,11 @@ long format(int dev, unsigned sid, unsigned trk, unsigned spt, unsigned clu,
 	/* Disknamen schreiben */
 	/* ------------------- */
 
-	set_dname:
-	if	(!doserr && dname[0])
+	l_set_dname:
+	if (!doserr && dname[0])
 		doserr = label(dev, dname);
 
-	return(doserr);
+	return doserr;
 }
 
 
@@ -754,13 +828,16 @@ long read_bootsec(int lw, long *ser, int *bps, int *spc,
 	unsigned int  *sw;
 
 
-	if	(NULL == (s = Malloc(512L)))
-		return(ENSMEM);
-	if	(lw == 0 || lw == 1)
+	if (NULL == (s = Malloc(512L)))
+		return ENSMEM;
+
+	if (lw == 0 || lw == 1)
 		doserr = M_Floprd(s, NULL, lw, 1, 0, 0, 1);
-	else doserr = Rwabs(0, s, 1, 0, lw);
-	if	(doserr == E_OK)
-		{
+	else
+		doserr = Rwabs(0, s, 1, 0, lw);
+
+	if (doserr == E_OK)
+	{
 		*ser    = s[10] + 256 * s[ 9] + 65536L * s[8];
 		*bps    = s[11] + 256 * s[12];
 		*spc    = s[13];
@@ -777,9 +854,9 @@ long read_bootsec(int lw, long *ser, int *bps, int *spc,
 		for	(sw = (unsigned int *) s; (unsigned char *) sw < s+512; sw++)
 			*exec += *sw;
 		*exec = (*exec == 0x1234);
-		}
+	}
 	Mfree(s);
-	return(doserr);
+	return doserr;
 }
 
 
@@ -789,7 +866,7 @@ long read_bootsec(int lw, long *ser, int *bps, int *spc,
 *
 *********************************************************************/
 
-long MDfree( DISKINFO *ds, int driveno)
+long MDfree(DISKINFO *ds, int driveno)
 {
 	char	*buf;
 	BPB *bpb;
@@ -798,16 +875,19 @@ long MDfree( DISKINFO *ds, int driveno)
 	unsigned int freecl = 0;
 
 
-	if	(--driveno < 0)
-		return(EDRIVE);
-	if	('HD' != disk_type(driveno) && 'FD' != disk_type(driveno))
-		return(Dfree(ds, driveno+1));
+	if (--driveno < 0)
+		return EDRIVE;
+
+	if ('HD' != disk_type(driveno) && 'FD' != disk_type(driveno))
+		return Dfree(ds, driveno + 1);
+
 	bpb = Getbpb(driveno);
-	if	(!bpb)
-		return(EMEDIA);
+	if (!bpb)
+		return EMEDIA;
+
 	buf = Malloc(((long) bpb->fsiz) * ((long) bpb->recsiz));
-	if	(!buf)
-		return(ENSMEM);
+	if (!buf)
+		return ENSMEM;
 
 	/* Zuerst wird FAT 1 eingelesen */
 	/* ---------------------------- */
@@ -818,52 +898,53 @@ long MDfree( DISKINFO *ds, int driveno)
 	/* wird dann versucht, FAT 2 zu lesen					 */
 	/* --------------------------------------------------------- */
 
-	if	(doserr == E_CRC || doserr == ESECNF)
+	if (doserr == E_CRC || doserr == ESECNF)
 		doserr = Rwabs(0, buf, bpb->fsiz, 1+bpb->fsiz, driveno);
 
-	if	(doserr)
+	if (doserr)
 		goto err;
 	numcl = bpb->numcl;
 
 	/* 1. Fall: 16 Bit FAT */
 	/* ------------------- */
 
-	if	((bpb->bflags) & 1)
-		{
+	if ((bpb->bflags) & 1)
+	{
 		register int *s = ((int *) buf) + 2;
 
-
-		while(numcl--)
-			if	(!(*s++))
+		while (numcl--)
+			if (!(*s++))
 				freecl++;
-		}
+	}
 
 	/* 2. Fall: 12 Bit FAT */
 	/* ------------------- */
 
-	else {
-		register char *s = buf+3;
+	else
+	{
+		register char *s = buf + 3;
 		register char c;
 
 
 		numcl >>= 1;
-		while(numcl--)
-			{
+		while (numcl--)
+		{
 			c = s[1];
-			if	(*s == 0 && (c & 0x0f) == 0)
+			if (*s == 0 && (c & 0x0f) == 0)
 				freecl++;
 			s += 2;
-			if	(*s == 0 && (c & 0xf0) == 0)
+			if (*s == 0 && (c & 0xf0) == 0)
 				freecl++;
 			s++;
-			}
-		if	((bpb -> numcl) & 1)
-			{
-			c = s[1];
-			if	(*s == 0 && (c & 0x0f) == 0)
-				freecl++;
-			}
 		}
+
+		if ((bpb -> numcl) & 1)
+		{
+			c = s[1];
+			if (*s == 0 && (c & 0x0f) == 0)
+				freecl++;
+		}
+	}
 	
 	ds->b_free   = freecl;
 	ds->b_total  = bpb->numcl;
@@ -871,7 +952,7 @@ long MDfree( DISKINFO *ds, int driveno)
 	ds->b_clsiz  = bpb->clsiz;
 	err:
 	Mfree(buf);
-	return(doserr);
+	return doserr;
 }
 
 
@@ -881,7 +962,7 @@ long MDfree( DISKINFO *ds, int driveno)
 *
 *********************************************************************/
 
-#define _bufl	 ( (BCB **) 0x4b2L)	/* sehr geschickt ! */
+#define _bufl	 ((BCB **) 0x4b2L)	/* sehr geschickt ! */
 #define FAT	 0
 #define DIR	 1
 #define DATA	 2				/* BCB- Puffertypen */
@@ -890,18 +971,16 @@ long MDfree( DISKINFO *ds, int driveno)
 long label(int lw, char *name)
 {
 	static 	char pfad[] = "A:\\*.*";
-               long retcode;
+	long retcode;
 #if	MAGIXDESK == 0
-     		DTA  dtapuffer;
-               char tmpdatei[50];
-	register	BCB	*buffer;
-			BCB	*bufl[2];		/* Hier DOS- Sektorpufferlisten */
-			long oldssp;
-		DIRENTRY	*dirs;
-	register	int  liste,i;
-	extern void fname_int(char *s, char *d);
+	DTA  dtapuffer;
+	char tmpdatei[50];
+	register BCB *buffer;
+	BCB	*bufl[2];		/* Hier DOS- Sektorpufferlisten */
+	long oldssp;
+	DIRENTRY *dirs;
+	register int liste,i;
 #endif
-	extern char    *tmpnam( char *s );
 
 
 	pfad[0] = lw + 'A';
@@ -911,15 +990,17 @@ long label(int lw, char *name)
 	/* --------------------------------------------------- */
 
 #if	MAGIXDESK == 0
-	if	(sysver < 0x0104)
-		{
+	if (sysver < 0x0104)
+	{
 		Fsetdta(&dtapuffer);
 		retcode =  Fsfirst(pfad, F_VOLUME);
-		if	(retcode != EFILNF && retcode != E_OK)
-			return(retcode);
-		}
-	else retcode = EFILNF;
-     if   (retcode == EFILNF)
+		if (retcode != EFILNF && retcode != E_OK)
+			return retcode;
+	}
+	else
+		retcode = EFILNF;
+
+	if (retcode == EFILNF)
 #endif
 
 	/* Falls der Name nicht existiert, wird er erzeugt	*/
@@ -928,21 +1009,22 @@ long label(int lw, char *name)
 	/* erzeugt.									*/
 	/* --------------------------------------------------- */
 
-     	{
-     	char	diskname[40];
+     {
+     	char diskname[40];
 
 		strcpy(diskname,     pfad);
 		strcpy(diskname + 3, name);
-		if	(!*name)
-			{
+		if (!*name)
+		{
 			diskname[3] = '\xe5';
 			diskname[4] = EOS;
-			}
-		retcode = Fcreate(diskname, F_VOLUME);
-		if	(retcode >= E_OK)
-			retcode = Fclose((int) retcode);
-		return(retcode);
 		}
+
+		retcode = Fcreate(diskname, F_VOLUME);
+		if (retcode >= E_OK)
+			retcode = Fclose((int) retcode);
+		return retcode;
+	}
 
 #if	MAGIXDESK == 0
 
@@ -958,14 +1040,14 @@ long label(int lw, char *name)
 	/* ------------------------ */
 
 	for	(liste = 0; liste < 2; liste++)
-		{
+	{
 
 		/* Jeden BCB durchsuchen */
 		/* --------------------- */
 
 		for	(buffer = bufl[liste]; buffer != NULL; buffer = buffer->b_link)
-			{
-			if	(buffer->b_bufdrv != lw || buffer->b_buftyp != DIR)
+		{
+			if (buffer->b_bufdrv != lw || buffer->b_buftyp != DIR)
 				continue;
 			dirs = (DIRENTRY *) (buffer->b_bufr);
 
@@ -973,37 +1055,41 @@ long label(int lw, char *name)
 			/* ------------------------- */
 
 			for	(i = 0; i < 16; dirs++,i++)
+			{
+				if (dirs->dir_attr & F_VOLUME)
 				{
-				if	(dirs->dir_attr & F_VOLUME)
+					if (*name)
 					{
-					if	(*name)
-						{
 						int j;
 
 						fname_int(name, dirs->dir_name);
 						for	(j = (int) strlen(dirs->dir_name); j < 11; j++)
 							dirs->dir_name[j] = ' ';
-						}
-					else dirs->dir_name[0] = DELETED;
+					}
+					else
+						dirs->dir_name[0] = DELETED;
+
 					dirs->dir_attr = F_VOLUME;
 					buffer->b_dirty = TRUE;
 					tmpdatei[0] = pfad[0];
 					tmpdatei[1] = ':';
 			     	tmpnam(tmpdatei+2);
 			     	retcode = Fcreate(tmpdatei,0);
-			     	if	(retcode >= E_OK)
+
+			     	if (retcode >= E_OK)
 			     		retcode = Fclose((int) retcode);
+
 			     	Fdelete(tmpdatei);
-					return(retcode);
-					}
+					return retcode;
 				}
 			}
 		}
+	}
 
 	/* Nichts gefunden */
 	/* --------------- */
 
-	return(EINTRN);
+	return EINTRN;
 #endif
 }
 
@@ -1029,15 +1115,15 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 {
 	int isquell;
 	char tmpdatei[128];
-	int  gelesen;
+	int gelesen;
 	int handle;
 	unsigned long bufsiz_char;	/* Puffergrîûe in Zeichen */
 	unsigned long n_bytes;		/* gefÅllte Bytes */
 	unsigned int  bufsiz_trk;	/* Puffergrîûe in Spuren */
 	unsigned int  c_tracks;		/* gefÅllte Spuren */
 	register unsigned ltrack,ctrack,cside,i;
-	int  secnos[100];			/* Sektornummern fÅr Versatz */
-	int  interlv;
+	int secnos[100];			/* Sektornummern fÅr Versatz */
+	int interlv;
 	register unsigned char *cbuf;
 	unsigned char *buf, *fbuf;
 	long doserr;
@@ -1049,10 +1135,12 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 	/* eine Fehlermeldung geliefert							 */
 	/* -------------------------------------------------------------- */
 
-	if	((slw != 0 && slw != 1) || (dlw != 0 && dlw != 1))
-		return(EUNCMD);
-	if	(tmp == slw || tmp == dlw)
-		return(EDRIVE);
+	if ((slw != 0 && slw != 1) || (dlw != 0 && dlw != 1))
+		return EUNCMD;
+
+	if (tmp == slw || tmp == dlw)
+		return EDRIVE;
+
 	isquell = TRUE;		/* Quelldisk ist eingelegt */
 
 #if	MAGIXDESK
@@ -1064,84 +1152,97 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 	/* Wenn ein temporÑres Laufwerk angegeben wurde, Pfad erstellen	*/
 	/* -------------------------------------------------------------	*/
 
-	if	(tmp >= 0)
-		{
+	if (tmp >= 0)
+	{
 		tmpdatei[0] = tmp + 'A';
 		tmpdatei[1] = ':';
      	tmpnam(tmpdatei+2);
      	handle = -1;
-		}
+	}
 
 	/* Wenn nicht formatiert werden soll, wird das Format der		*/
 	/* Zieldisk geprÅft, ob es mit dem der Quelldisk Åbereinstimmt.	*/
 	/* ggf. wird trotzdem formatiert							*/
 	/* ------------------------------------------------------------- */
 
-	if	(!fmt)
-		{
+	if (!fmt)
+	{
 		long ser;
 		int bps,spc,res,nfats,ndirs,nsects,media,spf,dspt,dsid,nhid,exec;
 		int dtrk;
 
-		if	(slw == dlw)
-			{
+		if (slw == dlw)
+		{
 #if		COUNTRY==FRG
 			strncpy(chg_msg+4, " Ziel", 5);
 #elif	COUNTRY==USA
 			strncpy(chg_msg+11, " dest.", 6);
 #endif
-			if	(2 == form_alert(1, chg_msg))
-				return(EBREAK);
+			if (2 == form_alert(1, chg_msg))
+				return EBREAK;
 			isquell = FALSE;
-			}
+		}
 
 		doserr = read_bootsec(dlw, &ser,&bps,&spc,&res,&nfats,&ndirs,&nsects,
 						   &media,&spf,&dspt,&dsid,&nhid,&exec);
-		if	(doserr != E_OK)
-			return(doserr);
-		if	(dsid <= 0 || dspt <= 0 || nsects <= 0)
-			return(EMEDIA);
+		if (doserr != E_OK)
+			return doserr;
+
+		if (dsid <= 0 || dspt <= 0 || nsects <= 0)
+			return EMEDIA;
+
 		dtrk = nsects/(dsid*dspt);
-		if	(dsid != sid || trk != dtrk || dspt != spt)
-			{
+		if (dsid != sid || trk != dtrk || dspt != spt)
+		{
 #if		COUNTRY==FRG
-			if	(1 != form_alert(1, "[2][Formatieren ?][ OK | Abbruch]"))
+			if (1 != form_alert(1, "[2][Formatieren ?][ OK | Abbruch]"))
 #elif	COUNTRY==USA
-			if	(1 != form_alert(1, "[2][Format ?][ OK | Cancel]"))
+			if (1 != form_alert(1, "[2][Format ?][ OK | Cancel]"))
 #endif
-				return(E_OK);
+				return E_OK;
 			fmt = TRUE;
-			}
 		}
+	}
 
 	/* Speicher anfordern, ggf. Tmpdatei erstellen */
 	/* ------------------------------------------- */
 
-	if	(fmt)
-		{
+	if (fmt)
+	{
 		fbuf = Malloc(20480L);	/* Formatierpuffer */
-		if	(fbuf == NULL)
-			return(ENSMEM);
+		if (fbuf == NULL)
+		{
+			return ENSMEM;
 		}
-	else fbuf = NULL;
+	}
+	else
+	{
+		fbuf = NULL;
+	}
 
 	bufsiz_char = (unsigned long) Malloc(-1L);
-	if	(bufsiz_char < 20000L)
-		return(ENSMEM);
+	if (bufsiz_char < 20000L)
+	{
+		return ENSMEM;
+	}
+
 	bufsiz_char /= (sid * spt * 512);
 	bufsiz_char *= (sid * spt * 512);	/* In Spuren umrechnen */
 	buf = Malloc(bufsiz_char);
-	if	(!buf)
-		return(ENSMEM);
+	if (!buf)
+	{
+		return ENSMEM;
+	}
+
 	bufsiz_trk = (unsigned int) (bufsiz_char/(sid * spt * 512L));
 
-	if	(bufsiz_trk < trk && tmp >= 0)	/* Speicher reicht nicht fÅr ganze Disk */
-		{
+	if (bufsiz_trk < trk && tmp >= 0)	/* Speicher reicht nicht fÅr ganze Disk */
+	{
 		doserr = Fcreate(tmpdatei, 0);
-		if	(doserr < E_OK)
+		if (doserr < E_OK)
 			goto err;
 		handle = (int) doserr;
-		}
+	}
 
 	/* Sektornummerliste initialisieren (fÅrs Formatieren) */
 	/* --------------------------------------------------- */
@@ -1152,7 +1253,7 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 	gelesen = FALSE;
 	nochmal:
 	for	(ltrack = 0; ltrack < trk; ltrack += bufsiz_trk)
-		{
+	{
 
 		/* Lesen */
 		/* ----- */
@@ -1160,135 +1261,138 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 		c_tracks = MIN(trk, ltrack + bufsiz_trk);	/* bis hierher lesen */
 		n_bytes  = (c_tracks-ltrack)*spt*sid*512L;	/* soviele Bytes lesen */
 
-		if	(!gelesen)
+		if (!gelesen)
+		{
+			if (slw == dlw && !isquell)
 			{
-			if	(slw == dlw && !isquell)
-				{
 #if		COUNTRY==FRG
 				strncpy(chg_msg+4, "Quell", 5);
 #elif	COUNTRY==USA
 				strncpy(chg_msg+11, "source", 6);
 #endif
-				if	(2 == form_alert(1, chg_msg))
+				if (2 == form_alert(1, chg_msg))
 					goto abbruch;
 				isquell = TRUE;
-				}
+			}
 			for	(ctrack = ltrack, cbuf = buf;
 			      ctrack < c_tracks;
 			      ctrack++, cbuf += spt*sid*512)
-				{
+			{
 #if		COUNTRY==FRG
 				feedb("Lese", ctrack);
 #elif	COUNTRY==USA
 				feedb("reading", ctrack);
 #endif
 				for	(cside = 0; cside < sid; cside++)
-					{
-				if	(qbreak())
-					{
-					abbruch:
-					doserr = EBREAK;
-					goto err;
-					}
-					doserr = M_Floprd(cbuf + 512L*spt*cside, NULL, slw, 1, ctrack, cside, spt);
-					if	(doserr != E_OK)
-						goto err;
-					}	
-				}
-			if	(tmp >= 0 && bufsiz_trk < trk)
 				{
+					if (qbreak())
+					{
+						abbruch:
+						doserr = EBREAK;
+						goto err;
+					}
+
+					doserr = M_Floprd(cbuf + 512L*spt*cside, NULL, slw, 1, ctrack, cside, spt);
+					if (doserr != E_OK)
+						goto err;
+				}	
+			}
+
+			if (tmp >= 0 && bufsiz_trk < trk)
+			{
 				doserr = Fwrite(handle, n_bytes, buf);
-				if	(doserr != n_bytes && doserr > E_OK)
+				if (doserr != n_bytes && doserr > E_OK)
 					doserr = ENSMEM;
-				if	(doserr < E_OK)
+				if (doserr < E_OK)
 					goto err;
-				if	(ctrack < trk)
+				if (ctrack < trk)
 					continue;			/* Weiterlesen */
 				gelesen = TRUE;
 				doserr = Fseek(0L, handle, 0);
-				if	(doserr < E_OK)
+				if (doserr < E_OK)
 					goto err;
 				goto nochmal;
-				}
 			}
-		else {
+		}
+		else
+		{
 			doserr = Fread(handle, n_bytes, buf);
-			if	(doserr != n_bytes)
+			if (doserr != n_bytes)
 				goto err;
-			}
+		}
 
 		/* Schreiben und ggf. Formatieren */
 		/* ------------------------------ */
 
-		if	(slw == dlw && isquell)
-			{
+		if (slw == dlw && isquell)
+		{
 #if		COUNTRY==FRG
 			strncpy(chg_msg+4, " Ziel", 5);
 #elif	COUNTRY==USA
 			strncpy(chg_msg+11, " dest.", 6);
 #endif
-			if	(2 == form_alert(1, chg_msg))
+			if (2 == form_alert(1, chg_msg))
 				goto abbruch;
 			isquell = FALSE;
-			}
+		}
 		for	(ctrack = ltrack, cbuf = buf;
 			 ctrack < c_tracks;
 			 ctrack++, cbuf += spt*sid*512)
+		{
+			if (fmt)
 			{
-			if	(fmt)
-				{
 #if		COUNTRY==FRG
 				feedb("Formatiere", ctrack);
 #elif	COUNTRY==USA
 				feedb("formatting", ctrack);
 #endif
 				for	(cside = 0; cside < sid; cside++)
-					{
-					if	(qbreak())
+				{
+					if (qbreak())
 						goto abbruch;
 					doserr = M_Flopfmt(fbuf, secnos, dlw, spt, ctrack, cside, interlv,
 								   (ctrack < 10) ? 0 : 0xe5e5);
-					if	(doserr != E_OK)
+					if (doserr != E_OK)
 						goto err;
 					for	(i = 0; i < spt; i++)
-						{
+					{
 						secnos[i] -= 2;
-						if	(secnos[i] < 1)
+						if (secnos[i] < 1)
 							secnos[i] += spt;
-						}
 					}
 				}
+			}
 #if		COUNTRY==FRG
 			feedb("Schreibe", ctrack);
 #elif	COUNTRY==USA
 			feedb("writing", ctrack);
 #endif
 			for	(cside = 0; cside < sid; cside++)
-				{
-				if	(ctrack == 0 && cside == 0)
+			{
+				if (ctrack == 0 && cside == 0)
 					Protobt(cbuf, 0x01000000L, -1, -1);	/* Eigene Seriennummer */
-				if	(qbreak())
+				if (qbreak())
 					goto abbruch;
 				doserr = M_Flopwr(cbuf + 512L*spt*cside, NULL, dlw, 1, ctrack, cside, spt);
-				if	(doserr != E_OK)
+				if (doserr != E_OK)
 					goto err;
-				}	
-			}
-
+			}	
 		}
+
+	}
 
 	err:
-	if	(buf)
+	if (buf)
 		Mfree(buf);
-	if	(fbuf)
+	if (fbuf)
 		Mfree(fbuf);
-	if	(tmp >= 0 && (handle >= 0))
-		{
+	if (tmp >= 0 && (handle >= 0))
+	{
 		Fclose(handle);
 		Fdelete(tmpdatei);
-		}
+	}
 	Rwabs(0, NULL, 2, 0, dlw);
-	return(doserr);
+	return doserr;
 }
 
 
@@ -1302,12 +1406,11 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 *
 *********************************************************************/
 
-void set_parent_paths( void )
+void set_parent_paths(void)
 {
-	extern   BASPAG *_BasPag;
 	register char *p,*s;
 	register int  i;
-	
+
 
 	s = (char *) _BasPag;					/* Basepage von KAOSDESK */
 	p = (char *) (* ((long *) (s + 0x24)));		/* Basepage von AES		*/
@@ -1315,13 +1418,13 @@ void set_parent_paths( void )
 	s += 0x40;							/* auf Pfadhandles		*/
 	p += 0x40;
 	for	(i = 0; i < 16; i++)				/* Pfadhandles tauschen	*/
-		{
+	{
 		char tmp;
 	
 		tmp = *s;
 		*s++ = *p;
 		*p++ = tmp;
-		}
+	}
 }
 
 
@@ -1335,24 +1438,27 @@ void set_parent_paths( void )
 
 static void set_apname(char *path)
 {
-	extern char *get_name(char *path);
 	register char *name;
 	register int i;
 
 
-	if	(!path)
+	if (!path)
 		path = "KAOSDESK";
-	else path = get_name(path);
-	if	(NULL == (name = apname))
+	else
+		path = get_name(path);
+
+	if (NULL == (name = apname))
 		menu_register(-1, path);			/* special feature */
-	else	{
+	else
+	{
 		for	(i = 0; i < 8; i++)
-			{
-			if	(*path == '.' || *path == EOS)
+		{
+			if (*path == '.' || *path == EOS)
 				*name++ = ' ';
-			else *name++ = *path++;
-			}
+			else
+				*name++ = *path++;
 		}
+	}
 }
 
 
@@ -1367,17 +1473,17 @@ static void set_apname(char *path)
 *
 *********************************************************************/
 
-static void show_mouse_immed( void )
+static void show_mouse_immed(void)
 {
 	Cursconf(0,0);
 	v_show_c(vdi_handle, 0);
-	if	(!isgem2 && !iskgem && is_rom_aes)
-		{
-		if	(sysver == 0x0102)
+	if (!isgem2 && !iskgem && is_rom_aes)
+	{
+		if (sysver == 0x0102)
 			*MO_12_COUNT_ADDR = 0;
-		if	(sysver == 0x0104)
+		if (sysver == 0x0104)
 			*MO_14_COUNT_ADDR = 0;
-		}
+	}
 }
 
 
@@ -1387,21 +1493,24 @@ static void show_mouse_immed( void )
 *
 *********************************************************************/
 
-static void Mwind_new( void )
+static void Mwind_new(void)
 {
 	int hdl;
 
-	if	(isgem2 || sysver < 0x0104)
+	if (isgem2 || sysver < 0x0104)
+	{
+		for (;;)
 		{
-		do	{
-			if	(!wind_get(0, WF_TOP, &hdl) || hdl <= 0)
+			if (!wind_get_int(0, WF_TOP, &hdl) || hdl <= 0)
 				break;
 			wind_close(hdl);
 			wind_delete(hdl);
-			}
-		while(TRUE);
 		}
-	else wind_new();
+	}
+	else
+	{
+		MT_wind_new(0L);
+	}
 }
 
 
@@ -1413,31 +1522,33 @@ static void Mwind_new( void )
 
 static void Mshel_write(int doex, int isgr, char *program, char *param )
 {
-	if	(aesvars)
-		{
+	if (aesvars)
+	{
 		shel_write(0, TRUE, 0, program, param);
 		return;
-		}
+	}
 
-	if	(is_rom_aes && (sysver == 0x0102))
-		{
+	if (is_rom_aes && (sysver == 0x0102))
+	{
 		*SH_12_FLAG1_ADDR = *SH_12_FLAG2_ADDR = TRUE;
 		strcpy(*SH_12_WPCMD_ADDR,  program);
 		memcpy(*SH_12_WPTAIL_ADDR, param, 128);
-		}
-	else if	(is_rom_aes && (sysver == 0x0104))
-		{
+	}
+	else
+	if (is_rom_aes && (sysver == 0x0104))
+	{
 		*SH_14_DOEX_ADDR = FALSE;
 		strcpy(*SH_14_WPCMD_ADDR,  program);
 		memcpy(*SH_14_WPTAIL_ADDR, param, 128);
-		}
-	else {
+	}
+	else
+	{
 		register int i;
 
 		for	(i = (int) param[0] + 2; i < 128; i++)
 			param[i] = (char) i;		/* "magics" */
 		shel_write(doex, isgr, TRUE, program, param);
-		}
+	}
 }
 
 
@@ -1450,45 +1561,47 @@ static void Mshel_write(int doex, int isgr, char *program, char *param )
 
 static int Mshel_read(char *program, char *param, int *isgr )
 {
-	char	cmd[128],tail[128];
+	char cmd[128], tail[128];
 	int	doex;
 
 
 	doex = FALSE;
 
-	if	(aesvars)
-		{
+	if (aesvars)
+	{
 		*isgr = *(aesvars->shelw_isgr);
 		doex = *(aesvars->shelw_doex);
-		}
-
-	else if	(is_rom_aes && (sysver == 0x0102))
+	}
+	else
+	if (is_rom_aes && (sysver == 0x0102))
+	{
+		if (!*SH_12_FLAG1_ADDR && !*SH_12_FLAG2_ADDR)
 		{
-		if	(!*SH_12_FLAG1_ADDR && !*SH_12_FLAG2_ADDR)
-			{
 			*isgr = *SH_12_WISGR_ADDR;
 			doex = *SH_12_DOEX_ADDR;
-			}
 		}
-
-	else if	(is_rom_aes && (sysver == 0x0104))
-		{
+	}
+	else
+	if (is_rom_aes && (sysver == 0x0104))
+	{
 		*isgr = *SH_14_WISGR_ADDR;
 		doex = *SH_14_DOEX_ADDR;
-		}
-
-	else {
+	}
+	else
+	{
 		shel_read(cmd, tail);
-		if	(memcmp(tail, param, 128L))
-			{
+		if (memcmp(tail, param, 128L))
+		{
 			strcpy(program, cmd);
 			strncpy(param, tail, 128);
-			return(TRUE);
-			}
+			return TRUE;
 		}
-	if	(doex)
+	}
+
+	if (doex)
 		shel_read(program, param);
-	return(doex);
+
+	return doex;
 }
 
 
@@ -1505,64 +1618,64 @@ static int Mshel_read(char *program, char *param, int *isgr )
 *
 *********************************************************************/
 
-long	res_exec(int doex, int isgr, char *program,
-		    char *param, char *envptr)
+long res_exec(int doex, int isgr, char *program,
+		    COMMAND *param, char *envptr)
 {
 	long doserr;
 	int	wait;
-	int  graphmode = TRUE;		/* Bildschirm ist im Grafikmodus */
-	extern long setpath(char *program, int stdpath, int isover);
+	int graphmode = TRUE;		/* Bildschirm ist im Grafikmodus */
 
 
-
-
-	if	(iskgem)
+	if (iskgem)
 		wait = !(Sconfig('AK', 0L) & SCB_NHALT);
-	else wait = TRUE;
+	else
+		wait = TRUE;
 
 	/* Die Schleife wird solange ausgefÅhrt, bis ein Programm keinen	*/
 	/* neuen shel_write()- Aufruf macht.						*/
 	/* ------------------------------------------------------------- */
 
-	do	{
+	do
+	{
 
 		/* Wenn KAOSDESK resident bleibt, muû KAOSDESK den Bildschirm	*/
 		/* selbst in Grafik/Textmodus umschalten.					*/
 		/* FÅr Grafikapplikationen wird die Titelzeile ausgegeben		*/
 		/* ------------------------------------------------------------- */
 
-		if	(!isgr)			/* neuer Modus: Text */
-			{
+		if (!isgr)			/* neuer Modus: Text */
+		{
 			init_vt52();
-			if	(graphmode)	/* alter Modus war: Grafik */
-				{
+			if (graphmode)	/* alter Modus war: Grafik */
+			{
 				v_hide_c(vdi_handle);
 				v_enter_cur(vdi_handle);
-				}
 			}
-		else {				/* neuer Modus: Grafik */
+		}
+		else
+		{				/* neuer Modus: Grafik */
 			int w;
-			extern int scry,scrw,char_w;
 
-			w = scrw - (int) strlen(program) * char_w;
-			if	(w >= 0)
-				{
+			w = desk_g.g_w - (int) strlen(program) * char_w;
+			if (w >= 0)
+			{
 				int pxy[4];
 
 				pxy[0] = pxy[1] = 0;
-				pxy[2] = scrw;
-				pxy[3] = scry - 2;
+				pxy[2] = desk_g.g_w;
+				pxy[3] = desk_g.g_y - 2;
 				vs_clip(vdi_handle, FALSE, pxy);
 				v_bar  (vdi_handle, pxy);
 				v_gtext(vdi_handle, w >> 1, 1, program);
-				}
+			}
 			exit_vt52();
-			if	(!graphmode)	/* alter Modus war: Text */
-				{
+			if (!graphmode)	/* alter Modus war: Text */
+			{
 				v_exit_cur(vdi_handle);
 				v_show_c(vdi_handle, 1);
-				}
 			}
+		}
+
 		graphmode = isgr;
 	
 		/* Die Parameter werden sowohl fÅr DOS als auch fÅr AES	*/
@@ -1570,70 +1683,69 @@ long	res_exec(int doex, int isgr, char *program,
 		/* machen kann.									*/
 		/* -------------------------------------------------------- */
 
-		Mshel_write(doex, isgr, program, param);
+		Mshel_write(doex, isgr, program, (char *) param);
 
 		/* Bei GEM- Programmen wird vor Programmstart ein wind_new	*/
 		/* gemacht, um die Fenster zu lîschen und ab KAOS 1.4 die	*/
 		/* Maus noch einmal definitiv einzuschalten				*/
 		/* -------------------------------------------------------- */
 
-		if	(isgr)
-			{
+		if (isgr)
+		{
 			set_apname(program);
 			appl_exit();
 			appl_init();
 			Mwind_new();
 			Mgraf_mouse(HOURGLASS);
 			appl_exit();
-			}
+		}
 
 		doserr = Pexec(0, program, (COMMAND *) param, envptr);
 
-		if	(isgr)
-			{
+		if (isgr)
+		{
 			appl_init();
 			set_apname(NULL);
 			Mwind_new();
-			}
-		else	if	(wait)
-			{
-			extern unsigned char waitkey( void );
-
+		}
+		else
+		if (wait)
+		{
 #if		COUNTRY==FRG
 			str_conout("\x1b" "e" "\r\nTaste drÅcken : ", 20);
 #elif	COUNTRY==USA
 			str_conout("\x1b" "e" "\r\npress any key : ", 20);
 #endif
 			waitkey();
-			}
+		}
 
 		/* Wenn kein Fehler aufgetreten ist, wird geprÅft, ob das	*/
 		/* aufgerufene Programm einen shel_write() gemacht hat		*/
 		/* -------------------------------------------------------- */
 
-		doex = Mshel_read(program, param, &isgr);
-		if	(doex)
+		doex = Mshel_read(program, (char *) param, &isgr);
+		if (doex)
 			doserr = setpath(program, FALSE, FALSE); /* Pgmpfad, Desk resident */
 
-		}
-	while(doex && doserr == E_OK);
+	}
+	while (doex && doserr == E_OK);
 
 
 
-	if	(isgem2 || (sysver != 0x0102))
-		{
+	if (isgem2 || (sysver != 0x0102))
+	{
 
 		/* Unter TOS 1.4 kann man einen shel_write mit  		   */
 		/* doex = 0 machen, um das Laden des Desktop zu erzwingen */
 
 		shel_write((sysver != 0x0104), 1, 1, "", "\0");
-		}
+	}
 
-	if	(!graphmode)
-		{
+	if (!graphmode)
+	{
 		v_exit_cur(vdi_handle);
 		/* exit_vt52(); wird von open_all_windows() erledigt */
-		}
+	}
 
 	/* FÅr einige Programme ist es noch einmal nîtig, den Mauszeiger */
 	/* definitiv einzuschalten.								*/
@@ -1645,23 +1757,23 @@ long	res_exec(int doex, int isgr, char *program,
 
 	show_mouse_immed();
 
-	return(doserr);
+	return doserr;
 }
 #endif
 
 #if	MAGIXDESK
 static void *rsc_block;
 
-long restart( void )
+long restart(void)
 {
-	extern   BASPAG *_BasPag;
-
 	*(aesvars->shel_vector) = NULL;
 	*((void **) (aes_global+7)) = rsc_block;
 	rsc_block = NULL;
-	return(Pexec(EXE_EXFR, "", _BasPag, NULL));
+	return Pexec(EXE_EXFR, "", _BasPag, NULL);
 }
-void res_exec( void )
+
+
+void res_exec(void)
 {
 	rsc_block = *((void **) (aes_global+7));
 	*((void **) (aes_global+7)) = NULL;
