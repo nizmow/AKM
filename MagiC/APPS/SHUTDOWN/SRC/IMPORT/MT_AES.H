@@ -272,7 +272,8 @@ extern WORD MT_evnt_multi(
 extern void MT_EVNT_multi( WORD evtypes, WORD nclicks, WORD bmask, WORD bstate,
 					MOBLK *m1, MOBLK *m2, ULONG ms, EVNT *event, WORD *global );
 
-extern WORD	MT_evnt_dclick( int ev_dnew, int ev_dgetset, WORD *global );
+/* There is a typo in the .C file, the function should be evnt_dclick() */
+extern WORD	MT_evnt_dclicks( int ev_dnew, int ev_dgetset, WORD *global );
 
 #define	evnt_keybd() \
 			MT_evnt_keybd( 0L )
@@ -289,7 +290,7 @@ extern WORD	MT_evnt_dclick( int ev_dnew, int ev_dgetset, WORD *global );
 #define	EVNT_multi( a, b, c, d, e, f, g, h ) \
 			MT_EVNT_multi( a, b, c, d, e, f, g, h, 0L )
 #define	evnt_dclick( a, b ) \
-			MT_evnt_dclick( a, b, 0L )
+			MT_evnt_dclicks( a, b, 0L )
 
 /****** Object definitions **********************************************/
 
