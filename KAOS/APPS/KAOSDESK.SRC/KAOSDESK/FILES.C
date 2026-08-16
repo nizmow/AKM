@@ -56,9 +56,9 @@ int qbreak(void)
 {
 	if ((Kbshift(-1) & (K_LSHIFT | K_RSHIFT)) == (K_LSHIFT | K_RSHIFT))
 	{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 		if (1 == form_alert(1, "[1][Vorgang abbrechen ?][  JA  | NEIN ]"))
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 		if (1 == form_alert(1, "[1][Stop process ?][  YES  | NO ]"))
 #endif
 			return TRUE;
@@ -70,17 +70,20 @@ int qbreak(void)
 
 /*********************************************************************
 *
-* Setzt das Dirty-Flag von Laufwerk <lw>
+* Setzt das interne Dirty-Flag von Laufwerk <lw>
 *
 *********************************************************************/
 
 void set_dirty(long err, char *path, char val)
 {
-	if (err != EWRPRO && err != EDRIVE && err != EFILNF &&
-	 	 err != EPTHNF && err != EACCDN)
-	 {
+	if ((err != EWRPRO) && (err != EDRIVE) && (err != EFILNF) &&
+	    (err != EPTHNF) && (err != EACCDN))
+	{
 	 	if (dirty_drives[path[0] - 'A'] == 1)
+	 	{
 	 		return;		/* schon "dirty" */
+	 	}
+
 		dirty_drives[path[0] - 'A'] = val;
 	}
 }
@@ -88,29 +91,31 @@ void set_dirty(long err, char *path, char val)
 
 /*********************************************************************
 *
-* Ermittelt den Disknamen von Laufwerk <lw>
+* Ermittelt den Volume-Namen von Laufwerk <lw>
+*
+* Sichert die aktuelle DTA.
+* Funktioniert nur fÅr das klassische 8+3-Dateinamenformat
 *
 *********************************************************************/
 
 long read_dname(int lw, char *name)
 {
 	DTA dta;
-	DTA *olddta;
-	char path[10];
+	DTA *old_dta;
+	static char path[] = "_:\\*.*";
 	long doserr;
 
-	olddta = Fgetdta();
+	old_dta = Fgetdta();
 	Fsetdta(&dta);
-	path[0] = lw + 'A';
-	strcpy(path+1, ":\\*.*");
 
+	path[0] = lw + 'A';
 	doserr = Fsfirst(path, F_VOLUME);
 	if (doserr != E_OK)
 		*name = EOS;
 	else
 		strcpy(name, dta.d_fname);
 
-	Fsetdta(olddta);
+	Fsetdta(old_dta);
 	return doserr;
 }
 
@@ -133,9 +138,9 @@ long GFdelete(char *path, char *name)
 		strcat(all, name);
 	}
 
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 	down_cnt(2, "lîsche Datei", all);
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 	down_cnt(2, "deleting file", all);
 #endif
 
@@ -164,9 +169,9 @@ long GDdelete(char *path, char *name)
 	{
 		strcat(all, name);
 	}
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 	down_cnt(2, "lîsche Ordner", all);
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 	down_cnt(2, "deleting folder", all);
 #endif
 	doserr = Ddelete(all);
@@ -313,9 +318,9 @@ long GFrename(char *path, DTA *srcfile, char *zpath)
 
 	strcpy(alls, path);
 	strcat(alls, srcfile->d_fname);
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 	down_cnt(2, "verschiebe Datei", alls);
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 	down_cnt(2, "moving file", alls);
 #endif
 	do
@@ -439,9 +444,9 @@ long GFcopy(char *path, DTA *srcfile, char *zpath)
 
 		else
 		{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			down_cnt(2, "lese Datei", alls);
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			down_cnt(2, "reading file", alls);
 #endif
 			if (shdl < 0)
@@ -477,9 +482,9 @@ long GFcopy(char *path, DTA *srcfile, char *zpath)
 		{
 			strcpy(alld, zpath);
 			strcat(alld, srcfile->d_fname);
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			down_cnt(2, "schreibe Datei", alld);
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			down_cnt(2, "writing file", alld);
 #endif
 			doserr = GFcreate(zpath, srcfile);
@@ -495,9 +500,9 @@ long GFcopy(char *path, DTA *srcfile, char *zpath)
 
 		if (lbytes)
 		{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			down_cnt(2, "schreibe Datei", alld);
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			down_cnt(2, "writing file", alld);
 #endif
 			doserr = Fwrite(dhdl, lbytes, buf);
@@ -505,9 +510,9 @@ long GFcopy(char *path, DTA *srcfile, char *zpath)
 				err_file = alld;
 			if (doserr >= 0L && doserr < lbytes)
 			{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 				form_alert(1, "[3][Zieldisk voll!][Abbruch]");
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 				form_alert(1, "[3][Destination disk full!][Abort]");
 #endif
 				doserr = -1L;
@@ -552,9 +557,9 @@ long GDcreate(char *path, char *name)
 	{
 		strcpy(all, path);
 		strcat(all, name);
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 		down_cnt(2, "erstelle Ordner", all);
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 		down_cnt(2, "creating folder", all);
 #endif
 		doserr = Dcreate(all);
@@ -668,7 +673,9 @@ static long _walk_path(void)
 			{
 				_clusters += dta.d_length/_clsize;
 				if (dta.d_length % _clsize)
+				{
 					_clusters++;	/* auf ganze Cluster aufrunden */
+				}
 			}
 		}
 
@@ -692,14 +699,16 @@ static long _walk_path(void)
 
 	depth--;
 
-	if (_clsize && endp > _path+3)		/* nicht Root */
+	if (_clsize && (endp > _path + 3))		/* nicht Root */
 	{
 		long dirn;
 
 		dirn = dirlen << 5;			/* 32 Bytes pro Eintrag */
 		_clusters += dirn/_clsize;
 		if (dirn % _clsize)
+		{
 			_clusters++;
+		}
 	}
 
 	if (errcode == EFILNF || errcode == ENMFIL)
@@ -707,11 +716,13 @@ static long _walk_path(void)
 		errcode = E_OK;
 	}
 
+	#if 0
 	if (errcode)
 	{
 		Cconws(_path);
 		Cconws("\r\n");
 	}
+	#endif
 
 	return err_alert(errcode);
 }
@@ -802,7 +813,7 @@ static void down_cnt(int ord, char *aktion, char *path)
 	{
 		char *s,*t;
 
-		s = (adr_cpmvdl+CPMVD_DT)->ob_spec.free_string;
+		s = adr_cpmvdl[CPMVD_DT].ob_spec.free_string;
 		t = get_name(path);
 		if (*path != *s || s[1] != ':' || strcmp(s+2, t))
 		{
@@ -811,7 +822,7 @@ static void down_cnt(int ord, char *aktion, char *path)
 			strcpy(s, t);
 			subobj_draw(adr_cpmvdl, CPMVD_DT, -1, NULL);
 		}
-		s = (adr_cpmvdl+CPMVD_AK)->ob_spec.free_string;
+		s = adr_cpmvdl[CPMVD_AK].ob_spec.free_string;
 		if (strcmp(s, aktion))
 			subobj_draw(adr_cpmvdl, CPMVD_AK, -1, aktion);
 		return;
@@ -955,26 +966,26 @@ long confirm(int wnr, int function, int ja, char *zielpfad)
 	switch(function)
 	{
 		case 0:
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			titel = "Lîsche";
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			titel = "Delete";
 #endif
 			objs_hide(adr_cpmvdl, CPMVD_MD, 0);
 			break;
 
 		case 1:
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			titel = "Kopiere";
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			titel = "Copy";
 #endif
 			goto unhide;
 
 		case 2:
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			titel = "Verschiebe";
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			titel = "Move";
 #endif
 			_move_flag = TRUE;
@@ -986,9 +997,9 @@ long confirm(int wnr, int function, int ja, char *zielpfad)
 			break;
 	}
 
-	(adr_cpmvdl+CPMVD_AK)->ob_spec.free_string[0] = EOS;
-	(adr_cpmvdl+CPMVD_DT)->ob_spec.free_string[0] = EOS;
-	(adr_cpmvdl+CPMVDL_B)->ob_spec.free_string[0] = EOS;
+	adr_cpmvdl[CPMVD_AK].ob_spec.free_string[0] = EOS;
+	adr_cpmvdl[CPMVD_DT].ob_spec.free_string[0] = EOS;
+	adr_cpmvdl[CPMVDL_B].ob_spec.free_string[0] = EOS;
 
 	n_dat = n_ord = 0;
 	n_clu = 0L;
@@ -1009,17 +1020,17 @@ long confirm(int wnr, int function, int ja, char *zielpfad)
 		return 1;
 	}
 
-	ultoa(n_dat, (adr_cpmvdl+CPMVDL_D)->ob_spec.free_string, 10);
-	ultoa(n_ord, (adr_cpmvdl+CPMVDL_O)->ob_spec.free_string, 10);
+	ultoa(n_dat, adr_cpmvdl[CPMVDL_D].ob_spec.free_string, 10);
+	ultoa(n_ord, adr_cpmvdl[CPMVDL_O].ob_spec.free_string, 10);
 
 	if (n_siz)
-		ultoa((n_clu*n_siz)/1024L, (adr_cpmvdl+CPMVDL_B)->ob_spec.free_string, 10);
+		ultoa((n_clu*n_siz)/1024L, adr_cpmvdl[CPMVDL_B].ob_spec.free_string, 10);
 
-	titelobj = (adr_cpmvdl+CPMVDL_T)->ob_spec.free_string;
+	titelobj = adr_cpmvdl[CPMVDL_T].ob_spec.free_string;
 	strcpy(titelobj, titel);
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 	strcat(titelobj, " Dateien");
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 	strcat(titelobj, " Files");
 #endif
 	form_center(adr_cpmvdl, &cg);
@@ -1046,10 +1057,10 @@ long confirm(int wnr, int function, int ja, char *zielpfad)
 	if (function > 0 && dst_drive >= 0 &&
 		 n_clu > dinfo[dst_drive].b_free && status.mode_ovwr != BACKUP)
 	{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 		if (2 == form_alert(2, "[2][Zuwenig Platz auf dem|Ziellaufwerk!]"
 						"[OK|Abbruch]"))
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 		if (2 == form_alert(2, "[2][Insufficient free space at|destination disk!]"
 						"[OK|Cancel]"))
 #endif
@@ -1250,9 +1261,9 @@ int copy_move_files(char *quell, char *ziel, int move_flag, int ispath)
 	{
 		if (ziel == strstr(ziel, quell))
 		{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			form_alert(1, "[3][UngÅltige Kopieranweisung!][Abbruch]");
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			form_alert(1, "[3][Invalid copy operation!][Cancel]");
 #endif
 			return 0;

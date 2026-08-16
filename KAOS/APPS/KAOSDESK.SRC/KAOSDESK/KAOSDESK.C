@@ -95,7 +95,7 @@ void objs_hide(OBJECT *tree, ...)
 		objnr = va_arg(argpoint, int);
 		if (objnr == 0)
 			break;
-		(tree+objnr)->ob_flags |= HIDETREE;
+		tree[objnr].ob_flags |= HIDETREE;
 	}
 
 	va_end(argpoint);
@@ -114,7 +114,7 @@ void objs_unhide(OBJECT *tree, ...)
 		objnr = va_arg(argpoint, int);
 		if (objnr == 0)
 			break;
-		(tree+objnr)->ob_flags &= ~HIDETREE;
+		tree[objnr].ob_flags &= ~HIDETREE;
 	}
 
 	va_end(argpoint);
@@ -127,13 +127,13 @@ void objs_unhide(OBJECT *tree, ...)
 
 int selected(OBJECT *tree, int which)
 
-{ return ((tree + which)->ob_state & SELECTED) ? 1 : 0; }
+{ return (tree[which].ob_state & SELECTED) ? 1 : 0; }
 
 /******* Objekt deselektieren **********/
 
 void ob_dsel(OBJECT *tree, int which)
 
-{ (tree+which)->ob_state &= ~SELECTED; }
+{ tree[which].ob_state &= ~SELECTED; }
 
 /******* Objekt selektieren/deselektieren **********/
 
@@ -141,16 +141,16 @@ void ob_sel_dsel(OBJECT *tree, int which, int sel)
 
 {
 	if (sel)
-		(tree+which)->ob_state |=  SELECTED;
+		tree[which].ob_state |=  SELECTED;
 	else
-		(tree+which)->ob_state &= ~SELECTED;
+		tree[which].ob_state &= ~SELECTED;
 }
 
 /***** Objekt selektieren **************/
 
 void ob_sel(OBJECT *tree, int which)
 
-{ (tree+which)->ob_state |= SELECTED; }
+{ tree[which].ob_state |= SELECTED; }
 
 
 /****************************************************************
@@ -204,7 +204,7 @@ int icsel(int *rwnr, int *objn)
 		{
 			for	(; i <= (tree -> ob_tail); i++)
 			{
-				if (!((tree+i)->ob_flags & HIDETREE) && selected(tree, i))
+				if (!(tree[i].ob_flags & HIDETREE) && selected(tree, i))
 				{
 					if (*rwnr != -2)	/* noch einer ! */
 						return -1;
@@ -247,7 +247,7 @@ void subobj_draw(OBJECT *tree, int obj, int n, char *s)
 	void objc_grect(OBJECT *tree, int objn, GRECT *g);
 
 
-	z = (tree+obj)->ob_spec.free_string;
+	z = tree[obj].ob_spec.free_string;
 	if (s)
 	{
 		strcpy(z, s);
@@ -400,13 +400,13 @@ static void modify_menu(void)
 
 		switch(status.sorttyp)
 		{
-#if 	COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			case M_SNAME:	t = "     NAMEN";	break;
 			case M_SDATUM: t = "     DATUM";	break;
 			case M_SGROES: t = "     GRôûE";	break;
 			case M_STYP:	t = "       TYP";	break;
 			case M_SNICHT: t = "UNSORTIERT";	break;
-#elif COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			case M_SNAME:	t = "     NAMES";	break;
 			case M_SDATUM: t = "      DATE";	break;
 			case M_SGROES: t = "      SIZE";	break;
@@ -494,9 +494,9 @@ void ende(void)
 	int ret;
 
 
-#if 	COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 	ret = form_alert(1, "[2][Verlasse KAOSDESK nach:][DESKTOP|DOS|Abbruch]");
-#elif COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 	ret = form_alert(1, "[2][Leave KAOSDESK for:][DESKTOP|DOS|Cancel]");
 #endif
 	if (ret == 3)
@@ -690,9 +690,9 @@ static void _rsrc_load(char *fname)
 {
 	if (!rsrc_load(fname))
 	{
-#if 	COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 		form_alert(1, "[3][Kann \".RSC\"- Datei|nicht finden][Abbruch]");
-#elif COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 		form_alert(1, "[3][Cannot find \".RSC\" file][Cancel]");
 #endif
 		appl_exit();
@@ -754,7 +754,7 @@ static void get_rsc(void)
 	ob_dsel(adr_hauptmen, MM_DATEI);
 	menu_ienable(adr_hauptmen, M_BLITTR, Blitmode(-1) & 2);
 	/* Diskname fÅrs Formatieren auf "" setzen 	*/
-	*((adr_format+FORMAT_T)->ob_spec.tedinfo)->te_ptext = EOS;
+	adr_format[FORMAT_T].ob_spec.tedinfo->te_ptext[0] = EOS;
 
 	/* Icongrîûen fÅr Auflîsungen korrigieren */
 	for	(i = I_FLPDSK; i <= I_BTCHDA; i++)
@@ -766,11 +766,11 @@ static void get_rsc(void)
 	/* Icons im Dialog "Laufwerk anmelden" installieren */
 	for	(i = I_FLPDSK; i <= I_PAPIER; i++)
 	{
-		(adr_laufwe + ICNCHG_F+i-1)->ob_type   = G_ICON;
-		(adr_laufwe + ICNCHG_F+i-1)->ob_state  = NORMAL;
-		(adr_laufwe + ICNCHG_F+i-1)->ob_width  = (adr_icons+i)->ob_width;
-		(adr_laufwe + ICNCHG_F+i-1)->ob_height = (adr_icons+i)->ob_height;
-		(adr_laufwe + ICNCHG_F+i-1)->ob_spec   = (adr_icons+i)->ob_spec;
+		adr_laufwe[ICNCHG_F + i - 1].ob_type   = G_ICON;
+		adr_laufwe[ICNCHG_F + i - 1].ob_state  = NORMAL;
+		adr_laufwe[ICNCHG_F + i - 1].ob_width  = adr_icons[i].ob_width;
+		adr_laufwe[ICNCHG_F + i - 1].ob_height = adr_icons[i].ob_height;
+		adr_laufwe[ICNCHG_F + i - 1].ob_spec   = adr_icons[i].ob_spec;
 	}
 
 #if MAGIXDESK
@@ -778,33 +778,37 @@ static void get_rsc(void)
 		return;
 	/* Gruppenrahmen anpassen */
 	i = gl_hhchar >> 1;
-	(adr_einste+EINST_S1)->ob_y		+= i;
-	(adr_einste+EINST_S1)->ob_height	+= i;
-	(adr_einste+EINST_S2)->ob_y		+= i;
-	(adr_einste+EINST_S2)->ob_height	+= i;
-	(adr_einste+EINST_R1)->ob_y -= i;
-	(adr_einste+EINST_R2)->ob_y -= i;
-	(adr_cpydsk+CPYDS_R1)->ob_y -= i;
-	(adr_format+FORMT_R1)->ob_y -= i;
-	(adr_cpmvdl+CPMVD_R1)->ob_y -= i;
-	(adr_datinf+FI_R1   )->ob_y -= i;
-	(adr_ordinf+OI_R1   )->ob_y -= i;
+
+	adr_einste[EINST_S1].ob_y		+= i;
+	adr_einste[EINST_S1].ob_height	+= i;
+	adr_einste[EINST_S2].ob_y		+= i;
+	adr_einste[EINST_S2].ob_height	+= i;
+	adr_einste[EINST_R1].ob_y -= i;
+	adr_einste[EINST_R2].ob_y -= i;
+	adr_cpydsk[CPYDS_R1].ob_y -= i;
+	adr_format[FORMT_R1].ob_y -= i;
+	adr_cpmvdl[CPMVD_R1].ob_y -= i;
+	adr_datinf[FI_R1   ].ob_y -= i;
+	adr_ordinf[OI_R1   ].ob_y -= i;
+
 	image = adr_about + ABOU_IMG;
 	image->ob_height = image->ob_spec.bitblk->bi_hl;
-	while ((image->ob_y + image->ob_height > (adr_about + ABOU_OS) -> ob_y) &&
-		 (image->ob_y > 0))
+	while ((image->ob_y + image->ob_height > (adr_about + ABOU_OS) -> ob_y) && (image->ob_y > 0))
+	{
 		image->ob_y--;
+	}
 
-	strcpy ((adr_about + ABOU_VER)->ob_spec.tedinfo->te_ptext+11, pgm_ver);
-	(adr_about + ABOU_OS)->ob_spec.free_string = os_ver_s;
+	strcpy(adr_about[ABOU_VER].ob_spec.tedinfo->te_ptext + 11, pgm_ver);
+	adr_about[ABOU_OS].ob_spec.free_string = os_ver_s;
 	i = adr_about->ob_width;
 	i -= (int) strlen(os_ver_s) * gl_hwchar;
 	i /= 2;
 	if (i < 0)
 		i = 0;
 
-	(adr_about + ABOU_OS)->ob_x = i;
-	(adr_hauptmen+M_ENDE) -> ob_state |= DISABLED;
+	adr_about[ABOU_OS].ob_x = i;
+	adr_hauptmen[M_ENDE].ob_state |= DISABLED;
+
 	/* Uhrzeit in der MenÅleiste an den rechten Rand */
 	if (lowres)
 	{
@@ -816,16 +820,18 @@ static void get_rsc(void)
 	}
 
 #else
-	strcpy ((adr_about + ABOU_VER)->ob_spec.free_string+21, pgm_ver);
+	strcpy(adr_about[ABOU_VER].ob_spec.free_string + 21, pgm_ver);
+
 	/* Programmparameter auf "" setzen 	*/
-	*((adr_ttppar+TTPPAR_1)->ob_spec.tedinfo)->te_ptext = EOS;
-	*((adr_ttppar+TTPPAR_2)->ob_spec.tedinfo)->te_ptext = EOS;
+	adr_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext[0] = EOS;
+	adr_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext[0] = EOS;
+
 	/* Dialog "Einstellungen" fÅr KAOS/TOS bzw. MAGIX anpassen */
 	if (!ismagix)
 	{
-		(adr_einste+EINST_TX)->ob_flags = HIDETREE;
-		(adr_einste+EINST_BD)->ob_state |= DISABLED;
-		(adr_einste+EINS_BDS)->ob_state |= DISABLED;
+		adr_einste[EINST_TX].ob_flags = HIDETREE;
+		adr_einste[EINST_BD].ob_state |= DISABLED;
+		adr_einste[EINS_BDS].ob_state |= DISABLED;
 	}
 	/* Uhrzeit in der MenÅleiste an den rechten Rand */
 	if (isgem2)

@@ -3,17 +3,17 @@ KAOSDESK.PRG
 .C[-Iimport]	; .h search path
 =
 KDSTART.O     ; minimal startup code
-KAOSDESK	(k.h,kaosdesk.h) [-P -W-stv]	; RAHMENPROGRAMM, REDRAWS
+KAOSDESK	(k.h,kaosdesk.h)	[-P -W-stv]	; RAHMENPROGRAMM, REDRAWS
 DEFAULTS	(k.h,kaosdesk.h)	[-P -W-stv]	; LADEN/ABSPEICHERN DER EINSTELLUNGEN
-DKLICK	(k.h,kaosdesk.h)	[-P -W-stv]	; MAUSAKTIONEN (™FFNEN)
-DIALOGS	(k.h,kaosdesk.h)	[-P -W-stv]	; DIALOGE
-KLICK	(k.h,kaosdesk.h)	[-P -W-stv]  ; MAUSAKTIONEN
-WINDOWS	(k.h,kaosdesk.h)	[-P -W-stv]
-FILES	(k.h,kaosdesk.h)	[-P]		; DATEIOPERATIONEN (L™SCH,KOP,VERSCH,UMBEN)
-ALLG	(k.h,kaosdesk.h)
-SPEC	(k.h)		[-P]		; TOS- SPEZIFISCHES
+DKLICK		(k.h,kaosdesk.h)	[-P -W-stv]	; MAUSAKTIONEN (™FFNEN)
+DIALOGS		(k.h,kaosdesk.h)	[-P -W-stv]	; DIALOGE
+KLICK		(k.h,kaosdesk.h)	[-P -W-stv] ; MAUSAKTIONEN
+WINDOWS		(k.h,kaosdesk.h)	[-P -W-stv]
+FILES		(k.h,kaosdesk.h)	[-P]		; DATEIOPERATIONEN (L™SCH,KOP,VERSCH,UMBEN)
+ALLG		(k.h,kaosdesk.h)
+SPEC		(k.h)				[-P]		; TOS- SPEZIFISCHES
 SHELSORT.O
-IMPORT\pcstdlib.lib   ; standard lib
-IMPORT\pctoslib.lib   ; TOS lib
-IMPORT\MT_AES.LIB	; MAGIX AES- lib
+IMPORT\pcstdlib.lib ; standard lib
+IMPORT\pctoslib.lib ; TOS lib
+IMPORT\MT_AES.LIB	; MAGIX AES lib
 IMPORT\pcgemlib.lib	; GEM lib

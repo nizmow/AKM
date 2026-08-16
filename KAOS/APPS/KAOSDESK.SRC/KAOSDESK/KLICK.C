@@ -125,9 +125,9 @@ int make_icon(int typ, char c, char *icntext, char *path, int x, int y)
 		;
 	if (i >= n_icons)
 	{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 		form_alert(1, "[3][Desktop ist voll!][Abbruch]");
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 		form_alert(1, "[3][Desktop full!][Cancel]");
 #endif
 		return TRUE;
@@ -364,9 +364,9 @@ static void move_icons(int x_koor, int y_koor, int wnr, OBJECT *tree, int kbsh)
 		if (ptr_g)
 			mk_dskt_icns(wnr, xrel, yrel);
 		else
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			form_alert(1, "[3][Immer nur EINE Datei|aufs Desktop ziehen!][Abbruch]");
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			form_alert(1, "[3][Only ONE file can be placed on|desktop at one time!][Abort]");
 #endif
 		return;
@@ -845,9 +845,9 @@ void prt_icns(int wnr, int print)
 	if (wnr < 0)
 		return;
 
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 	if (print && (2 == form_alert(1, "[2][Druckprogramm aufrufen?][OK|Abbruch]")))
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 	if (print && (2 == form_alert(1, "[2][Execute print program?][OK|Cancel]")))
 #endif
 		return;

@@ -4,11 +4,18 @@
 *
 **************************************************/
 
-#define USA 0
-#define FRG 1
+
+#define LANG_GER 1
+#define LANG_FRA 2		/* not supported, yet */
+#define LANG_ENG 3
+#define LANG_SPA 4		/* not supported, yet */
+#define LANG_ITA 5		/* not supported, yet */
+#define LANG_SWE 6		/* not supported, yet */
+
+
+#define LANGUAGE LANG_GER
 
 #define MAGIXDESK 0		/* TRUE: MagiX- Desktop kreieren */
-#define COUNTRY FRG
 #define DEBUG 0
 
 #include <mt_aes.h>

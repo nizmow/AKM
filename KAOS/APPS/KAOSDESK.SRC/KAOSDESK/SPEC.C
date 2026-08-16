@@ -497,9 +497,9 @@ int tryagain(long *doserr, int drv)
 	int ret;
 	const char *s;
 	static char alerts[] =
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 		" auf X:][Abbruch|Nochmal|Weiter]";
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 		" at  X:][Cancel|Retry|OK]";
 #endif
 	char buf[200];
@@ -509,9 +509,9 @@ int tryagain(long *doserr, int drv)
 #if MAGIXDESK==0
 	s = err_string((int) *doserr);
 	if (s == NULL)
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 		s = "Diskettenfehler";
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 		s = "disk error";
 #endif
 #else
@@ -1135,9 +1135,9 @@ long label(int lw, char *name)
 *
 *********************************************************************/
 
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 char chg_msg[] = "[2][Quelldisk in X: einlegen!][OK|Abbruch]";
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 char chg_msg[] = "[2][Insert source disk into X:!][OK|Cancel]";
 #endif
 
@@ -1204,9 +1204,9 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 
 		if (slw == dlw)
 		{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			strncpy(chg_msg+4, " Ziel", 5);
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			strncpy(chg_msg+11, " dest.", 6);
 #endif
 			if (2 == form_alert(1, chg_msg))
@@ -1225,9 +1225,9 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 		dtrk = nsects/(dsid*dspt);
 		if (dsid != sid || trk != dtrk || dspt != spt)
 		{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			if (1 != form_alert(1, "[2][Formatieren ?][ OK | Abbruch]"))
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			if (1 != form_alert(1, "[2][Format ?][ OK | Cancel]"))
 #endif
 				return E_OK;
@@ -1296,9 +1296,9 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 		{
 			if (slw == dlw && !isquell)
 			{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 				strncpy(chg_msg+4, "Quell", 5);
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 				strncpy(chg_msg+11, "source", 6);
 #endif
 				if (2 == form_alert(1, chg_msg))
@@ -1309,9 +1309,9 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 			      ctrack < c_tracks;
 			      ctrack++, cbuf += spt * sid * 512)
 			{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 				feedb("Lese", ctrack);
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 				feedb("reading", ctrack);
 #endif
 				for	(cside = 0; cside < sid; cside++)
@@ -1357,9 +1357,9 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 
 		if (slw == dlw && isquell)
 		{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			strncpy(chg_msg+4, " Ziel", 5);
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			strncpy(chg_msg+11, " dest.", 6);
 #endif
 			if (2 == form_alert(1, chg_msg))
@@ -1372,9 +1372,9 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 		{
 			if (fmt)
 			{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 				feedb("Formatiere", ctrack);
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 				feedb("formatting", ctrack);
 #endif
 				for	(cside = 0; cside < sid; cside++)
@@ -1393,9 +1393,9 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 					}
 				}
 			}
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			feedb("Schreibe", ctrack);
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			feedb("writing", ctrack);
 #endif
 			for	(cside = 0; cside < sid; cside++)
@@ -1743,9 +1743,9 @@ long res_exec(int doex, int isgr, char *program,
 		else
 		if (wait)
 		{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			str_conout("\x1b" "e" "\r\nTaste drcken : ", 20);
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			str_conout("\x1b" "e" "\r\npress any key : ", 20);
 #endif
 			waitkey();

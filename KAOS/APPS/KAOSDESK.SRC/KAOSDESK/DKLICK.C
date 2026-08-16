@@ -190,10 +190,10 @@ int dclick(int wnr, int obj, int kbsh)
 		{
 			case 'D_':
 			case 'P_':
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 				form_alert(1, "[3][Drucker und Papierkorb lassen|"
 								"sich nicht ”ffnen.][Abbruch]");
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 				form_alert(1, "[3][Printer and Trash cannot|"
 								"be opened.][Abort]");
 #endif
@@ -266,7 +266,7 @@ int dclick(int wnr, int obj, int kbsh)
 
 			else
 			{
-				strcpy(path, ((adr_prgrms+PG_4)->ob_spec.tedinfo)->te_ptext);
+				strcpy(path, adr_prgrms[PG_4].ob_spec.tedinfo->te_ptext);
 				typ = suffixtyp(path);
 				starten(path, typ, 0, 0, kbsh & ~K_CTRL);
 			}
@@ -323,9 +323,9 @@ void opn_newwnd(char *path)
 			}
 		}
 	err_wnd:
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 	form_alert(1, "[3][Keine Fenster mehr.][Abbruch]");
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 	form_alert(1, "[3][All windows used.][Cancel]");
 #endif
 	return;
@@ -436,9 +436,9 @@ int show_file(char *path)
 							long fpos;
 
 							if (!s)
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 								str_conout("\r\n--Mehr-- "
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 								str_conout("\r\n--More-- "
 #endif
 										 "\x1b" "e", 13);
@@ -516,8 +516,8 @@ int show_file(char *path)
 		{
 			lbytes = doserr = 0L;
 			goto back;
-			}
 		}
+	}
 
 	if (buf)
 		Mfree(buf);
@@ -645,7 +645,7 @@ void get_param(char *pgm, int wnr, int obj, char *tail)
 			{
 				if (wnr == iwnr && i == obj)
 					continue;		/* Das Programm selbst */
-				if (!((tree+i)->ob_flags & HIDETREE) && selected(tree, i))
+				if (!(tree[i].ob_flags & HIDETREE) && selected(tree, i))
 				{
 					char rettc1;
 					char *e;
@@ -835,7 +835,7 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 		if (objnr > PG_14)
 			objnr = PG_1;
 
-		program = ((adr_prgrms+objnr)->ob_spec.tedinfo)->te_ptext;
+		program = adr_prgrms[objnr].ob_spec.tedinfo->te_ptext;
 
 		if (program[0] == '*')
 		{

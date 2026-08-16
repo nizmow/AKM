@@ -30,7 +30,7 @@ const char *err_string(int e)
 		"Allgemeiner Fehler",
 		"Laufwerk nicht bereit",
 		"Unbekanntes Kommando",
-		"CRC- Fehler",
+		"CRC-Fehler",
 		"Kommando nicht mîglich",
 		"Spur nicht gefunden",
 		"Unbekanntes Medium",
@@ -54,15 +54,15 @@ const char *err_string(int e)
 		"UngÅltiges Laufwerk",
 		"Nicht dasselbe Laufwerk",
 		"Keine weiteren Dateien",
-		"UngÅltiger Fseek- Bereich",
+		"UngÅltiger Fseek-Bereich",
 		"Interner Fehler",
 		"Datei nicht ausfÅhrbar",
-		"Mshrink- Fehler",
+		"Mshrink-Fehler",
 
 		"User break",
 		"68000- Exception",
 
-		"Pfad zu tief",
+		"Pfad zu tief"
 	};
 
 	static const char errn[] =
@@ -91,9 +91,9 @@ const char *err_string(int e)
 
 /****************************************************************
 *
-* Gibt zu einem DOS- Fehler die entsprechende Alertbox
+* Gibt zu einem DOS-Fehler die entsprechende Alertbox.
 * Unter MAGIX wird form_xerr() verwendet, das automatisch
-* die richtige NationnalitÑt wÑhlt.
+* die passende Sprache wÑhlt.
 *
 ****************************************************************/
 
@@ -123,10 +123,15 @@ long err_alert(long e)
 		{
 			alrts = err_string((int) e);
 			if (!alrts)
-				alrts = "TOS- Fehler";
+			{
+				alrts = "TOS-Fehler";
+			}
+
 			strcpy(s, "[3][");
 			if (err_file == (char *) -1L)
+			{
 				strcpy(s+4, "Programm gab zurÅck :|");
+			}
 			else
 			if (err_file)
 			{
@@ -208,7 +213,7 @@ void Mgraf_mouse(int type)
 
 /*********************************************************************
 *
-* Wandelt DOS- Datum in eine Zeichenkette um.
+* Wandelt DOS-Datum in eine Zeichenkette um.
 *
 *********************************************************************/
 
@@ -236,7 +241,7 @@ void date_to_str(char *s, unsigned int date)
 
 /*********************************************************************
 *
-* Wandelt DOS- Zeit in eine Zeichenkette um.
+* Wandelt DOS-Zeit in eine Zeichenkette um.
 *
 *********************************************************************/
 
@@ -315,7 +320,7 @@ char *print_ul(unsigned long z, char *p)
 
 /*********************************************************************
 *
-* Rechnet Dateinamen ins interne Format und zurÅck
+* Rechnet Dateinamen ins interne Format
 *
 *********************************************************************/
 
@@ -338,6 +343,12 @@ void fname_int(char *s, char *d)
 	*p = '\0';
 }
 
+
+/*********************************************************************
+*
+* Rechnet Dateinamen vom internen Format zurÅck
+*
+*********************************************************************/
 
 void fname_ext(char *s, char *d)
 {
@@ -365,9 +376,9 @@ void fname_ext(char *s, char *d)
 *
 * Berechnet den Dateityp, und zwar:
 *
-* Endung PRG,TOS,TTP,APP	: Programm
-* Endung BAT,BTP		: Batchdatei
-* sonst				: Textdatei
+* Endung PRG,TOS,TTP,APP : Programm
+* Endung BAT,BTP         : Batchdatei
+* sonst                  : Textdatei
 *
 *********************************************************************/
 

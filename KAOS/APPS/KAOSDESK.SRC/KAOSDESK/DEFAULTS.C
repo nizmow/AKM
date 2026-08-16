@@ -1,6 +1,6 @@
 /*********************************************************************
 *
-* Dieses Modul enth„lt das Laden und Abspeichern der Defaults
+* Dieses Modul enth„lt das Laden und Abspeichern der "Defaults"
 *
 *********************************************************************/
 
@@ -16,6 +16,14 @@
 #if	MAGIXDESK==0
 static char *infdata;
 #endif
+
+static char *gmemptr = NULL;
+#if	MAGIXDESK
+char inf_name[] = "A:\\MAGX.INF";
+#else
+char inf_name[] = "A:\\KAOSDESK.INF";
+#endif
+static char *s;
 
 
 /****************************************************************
@@ -39,12 +47,13 @@ void load_icons(void)
 		icf_data = (int *) buf;
 		icf_pgmicn = (int *) buf;
 		icf_daticn = (int *) (buf + (iconfile_header.n_pgm_icons) * 0x70);
-		icf_pgms = buf + (0x70) * 
-			(iconfile_header.n_pgm_icons + iconfile_header.n_dat_icons);
+		icf_pgms = buf + (0x70) * (iconfile_header.n_pgm_icons + iconfile_header.n_dat_icons);
 		icf_fils = icf_pgms + 9 * iconfile_header.n_pgm_names;
 	}
 	else
+	{
 		icf_data = NULL;			/* keine Icons */
+	}
 }
 
 
@@ -56,34 +65,23 @@ void load_icons(void)
 *
 ****************************************************************/
 
-void recalc(int *wert, int old, int new)
+void recalc(int *val, int old, int new)
 {
 	unsigned long tmp;
 
-	tmp = (unsigned long) *wert;
+	tmp = (unsigned long) *val;
 	tmp *= new;
 	tmp /= old;
-	*wert = (int) tmp;
+	*val = (int) tmp;
 }
 
 
 /****************************************************************
 *
-* L„dt bzw. setzt alle Defaults.
-* pass == 0: gmemptr initialisieren, d.h. n_icons, n_apps
-*            bestimmen und Speicher fr icon und application
-*		     allozieren
-* pass == 1: Status  laden
+* Hilfsfunktion fr load_status()
 *
 ****************************************************************/
 
-static char *gmemptr = NULL;
-#if	MAGIXDESK
-char inf_name[] = "A:\\MAGX.INF";
-#else
-char inf_name[] = "A:\\KAOSDESK.INF";
-#endif
-static char *s;
 static int scnlin(void)
 {
 	for (;;)
@@ -99,6 +97,12 @@ static int scnlin(void)
 }
 
 
+/****************************************************************
+*
+* Hilfsfunktion fr load_status()
+*
+****************************************************************/
+
 static void scnstr(char *t)
 {
 	while (*s == ' ')
@@ -108,6 +112,12 @@ static void scnstr(char *t)
 	*t = '\0';
 }
 
+
+/****************************************************************
+*
+* Hilfsfunktion fr load_status()
+*
+****************************************************************/
 
 static void scnbstr(char *t)
 {
@@ -119,6 +129,12 @@ static void scnbstr(char *t)
 }
 
 
+/****************************************************************
+*
+* Hilfsfunktion fr load_status()
+*
+****************************************************************/
+
 static int scndez(void)
 {
 	while (*s == ' ')
@@ -126,6 +142,12 @@ static int scndez(void)
 	return (int) strtol(s, &s, 10);
 }
 
+
+/****************************************************************
+*
+* Hilfsfunktion fr load_status()
+*
+****************************************************************/
 
 static char scnflg(void)
 {
@@ -142,6 +164,16 @@ static char scnflg(void)
 	return 0;
 }
 
+
+/****************************************************************
+*
+* L„dt bzw. setzt alle Defaults.
+* pass == 0: gmemptr initialisieren, d.h. n_icons, n_apps
+*            bestimmen und Speicher fr icon und application
+*		     allozieren
+* pass == 1: Status laden
+*
+****************************************************************/
 
 void load_status(int pass)
 {
@@ -175,8 +207,8 @@ void load_status(int pass)
 		/* zun„chst sicherheitshalber Defaults setzen */
 		/* ------------------------------------------ */
 
-		(((adr_ttppar+TTPPAR_1)->ob_spec.tedinfo)->te_ptext)[0] = EOS;
-		(((adr_ttppar+TTPPAR_2)->ob_spec.tedinfo)->te_ptext)[0] = EOS;
+		adr_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext[0] = EOS;
+		adr_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext[0] = EOS;
 
 		status.clock		= TRUE;
 		status.blitstate	= TRUE;
@@ -285,9 +317,9 @@ void load_status(int pass)
 	if (strncmp(s, "#_DSK", 5))
 	{
 		err:
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 		form_alert(1, "[3][Fehler auf INF- Datei!][Abbruch]");
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 		form_alert(1, "[3][Error at INF file!][Abort]");
 #endif
 		goto install;
@@ -442,7 +474,7 @@ void load_status(int pass)
 			case 'PG':
 				if (!pass || ln_pgms >= ANZPROGRAMS)
 					break;
-				scnbstr(((adr_prgrms+PG_1+ln_pgms)->ob_spec.tedinfo)->te_ptext);
+				scnbstr(adr_prgrms[PG_1 + ln_pgms].ob_spec.tedinfo->te_ptext);
 				ln_pgms++;
 				break;
 
@@ -475,8 +507,8 @@ void load_status(int pass)
 				while ((*s) && (*s != '\r') && (*s != '\n'))
 					*ziel1++ = *s++;
 				*ziel1 = EOS;
-				ziel1 = ((adr_ttppar+TTPPAR_1)->ob_spec.tedinfo)->te_ptext;
-				ziel2 = ((adr_ttppar+TTPPAR_2)->ob_spec.tedinfo)->te_ptext;
+				ziel1 = adr_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext;
+				ziel2 = adr_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext;
 				if (buf[0])
 				{
 					strncpy(ziel1, buf, TTPLEN);
@@ -527,8 +559,8 @@ void load_status(int pass)
 		(o->ob_spec).index = adr_icons[(aes_global[10] > 1) ? I_BG_COL : I_BG_BW].ob_spec.index;
 /*		(o->ob_spec).index = (aes_global[10] > 1) ? 0x1173L : 0x1143L; */
 		o->ob_flags = o->ob_state = 0;
-		icw = (adr_icons+I_FLPDSK)->ob_width + 1;
-		ich = (adr_icons+I_FLPDSK)->ob_height + 1;
+		icw = adr_icons[I_FLPDSK].ob_width + 1;
+		ich = adr_icons[I_FLPDSK].ob_height + 1;
 
 		dx = desk_g.g_x;
 		dy = desk_g.g_y;
@@ -563,7 +595,7 @@ void load_status(int pass)
 	for	(; ln_icns < n_icons; ln_icns++)
 		icon[ln_icns].icontyp = 0;
 	for	(; ln_pgms < ANZPROGRAMS; ln_pgms++)
-		*((adr_prgrms+PG_1+ln_pgms)->ob_spec.tedinfo)->te_ptext = EOS;
+		adr_prgrms[PG_1 + ln_pgms].ob_spec.tedinfo->te_ptext[0] = EOS;
 	for	(; ln_apps < n_apps; ln_apps++)
 		application[ln_apps].path[0] = EOS;
 
@@ -596,7 +628,9 @@ void load_status(int pass)
 				icon[i].data.ib_char = icon[i].isdisk + 0x1000;
 		}
 		else
-			(fenster[0].pobj + i+1)->ob_flags = HIDETREE;
+		{
+			fenster[0].pobj[i + 1].ob_flags = HIDETREE;
+		}
 	}
 
 	Mgraf_mouse(ARROW);
@@ -797,7 +831,7 @@ static void status_to_ascii(char *inf)
 	for	(i = 0; i < ANZPROGRAMS; i++)
 	{
 		prtstr("#_DPG ");
-		prtstr(((adr_prgrms+PG_1+i)->ob_spec.tedinfo)->te_ptext);
+		prtstr(adr_prgrms[PG_1 + i].ob_spec.tedinfo->te_ptext);
 		*s++ = '\r';
 		*s++ = '\n';
 	}
@@ -806,8 +840,8 @@ static void status_to_ascii(char *inf)
 	/* ------------ */
 
 	prtstr("#_DPP ");
-	prtstr(((adr_ttppar+TTPPAR_1)->ob_spec.tedinfo)->te_ptext);
-	prtstr(((adr_ttppar+TTPPAR_2)->ob_spec.tedinfo)->te_ptext);
+	prtstr(adr_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext);
+	prtstr(adr_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext);
 	*s++ = '\r';
 	*s++ = '\n';
 
@@ -890,9 +924,9 @@ void save_status(int is_inf)
 		s = inf;
 		status_to_ascii(s + 128);
 		if (!shel_put(inf, 128 + ((unsigned int) strlen(inf+128) + 1)))
-#if	COUNTRY == FRG
+#if LANGUAGE == LANG_GER
 			form_alert(1, "[3][šberlauf des AES- Puffers!][Abbruch]");
-#elif COUNTRY == USA
+#elif LANGUAGE == LANG_ENG
 			form_alert(1, "[3][Overflow in AES- buffer!][Cancel]");
 #endif
 	}
@@ -980,10 +1014,10 @@ void reload_status(int drv)
 	char olddrv;
 	long doserr;
 
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 	static char errstr[] = "[2][Keine INF- Datei auf X:|Defaults verwenden ?][OK|Abbruch]";
 	#define _DRV 25
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 	static char errstr[] = "[2][INF file not found at X:|Use defaults ?][OK|Cancel]";
 	#define _DRV 24
 #endif
@@ -1064,10 +1098,10 @@ void reload_status(int is_inf, int drv)
 	char olddrv;
 	long doserr;
 
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 	static char errstr[] = "[2][Kein KAOSDESK.INF auf X:|Defaults verwenden ?][OK|Abbruch]";
 	#define _DRV 26
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 	static char errstr[] = "[2][KAOSDESK.INF not found at X:|Use defaults ?][OK|Cancel]";
 	#define _DRV 30
 #endif

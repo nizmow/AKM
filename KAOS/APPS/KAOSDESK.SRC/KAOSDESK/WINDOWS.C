@@ -421,9 +421,9 @@ static void set_title(int wnr)
 	*s++ = ' ';
 	if (strlen(p) + strlen(m) > 124)
 	{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 		strcpy(s, "Pfad zu tief");
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 		strcpy(s, "Path to deep");
 #endif
 	}
@@ -432,9 +432,9 @@ static void set_title(int wnr)
 		strcpy(s, p);
 		strcat(s, m);
 		if (p[0] == 'R')
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			strcat(s, "  (Rommodul)");
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			strcat(s, "  (ROM modul)");
 #endif
 	}
@@ -489,10 +489,10 @@ static void set_info(int wnr)
 
 		if (snum == 0 && fenster[wnr].too_much)
 		{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			strcpy(s, " mehr als ");
 			objs = " Objekte";
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			strcpy(s, " more than ");
 			objs = " objects";
 #endif
@@ -500,10 +500,10 @@ static void set_info(int wnr)
 		else
 		{
 			ultoa(size, s, 10);
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			strcat(s, " Bytes in ");
 			objs = (num == 1) ? " Objekt" : " Objekten";
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			strcat(s, " bytes in ");
 			objs = (num == 1) ? " object" : " objects";
 #endif
@@ -513,9 +513,9 @@ static void set_info(int wnr)
 		itoa(num, s, 10);
 		if (snum)
 		{
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			strcat(s, " selektierten");
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			strcat(s, " selected");
 #endif
 		}
@@ -537,9 +537,9 @@ static void set_info(int wnr)
 			if (size < 10)
 				*s++ = ' ';
 			ultoa(size, s, 10);
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 			strcat(s, " Bytes | ");
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 			strcat(s, " bytes | ");
 #endif
 			s += strlen(s);
@@ -588,9 +588,9 @@ void show_free(int wnr)
 
 	lwc  = fenster[wnr].path[0];
 	s    = alertstr;
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 	strcpy(s, "[0][Freier Platz auf Laufwerk ");
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 	strcpy(s, "[0][Free space at drive ");
 #endif
 	s += strlen(s);
@@ -600,9 +600,9 @@ void show_free(int wnr)
 	lwc -= 'A';
 	bytes = dinfo[lwc].b_free * dinfo[lwc].b_secsiz * dinfo[lwc].b_clsiz;
 	print_ul(bytes, s);
-#if		COUNTRY==FRG
+#if LANGUAGE == LANG_GER
 	strcat(s, " Bytes|][  OK  ]");
-#elif	COUNTRY==USA
+#elif LANGUAGE == LANG_ENG
 	strcat(s, " bytes|][  OK  ]");
 #endif
 	form_alert(1, alertstr);
