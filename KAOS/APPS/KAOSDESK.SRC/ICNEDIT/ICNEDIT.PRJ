@@ -1,9 +1,10 @@
 ICNEDIT.PRG
+.L[-S=$800]
+.C[-IIMPORT]	; .h search path
 =
-TCSTART.O      ; startup code
+IMPORT\PCMXSTRT.O      ; startup code
 ICNEDIT		(ICNEDIT.H) [-W-stv]	; RAHMENPROGRAMM, REDRAWS
-SDATEI						; DATEIVERWALTUNG
-pcstdlib.lib   ; standard lib
-pctoslib.lib   ; TOS lib
-pcgemlib.lib   ; AES and VDI lib
-
+IMPORT\pcstdlib.lib ; standard lib
+IMPORT\pctoslib.lib ; TOS lib
+IMPORT\MT_AES.LIB	; MAGIX AES lib
+IMPORT\pcgemlib.lib	; GEM lib
