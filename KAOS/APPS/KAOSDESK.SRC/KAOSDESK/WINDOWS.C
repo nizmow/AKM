@@ -583,11 +583,10 @@ void show_free(int wnr)
 	char alertstr[100];
 	register char *s;
 	int lwc;
-	long bytes;
 
 
-	lwc  = fenster[wnr].path[0];
-	s    = alertstr;
+	lwc = fenster[wnr].path[0];
+	s = alertstr;
 #if LANGUAGE == LANG_GER
 	strcpy(s, "[0][Freier Platz auf Laufwerk ");
 #elif LANGUAGE == LANG_ENG
@@ -598,12 +597,11 @@ void show_free(int wnr)
 	strcpy(s, ":| |      ");
 	s   += strlen(s);
 	lwc -= 'A';
-	bytes = dinfo[lwc].b_free * dinfo[lwc].b_secsiz * dinfo[lwc].b_clsiz;
-	print_ul(bytes, s);
+	print_ul(dinfo[lwc].b_free, dinfo[lwc].b_secsiz * dinfo[lwc].b_clsiz, s);
 #if LANGUAGE == LANG_GER
-	strcat(s, " Bytes|][  OK  ]");
+	strcat(s, "Bytes|][  OK  ]");
 #elif LANGUAGE == LANG_ENG
-	strcat(s, " bytes|][  OK  ]");
+	strcat(s, "bytes|][  OK  ]");
 #endif
 	form_alert(1, alertstr);
 }
@@ -716,20 +714,39 @@ static long read_wind(int wnr, int free_flag)
 		if (errcode != EFILNF && errcode != E_OK)
 			continue;
 	
-		/* Freien Speicher ermitteln */
-		/* ------------------------- */
+		/* Freien Speicher ermitteln und daraus die Gr”že des horizontalen Scroll-Balkens */
+		/* ------------------------------------------------------------------------------ */
 	
 		if (free_flag)
 		{
 			long slsize;
 
-			if (dinfo[drv].b_clsiz == 0L)	/* ungltig */
+			if (dinfo[drv].b_clsiz == 0L)
+			{
+				/* noch nicht ermittelt oder ungltig => ermitteln */
+
 				if (0L > (errcode = MDfree(&dinfo[drv], drv + 1)))
 					continue;
+			}
+
 			if (dinfo[drv].b_free == dinfo[drv].b_total)
+			{
+				/* voll belegt */
 				slsize = -1L;
+			}
 			else
-				slsize = ((dinfo[drv].b_total-dinfo[drv].b_free) * 1000L) / dinfo[drv].b_total;
+			{
+				unsigned long b_total = dinfo[drv].b_total;
+				unsigned long b_free = dinfo[drv].b_free;
+				
+				/* 32-bit-šberlauf vermeiden */
+				if (b_total > 1024 * 1024)
+				{
+					b_total >>= 10;
+					b_free >>= 10;
+				}
+				slsize = ((b_total - b_free) * 1000L) / b_total;
+			}
 
 			wind_set_int(fenster[wnr].handle, WF_HSLSIZE, (int) slsize);
 		}

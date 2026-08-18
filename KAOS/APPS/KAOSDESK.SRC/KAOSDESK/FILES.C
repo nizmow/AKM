@@ -48,7 +48,8 @@ int disk_type(int drvnr)
 
 /*********************************************************************
 *
-* Fragt, ob abgebrochen werden soll.
+* Durch Gedrckthalten beider Umschalttasten kann ein Vorgang
+* nach Nachfrage abgebrochen werden.
 *
 *********************************************************************/
 
@@ -593,10 +594,11 @@ long GDcreate(char *path, char *name)
 *
 *********************************************************************/
 
+static long _first_error;	/* avoid a large number of error messages */
 static long _nbytes,_hbytes;
 static int _nfiles,_hfiles,_folders;
-static long (*_before)(char *path, DTA *file);
-static long (*_after) (char *path, DTA *file);
+static long (*_before_cb)(char *path, DTA *file);
+static long (*_after_cb) (char *path, DTA *file);
 static int depth, _attr_msk;
 static long _clsize, _clusters;
 static char *_path;
@@ -616,13 +618,15 @@ static long _walk_path(void)
 	depth++;
 	if (depth > 8 || errcode > 116)
 	{
-		err_alert(EPTHOV);
 		depth--;
-		return E_OK;
+		errcode = EPTHOV;
+		goto error;
 	}
 
 	if (qbreak())
+	{
 		return EBREAK;
+	}
 
 	Fsetdta(&dta);
 	strcpy(endp, _mask);
@@ -630,8 +634,14 @@ static long _walk_path(void)
 	errcode = Fsfirst(_path, _attr_msk);
 	while (errcode == E_OK)
 	{
+		/* user break */
+
 		if (qbreak())
+		{
 			return EBREAK;
+		}
+
+		/* skip "." and ".." entries */
 
 		if (dta.d_fname[0] == '.')
 		{
@@ -639,12 +649,18 @@ static long _walk_path(void)
 				goto next;
 		}
 
-		if (_before != NULL)
+		/* callback BEFORE operation */
+
+		if (_before_cb != NULL)
 		{
 			*endp = EOS;
-			if (E_OK != (errcode = _before(_path, &dta)))
+			if (E_OK != (errcode = _before_cb(_path, &dta)))
+			{
 				return errcode;
+			}
 		}
+
+		/* folder: recursion, otherwise regular file */
 
 		if (dta.d_attrib & F_SUBDIR)
 		{
@@ -679,17 +695,22 @@ static long _walk_path(void)
 			}
 		}
 
-		if (errcode == E_OK && _after != NULL)
+		/* callback AFTER operation */
+
+		if ((errcode == E_OK) && (_after_cb != NULL))
 		{
 			*endp = EOS;
-			if (E_OK != (errcode = _after(_path, &dta)))
+			if (E_OK != (errcode = _after_cb(_path, &dta)))
 				return errcode;
-		}			/* "User break" */
+		}
 
 		next:
 		dirlen++;
+
+		/* user break */
 		if (qbreak())
 			return EBREAK;
+
 		if (errcode == E_OK)
 		{
 			Fsetdta(&dta);
@@ -724,7 +745,19 @@ static long _walk_path(void)
 	}
 	#endif
 
-	return err_alert(errcode);
+	error:
+	if (_first_error == 0)
+	{
+		_first_error = errcode;
+		err_alert(_first_error);
+	}
+
+	if (errcode == EPTHOV)
+	{
+		errcode = E_OK;
+	}
+
+	return errcode;
 }
 
 
@@ -737,20 +770,24 @@ static long _walk_path(void)
 *
 *********************************************************************/
 
-long walk_path(char *path, long *clusters, long *nbytes,
-			long *hbytes, int *folders,
-			int *nfiles, int *hfiles,
-			int attr_msk, long clsize,
-			long (*before)(char *path, DTA *file),
-			long (*after) (char *path, DTA *file))
+long walk_path
+(
+	char *path, long *clusters, long *nbytes,
+	long *hbytes, int *folders,
+	int *nfiles, int *hfiles,
+	int attr_msk, long clsize,
+	long (*before_cb)(char *path, DTA *file),
+	long (*after_cb) (char *path, DTA *file)
+)
 {
 	long errcode;
 
 
+	_first_error = 0L;
 	_clusters = 0L;
 	_nbytes = _hbytes = _nfiles = _hfiles = _folders = depth = 0;
-	_before	= before;
-	_after	= after;
+	_before_cb = before_cb;
+	_after_cb = after_cb;
 	_attr_msk = attr_msk;
 	_clsize = clsize;
 	_path = path;

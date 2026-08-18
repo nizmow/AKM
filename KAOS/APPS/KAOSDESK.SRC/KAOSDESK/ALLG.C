@@ -293,14 +293,36 @@ void drv_to_str(char *s, char c)
 *
 *********************************************************************/
 
-char *print_ul(unsigned long z, char *p)
+char *print_ul(unsigned long num, unsigned long factor, char *p)
 {
+	static const char *units = "\0kMGT";
+	const char *unit = units;
 	register char *s;
 	register int len;
 	char hilfs[20];
 
+	while(factor > 1024)
+	{
+		factor >>= 10;
+		unit++;
+	}
 
-	ultoa(z, hilfs, 10);
+	if (factor == 512)
+	{
+		factor = 1;
+		num >>= 1;
+		unit++;
+	}
+
+	if (num > 10000000L)
+	{
+		num >>= 10;
+		unit++;
+	}
+
+	num *= factor;		/* hopefully not overflow */
+
+	ultoa(num, hilfs, 10);
 	s = hilfs;
 	*p++ = *s++;
 	len = (int) strlen(s);
@@ -313,6 +335,8 @@ char *print_ul(unsigned long z, char *p)
 		len--;
 	}
 
+	*p++ = ' ';
+	*p++ = *unit;
 	*p = '\0';
 	return p;
 }

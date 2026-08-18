@@ -204,7 +204,7 @@ extern void time_to_str(char *s, unsigned int time);
 extern void fname_int(char *s, char *d);
 extern void fname_ext(char *s, char *d);
 extern void drv_to_str(char *s, char c);
-extern char *print_ul(unsigned long z, char *p);
+extern char *print_ul(unsigned long num, unsigned long factor, char *p);
 
 /* KDSTART */
 
@@ -419,5 +419,5 @@ extern long GDcreate(char *path, char *name);
 extern long walk_path(char *path, long *clusters, long *nbytes, long *hbytes,
 			int *folders, int *nfiles, int *hfiles,
 			int attr_msk, long clsize,
-			long (*before)(char *path, DTA *file),
-			long (*after) (char *path, DTA *file));
+			long (*before_cb)(char *path, DTA *file),
+			long (*after_cb) (char *path, DTA *file));

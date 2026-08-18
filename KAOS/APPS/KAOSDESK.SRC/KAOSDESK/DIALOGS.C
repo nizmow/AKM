@@ -230,6 +230,59 @@ void info_spec(int typ)
 
 /****************************************************************
 *
+* print large numbers, factor is always a power of two
+*
+****************************************************************/
+
+static void num2text(unsigned long num, unsigned long factor, char *text)
+{
+	static const char *units[] =
+	{
+		"",
+		"k",
+		"M",
+		"G",
+		"T"
+	};
+
+	if (num == 0xffffffffL)
+	{
+		*text++ = '-';
+		*text = '\0';
+	}
+	else
+	{
+		unsigned unit = 0;
+
+		while(factor > 1024)
+		{
+			factor >>= 10;
+			unit++;
+		}
+
+		if (factor == 512)
+		{
+			factor = 1;
+			num >>= 1;
+			unit++;
+		}
+
+		if (num > 10000000L)
+		{
+			num >>= 10;
+			unit++;
+		}
+
+		num *= factor;		/* hopefully not overflow */
+
+		ultoa(num, text, /* decimal */ 10);
+		strcat(text, units[unit]);
+	}
+}
+
+
+/****************************************************************
+*
 * Informationen ber selektierte Diskette oder Festplatte anzeigen
 *
 ****************************************************************/
@@ -238,6 +291,7 @@ void info_disk(char *path, int typ)
 {
 	int lw;
 	long dummy;
+	unsigned long cluster_bytes;
 	long err;
 	int n_files = 0, n_hidden_files = 0, n_folders = 0;
 	long bytes_files = 0, bytes_hidden_files = 0;
@@ -254,33 +308,48 @@ void info_disk(char *path, int typ)
 	drv_to_str(adr_dskinf[DSKINF_T].ob_spec.tedinfo->te_ptmplt, path[0]);
 	dst = adr_dskinf[DSKINF_T].ob_spec.tedinfo->te_ptext;
 
+	/* get volume name */
+
 	err = read_dname(lw, prev_name);
 	if (err != E_OK && err != EFILNF && err != ENMFIL)
 	{
-		fehler:
+		error:
 		Mgraf_mouse(ARROW);
 		err_alert(err);
 		return;
 	}
+
+	/* show missing volume name as empty string */
 
 	if (err == E_OK)
 		fname_int(prev_name, dst);
 	else
 		*dst = EOS;
 
+	/* get free/used information */
+
 	err = Dfree(&info_free, lw + 1);
 	if (err != E_OK)
-		goto fehler;
+		goto error;
 
+	/* total number of blocks (up to 4294967295) */
 	ultoa(info_free.b_total,  adr_dskinf[DI_CLUST].ob_spec.free_string, 10);
+	/* sectors per block, usually 1 or 2 */
 	ultoa(info_free.b_clsiz,  adr_dskinf[DI_SECCL].ob_spec.free_string, 10);
+	/* sector size in bytes, usually 512 .. 4096 */ 
 	ultoa(info_free.b_secsiz, adr_dskinf[DI_BYSEC].ob_spec.free_string, 10);
-	info_free.b_secsiz *= info_free.b_clsiz;
-	info_free.b_total  *= info_free.b_secsiz;
-	info_free.b_free   *= info_free.b_secsiz;
-	ultoa(info_free.b_total, adr_dskinf[DI_BTOTL].ob_spec.free_string, 10);
-	ultoa(info_free.b_total - info_free.b_free, adr_dskinf[DI_BUSED].ob_spec.free_string, 10);
-	ultoa(info_free.b_free, adr_dskinf[DI_BFREE].ob_spec.free_string, 10);
+
+	/* bytes per block (cluster) */
+	cluster_bytes = info_free.b_secsiz * info_free.b_clsiz;
+	
+	/* total bytes */
+	num2text(info_free.b_total, cluster_bytes, adr_dskinf[DI_BTOTL].ob_spec.free_string);
+
+	/* used bytes */
+	num2text(info_free.b_total - info_free.b_free, cluster_bytes, adr_dskinf[DI_BUSED].ob_spec.free_string);
+
+	/* free bytes */
+	num2text(info_free.b_free, cluster_bytes, adr_dskinf[DI_BFREE].ob_spec.free_string);
 
 	err = walk_path(path, &dummy,
 					&bytes_files, &bytes_hidden_files,
@@ -288,21 +357,21 @@ void info_disk(char *path, int typ)
 				 	0x37, 0L, 0L, 0L);
 	#if 0	/* just continue in case of an error deep in the tree */
 	if (err != E_OK)
-		goto fehler;
+		goto error;
 	#endif
 
 	ultoa(n_folders, adr_dskinf[DI_N_ORD].ob_spec.free_string, 10);
 	ultoa(n_files, adr_dskinf[DI_N_DAT].ob_spec.free_string, 10);
 	ultoa(n_hidden_files, adr_dskinf[DI_N_VDA].ob_spec.free_string, 10);
-/*
-	ultoa(bytes_files, adr_dskinf[DI_B_DAT].ob_spec.free_string, 10);
-	ultoa(bytes_hidden_files, adr_dskinf[DI_B_VDA].ob_spec.free_string, 10);
-*/
+
+	num2text(bytes_files, 1, adr_dskinf[DI_B_DAT].ob_spec.free_string);
+	num2text(bytes_hidden_files, 1, adr_dskinf[DI_B_VDA].ob_spec.free_string);
 
 	if (typ == 'FD')
 	{
 		long ser;
 		int bps,spc,res,nfats,ndirs,nsects,media,spf,spt,nsides,nhid,exec;
+		int trsid;
 
 		err = read_bootsec(lw, &ser,&bps,&spc,&res,&nfats,&ndirs,&nsects,
 						   &media,&spf,&spt,&nsides,&nhid,&exec);
@@ -319,7 +388,7 @@ void info_disk(char *path, int typ)
 			spt = -1;
 			nsides = -1;
 			nhid = -1;
-			exec = -1;
+			exec = 0;
 		}
 		else
 		if (nsides <= 0 || spt <= 0 || nsects <= 0)
@@ -327,9 +396,16 @@ void info_disk(char *path, int typ)
 			err = EMEDIA;
 		}
 
-		ultoa(nsides, adr_dskinf[DI_SIDES].ob_spec.free_string, 10);
-		ultoa(nsects/(nsides*spt), adr_dskinf[DI_TRSID].ob_spec.free_string, 10);
-		ultoa(spt, adr_dskinf[DI_SECTR].ob_spec.free_string, 10);
+		/* number of sides, floppy disks have 1 or 2 */
+		num2text(nsides, 1, adr_dskinf[DI_SIDES].ob_spec.free_string);
+
+		/* tracks per side, floppy disks usually have 80 */
+		trsid = ((nsects > 0) && (nsides > 0) && (spt > 0)) ? (nsects/(nsides*spt)) : -1;
+		num2text(trsid, 1, adr_dskinf[DI_TRSID].ob_spec.free_string);
+
+		/* sectors per track, floppy disks usually have 9 */
+		num2text(spt, 1, adr_dskinf[DI_SECTR].ob_spec.free_string);
+
 		objs_unhide(adr_dskinf, DI_K1, DI_K2, DI_K3,
 							DI_SIDES, DI_TRSID, DI_SECTR, 0);
 		if (exec)
