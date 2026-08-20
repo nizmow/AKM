@@ -11,6 +11,7 @@
 *
 *******************************************************************/
 
+#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <mgx_dos.h>	/* include before tos.h */
@@ -35,7 +36,12 @@
 #define MIN(a,b) ((a < b) ? a : b)
 #define MAX(a,b) ((a > b) ? a : b)
 
-int message[16];
+#define XBEG_MM	4				/* Rand in Millimetern */
+#define YBEG_MM	4				/* Rand in Millimetern */
+
+#define ICON_W 32				/* Icon-Breite in Pixeln */
+#define ICON_H 28				/* Icon-Hîhe in Pixeln */
+
 int work_out[57], work_in[12];	/* VDI-Felder fÅr v_opnvwk() */
 
 char pgm_data[0x70];			/* Programmicon */
@@ -44,18 +50,19 @@ char dat_data[0x70];			/* Dateiicon */
 char pgm_fname[128];			/* Dateiname fÅr Programmicon */
 char dat_fname[128];			/* Dateiname fÅr Dateiicon */
 
-#define XBEG_MM	4				/* Rand in Millimetern */
-#define YBEG_MM	4				/* Rand in Millimetern */
+static int dirty_pgm;			/* Programm-Icon ist verÑndert worden */
+static int dirty_dat;			/* Datei-Icon ist verÑndert worden */
 
-int wpix;
-int hpix;
+
+int wpix;						/* Bildschirmpixel pro Icon-Pixel, ohne Linien */
+int hpix;						/* Zwischen zwei Icon-Pixeln ist eine dÅnne Linie von einem Pixel */
 
 int xbeg;						/* Rand in Pixeln */
 int ybeg;						/* Rand in Pixeln einschl. MenÅleiste */
 
 
 int ap_id;
-int my_handle = -1;
+int wind_handle = -1;
 int vdi_handle, gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
 static GRECT desk_g;			/* Maûe fÅr Hintergrund */
 static GRECT wind_g;			/* Maûe fÅr Fenster */
@@ -63,30 +70,45 @@ static int scrx2;				/* rechte HÑlfte */
 int clip_array[4];
 GRECT clip_grect;
 
-OBJECT *addr_main_menu;
-OBJECT *adr_picon;
-OBJECT *adr_dicon;
+static OBJECT *addr_main_menu;
+static OBJECT *addr_icon_pgm;
+static OBJECT *addr_icon_dat;
 
 static char path[128] = "\0", filename[20];
+
+#if LANGUAGE == LANG_GER
+const char *alrt_lose_changes = "[2][Ungesicherte énderungen verlieren?][JA| NEIN ]";
+#elif LANGUAGE == LANG_ENG
+const char *alrt_lose_changes = "[2][Lose changes?][YES|  NO  ]";
+#endif
 
 
 /********************************************************************
 *
-* Fileselector fÅr alle TOS- Versionen.
+* Dateiauswahldialog ("file selector") fÅr alle TOS- Versionen.
 * Ab TOS 1.4 (AES 1.40) und nicht >= GEM 2.0 wird die öberschrift
 * vewendet.
 *
+* RÅckgabe 1 fÅr "OK" und 0 fÅr "Abbruch" oder im Fehlerfall
+*
 ********************************************************************/
 
-int fsel(char *path, char *sel, int *button, char *label)
+static int fsel(char *path, char *sel, const char *label)
 {
 	int ret;
+	int button;
 
 	if (_GemParBlk.global[0] < 0x0200 && _GemParBlk.global[0] >= 0x0140)
-		ret = fsel_exinput(path, sel, button, label);
+		ret = fsel_exinput(path, sel, &button, label);
 	else
-		ret = fsel_input(path, sel, button);
-	return ret;
+		ret = fsel_input(path, sel, &button);
+
+	if (ret == 0)
+	{
+		button = 0;		/* Fehlerfall wie Abbruch */
+	}
+
+	return button;
 }
 
 
@@ -97,7 +119,7 @@ int fsel(char *path, char *sel, int *button, char *label)
 *
 *********************************************************************/
 
-char *get_name(char *path)
+static char *get_name(char *path)
 {
 	register char *n;
 
@@ -172,9 +194,9 @@ static char *makenam(char *path, const char *selected)
 	char *ret;
 
 	ret = path;
-	path += strlen( path );
-	while(0 != (*--path != '\\'	 ) ) ;
-	while(0 != (*++path =  *selected++) ) ;
+	path += strlen(path);
+	while(0 != (*--path != '\\'));
+	while(0 != (*++path =  *selected++));
 	return ret;
 }
 
@@ -186,7 +208,7 @@ static char *makenam(char *path, const char *selected)
 *
 *********************************************************************/
 
-static int alert(int defbutton, char *s)
+static int alert(int defbutton, const char *s)
 {
 	char temp[200];
 	register char *t,*s2;
@@ -263,59 +285,57 @@ static int is_filename_valid(const char *file_type)
 
 static int fsel_open_file(int (*read_cb)(int handle), const char *file_type)
 {
-	int	exit, handle, error;
-
-
-	error = TRUE;
-	again:
-	makepath(path, file_type);
 	#if LANGUAGE == LANG_GER
-	if (fsel(path, filename, &exit, "Datei lesen..."))
+	const char *title = "Datei lesen...";
+	const char *alrt_new = "[2][Neue Datei %F|anlegen?][OK|ABBRUCH]";
+	const char *alrt_read_err = "[3][Datei- Lesefehler|auf %F!][ABBRUCH]";
+	const char *alrt_open_err = "[3][Datei %F|lÑût sich nicht îffnen.][ABBRUCH]";
 	#elif LANGUAGE == LANG_ENG
-	if (fsel(path, filename, &exit, "Read file..."))
+	const char title = "Read file...";
+	const char *alrt_new = "[2][Create new file %F?][OK| Abort ]";
+	const char *alrt_read_err = "[3][Read error on file %F!][ Abort ]";
+	const char *alrt_open_err = "[3][Cannot open file %F.][ Abort ]";
 	#endif
-		if (exit == 1)
+
+
+	for (;;)
+	{
+		makepath(path, file_type);
+		if (!fsel(path, filename, title))
 		{
-			if (!is_filename_valid(file_type))
-				goto again;
+			return TRUE;	/* error or Cancel */
+		}
+
+		if (is_filename_valid(file_type))
+		{
+			int	handle;
+
 			handle = (int) Fopen(makenam(path, filename), RMODE_RD);
 			if (handle == (int) EFILNF)
 			{
-				#if LANGUAGE == LANG_GER
-				if (1 == alert(1,"[2][Neue Datei %F|erzeugen?][OK|ABBRUCH]"))
-				#elif LANGUAGE == LANG_ENG
-				if (1 == alert(1,"[2][Create new file %F ?][OK| Abort ]"))
-				#endif
+				if (1 == alert(1, alrt_new))
 					return (int) E_OK;
-				goto again;
 			}
-
+			else
 			if (handle > 0)
 			{
-				if ( !(*read_cb) (handle) )
-					error = FALSE;		  /* alles ok */
+				if (!(*read_cb) (handle))
+				{
+					return FALSE;		  /* alles ok */
+				}
 				else
 				{
-					#if LANGUAGE == LANG_GER
-					alert(1,"[3][Datei- Lesefehler|auf %F!][ABBRUCH]");
-					#elif LANGUAGE == LANG_ENG
-					alert(1,"[3][Read error on file %F!][ Abort ]");
-					#endif
+					alert(1, alrt_read_err);	/* Lesefehler und Abbruch */
 				}
 				Fclose(handle);
+				return TRUE;	/* Fehler */
 			}
 			else
 			{
-				#if LANGUAGE == LANG_GER
-				alert(1,"[3][Datei %F|lÑût sich nicht îffnen.][ABBRUCH]");
-				#elif LANGUAGE == LANG_ENG
-				alert(1,"[3][Cannot open file %F.][ Abort ]");
-				#endif
-				goto again;
+				alert(1, alrt_open_err);	/* Fehler und nochmal versuchen */
 			}
 		}
-
-	return error;
+	}
 }
 
 
@@ -332,52 +352,60 @@ static int fsel_open_file(int (*read_cb)(int handle), const char *file_type)
 
 static int save(char *name, int (*write_cb)(int handle), const char *file_type)
 {
-	int  handle;
+	int handle;
 
 	#if LANGUAGE == LANG_GER
-	#define overwrite_err_s "[2][Datei %F|öberschreiben ?][OK|ABBRUCH]"
+	#define overwrite_err_s "[2][Datei %F|Åberschreiben?][Ja|Nein]"
 	#define write_err_s "[3][Datei- Schreibfehler|auf %F!][ABBRUCH]"
 	#elif LANGUAGE == LANG_ENG
-	#define overwrite_err_s	"[2][Overwrite file %F ?][OK| Abort ]"
+	#define overwrite_err_s	"[2][Overwrite file %F?][Yes|No]"
 	#define write_err_s	"[3][Write error on file %F!][ Abort ]"
 	#endif
 
 	strcpy(filename, get_name(name));
 	if ((!is_filename_valid(file_type)) || strchr(name, '*') || strchr(name, '?'))
-		return TRUE;	  /* Extension stimmt nicht oder Wildcards */
-	if (Fsfirst(name, 255 ) == 0L )
+	{
+		return TRUE;	  /* Dateityp stimmt nicht oder Wildcards */
+	}
+
+	if (Fsfirst(name, 0xff) == 0L)
 	{
 		/* Datei existiert schon */
 		if (alert(2, overwrite_err_s) == 2)
+		{
 			return TRUE;
+		}
+
+		#if 0
 		if (Fdelete(name) < 0L)
 		{
 			err: alert(1, write_err_s);
 			return TRUE;
 		}
+		#endif
 	}
 
 	if ((handle = (int) Fcreate(name, 0)) > 0)
 	{
-		if ((*write_cb) (handle))
-		{
-			Fclose(handle);
-			Fdelete(name);
-			goto err;
-		}
+		int ret = (*write_cb)(handle);		/* write data */
 		Fclose(handle);
-	}
-	else
-		goto err;
+		if (!ret)
+		{
+			return FALSE;		/* success */
+		}
 
-	return FALSE;
+		Fdelete(name);
+	}
+
+	alert(1, write_err_s);
+	return TRUE;	/* failure */
 }
 
 
 /********************************************************************
 *
 * Speichert eine Datei, fragt vorher nach dem Namen.
-* FÅr das Schreiben wird die Funktion <schreiben()> benutzt, die bei
+* FÅr das Schreiben wird die Funktion <write_cb()> benutzt, die bei
 * Fehlern einen Wert ungleich Null zurÅckgibt.
 * Der Dateityp ist von der Form "EXT".
 * Die Routine gibt FALSE zurÅck, falls korrekt geschrieben wurde.
@@ -386,33 +414,34 @@ static int save(char *name, int (*write_cb)(int handle), const char *file_type)
 
 int saveas(int (*write_cb)(int handle), const char *file_type)
 {
-	int	exit;
+	#if LANGUAGE == LANG_GER
+	const char *title = "Datei speichern...";
+	#elif LANGUAGE == LANG_ENG
+	const char *title = "Save file...";
+	#endif
 
 
 	strcpy(filename, get_name(path));
-	again:
-	makepath(path, file_type);
-	#if LANGUAGE == LANG_GER
-	if (fsel(path, filename, &exit, "Datei speichern..."))
-	#elif LANGUAGE == LANG_ENG
-	if (fsel(path, filename, &exit, "Save file..."))
-	#endif
-		if (exit == 1)
-		{
-			if (save(makenam(path, filename), write_cb, file_type))
-				goto again;
-			else
-				return FALSE;
-		}
 
-	return TRUE;
+	for (;;)
+	{
+		makepath(path, file_type);
+		if (!fsel(path, filename, title))
+		{
+			return TRUE;	/* Cancel or error */
+		}
+		if (!save(makenam(path, filename), write_cb, file_type))
+		{
+			return FALSE;	/* success */
+		}
+	}
 }
 
 
 /********************************************************************
 *
-* Speichert eine Datei, benutzt den letzten Namen.
-* FÅr das Schreiben wird die Funktion <schreiben()> benutzt, die bei
+* Speichert eine Datei, benutzt den zuletzt verwendeten Namen.
+* FÅr das Schreiben wird die Funktion <write_cb()> benutzt, die bei
 * Fehlern einen Wert ungleich Null zurÅckgibt.
 * Der Dateityp ist von der Form "EXT".
 *
@@ -426,8 +455,7 @@ static int close_file_dialogue(int (*write_cb)(int handle), const char *file_typ
 
 /*********************************************************************
 *
-* Dieses Modul enthÑlt die Initialisierung des AES/VDI, die Initiali-
-* sierung von ICNEDIT sowie allgemeine Routinen.
+* Initialisierung des AES/VDI
 *
 *********************************************************************/
 
@@ -442,6 +470,11 @@ static void open_work(void)
 	v_opnvwk(work_in, &vdi_handle, work_out);
 	vswr_mode(vdi_handle, MD_REPLACE);      /* Replace- Modus */
 	vsf_interior(vdi_handle, SOLID);        /* komplett ausfÅllen */
+
+	#if 0
+	printf(" work_out[3]=%d,  work_out[4]=%d\n", work_out[3], work_out[4]);
+	Bconin(2);
+	#endif
 
 	/* RÑnder von mm in Pixel umrechnen */
 	/* work_out[3] ist Pixelbreite in Mikrometern */
@@ -460,10 +493,10 @@ static void open_work(void)
 static void close_work(void)
 {
 	wind_update(END_UPDATE);
-	if (my_handle >= 0)
+	if (wind_handle >= 0)
 	{
-		wind_close(my_handle);
-		wind_delete(my_handle);
+		wind_close(wind_handle);
+		wind_delete(wind_handle);
 	}
 	v_clsvwk(vdi_handle);
 	rsrc_free();
@@ -522,20 +555,21 @@ void program_init(int err_tail)
 	wind_g.g_w = desk_g.g_w + 2;
 	wind_g.g_h = desk_g.g_h + 2;
 
-	my_handle = wind_create(0, &wind_g);
-	if (my_handle < 0)
+	wind_handle = wind_create(0, &wind_g);
+	if (wind_handle < 0)
 		close_work();
 
 	/* maximal mîgliche Punktgrîûen berechnen */
 	/* -------------------------------------- */
 
-	wpix = ((desk_g.g_w >> 1) - xbeg - 32 * 3) / 32 + 2;
-	hpix = (desk_g.g_h - ybeg - 2 * gl_hhchar - 28 * 3) / 28 + 2;
+	wpix = ((desk_g.g_w >> 1) - xbeg - ICON_W * 3) / ICON_W + 2;
+	hpix = (desk_g.g_h - ybeg - 2 * gl_hhchar - ICON_H * 3) / ICON_H + 2;
 
 #if 1
-	if (work_out[4] == 2 * work_out[3])
+	if ((work_out[4] == 2 * work_out[3]) || (work_out[3] == 169 && work_out[4] == 372))
 	{
 		/* Die Pixel sind doppelt so hoch wie breit: "ST medium" */
+		/* Unter MagiC sind die Maûe 278x556, unter TOS 169x372 */
 
 		if (wpix < hpix + hpix)
 			hpix = (wpix >> 1);
@@ -577,26 +611,36 @@ void program_init(int err_tail)
 		#if LANGUAGE == LANG_GER
 		form_alert(1, "[3][Auflîsung zu gering!][ABBRUCH]");
 		#elif LANGUAGE == LANG_ENG
-		form_alert(1, "[3][Screen resolution too low!][ Abort ]");
+		form_alert(1, "[3][Screen resolution too low!][Abort]");
 		#endif
 		close_work();
 	}
 
 	ybeg += desk_g.g_y;
 	rsrc_gaddr(0, HAUPTMEN, &addr_main_menu);
-	rsrc_gaddr(0, T_ICONS, &adr_dicon);
-	adr_picon = adr_dicon + I_PROGRA;
-	adr_dicon += I_DATEI;
+	rsrc_gaddr(0, T_ICONS, &addr_icon_dat);
+	addr_icon_pgm = addr_icon_dat + I_PROGRA;
+	addr_icon_dat += I_DATEI;
 
-	adr_picon->ob_x = 1;
-	adr_dicon->ob_x = scrx2 + 1;
-	adr_dicon->ob_y = adr_picon->ob_y = desk_g.g_h + desk_g.g_y - 37;
-	adr_dicon->ob_height = adr_picon->ob_height = 36;
-	adr_picon->ob_spec.iconblk->ib_pdata = (int *) pgm_data;
-	adr_dicon->ob_spec.iconblk->ib_pdata = (int *) dat_data;
+	/* Die beiden Vorschau-Icons positionieren */
+
+	addr_icon_pgm->ob_x = 1;
+	addr_icon_dat->ob_x = scrx2 + 1;
+	#if 1
+	/* Vorschau-Icons unter dem Zeichenbereich */
+	addr_icon_dat->ob_y = addr_icon_pgm->ob_y = ybeg + (hpix + 1) * ICON_H + hpix;
+	#else
+	/* alte Version: Vorschau-Icons am unteren Bildschirmrand */
+	addr_icon_dat->ob_y = addr_icon_pgm->ob_y = desk_g.g_h + desk_g.g_y - 37;
+	#endif
+	addr_icon_dat->ob_height = addr_icon_pgm->ob_height = 36;
+	addr_icon_pgm->ob_spec.iconblk->ib_pdata = (int *) pgm_data;
+	addr_icon_dat->ob_spec.iconblk->ib_pdata = (int *) dat_data;
+
+	/* MenÅ und Vollbildfenster */
 
 	menu_bar(addr_main_menu, TRUE);
-	wind_open(my_handle, &wind_g);
+	wind_open(wind_handle, &wind_g);
 
 	if (pgm_fname[0])
 	{
@@ -621,11 +665,13 @@ void program_init(int err_tail)
 	}
 
 	if (err_tail)
+	{
 		#if LANGUAGE == LANG_GER
 		form_alert(1, "[3][Dateiname ungÅltig|oder nicht gefunden!][ABBRUCH]");
 		#elif LANGUAGE == LANG_ENG
 		form_alert(1, "[3][Filename invalid|or file does not exist!][ Abort ]");
 		#endif
+	}
 
 	wind_update(END_UPDATE);
 }
@@ -681,7 +727,7 @@ static int write_dat_icon(int handle)
 
 /****************************************************************
 *
-* Zeichnet das Fenster <wnr> neu.
+* Zeichnet das Fenster <whdl> neu.
 *
 ****************************************************************/
 
@@ -742,7 +788,7 @@ static void name_to_scr(int ispgm)
 	GRECT g;
 
 
-	icn  = (ispgm) ? adr_picon : adr_dicon;
+	icn  = (ispgm) ? addr_icon_pgm : addr_icon_dat;
 	name = get_name((ispgm) ? pgm_fname : dat_fname);
 	strcpy(icn->ob_spec.iconblk->ib_ptext, name);
 
@@ -764,7 +810,7 @@ static void name_to_scr(int ispgm)
 *
 ****************************************************************/
 
-static int is_frame(int ispgm, int x, int y, int *status)
+static int is_fixed_icon_frame(int ispgm, int x, int y, int *status)
 {
 	*status = FALSE;		/* weiûer Rahmen */
 	if (y == 0 || y == 27)
@@ -779,7 +825,7 @@ static int is_frame(int ispgm, int x, int y, int *status)
 	}
 	else
 	{
-		if (x <= 3 || x >= 28)
+		if (x <= 3 || x >= ICON_H)
 			return TRUE;
 		if (x-y >= 22)
 			return TRUE;
@@ -844,7 +890,7 @@ void set_pixel(int ispgm, int x, int y, int status, int print)
 	int ix,iy;
 
 
-	icn = (ispgm) ? adr_picon : adr_dicon;
+	icn = (ispgm) ? addr_icon_pgm : addr_icon_dat;
 	data = (char *) icn->ob_spec.iconblk->ib_pdata;	/* Icondaten */
 	mask = (char *) icn->ob_spec.iconblk->ib_pmask;	/* Iconmaske */
 
@@ -893,7 +939,7 @@ void set_pixel(int ispgm, int x, int y, int status, int print)
 
 /****************************************************************
 *
-* Die Icons werden auf den Bildschirm gebracht
+* Das linke oder rechte Icon zeichnen
 *
 ****************************************************************/
 
@@ -911,14 +957,14 @@ static void icn_to_scr(int ispgm)
 	/* weiûe FlÑche */
 	pxy[0] = my_xbeg;
 	pxy[1] = ybeg;
-	pxy[2] = my_xbeg + (wpix + 1) * 32;
-	pxy[3] = ybeg + (hpix + 1) * 28;
+	pxy[2] = my_xbeg + (wpix + 1) * ICON_W;
+	pxy[3] = ybeg + (hpix + 1) * ICON_H;
 	v_bar(vdi_handle, pxy);
 
 	/* waagerechte Linien */
 	pxy[0] = my_xbeg;
-	pxy[2] = my_xbeg + (wpix + 1) * 32;
-	for	(i = 0; i <= 28; i++)
+	pxy[2] = my_xbeg + (wpix + 1) * ICON_W;
+	for	(i = 0; i <= ICON_H; i++)
 	{
 		pxy[1] = pxy[3] = ybeg + i * (hpix + 1);
 		v_pline(vdi_handle, 2, pxy);
@@ -926,20 +972,20 @@ static void icn_to_scr(int ispgm)
 
 	/* senkrechte Linien */
 	pxy[1] = ybeg;
-	pxy[3] = ybeg+(hpix+1)*28;
-	for	(i = 0; i <= 32; i++)
+	pxy[3] = ybeg + (hpix + 1) * ICON_H;
+	for	(i = 0; i <= ICON_W; i++)
 	{
 		pxy[0] = pxy[2] = my_xbeg + i * (wpix + 1);
 		v_pline(vdi_handle, 2, pxy);
 	}
 
 	/* Pixel zeichnen */
-	for	(i = 0; i < 28; i++)			/* y */
-		for	(j = 0; j < 32; j++)		/* x */
+	for	(i = 0; i < ICON_H; i++)			/* y */
+		for	(j = 0; j < ICON_W; j++)		/* x */
 		{
 			int status;
 
-			if (is_frame(ispgm, j, i, &status))
+			if (is_fixed_icon_frame(ispgm, j, i, &status))
 				set_pixel(ispgm, j, i, status, status);
 			else
 			{
@@ -967,18 +1013,26 @@ static void menu_file(int entry)
 	switch (entry)
 	{
 		case M_LDPGM:
+			if (dirty_pgm && (form_alert(2, alrt_lose_changes) == 2))
+				break;
+
 			if (!fsel_open_file(read_pgm_icon, "ICP"))
  			{
 				strcpy(pgm_fname, path);
-				upd_wind(my_handle, 1);
+				upd_wind(wind_handle, 1);
+				dirty_pgm = 0;
 			}
 			break;
 
 		case M_LDDAT:
+			if (dirty_dat && (form_alert(2, alrt_lose_changes) == 2))
+				break;
+
 			if (!fsel_open_file(read_dat_icon, "ICD"))
 			{
 				strcpy(dat_fname, path);
-				upd_wind(my_handle, 0);
+				upd_wind(wind_handle, 0);
+				dirty_dat = 0;
 			}
 			break;
 
@@ -990,6 +1044,7 @@ static void menu_file(int entry)
 			{
 				strcpy(pgm_fname, path);
 				name_to_scr(TRUE);
+				dirty_pgm = 0;
 			}
 			break;
 
@@ -1001,6 +1056,7 @@ static void menu_file(int entry)
 			{
 				strcpy(dat_fname, path);
 				name_to_scr(FALSE);
+				dirty_dat = 0;
 			}
 			break;
 
@@ -1034,11 +1090,12 @@ static void menu_file(int entry)
 			break;
 
 		case M_ABBRU:
-			#if LANGUAGE == LANG_GER
-			if (form_alert(2, "[2][Programm abbrechen ?][JA| NEIN ]") == 1)
-			#elif LANGUAGE == LANG_ENG
-			if (form_alert(2, "[2][Abort program ?][YES|  NO  ]") == 1)
-			#endif
+			if (dirty_pgm || dirty_dat)
+			{
+				if (form_alert(2, alrt_lose_changes) == 2)
+					break;
+			}
+
 			close_work();
 			break;
 	}
@@ -1058,9 +1115,23 @@ static void menu_edit(int entry)
 	data = NULL;
 	switch(entry)
 	{
-		case M_CLRPGM: data = pgm_data; break;
-		case M_CLRDAT: data = dat_data; break;
+		case M_CLRPGM:
+			if (pgm_fname[0])
+			{
+				dirty_pgm = 1;		/* Icon wurde verÑndert */
+			} 
+			data = pgm_data;
+			break;
+
+		case M_CLRDAT:
+			if (dat_fname[0])
+			{
+				dirty_dat = 1;		/* Icon wurde verÑndert */
+			}
+			data = dat_data;
+			break;
 	}
+
 	if (data)
 	{
 		/* lîsche das jeweilige Icon und male es neu */
@@ -1079,7 +1150,7 @@ static void menu_edit(int entry)
 
 static void _redraw(int whdl, const GRECT *g)
 {
-	if (whdl != my_handle)
+	if (whdl != wind_handle)
 		return;
 
 	clip_grect = *g;
@@ -1106,7 +1177,7 @@ static void redraw(int whdl, const GRECT *g_new)
 	GRECT g;
 
 
-	if (whdl != my_handle)
+	if (whdl != wind_handle)
 		return;						/* ungÅltiges Handle */
 
 	graf_mouse(M_OFF, NULL);
@@ -1137,8 +1208,8 @@ static void redraw(int whdl, const GRECT *g_new)
 *
 * Rechnet Bildschirmkoordinaten in Iconkoordinaten um.
 * RÅckgabe 1: Programmicon
-*		 0: Dateiicon
-*		-1: kein Iconpunkt
+*	       0: Dateiicon
+*         -1: kein Iconpunkt
 *
 ****************************************************************/
 
@@ -1168,7 +1239,7 @@ static int getxy(int *x, int *y)
 	*x /= (wpix+1);
 	*y /= (hpix+1);
 
-	if (*x >= 32 || *y >= 28)
+	if (*x >= ICON_W || *y >= ICON_H)
 		return -1;
 	else
 		return ispgm;
@@ -1195,12 +1266,15 @@ static void handle_button(int nclicks, const EVNTDATA *ev)
 	clear = (ev->bstate & 2);
 	x = ev->x;
 	y = ev->y;
+
 	ispgm = getxy(&x, &y);
 	if (ispgm < 0)
-		return;
+	{
+		return;		/* Kein gÅltiger Icon-Pixel */
+	}
 
 	/* Den Rahmen darf man nicht Ñndern */
-	if (is_frame(ispgm, x, y, &state_prev))
+	if (is_fixed_icon_frame(ispgm, x, y, &state_prev))
 		return;
 
 	state_prev = is_pixel(ispgm, x, y);
@@ -1210,6 +1284,14 @@ static void handle_button(int nclicks, const EVNTDATA *ev)
 		graf_mouse(M_OFF, NULL);
 		set_pixel(ispgm, x, y, state_new, TRUE);
 		graf_mouse(M_ON, NULL);
+		if (ispgm)
+		{
+			dirty_pgm = 1;
+		}
+		else
+		{
+			dirty_dat = 1;
+		}
 	}
 }
 
@@ -1224,6 +1306,7 @@ void main(int argc, char *argv[])
 {
 	int err_tail;		/* Fehler in Kommandozeile */
 	EVNT w_ev;
+	int message[16];
 
 
 	err_tail = FALSE;
@@ -1311,12 +1394,20 @@ void main(int argc, char *argv[])
 						break;
 				}
 
-			menu_tnormal(addr_main_menu, message[3], 1);
+				menu_tnormal(addr_main_menu, message[3], 1);
 			}
-
+			else
 			if (message[0] == WM_REDRAW)
 			{
 				redraw(message[3], (GRECT *) (message + 4));
+			}
+			else
+			if (message[0] == WM_TOPPED)
+			{
+				if (message[3] == wind_handle)
+				{
+					wind_set_int(wind_handle, WF_TOP, 0);
+				}
 			}
 		}
 
@@ -1339,7 +1430,7 @@ void main(int argc, char *argv[])
 				case 0x2000: menu_file(M_LDDAT);break;
 				case 0x1910: menu_file(M_SPPGM);break;
 				case 0x2004: menu_file(M_SPDAT);break;
-				case 0x1F13: menu_file(M_ENDE );break;
+				case 0x1F13: menu_file(M_ENDE);break;
 				case 0x1011: menu_file(M_ABBRU);break;
 			}
 		}

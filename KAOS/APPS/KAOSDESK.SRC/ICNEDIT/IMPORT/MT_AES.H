@@ -880,7 +880,7 @@ WORD	MT_scrp_clear( WORD *global );                               /* GEM 2.x    
 
 
 extern WORD	MT_fsel_input( char *path, char *name, WORD *button, WORD *global );
-extern WORD	MT_fsel_exinput( char *path, char *name, WORD *button, char *label, WORD *global );
+extern WORD	MT_fsel_exinput( char *path, char *name, WORD *button, const char *label, WORD *global );
 
 #define	fsel_input( a, b, c ) \
 			MT_fsel_input( a, b, c, 0L )
