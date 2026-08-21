@@ -24,23 +24,23 @@ static int curr_kat = EIN_GRP1;
 
 void dialogs_init(void)
 {
-	init_popup(adr_einst, EIN_KAT, &pop_kategorie, T_POPKAT, 1);
-	adr_einst[EIN_BAT].ob_spec.tedinfo->te_ptext = ext_bat;
-	adr_einst[EIN_BTP].ob_spec.tedinfo->te_ptext = ext_btp;
-	adr_einst[EIN_BAT].ob_spec.tedinfo->te_txtlen =
-	adr_einst[EIN_BTP].ob_spec.tedinfo->te_txtlen = 4;
+	init_popup(tree_settings, EIN_KAT, &pop_kategorie, T_POPKAT, 1);
+	tree_settings[EIN_BAT].ob_spec.tedinfo->te_ptext = ext_bat;
+	tree_settings[EIN_BTP].ob_spec.tedinfo->te_ptext = ext_btp;
+	tree_settings[EIN_BAT].ob_spec.tedinfo->te_txtlen =
+	tree_settings[EIN_BTP].ob_spec.tedinfo->te_txtlen = 4;
 
-	objs_hide(adr_einst, EIN_GRP2, EIN_GRP3, EIN_GRP4, EIN_GRP5, 0);
-	objs_uneditable(adr_einst, EIN_CMD, EIN_BAT, EIN_BTP,
+	objs_hide(tree_settings, EIN_GRP2, EIN_GRP3, EIN_GRP4, EIN_GRP5, 0);
+	objs_uneditable(tree_settings, EIN_CMD, EIN_BAT, EIN_BTP,
 					EIN_SHOW, EIN_PRNT, EIN_EDIT,
 					EIN_KACH, 0);
-	objs_unhide(adr_einst, EIN_GRP1, 0);
+	objs_unhide(tree_settings, EIN_GRP1, 0);
 
-	adr_datinf[FI_FLDATTR].ob_x = adr_datinf[FI_DRIVEATTR].ob_x =
-					adr_datinf[FI_FILEATTR].ob_x;
-	adr_datinf->ob_width = 38 * gl_hwchar;
-	adr_datinf->ob_height = 20 * gl_hhchar;
-	objs_hide(adr_datinf, FI_CONTSTR, FI_DISKLETTER, 0);
+	tree_datinf[FI_FLDATTR].ob_x = tree_datinf[FI_DRIVEATTR].ob_x =
+					tree_datinf[FI_FILEATTR].ob_x;
+	tree_datinf->ob_width = 38 * gl_hwchar;
+	tree_datinf->ob_height = 20 * gl_hhchar;
+	objs_hide(tree_datinf, FI_CONTSTR, FI_DISKLETTER, 0);
 }
 
 
@@ -190,7 +190,7 @@ void dial_arbsic(void)
 
 void dial_about(void)
 {
-	do_dialog(adr_about);
+	do_dialog(tree_about);
 }
 
 
@@ -571,7 +571,7 @@ void dial_search(void)
 	{
 		/* selektierte Disk-Icons merken */
 
-		tree = fenster[0]->pobj;
+		tree = windows[0]->pobj;
 		*s++ = 'D';
 		*s = EOS;
 		if ((i = (tree -> ob_head)) > 0)
@@ -659,7 +659,7 @@ void dial_laufwe(void)
 					0, NULL, NULL, FALSE,
 					-1,0);
 
-	if (!is_prnt && status.show_prticon)
+	if (!is_prnt && settings.show_prticon)
 		make_icon(ITYP_DRUCKR, std_prt_icon,
 					0, NULL, NULL, FALSE,
 					-1,0);
@@ -769,22 +769,26 @@ void dial_assign_icon(void)
 		 			p = find_path(path, NULL);
 		 			if (p)
 		 				arg2 = p->path;
-		 			else	arg2 = path;
+		 			else
+		 				arg2 = path;
 		 			break;
 		 case '_X':	arg1[2] = 'a';
 					if (a)			/* angemeldete APP */
 		 				arg2 = a->apname;
-		 			else	arg2 = path;	/* neue APP */
+		 			else
+		 				arg2 = path;	/* neue APP */
 		 			break;
 		 case '_T':
 		 case 'TX':	arg1[2] = 'd';
 					if (a)			/* angemeldete Datei */
 		 				arg2 = a->apname;
-		 			else	arg2 = "<>";	/* keine APP */
+		 			else
+		 				arg2 = "<>";	/* keine APP */
 		 			d = find_datafile(path);
 		 			if (d)
 		 				arg3 = d->daname;
-		  			else	arg3 = get_name(path);
+		  			else
+		  				arg3 = get_name(path);
 		  			break;
 		 
 		 case 'AT':	arg2 = "ALIS";
@@ -983,45 +987,45 @@ void dial_einste(void)
 
 	for	(ret = 0; ret < 5; ret++)
 	{
-		ted = adr_einst[specpgms[ret]].ob_spec.tedinfo;
+		ted = tree_settings[specpgms[ret]].ob_spec.tedinfo;
 		ted->te_ptext = txt[ret];
 		p = (ret < 4) ? menuprograms[ret].path : newkach->path;
 		abbrev_path(ted->te_ptext, p, ted->te_tmplen-1 );
 	}
 
-	ob_sel_dsel(adr_einst, EINST_BL, status.cnfm_del);
-	ob_sel_dsel(adr_einst, EINST_BK, status.cnfm_copy);
+	ob_sel_dsel(tree_settings, EINST_BL, settings.cnfm_del);
+	ob_sel_dsel(tree_settings, EINST_BK, settings.cnfm_copy);
 
-	ob_sel_dsel(adr_einst, EINST_KU, status.mode_ovwr == OVERWRITE);
-	ob_sel_dsel(adr_einst, EINST_KA, status.mode_ovwr == BACKUP);
-	ob_sel_dsel(adr_einst, EINST_KB, status.mode_ovwr == CONFIRM);
-	ob_sel_dsel(adr_einst, EINST_KF, status.check_free);
-	ob_sel_dsel(adr_einst, EIN_CPRS, status.copy_resident);
-	ob_sel_dsel(adr_einst, EIN_KOBO, status.copy_use_kobold);
+	ob_sel_dsel(tree_settings, EINST_KU, settings.mode_ovwr == OVERWRITE);
+	ob_sel_dsel(tree_settings, EINST_KA, settings.mode_ovwr == BACKUP);
+	ob_sel_dsel(tree_settings, EINST_KB, settings.mode_ovwr == CONFIRM);
+	ob_sel_dsel(tree_settings, EINST_KF, settings.check_free);
+	ob_sel_dsel(tree_settings, EIN_CPRS, settings.copy_resident);
+	ob_sel_dsel(tree_settings, EIN_KOBO, settings.copy_use_kobold);
 
 
-	ob_sel_dsel(adr_einst, EINST_RS, status.resident);
-	ob_sel_dsel(adr_einst, EINST_DN, status.dnam_init);
-	ob_sel_dsel(adr_einst, EINS_ERD, status.save_on_exit);
-	ob_sel_dsel(adr_einst, EINS_DCLICK, status.rtbutt_dclick);
+	ob_sel_dsel(tree_settings, EINST_RS, settings.resident);
+	ob_sel_dsel(tree_settings, EINST_DN, settings.dnam_init);
+	ob_sel_dsel(tree_settings, EINS_ERD, settings.save_on_exit);
+	ob_sel_dsel(tree_settings, EINS_DCLICK, settings.rtbutt_dclick);
 
-	ob_sel_dsel(adr_einst, EIN_PP, status.use_pp);
-	ob_sel_dsel(adr_einst, EINST_VE, status.show_all);
-	ob_sel_dsel(adr_einst, EIN_8PL3, status.show_8p3);
-	ob_sel_dsel(adr_einst, EIN_RELOAD, !status.auto_reload_off);		/* auto window reload */
-	ob_sel_dsel(adr_einst, EINS_DRK, status.show_prticon);
+	ob_sel_dsel(tree_settings, EIN_PP, settings.use_pp);
+	ob_sel_dsel(tree_settings, EINST_VE, settings.show_all);
+	ob_sel_dsel(tree_settings, EIN_8PL3, settings.show_8p3);
+	ob_sel_dsel(tree_settings, EIN_RELOAD, !settings.auto_reload_off);		/* auto window reload */
+	ob_sel_dsel(tree_settings, EINS_DRK, settings.show_prticon);
 
-	adr_einst[EIN_DSH].ob_spec.obspec.character =
-		status.h_icon_dist + '0';
-	adr_einst[EIN_DSV].ob_spec.obspec.character =
-		status.v_icon_dist + '0';
-	adr_einst[EIN_RAS].ob_spec.obspec.character =
-		status.desk_raster + '0';
+	tree_settings[EIN_DSH].ob_spec.obspec.character =
+		settings.h_icon_dist + '0';
+	tree_settings[EIN_DSV].ob_spec.obspec.character =
+		settings.v_icon_dist + '0';
+	tree_settings[EIN_RAS].ob_spec.obspec.character =
+		settings.desk_raster + '0';
 
-	adr_einst[EIN_COL].ob_spec.obspec.interiorcol = *desk_col;
-	adr_einst[EIN_PAT].ob_spec.obspec.fillpattern = *desk_patt;
+	tree_settings[EIN_COL].ob_spec.obspec.interiorcol = *desk_col;
+	tree_settings[EIN_PAT].ob_spec.obspec.fillpattern = *desk_patt;
 
-	ret = do_exdialog(adr_einst, chk_einste, NULL);
+	ret = do_exdialog(tree_settings, chk_einste, NULL);
 
 	if (ret == EINST_LD)
 	{
@@ -1043,23 +1047,23 @@ void dial_einste(void)
 	if (ret == EIN_OK)		/* OK */
 	{
 
-		new_hdst = adr_einst[EIN_DSH].ob_spec.obspec.character - '0';
-		new_vdst = adr_einst[EIN_DSV].ob_spec.obspec.character - '0';
-		if ((status.h_icon_dist != new_hdst) ||
-			 (status.v_icon_dist != new_vdst))
+		new_hdst = tree_settings[EIN_DSH].ob_spec.obspec.character - '0';
+		new_vdst = tree_settings[EIN_DSV].ob_spec.obspec.character - '0';
+		if ((settings.h_icon_dist != new_hdst) ||
+			 (settings.v_icon_dist != new_vdst))
 		{
-			status.h_icon_dist = new_hdst;
-			status.v_icon_dist = new_vdst;
-			if (status.showtyp == M_ABILDR)
+			settings.h_icon_dist = new_hdst;
+			settings.v_icon_dist = new_vdst;
+			if (settings.showtyp == M_ABILDR)
 				upd_w = TRUE;
 		}
-		if (status.show_8p3 != selected(adr_einst, EIN_8PL3) &&
-			(status.showtyp == M_ATEXT))
+		if (settings.show_8p3 != selected(tree_settings, EIN_8PL3) &&
+			(settings.showtyp == M_ATEXT))
 			upd_w = TRUE;
 
-		status.desk_raster = adr_einst[EIN_RAS].ob_spec.obspec.character - '0';
-		newcol = adr_einst[EIN_COL].ob_spec.obspec.interiorcol;
-		newpat = adr_einst[EIN_PAT].ob_spec.obspec.fillpattern;
+		settings.desk_raster = tree_settings[EIN_RAS].ob_spec.obspec.character - '0';
+		newcol = tree_settings[EIN_COL].ob_spec.obspec.interiorcol;
+		newpat = tree_settings[EIN_PAT].ob_spec.obspec.fillpattern;
 
 
 		if (oldex && strcmp(_newkach.path, (*kachel_path)->path) ||
@@ -1089,34 +1093,34 @@ void dial_einste(void)
 		if (upd_0)
 		{
 			set_desktop();
-			upd_wind(fenster[0]);
+			upd_wind(windows[0]);
 		}
 
-		status.cnfm_del  = selected(adr_einst, EINST_BL);
-		status.cnfm_copy = selected(adr_einst, EINST_BK);
-		status.copy_resident = selected(adr_einst, EIN_CPRS);
-		status.copy_use_kobold = selected(adr_einst, EIN_KOBO);
+		settings.cnfm_del  = selected(tree_settings, EINST_BL);
+		settings.cnfm_copy = selected(tree_settings, EINST_BK);
+		settings.copy_resident = selected(tree_settings, EIN_CPRS);
+		settings.copy_use_kobold = selected(tree_settings, EIN_KOBO);
 
-		if (selected(adr_einst, EINST_KB))
-			status.mode_ovwr = CONFIRM;
+		if (selected(tree_settings, EINST_KB))
+			settings.mode_ovwr = CONFIRM;
 		else
-		if (selected(adr_einst, EINST_KA))
-			status.mode_ovwr = BACKUP;
+		if (selected(tree_settings, EINST_KA))
+			settings.mode_ovwr = BACKUP;
 		else
-			status.mode_ovwr = OVERWRITE;
+			settings.mode_ovwr = OVERWRITE;
 
-		status.check_free	= selected(adr_einst, EINST_KF);
-		status.resident		= selected(adr_einst, EINST_RS);
-		status.use_pp		= selected(adr_einst, EIN_PP);
-		status.show_all		= selected(adr_einst, EINST_VE);
-		status.show_8p3		= selected(adr_einst, EIN_8PL3);
-		status.auto_reload_off = !selected(adr_einst, EIN_RELOAD);
-		status.dnam_init	= selected(adr_einst, EINST_DN);
-		status.save_on_exit	= selected(adr_einst, EINS_ERD);
-		status.rtbutt_dclick= selected(adr_einst, EINS_DCLICK);
-		status.show_prticon = selected(adr_einst, EINS_DRK);
+		settings.check_free	= selected(tree_settings, EINST_KF);
+		settings.resident   = selected(tree_settings, EINST_RS);
+		settings.use_pp     = selected(tree_settings, EIN_PP);
+		settings.show_all   = selected(tree_settings, EINST_VE);
+		settings.show_8p3   = selected(tree_settings, EIN_8PL3);
+		settings.auto_reload_off = !selected(tree_settings, EIN_RELOAD);
+		settings.dnam_init	= selected(tree_settings, EINST_DN);
+		settings.save_on_exit	= selected(tree_settings, EINS_ERD);
+		settings.rtbutt_dclick= selected(tree_settings, EINS_DCLICK);
+		settings.show_prticon = selected(tree_settings, EINS_DRK);
 
-		fslx_set_flags(status.show_8p3, &dummy);
+		fslx_set_flags(settings.show_8p3, &dummy);
 
 		if (upd_w)
 			upd_show();
@@ -1140,11 +1144,11 @@ int dial_ttppar(char *pgm, char *par)
 	register char *ziel1,*ziel2;
 
 
-	ziel1 = (adr_ttppar+TTPPAR_T)->ob_spec.free_string;
+	ziel1 = (tree_ttppar+TTPPAR_T)->ob_spec.free_string;
 	strcpy(ziel1, get_name(pgm));
 
-	ziel1 = ((adr_ttppar+TTPPAR_1)->ob_spec.tedinfo)->te_ptext;
-	ziel2 = ((adr_ttppar+TTPPAR_2)->ob_spec.tedinfo)->te_ptext;
+	ziel1 = tree_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext;
+	ziel2 = tree_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext;
 	if (*par)
 	{
 		strncpy(ziel1, par, TTPLEN);
@@ -1155,7 +1159,7 @@ int dial_ttppar(char *pgm, char *par)
 		}
 	}
 
-	if 	(TTPPA_OK != do_dialog(adr_ttppar))
+	if 	(TTPPA_OK != do_dialog(tree_ttppar))
 		return 0;
 
 	strcpy(par, ziel1);
@@ -1223,8 +1227,8 @@ void dial_fontsel(void)
 	handle = aes_handle;
 	v_opnvwk(work_in, &handle, work_out);
 
-	id = status.fontID;
-	pt = (((long) status.fontH)<<16L);
+	id = settings.fontID;
+	pt = (((long) settings.fontH)<<16L);
 	ratio = (1L<<16L);
 	fnt_dialog = fnts_create(handle, 0, FONT_FLAGS, FNTS_3D,
 				  "Was Shumway Your favourite Gordon?", 0L);
@@ -1248,11 +1252,12 @@ void dial_fontsel(void)
 		Cconws("        ");
 		Cnecin();
 */
-		status.fontID = (int) id;
-		status.fontH = (int) (pt >> 16L);
+		settings.fontID = (int) id;
+		settings.fontH = (int) (pt >> 16L);
 		if (!fnts_get_info(fnt_dialog, id, &mono, &dummy))
-			status.font_is_prop = TRUE;
-		else	status.font_is_prop = !mono;
+			settings.font_is_prop = TRUE;
+		else
+			settings.font_is_prop = !mono;
 		set_char_dim();
 		upd_is();
 	}

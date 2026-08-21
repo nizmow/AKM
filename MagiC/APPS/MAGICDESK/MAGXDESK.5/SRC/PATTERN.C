@@ -66,7 +66,7 @@ int pattern_match(char *pattern, char *fname)
 		{
 			/* erst unwahrscheinlicheren Fall als Rekursion */
 			if	(pattern_match(pattern+1, fname))
-				return(TRUE);
+				return TRUE;
 			fname++;
 			continue;
 		}

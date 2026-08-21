@@ -65,7 +65,7 @@ static void destroy_all_selmasks( void )
 	WINDOW **pw,*w;
 
 
-	for	(i = 1,pw = fenster+1; i < ANZFENSTER; i++,pw++)
+	for	(i = 1,pw = windows + 1; i < NUM_WINDOWS; i++,pw++)
 	{
 		w = *pw;
 		if ((w) && !(w->flags & WFLAG_ICONIFIED) &&
@@ -104,7 +104,7 @@ void dsel_all( void )
 			dirty_info_selmask(w);
 	}
 
-	for	(i = 1,pw=fenster+1; i < ANZFENSTER; i++,pw++)
+	for	(i = 1,pw=windows+1; i < NUM_WINDOWS; i++,pw++)
 	{
 		w = *pw;
 		if ((w) && !(w->flags & WFLAG_ICONIFIED) &&
@@ -195,7 +195,7 @@ static int grect_toggle(WINDOW *w, char *sel_status, GRECT *g)
 				t->ob_state &= ~SELECTED;
 				t->ob_state |= newstate;
 /*
-				obj_malen((int) (w-fenster),
+				obj_malen((int) (w-windows),
 						(int) (mdta - w->pmydta)+1);
 */
 				rx = t->ob_x;
@@ -269,7 +269,8 @@ void rubberbox( WINDOW *w, int x, int y, int mx, int my )
 		{
 			if (!(SELECTED&(tree->ob_state)) || (HIDETREE&(tree->ob_flags)))
 				sel_status[i - 1] = 0;
-			else	sel_status[i - 1] = SELECTED;
+			else
+				sel_status[i - 1] = SELECTED;
 		}
 	}
 	else
@@ -373,598 +374,6 @@ void rubberbox( WINDOW *w, int x, int y, int mx, int my )
 	{
 		Mfree(sel_status);
 	}
-}
-
-
-/****************************************************************
-*
-* Der Benutzer hat an der Bildschirmposition (x_koor,y_koor) mit
-* dem <knopf> einen <anzahl>- fachen Mausklick ausgefÅhrt.
-* Es ist kein BEG_UPDATE ausgefÅhrt worden.
-*
-****************************************************************/
-
-void mausknopf(int anzahl, EVNTDATA *ev)
-{
-	WINDOW *w,*w2;
-	EVNTDATA ev2;
-	int icnobj;
-	int issel,dummy2;
-	OBJECT *tree;
-	static void move_icons(int x_koor, int y_koor,
-					WINDOW *w, int kbsh);
-
-
-	/* whdl := Handle des angeklickten Fensters oder < 0			*/
-	/* w	:= angeklicktes Fenster oder == NULL					*/
-	/* icnobj := Objektnummer des Icons in diesem Fenster bzw. Desk.	*/
-	/* tree   := Objektbaum des Fensters bzw. des Desktop			*/
-	/* -------------------------------------------------------------	*/
-
-	w = whdl2window(wind_find(ev->x, ev->y));
-	if (!w)
-		return;		/* keins oder nicht unser Fenster */
-
-	if (w->handle)	/* echtes Fenster (nicht der Desktop) */
-	{
-
-		/* Klick auf Hintergrundfenster.					*/
-		/* Weil WF_BEVENT gesetzt ist, wird das Fenster nicht	*/
-		/* vom System nach oben gebracht. Dies muû daher		*/
-		/* manuell erfolgen. Hier nur bei kurzem Einfachklick	*/
-		/* mit nur der linken Maustaste und ohne			*/
-		/* Umschalttasten!								*/
-		/* --------------------------------------------------- */
-
-		if ((anzahl == 1) && (ev->bstate == 1) && (!ev->kstate) &&
-				(w->handle != top_whdl()))
-		{
-			graf_mkstate(&ev2);
-			if (!ev2.bstate)	/* wieder losgelassen! */
-			{
-				wind_set_int(w->handle, WF_TOP, 0);
-				wind_set_int(-1, WF_TOP, -1);	/* MenÅ nach oben! */
-				return;
-			}
-		}
-
-		/* In MagiC 6 kriegen wir jetzt auch Klicks auf die	*/
-		/* INFO-Zeile. Wir behandeln einfach alle Klicks		*/
-		/* auûerhalb des Arbeitsbereichs als INFO			*/
-		/* --------------------------------------------------- */
-
-		if (!in_grect(ev->x, ev->y, &(w->in)))
-		{
-			GRECT g;
-
-			if (wind_get_grect(w->handle, WF_INFOXYWH, &g))
-			{
-				g.g_x += w->out.g_x;
-				g.g_y += w->out.g_y;
-				if (in_grect(ev->x, ev->y, &g))
-					show_free(w);
-			}
-		}
-	}
-
-	tree = w->pobj;
-	icnobj = find_obj(tree, ev->x, ev->y);
-
-	/* 1. Fall: Kein Objekt wurde angeklickt. Nichts passiert. */
-	/* ------------------------------------------------------- */
-
-	if (icnobj < 0)
-		return;
-
-	issel = icsel(&w2, &dummy2);	/* irgendwo Icons angewÑhlt? */
-
-	/* 2. Fall: Ein Hintergrund wurde angeklickt.			*/
-	/*		  Alle Icons ggf. deselektieren				*/
-	/*          Falls noch Maustaste gedrÅckt, Box ziehen		*/
-	/*		  ggf. alle meine Fenster toppen				*/
-	/* -------------------------------------------------------- */
-
-	if (icnobj == 0)
-	{
-		wind_update(BEG_UPDATE);
-		if (!(ev->kstate & (K_RSHIFT + K_LSHIFT)))
-		{
-			destroy_all_selmasks();
-			if (issel)
-				dsel_all();
-		}
-		graf_mkstate(&ev2);
-		if (ev2.bstate & 1)
-		{
-			rubberbox(w, ev->x, ev->y, ev2.x, ev2.y);
-		}
-		else
-		{
-			if (!w->handle)
-				top_all_my_windows();
-		}
-		wind_update(END_UPDATE);
-		return;
-	}
-
-	/* 3. Fall: selektiertes Objekt wurde einmal angeklickt	*/
-	/* -------------------------------------------------------- */
-
-	if (anzahl < 2 && selected(tree, icnobj))
-	{
-		if (ev->kstate & (K_RSHIFT + K_LSHIFT))
-		{
-			wind_update(BEG_UPDATE);
-			ob_dsel(tree, icnobj);
-			obj_malen(w, icnobj);
-			dirty_info_selmask(w);
-			wind_update(END_UPDATE);
-			return;
-		}
-		goto tst_move;
-	}
-
-	/* 4. Fall: nichtselektiertes Objekt wurde angeklickt		*/
-	/*          oder irgendein Objekt wurde doppelgeklickt		*/
-	/*          Bei nicht SHIFT alle anderen Objekte deselekt.	*/
-	/* -------------------------------------------------------- */
-
-	if (!(tree[icnobj].ob_flags & EXIT))	/* nicht ".." */
-	{
-		wind_update(BEG_UPDATE);
-		if (!(ev->kstate & (K_RSHIFT + K_LSHIFT)))
-		{
-			dsel_all();
-			ob_sel(tree, icnobj);
-		}
-		else
-		{
-			if (anzahl != 2)
-				(tree + icnobj) -> ob_state ^= SELECTED;
-			else
-				(tree + icnobj) -> ob_state |= SELECTED;
-		}
-
-		obj_malen(w, icnobj);
-		dirty_info_selmask(w);
-		wind_update(END_UPDATE);
-	}
-	else
-	{
-		anzahl = 2;	/* Klick auf ".." wie Doppelklick */
-	}
-
-	if ((anzahl < 2) && (!(tree[icnobj].ob_flags & EXIT)))
-	{	/* einmal geklickt, nicht ".." */
-		tst_move:
-		graf_mkstate(&ev2);
-		if (ev2.bstate & 1)
-		{
-			upd_infos();
-			move_icons(ev->x, ev->y, w, ev->kstate);
-		}
-		return;
-	}
-
-	/* Ab hier nur noch Doppelklicks berÅcksichtigen */
-	/* --------------------------------------------- */
-
-	if (anzahl == 2)
-	{
-		if (dclick(w, icnobj, ev->kstate))
-		{
-			wind_update(BEG_UPDATE);
-			ob_dsel(tree, icnobj);
-			obj_malen(w, icnobj);
-			dirty_info_selmask(w);
-			wind_update(END_UPDATE);
-		}
-	}
-}
-
-
-/****************************************************************
-*
-* Alle Objekte in einem Fenster oder auf dem Desktop werden
-* selektiert und ggf. neu gezeichnet.
-*
-****************************************************************/
-
-void sel_all(WINDOW *w)
-{
-	OBJECT *tree = w->pobj;
-	register OBJECT *ob;
-	GRECT g;
-	int   dummy;
-	register int i,head;
-	WINDOW *ow;
-
-
-
-	/* In fremdem Fenster alle Objekte deselektieren */
-
-	if (icsel(&ow, &dummy) && (ow != w))
-		dsel_all();
-
-	/* leere Fenster nicht behandeln */
-
-	if ((head = (tree -> ob_head)) <= 0)
-		return;
-
-	/* Select-Status aller Objekte umdrehen */
-	/* auûer versteckten und ".."-Objekt	*/
-
-	for	(i = head,ob = tree+head;
-			i <= (tree -> ob_tail);
-			i++,ob++)
-	{
-		if (0 == (ob->ob_flags & (HIDETREE+EXIT)))
-			ob->ob_state ^= SELECTED;
-	}
-
-	/* UmhÅllendes Rechteck aller selektierten */
-	/* Objekte bestimmen */
-
-	tree_sel_grect(tree, &g);
-
-	for	(i = head,ob = tree+head;
-			i <= (tree -> ob_tail);
-			i++,ob++)
-	{
-		if (0 == (ob->ob_flags & (HIDETREE+EXIT)))
-			ob->ob_state |= SELECTED;
-	}
-
-	redraw(w, &g);
-	if (g.g_w > 0)
-		dirty_info_selmask(w);
-}
-
-
-/****************************************************************
-*
-* BerÅcksichtigt das Desktop-Raster 
-*
-****************************************************************/
-
-static void desk_raster(int *x, int *y)
-{
-	*x -= (*x % status.desk_raster);
-	*y -= desk_g.g_y;
-	*y -= (*y % status.desk_raster);
-	*y += desk_g.g_y;
-}
-
-
-/****************************************************************
-*
-* Initialisiert ein Objekt, das ein Icon darstellt
-*
-****************************************************************/
-
-void init_icnobj(OBJECT *o, CICONBLK *icn, int typ, char *text,
-			int is_alias)
-{
-	int len;
-
-	if (text)
-		icn->monoblk.ib_ptext = text;
-	o->ob_type   = G_CICON;
-	if (typ >= 0)
-	{
-		o->ob_flags  = NORMAL;
-		o->ob_state  = NORMAL;
-	}
-	len = (int) strlen(icn->monoblk.ib_ptext);
-	if (len < MIN_FNAMLEN)
-		len = MIN_FNAMLEN;
-	if (is_alias)
-		len++;
-	len *= 6;		/* Zeichen -> Pixel */
-	if (icn->monoblk.ib_wicon > len)
-		len = icn->monoblk.ib_wicon;
-	icn->monoblk.ib_wtext = len;
-	icn->monoblk.ib_xicon = (len-icn->monoblk.ib_wicon)>>1;
-	o->ob_width  = len;
-	o->ob_height = icn->monoblk.ib_hicon + 8;
-	o->ob_spec.ciconblk = icn;
-}
-
-
-/****************************************************************
-*
-* Bringt ein neues Icon ins Desktop. Es soll ein Icon mit Typ
-*  <typ>, absoluter Position <x,y>, (optionalem) Buchstaben <c>
-*  und (optionalem) Text <text>.
-* Wenn es sich um eine Datei handelt, die aufs Desktop gezogen
-*  wurde, wird <path> zugeordnet.
-*
-* Ist x == -1, wird eine (freie) Position bestimmt.
-*
-* RÅckgabe != 0, falls nicht erfolgreich.
-*
-****************************************************************/
-
-int make_icon(int typ, CICONBLK *cic, char c, char *icntext,
-			char *path, int is_alias, int x, int y)
-{
-	register int i,j,k;
-	register OBJECT *ob,*parent;
-	ICONBLK *ic;
-	char *newmemptr;
-
-
-	parent = fenster[0]->pobj;
-
-	if (x < 0)
-	{
-		GRECT neu,neu2;
-
-		neu.g_x = 0;
-		neu.g_y = desk_g.g_y;
-		neu.g_w = 72;	/* der Einfachheit halber */
-		neu.g_h = cic->monoblk.ib_hicon + 8;
-		while (neu.g_y < desk_g.g_h - neu.g_h)
-		{
-			while (neu.g_x < desk_g.g_w - neu.g_w)
-			{
-				for	(k = 1,ob = parent+1;
-					k <= n_deskicons; k++,ob++)
-				{
-					if (ob->ob_flags & HIDETREE)
-						continue;
-					neu2 = neu;
-					if (rc_intersect((GRECT *) &(ob->ob_x),
-						&neu2))
-						goto schneidet;
-				}
-				goto found;
-				schneidet:
-				neu.g_x += 6;
-			}
-			neu.g_x = 0;
-			neu.g_y += 6;
-		}
-		neu.g_x = 0;		/* kein freier Platz */
-		neu.g_y = desk_g.g_y;
-		found:
-		x = neu.g_x;
-		y = neu.g_y;
-	}
-
-	for	(i = 0; i < n_deskicons && icon[i].icontyp; i++)
-		;
-	if (i >= n_deskicons)
-	{
-
-		/* Alle Icons frei. Neuen Block allozieren	*/
-		/* umkopieren und alten Block freigeben		*/
-		/* -----------------------------------------	*/
-
-		j = n_deskicons + PLUSICONS;
-		newmemptr = Malloc(sizeof(ICON)        * j +
-					  sizeof(OBJECT)      * (j+1));
-		if (!newmemptr)
-		{
-			err_alert(ENSMEM);
-			return TRUE;
-		}
-		/* OBJECTs relozieren */
-		for	(k = 1,ob = parent+1;
-			k <= n_deskicons; k++,ob++)
-		{
-			if (ob->ob_type == G_CICON)
-			{
-				ic = ob->ob_spec.iconblk;
-				ob->ob_spec.index -= (long) icon;
-				if (((long) ic->ib_ptext > (long) icon) &&
-					 ((long) ic->ib_ptext < (long) (icon+n_deskicons)))
-				{
-					ic->ib_ptext -= (long) icon;
-				}
-			}
-		}
-
-		memcpy(newmemptr, parent,
-			(n_deskicons+1) * sizeof(OBJECT));
-		fenster[0]->pobj = parent = (OBJECT *) newmemptr;
-		memcpy(parent + j + 1, icon,
-			n_deskicons * sizeof(ICON));
-		icon = (ICON *) (parent + j + 1);
-		Mfree(gmemptr);
-		gmemptr = newmemptr;
-		for	(; i < j; i++)
-			icon[i].icontyp = icon[i].isdisk = 0;
-
-		ob = parent;
-		ob->ob_tail = j;
-		ob++;
-		for	(k = 1; k <= n_deskicons; k++,ob++)
-		{
-			if (ob->ob_type == G_CICON)
-			{
-				ob->ob_spec.index += (long) icon;
-				ic = ob->ob_spec.iconblk;
-				if ((long) ic->ib_ptext < (long) (n_deskicons*sizeof(ICON)))
-					ic->ib_ptext += (long) icon;
-			}
-		}
-		ob--;
-		ob->ob_next = k;
-		ob->ob_flags &= ~LASTOB;
-		ob++;
-		for	(; k <= j; k++,ob++)
-		{
-			ob->ob_next = k+1;
-			ob->ob_head = ob->ob_tail = -1;
-			ob->ob_flags = HIDETREE;
-			ob->ob_state = ob->ob_type = 0;
-		}
-		ob--;
-		ob->ob_next = 0;
-		ob->ob_flags |= LASTOB;
-
-		i = n_deskicons;
-		n_deskicons = j;
-		fenster[0]->shownum  = fenster[0]->realnum = n_deskicons;
-		wind_set_ptr_int(SCREEN, WF_NEWDESK, parent, 0);
-	}
-
-	if (path)
-	{
-		k = (icntext) ? (int) strlen(icntext) : 1;
-		if (strlen(path) > (80 - k))
-		{
-			err_alert(EPTHOV);
-			return TRUE;
-		}
-		strcpy(icon[i].text, path);
-	}
-	else
-	{
-	 	icon[i].text[0] = EOS;
-	}
-
-	ob = parent+i+1;
-	icon[i].icontyp = typ;
-	icon[i].data    = *cic;
-	icon[i].isdisk  = c;
-	icon[i].is_alias = is_alias;
-	if (icntext)
-	{
-		strcat(icon[i].text, icntext);
-		icntext = get_name(icon[i].text);
-	}
-
-	init_icnobj(ob, &icon[i].data, typ, icntext, is_alias);
-	if (c)
-		icon[i].data.monoblk.ib_char = (c & 0x00ff) | 0x1000;
-	if (is_alias)
-		ob->ob_state |= (SHADOWED+0x8000+0x400);	/* kursiv */
-
-	/* Test, ob Icons auûerhalb des Bildschirms liegen */
-	/* ----------------------------------------------- */
-
-	x -= parent->ob_x;
-	y -= parent->ob_y;
-	if (x < 0)
-		x = 0;
-	if (y < desk_g.g_y)
-		y = desk_g.g_y;
-	if (x + ob->ob_width > parent->ob_width)
-		x = parent->ob_width - ob->ob_width;
-	if (y + ob->ob_height > parent->ob_height)
-		y = parent->ob_height - ob->ob_height;
-
-	/* Raster fÅr Iconposition, ohne Text (!) */
-	/* -------------------------------------- */
-
-	j = icon[i].data.monoblk.ib_xicon;
-	x += j;				/* Position des Icons selbst */
-	desk_raster(&x, &y);	/* ... rastern */
-	x -= j;				/* ... und zurÅck auf Objektposition */
-
-	ob->ob_x	    = x;
-	ob->ob_y	    = y;
-
-	obj_malen(fenster[0], i+1);
-	return FALSE;
-}
-
-
-/****************************************************************
-*
-* Nimmt ein Icon vom Desktop.
-*
-****************************************************************/
-
-void kill_icon(int objnr)
-{
-	WINDOW *w	= fenster[0];
-	OBJECT *ob = w->pobj+objnr;
-	ICON   *ic = icon+objnr-1;
-	GRECT  g;
-
-
-	ic -> icontyp = ic -> isdisk = 0;
-	ob -> ob_flags = HIDETREE;
-	objc_grect(w->pobj, objnr, &g);
-	redraw(w, &g);
-}
-
-
-/****************************************************************
-*
-* Gibt zu einem Objekt den Pfad und ggf. die DTA zurÅck.
-* RÅckgabe  0, falls Datei
-*           1, falls Pfad (Disk oder Ordner oder Fenster)
-*		 -1, sonst
-*
-****************************************************************/
-
-int obj_to_path(WINDOW *w, int obj, char *path, MYDTA **f)
-{
-	ICON  *icn;
-	MYDTA *file;
-	int   ispath = 0;
-
-
-	if (f)
-		*f = NULL;				/* per Default keine DTA */
-	*path = EOS;
-	if (!w->handle)	/* Desktop */
-	{
-		if (obj == 0)			/* Desktop- Hintergrund */
-			return -1;
-
-		icn = icon + (obj - 1);
-		if (icn->icontyp >= ITYP_ORDNER) /* Ord,Prog,Dat,Bat */
-		{
-			strcpy(path, icn->text);
-			if (icn->icontyp == ITYP_ORDNER)
-				ispath = 1;
-		}
-		else
-		{
-			if (!icn->isdisk)
-				return -1;
-
-			path[0] = icn->isdisk;
-			path[1] = ':';
-			path[2] = EOS;
-			ispath = 1;
-		}
-	}
-	else
-	{
-		strcpy(path, w->path);
-		if (w->flags & WFLAG_ICONIFIED)
-		{
-			return 1;	/* nur Pfad, kein Dateiname */
-		}
-		if (obj)
-		{
-			file = w->pmydta[obj-1];
-			if (f)
-				*f = file;
-			if ((file -> attrib) & F_SUBDIR)
-				ispath = 1;
-			if (ispath && !strcmp(file->filename, ".."))
-			{
-				path[strlen(path)-1] = EOS;	/* '\' weg */
-				*(get_name(path)-1) = EOS;	/* einen zurÅck */
-			}
-			else	strcat(path, file->filename);
-		}
-		else
-		{
-			ispath = 1;
-		}
-	}
-
-	if (ispath && obj)
-		strcat(path, "\\");
-	return ispath;
 }
 
 
@@ -1398,7 +807,7 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 	/* --------------------------------------------------------- */
 
 	{
-		char	zielpfad[130];
+		char zielpfad[130];
 
 
 			/* wenn Zielobjekt kein Pfad ist... */
@@ -1414,6 +823,597 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 		cpmvdl_icns(w, zielpfad, ev.kstate);
 		wind_update(END_UPDATE);
 	}
+}
+
+
+/****************************************************************
+*
+* Der Benutzer hat an der Bildschirmposition (x_koor,y_koor) mit
+* dem <knopf> einen <anzahl>- fachen Mausklick ausgefÅhrt.
+* Es ist kein BEG_UPDATE ausgefÅhrt worden.
+*
+****************************************************************/
+
+void handle_mouse_button(int anzahl, EVNTDATA *ev)
+{
+	WINDOW *w,*w2;
+	EVNTDATA ev2;
+	int icnobj;
+	int issel,dummy2;
+	OBJECT *tree;
+
+
+	/* whdl := Handle des angeklickten Fensters oder < 0			*/
+	/* w	:= angeklicktes Fenster oder == NULL					*/
+	/* icnobj := Objektnummer des Icons in diesem Fenster bzw. Desk.	*/
+	/* tree   := Objektbaum des Fensters bzw. des Desktop			*/
+	/* -------------------------------------------------------------	*/
+
+	w = whdl2window(wind_find(ev->x, ev->y));
+	if (!w)
+		return;		/* keins oder nicht unser Fenster */
+
+	if (w->handle)	/* echtes Fenster (nicht der Desktop) */
+	{
+
+		/* Klick auf Hintergrundfenster.					*/
+		/* Weil WF_BEVENT gesetzt ist, wird das Fenster nicht	*/
+		/* vom System nach oben gebracht. Dies muû daher		*/
+		/* manuell erfolgen. Hier nur bei kurzem Einfachklick	*/
+		/* mit nur der linken Maustaste und ohne			*/
+		/* Umschalttasten!								*/
+		/* --------------------------------------------------- */
+
+		if ((anzahl == 1) && (ev->bstate == 1) && (!ev->kstate) &&
+				(w->handle != top_whdl()))
+		{
+			graf_mkstate(&ev2);
+			if (!ev2.bstate)	/* wieder losgelassen! */
+			{
+				wind_set_int(w->handle, WF_TOP, 0);
+				wind_set_int(-1, WF_TOP, -1);	/* MenÅ nach oben! */
+				return;
+			}
+		}
+
+		/* In MagiC 6 kriegen wir jetzt auch Klicks auf die	*/
+		/* INFO-Zeile. Wir behandeln einfach alle Klicks		*/
+		/* auûerhalb des Arbeitsbereichs als INFO			*/
+		/* --------------------------------------------------- */
+
+		if (!in_grect(ev->x, ev->y, &(w->in)))
+		{
+			GRECT g;
+
+			if (wind_get_grect(w->handle, WF_INFOXYWH, &g))
+			{
+				g.g_x += w->out.g_x;
+				g.g_y += w->out.g_y;
+				if (in_grect(ev->x, ev->y, &g))
+					show_free(w);
+			}
+		}
+	}
+
+	tree = w->pobj;
+	icnobj = find_obj(tree, ev->x, ev->y);
+
+	/* 1. Fall: Kein Objekt wurde angeklickt. Nichts passiert. */
+	/* ------------------------------------------------------- */
+
+	if (icnobj < 0)
+		return;
+
+	issel = icsel(&w2, &dummy2);	/* irgendwo Icons angewÑhlt? */
+
+	/* 2. Fall: Ein Hintergrund wurde angeklickt.			*/
+	/*		  Alle Icons ggf. deselektieren				*/
+	/*          Falls noch Maustaste gedrÅckt, Box ziehen		*/
+	/*		  ggf. alle meine Fenster toppen				*/
+	/* -------------------------------------------------------- */
+
+	if (icnobj == 0)
+	{
+		wind_update(BEG_UPDATE);
+		if (!(ev->kstate & (K_RSHIFT + K_LSHIFT)))
+		{
+			destroy_all_selmasks();
+			if (issel)
+				dsel_all();
+		}
+		graf_mkstate(&ev2);
+		if (ev2.bstate & 1)
+		{
+			rubberbox(w, ev->x, ev->y, ev2.x, ev2.y);
+		}
+		else
+		{
+			if (!w->handle)
+				top_all_my_windows();
+		}
+		wind_update(END_UPDATE);
+		return;
+	}
+
+	/* 3. Fall: selektiertes Objekt wurde einmal angeklickt	*/
+	/* -------------------------------------------------------- */
+
+	if (anzahl < 2 && selected(tree, icnobj))
+	{
+		if (ev->kstate & (K_RSHIFT + K_LSHIFT))
+		{
+			wind_update(BEG_UPDATE);
+			ob_dsel(tree, icnobj);
+			obj_malen(w, icnobj);
+			dirty_info_selmask(w);
+			wind_update(END_UPDATE);
+			return;
+		}
+		goto tst_move;
+	}
+
+	/* 4. Fall: nichtselektiertes Objekt wurde angeklickt		*/
+	/*          oder irgendein Objekt wurde doppelgeklickt		*/
+	/*          Bei nicht SHIFT alle anderen Objekte deselekt.	*/
+	/* -------------------------------------------------------- */
+
+	if (!(tree[icnobj].ob_flags & EXIT))	/* nicht ".." */
+	{
+		wind_update(BEG_UPDATE);
+		if (!(ev->kstate & (K_RSHIFT + K_LSHIFT)))
+		{
+			dsel_all();
+			ob_sel(tree, icnobj);
+		}
+		else
+		{
+			if (anzahl != 2)
+				(tree + icnobj) -> ob_state ^= SELECTED;
+			else
+				(tree + icnobj) -> ob_state |= SELECTED;
+		}
+
+		obj_malen(w, icnobj);
+		dirty_info_selmask(w);
+		wind_update(END_UPDATE);
+	}
+	else
+	{
+		anzahl = 2;	/* Klick auf ".." wie Doppelklick */
+	}
+
+	if ((anzahl < 2) && (!(tree[icnobj].ob_flags & EXIT)))
+	{	/* einmal geklickt, nicht ".." */
+		tst_move:
+		graf_mkstate(&ev2);
+		if (ev2.bstate & 1)
+		{
+			upd_infos();
+			move_icons(ev->x, ev->y, w, ev->kstate);
+		}
+		return;
+	}
+
+	/* Ab hier nur noch Doppelklicks berÅcksichtigen */
+	/* --------------------------------------------- */
+
+	if (anzahl == 2)
+	{
+		if (dclick(w, icnobj, ev->kstate))
+		{
+			wind_update(BEG_UPDATE);
+			ob_dsel(tree, icnobj);
+			obj_malen(w, icnobj);
+			dirty_info_selmask(w);
+			wind_update(END_UPDATE);
+		}
+	}
+}
+
+
+/****************************************************************
+*
+* Alle Objekte in einem Fenster oder auf dem Desktop werden
+* selektiert und ggf. neu gezeichnet.
+*
+****************************************************************/
+
+void sel_all(WINDOW *w)
+{
+	OBJECT *tree = w->pobj;
+	register OBJECT *ob;
+	GRECT g;
+	int   dummy;
+	register int i,head;
+	WINDOW *ow;
+
+
+
+	/* In fremdem Fenster alle Objekte deselektieren */
+
+	if (icsel(&ow, &dummy) && (ow != w))
+		dsel_all();
+
+	/* leere Fenster nicht behandeln */
+
+	if ((head = (tree -> ob_head)) <= 0)
+		return;
+
+	/* Select-Status aller Objekte umdrehen */
+	/* auûer versteckten und ".."-Objekt	*/
+
+	for	(i = head,ob = tree+head;
+			i <= (tree -> ob_tail);
+			i++,ob++)
+	{
+		if (0 == (ob->ob_flags & (HIDETREE+EXIT)))
+			ob->ob_state ^= SELECTED;
+	}
+
+	/* UmhÅllendes Rechteck aller selektierten */
+	/* Objekte bestimmen */
+
+	tree_sel_grect(tree, &g);
+
+	for	(i = head,ob = tree+head;
+			i <= (tree -> ob_tail);
+			i++,ob++)
+	{
+		if (0 == (ob->ob_flags & (HIDETREE+EXIT)))
+			ob->ob_state |= SELECTED;
+	}
+
+	redraw(w, &g);
+	if (g.g_w > 0)
+		dirty_info_selmask(w);
+}
+
+
+/****************************************************************
+*
+* BerÅcksichtigt das Desktop-Raster 
+*
+****************************************************************/
+
+static void desk_raster(int *x, int *y)
+{
+	*x -= (*x % settings.desk_raster);
+	*y -= desk_g.g_y;
+	*y -= (*y % settings.desk_raster);
+	*y += desk_g.g_y;
+}
+
+
+/****************************************************************
+*
+* Initialisiert ein Objekt, das ein Icon darstellt
+*
+****************************************************************/
+
+void init_icnobj(OBJECT *o, CICONBLK *icn, int typ, char *text,
+			int is_alias)
+{
+	int len;
+
+	if (text)
+		icn->monoblk.ib_ptext = text;
+	o->ob_type   = G_CICON;
+	if (typ >= 0)
+	{
+		o->ob_flags  = NORMAL;
+		o->ob_state  = NORMAL;
+	}
+	len = (int) strlen(icn->monoblk.ib_ptext);
+	if (len < MIN_FNAMLEN)
+		len = MIN_FNAMLEN;
+	if (is_alias)
+		len++;
+	len *= 6;		/* Zeichen -> Pixel */
+	if (icn->monoblk.ib_wicon > len)
+		len = icn->monoblk.ib_wicon;
+	icn->monoblk.ib_wtext = len;
+	icn->monoblk.ib_xicon = (len-icn->monoblk.ib_wicon)>>1;
+	o->ob_width  = len;
+	o->ob_height = icn->monoblk.ib_hicon + 8;
+	o->ob_spec.ciconblk = icn;
+}
+
+
+/****************************************************************
+*
+* Bringt ein neues Icon ins Desktop. Es soll ein Icon mit Typ
+*  <typ>, absoluter Position <x,y>, (optionalem) Buchstaben <c>
+*  und (optionalem) Text <text>.
+* Wenn es sich um eine Datei handelt, die aufs Desktop gezogen
+*  wurde, wird <path> zugeordnet.
+*
+* Ist x == -1, wird eine (freie) Position bestimmt.
+*
+* RÅckgabe != 0, falls nicht erfolgreich.
+*
+****************************************************************/
+
+int make_icon(int typ, CICONBLK *cic, char c, char *icntext,
+			char *path, int is_alias, int x, int y)
+{
+	register int i,j,k;
+	register OBJECT *ob,*parent;
+	ICONBLK *ic;
+	char *newmemptr;
+
+
+	parent = windows[0]->pobj;
+
+	if (x < 0)
+	{
+		GRECT neu,neu2;
+
+		neu.g_x = 0;
+		neu.g_y = desk_g.g_y;
+		neu.g_w = 72;	/* der Einfachheit halber */
+		neu.g_h = cic->monoblk.ib_hicon + 8;
+		while (neu.g_y < desk_g.g_h - neu.g_h)
+		{
+			while (neu.g_x < desk_g.g_w - neu.g_w)
+			{
+				for	(k = 1,ob = parent+1;
+					k <= n_deskicons; k++,ob++)
+				{
+					if (ob->ob_flags & HIDETREE)
+						continue;
+					neu2 = neu;
+					if (rc_intersect((GRECT *) &(ob->ob_x),
+						&neu2))
+						goto schneidet;
+				}
+				goto found;
+				schneidet:
+				neu.g_x += 6;
+			}
+			neu.g_x = 0;
+			neu.g_y += 6;
+		}
+		neu.g_x = 0;		/* kein freier Platz */
+		neu.g_y = desk_g.g_y;
+		found:
+		x = neu.g_x;
+		y = neu.g_y;
+	}
+
+	for	(i = 0; i < n_deskicons && icon[i].icontyp; i++)
+		;
+	if (i >= n_deskicons)
+	{
+
+		/* Alle Icons frei. Neuen Block allozieren	*/
+		/* umkopieren und alten Block freigeben		*/
+		/* -----------------------------------------	*/
+
+		j = n_deskicons + PLUSICONS;
+		newmemptr = Malloc(sizeof(ICON)        * j +
+					  sizeof(OBJECT)      * (j+1));
+		if (!newmemptr)
+		{
+			err_alert(ENSMEM);
+			return TRUE;
+		}
+		/* OBJECTs relozieren */
+		for	(k = 1,ob = parent+1;
+			k <= n_deskicons; k++,ob++)
+		{
+			if (ob->ob_type == G_CICON)
+			{
+				ic = ob->ob_spec.iconblk;
+				ob->ob_spec.index -= (long) icon;
+				if (((long) ic->ib_ptext > (long) icon) &&
+					 ((long) ic->ib_ptext < (long) (icon+n_deskicons)))
+				{
+					ic->ib_ptext -= (long) icon;
+				}
+			}
+		}
+
+		memcpy(newmemptr, parent,
+			(n_deskicons+1) * sizeof(OBJECT));
+		windows[0]->pobj = parent = (OBJECT *) newmemptr;
+		memcpy(parent + j + 1, icon,
+			n_deskicons * sizeof(ICON));
+		icon = (ICON *) (parent + j + 1);
+		Mfree(gmemptr);
+		gmemptr = newmemptr;
+		for	(; i < j; i++)
+			icon[i].icontyp = icon[i].isdisk = 0;
+
+		ob = parent;
+		ob->ob_tail = j;
+		ob++;
+		for	(k = 1; k <= n_deskicons; k++,ob++)
+		{
+			if (ob->ob_type == G_CICON)
+			{
+				ob->ob_spec.index += (long) icon;
+				ic = ob->ob_spec.iconblk;
+				if ((long) ic->ib_ptext < (long) (n_deskicons*sizeof(ICON)))
+					ic->ib_ptext += (long) icon;
+			}
+		}
+		ob--;
+		ob->ob_next = k;
+		ob->ob_flags &= ~LASTOB;
+		ob++;
+		for	(; k <= j; k++,ob++)
+		{
+			ob->ob_next = k+1;
+			ob->ob_head = ob->ob_tail = -1;
+			ob->ob_flags = HIDETREE;
+			ob->ob_state = ob->ob_type = 0;
+		}
+		ob--;
+		ob->ob_next = 0;
+		ob->ob_flags |= LASTOB;
+
+		i = n_deskicons;
+		n_deskicons = j;
+		windows[0]->shownum  = windows[0]->realnum = n_deskicons;
+		wind_set_ptr_int(SCREEN, WF_NEWDESK, parent, 0);
+	}
+
+	if (path)
+	{
+		k = (icntext) ? (int) strlen(icntext) : 1;
+		if (strlen(path) > (80 - k))
+		{
+			err_alert(EPTHOV);
+			return TRUE;
+		}
+		strcpy(icon[i].text, path);
+	}
+	else
+	{
+	 	icon[i].text[0] = EOS;
+	}
+
+	ob = parent+i+1;
+	icon[i].icontyp = typ;
+	icon[i].data    = *cic;
+	icon[i].isdisk  = c;
+	icon[i].is_alias = is_alias;
+	if (icntext)
+	{
+		strcat(icon[i].text, icntext);
+		icntext = get_name(icon[i].text);
+	}
+
+	init_icnobj(ob, &icon[i].data, typ, icntext, is_alias);
+	if (c)
+		icon[i].data.monoblk.ib_char = (c & 0x00ff) | 0x1000;
+	if (is_alias)
+		ob->ob_state |= (SHADOWED+0x8000+0x400);	/* kursiv */
+
+	/* Test, ob Icons auûerhalb des Bildschirms liegen */
+	/* ----------------------------------------------- */
+
+	x -= parent->ob_x;
+	y -= parent->ob_y;
+	if (x < 0)
+		x = 0;
+	if (y < desk_g.g_y)
+		y = desk_g.g_y;
+	if (x + ob->ob_width > parent->ob_width)
+		x = parent->ob_width - ob->ob_width;
+	if (y + ob->ob_height > parent->ob_height)
+		y = parent->ob_height - ob->ob_height;
+
+	/* Raster fÅr Iconposition, ohne Text (!) */
+	/* -------------------------------------- */
+
+	j = icon[i].data.monoblk.ib_xicon;
+	x += j;				/* Position des Icons selbst */
+	desk_raster(&x, &y);	/* ... rastern */
+	x -= j;				/* ... und zurÅck auf Objektposition */
+
+	ob->ob_x	    = x;
+	ob->ob_y	    = y;
+
+	obj_malen(windows[0], i+1);
+	return FALSE;
+}
+
+
+/****************************************************************
+*
+* Nimmt ein Icon vom Desktop.
+*
+****************************************************************/
+
+void kill_icon(int objnr)
+{
+	WINDOW *w	= windows[0];
+	OBJECT *ob = w->pobj+objnr;
+	ICON   *ic = icon+objnr-1;
+	GRECT  g;
+
+
+	ic -> icontyp = ic -> isdisk = 0;
+	ob -> ob_flags = HIDETREE;
+	objc_grect(w->pobj, objnr, &g);
+	redraw(w, &g);
+}
+
+
+/****************************************************************
+*
+* Gibt zu einem Objekt den Pfad und ggf. die DTA zurÅck.
+* RÅckgabe  0, falls Datei
+*           1, falls Pfad (Disk oder Ordner oder Fenster)
+*		 -1, sonst
+*
+****************************************************************/
+
+int obj_to_path(WINDOW *w, int obj, char *path, MYDTA **f)
+{
+	ICON  *icn;
+	MYDTA *file;
+	int   ispath = 0;
+
+
+	if (f)
+		*f = NULL;				/* per Default keine DTA */
+	*path = EOS;
+	if (!w->handle)	/* Desktop */
+	{
+		if (obj == 0)			/* Desktop- Hintergrund */
+			return -1;
+
+		icn = icon + (obj - 1);
+		if (icn->icontyp >= ITYP_ORDNER) /* Ord,Prog,Dat,Bat */
+		{
+			strcpy(path, icn->text);
+			if (icn->icontyp == ITYP_ORDNER)
+				ispath = 1;
+		}
+		else
+		{
+			if (!icn->isdisk)
+				return -1;
+
+			path[0] = icn->isdisk;
+			path[1] = ':';
+			path[2] = EOS;
+			ispath = 1;
+		}
+	}
+	else
+	{
+		strcpy(path, w->path);
+		if (w->flags & WFLAG_ICONIFIED)
+		{
+			return 1;	/* nur Pfad, kein Dateiname */
+		}
+		if (obj)
+		{
+			file = w->pmydta[obj-1];
+			if (f)
+				*f = file;
+			if ((file -> attrib) & F_SUBDIR)
+				ispath = 1;
+			if (ispath && !strcmp(file->filename, ".."))
+			{
+				path[strlen(path)-1] = EOS;	/* '\' weg */
+				*(get_name(path)-1) = EOS;	/* einen zurÅck */
+			}
+			else
+				strcat(path, file->filename);
+		}
+		else
+		{
+			ispath = 1;
+		}
+	}
+
+	if (ispath && obj)
+		strcat(path, "\\");
+	return ispath;
 }
 
 
@@ -1449,7 +1449,7 @@ static void mv_dskt_icns(int x, int y)
 		return;
 	mvx = x;
 	mvy = y;
-	walk_sel(fenster[0], mv_obj, NULL);
+	walk_sel(windows[0], mv_obj, NULL);
 }
 
 
@@ -1551,7 +1551,7 @@ Cconout((char) (typ >> 8)); Cconout((char) typ);
 Cconout(' ');
 Cconws(pgm);
 */
-		starten(pgm, NULL, typ, NULL, fenster[0], 0, 0);
+		starten(pgm, NULL, typ, NULL, windows[0], 0, 0);
 	}
 }
 
@@ -1675,7 +1675,7 @@ static int collect_objs(WINDOW *w, int obj, void *dummy)
 	/* 1. Fall: Kobold benutzen */
 	/* ------------------------ */
 
-	if (status.copy_use_kobold)
+	if (settings.copy_use_kobold)
 	{
 		if (free_space < 130L)
 			return (int) ENSMEM;
@@ -1770,7 +1770,9 @@ static int collect_objs(WINDOW *w, int obj, void *dummy)
 				flen = f->filesize;
 			else	flen = -1L;		/* Ordner */
 		}
-		else	flen = -4L;			/* Objekt auf dem Desktop */
+		else
+			flen = -4L;			/* Objekt auf dem Desktop */
+
 		ltoa(flen, path, 10);
 		len = strlen(path)+1;	/* LÑnge inkl. EOS */
 		if (len > free_space)
@@ -1877,7 +1879,7 @@ void cpmvdl_icns(WINDOW *w, char *destpath, int kbsh)
 	/* 1. Fall: Kobold benutzen */
 	/* ------------------------ */
 
-	if (status.copy_use_kobold)
+	if (settings.copy_use_kobold)
 	{
 		kobold_path = getenv("KOBOLD");
 		if (!kobold_path)
@@ -1967,23 +1969,23 @@ void cpmvdl_icns(WINDOW *w, char *destpath, int kbsh)
 	*selpaths++ = action;
 	if (action == 'D')
 	{
-		if (status.cnfm_del)
+		if (settings.cnfm_del)
 			*selpaths++ = 'c';
 	}
 	else
 	{
-		if (status.cnfm_copy)
+		if (settings.cnfm_copy)
 			*selpaths++ = 'c';
-		if (status.check_free)
+		if (settings.check_free)
 			*selpaths++ = 'f';
-		if (status.mode_ovwr == OVERWRITE)
+		if (settings.mode_ovwr == OVERWRITE)
 			*selpaths++ = 'o';
 		else
-		if (status.mode_ovwr == BACKUP)
+		if (settings.mode_ovwr == BACKUP)
 			*selpaths++ = 'u';
 	}
 			
-	if (!status.copy_resident)
+	if (!settings.copy_resident)
 		*selpaths++ = 'q';			/* nach Aktion terminieren */
 	*selpaths++ = EOS;
 	free_space -= (selpaths-sel_mem)+1;	/* Schalter + Ende-EOS */

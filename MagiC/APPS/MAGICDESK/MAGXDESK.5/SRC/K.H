@@ -90,8 +90,8 @@ extern CICONBLK **icons;
 #define FENSTERTYP_T (NAME+CLOSER+FULLER+MOVER+INFO+SIZER+UPARROW+DNARROW+VSLIDE+HSLIDE+LFARROW+RTARROW+SMALLER)
 #define FENSTERTYP_B (NAME+CLOSER+FULLER+MOVER+INFO+SIZER+UPARROW+DNARROW+VSLIDE+SMALLER)
 
-#define ANZDRIVES	32			/* Maximale Anzahl Laufwerke */
-#define ANZFENSTER	64			/* Anzahl der Fenster */
+#define NUM_DRIVES  32			/* Maximale Anzahl Laufwerke */
+#define NUM_WINDOWS	64			/* Anzahl der Fenster */
 #define PLUSICONS	10			/* Anzahl freier Desktop- Icons */
 #define MAX_ICONTXT	80
 #define TTPLEN 63
@@ -105,7 +105,7 @@ extern CICONBLK **icons;
 /* Angemeldete Programme */
 /* --------------------- */
 
-#define ANZPROGRAMS	14			/* Anzahl Dateien in "Programme" */
+#define NUM_PROGRAMS 14			/* Anzahl Dateien in "Programme" */
 #define  INDEX_CMD	0			/* Kommandointerpreter */
 #define  INDEX_SHOW 1			/* Anzeigeprogramm */
 #define  INDEX_PRNT	2			/* Ausgabeprogramm */
@@ -123,7 +123,7 @@ extern char *kachel_8;			/* Kachel 8 Planes (256 Farben) */
 extern char *kachel_m;			/* Kachel > 256 Farben */
 extern MENUPROGRAM **kachel_path;	/* Zeiger auf aktuelle Kachel */
 
-extern MENUPROGRAM menuprograms[ANZPROGRAMS];
+extern MENUPROGRAM menuprograms[NUM_PROGRAMS];
 extern char ext_bat[4];				/* Dateityp .BAT */
 extern char ext_btp[4];				/* Dateityp .BTP */
 
@@ -245,14 +245,14 @@ typedef struct _window
 	OBJECT *pobj;			/* Zeiger auf dargestellte Objekte */
 } WINDOW;
 
-extern WINDOW	*fenster[ANZFENSTER+1];	/* Zeiger auf Fenster */
-extern GRECT	fensterg[ANZFENSTER+1];	/* gespeicherte Positionen */
+extern WINDOW *windows[NUM_WINDOWS + 1];	/* Zeiger auf Fenster */
+extern GRECT windows_g[NUM_WINDOWS + 1];	/* gespeicherte Positionen */
 
 extern int dirty_win,dirty_pgm;
-extern char dirty_drives[ANZDRIVES];	/* 0 = Inhalt unverÑndert */
+extern char dirty_drives[NUM_DRIVES];	/* 0 = Inhalt unverÑndert */
 								/* 1 = Inh.+fr.Sp. geÑndert */
 								/* 2 = nur Inh. geÑndert */
-extern DISKINFO    dinfo[ANZDRIVES];
+extern DISKINFO dinfo[NUM_DRIVES];
 
 enum { OVERWRITE, BACKUP, CONFIRM };
 
@@ -294,7 +294,7 @@ typedef struct
 	int  font_is_prop;		/* Flag fÅr Proportional-Zeichensatz */
 } DEFAULTS;
 
-extern DEFAULTS status;
+extern DEFAULTS settings;
 extern char *desk_col;
 extern char *desk_patt;
 
@@ -379,7 +379,6 @@ extern int  drag_and_drop(int whdl, int kbsh, int mx, int my);
 
 extern void	set_char_dim(void);
 extern void	_ende(int code);
-extern void	anfang(void);
 extern int	change_res(int dev, int txt);
 extern void	close_all_wind(void);
 extern void	init_popup(OBJECT *dialog, int objnr,
@@ -392,30 +391,29 @@ extern int	is_dest(WINDOW *w, int objnr);
 extern void	redraw( WINDOW *w, GRECT *neu);
 extern void	set_deflt_clip( void );
 extern void	shutdown(int dev, int txt);
-extern void	tastatur(int code);
 extern void tree_sel_grect(OBJECT *tree, GRECT *g);
-extern int 	walk_sel(WINDOW *w, int (*tue)(WINDOW *w, int obj, void *par), void *par);
-extern OBJECT *adr_hauptmen;
-extern OBJECT *adr_icons;
-extern OBJECT *adr_einst;
-extern OBJECT *adr_ttppar;
-extern OBJECT *adr_about;
-extern OBJECT *adr_datinf;
-extern int	aes_handle,vdi_handle,vdi_device,char_w,char_h;
-extern int	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
+extern int 	walk_sel(WINDOW *w, int (*cb)(WINDOW *w, int obj, void *par), void *par);
+extern OBJECT *tree_menu;
+extern OBJECT *tree_icons;
+extern OBJECT *tree_settings;
+extern OBJECT *tree_ttppar;
+extern OBJECT *tree_about;
+extern OBJECT *tree_datinf;
+extern int aes_handle,vdi_handle,vdi_device,char_w,char_h;
+extern int gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
 extern GRECT desk_g,screen_g;
 extern USERBLK userblk;
-extern char	*pgm_ver;
-extern int	*aes_global;
-extern int	ap_id;
-extern int	folder_w;
-extern int	spaltenabstand;		/* FÅr Textausgabe */
+extern const char *pgm_ver;
+extern int *aes_global;
+extern int ap_id;
+extern int folder_w;
+extern int spaltenabstand;		/* FÅr Textausgabe */
 
 /* Externals aus KLICK.C */
 
 extern void obj_malen(WINDOW *w, int index);
 extern void dsel_all(void);
-extern void mausknopf(int anzahl, EVNTDATA *ev);
+extern void handle_mouse_button(int anzahl, EVNTDATA *ev);
 extern void sel_all(WINDOW *w);
 extern int  make_icon(int typ, CICONBLK *cic, char c, char *icntext,
 					char *path, int is_alias, int x, int y);
@@ -507,3 +505,5 @@ extern char *os_ver_s;
 extern void set_parent_paths(void);
 extern void res_exec(void);
 extern void get_syshdr(void);
+extern long getHz200(void);
+extern unsigned get_dclick_interval_ms(void);

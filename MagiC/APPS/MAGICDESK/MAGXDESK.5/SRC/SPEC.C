@@ -10,6 +10,8 @@
 #include <vdi.h>
 #include <string.h>
 
+#define _HZ_200     ((long *)          0x4ba)
+
 
 /*********************************************************************
 *
@@ -39,7 +41,9 @@ void get_syshdr(void)
 	os_ver_s[11] = (((aesvars->version)     ) & 0xf) +'0';
 
 	if (aesvars->release < 3)
+	{
 		os_ver_s[12] = *("àáâ" + (aesvars->release));
+	}
 
 	os_ver_s[18] = (((aesvars->date) >> 28)      ) + '0';
 	os_ver_s[19] = (((aesvars->date) >> 24) & 0xf) + '0';
@@ -62,13 +66,13 @@ void get_syshdr(void)
 int change_res(int dev, int txt)
 {
 	if (!aesvars)
-		return(0);
+		return 0;
 #if		COUNTRY==FRG
 	if (1 != form_alert(1, "[2][Aufl”sungswechsel ?][ OK | Abbruch ]"))
-		return(0);
+		return 0;
 #elif	COUNTRY==USA
 	if (1 != form_alert(1, "[2][Change resolution ?][ OK | Cancel ]"))
-		return(0);
+		return 0;
 #endif
 	aesvars->chgres(dev, txt);
 	return 1;
@@ -106,10 +110,14 @@ COOKIE *getcookie(long key)
 *
 *********************************************************************/
 
-long read_bootsec(int lw, long *ser, int *bps, int *spc,
-						int *res,	int *nfats, int *ndirs, int *nsects,
-						int *media, int *spf, int *spt, int *nsides,
-						int *nhid, int *exec)
+long read_bootsec
+(
+	int lw,
+	long *ser, int *bps, int *spc,
+	int *res, int *nfats, int *ndirs, int *nsects,
+	int *media, int *spf, int *spt, int *nsides,
+	int *nhid, int *exec
+)
 {
 	long doserr;
 	unsigned char *s;
@@ -148,7 +156,48 @@ long read_bootsec(int lw, long *ser, int *bps, int *spc,
 	}
 
 	Mfree(s);
-	return(doserr);
+	return doserr;
+}
+
+
+/****************************************************************
+*
+* Systemzeit fr Intervall-Berechnungen
+*
+****************************************************************/
+
+long getHz200(void)
+{
+	return *_HZ_200;
+}
+
+
+/****************************************************************
+*
+* Doppelklick-Zeit in Millisekunden,
+* muž mit 5 multipliziert werden fr 5-ms-Einheiten fr den 200-Hz-Timer
+*
+****************************************************************/
+
+unsigned get_dclick_interval_ms(void)
+{
+	/* Tabelle aus dem MagiC-Kernel */
+	static const unsigned dclick_tab[] =
+	{
+		450,	/* in ms */
+		330,
+		275,
+		220,
+		165
+	};
+
+	unsigned v = (unsigned) evnt_dclick(0, 0);
+	if (v > 4)
+	{
+		v = 4;
+	}
+	
+	return dclick_tab[v];
 }
 
 
@@ -160,7 +209,7 @@ long read_bootsec(int lw, long *ser, int *bps, int *spc,
 
 static void *rsc_block;
 
-long restart(void)
+static long restart(void)
 {
 	extern BASPAG *_BasPag;
 

@@ -178,7 +178,7 @@ static LONG open_img( BYTE *path )
 		retcode = ENSMEM;
 		err:
 		Fclose(fd);
-		return(retcode);
+		return retcode;
 	}
 
 	img_buf = external_buf;
@@ -259,15 +259,15 @@ static UBYTE *unpack_line1( UBYTE *img, UBYTE *des, WORD pat_len, WORD len )
 	{
 		if ( img[3] > 1 )													/* mehr als eine Zeile? */
 		{
-			unpack_line2( img + 4, des, pat_len, len );
+			unpack_line2(img + 4, des, pat_len, len);
 			img[3] -= 1;													/* eine Wiederholung weniger */
-			return( img );
+			return img;
 		}
 		else
-			return( unpack_line2( img + 4, des, pat_len, len ));
+			return unpack_line2(img + 4, des, pat_len, len);
 	}
 	else
-		return( unpack_line2( img, des, pat_len, len ));
+		return unpack_line2(img, des, pat_len, len);
 }
 
 /*----------------------------------------------------------------------------------------*/ 
@@ -303,7 +303,8 @@ static UBYTE *unpack_line2( UBYTE *img, UBYTE *des, WORD pat_len, WORD len )
 			img += pat_len;												/* Musterdaten berspringen */
 			cnt *= pat_len;												/* L„nge des Musters */
 		}
-		else if ( tag == 0x80 )											/* Bit String? */
+		else
+		if (tag == 0x80)											/* Bit String? */
 		{
 			cnt = *img++;													/* Anzahl der unkomprimierten Bytes */
 		

@@ -68,7 +68,8 @@ static void path_typ(char *path, int *typ, int *config,
 		*a = dfile_to_app(path);
 		if (*a)
 			*typ = 'TX';
-		else	*typ = '_T';
+		else
+			*typ = '_T';
 	}
 	else
 	{
@@ -236,7 +237,8 @@ Cconws("\"\r\n");
 		}
 		while(s);
 	}
-	else	extra_len = 1;		/* fÅr EOS */
+	else
+		extra_len = 1;		/* fÅr EOS */
 
 	if (len+extra_len > *xarg_free)
 	{
@@ -424,9 +426,9 @@ static int get_param(char *pgm, WINDOW *w, int obj,
 		*endppath = EOS;
 	}
 	nargs = 0;
-	for	(iwnr = 0; iwnr <= ANZFENSTER; iwnr++)
+	for	(iwnr = 0; iwnr <= NUM_WINDOWS; iwnr++)
 	{
-		iw = fenster[iwnr];
+		iw = windows[iwnr];
 		if (!iw)
 			continue;				/* Fenster unbenutzt */
 		tree = iw->pobj;
@@ -457,7 +459,8 @@ static int get_param(char *pgm, WINDOW *w, int obj,
 						isne = strcmp(pgm, path);
 						*e = rettc1;
 					}
-					else	isne = TRUE;
+					else
+						isne = TRUE;
 
 					if (isne)
 						e = path;
@@ -522,7 +525,8 @@ static int ddcreate(int apid, int winid, int msx, int msy, int kstate, char exts
 			pipename[17]++;
 			if (pipename[17] > 'Z')
 				break;
-			else	pipename[18] = 'A';
+			else
+				pipename[18] = 'A';
 		}
 		fd = (int) Fcreate(pipename, FAP_NOBLOCK);
 	}
@@ -826,7 +830,8 @@ Cconws(path);
 	/*		starten										*/
 	/* ------------------------------------------------------------- */
 
-	else {
+	else
+	{
 		if ((typ != '_X') && (kbsh & K_CTRL))
 		{
 
@@ -911,8 +916,8 @@ void open_window(char *path, char *mask, char *sel_mask,
 
 	/* passendes bzw. freies Fenster suchen */
 
-	for	(wnr = 1,pw = fenster+1,free = 0;
-			wnr <= ANZFENSTER; wnr++,pw++)
+	for	(wnr = 1,pw = windows+1,free = 0;
+			wnr <= NUM_WINDOWS; wnr++,pw++)
 	{
 		w = *pw;
 
@@ -1009,13 +1014,15 @@ static long setpath(char *program, int stdpath)
 			Dsetdrv(program[0] - 'A');
 		if (program < endp)
 			doserr = Dsetpath(program);
-		else doserr = E_OK;
+		else
+			doserr = E_OK;
 		*endp = rett;
 	}
-	else {
+	else
+	{
 		/* KAOSDESK- Pfad */
 		tw = top_window();		/* Nummer des obersten Fensters */
-		for	(i = 1,pw = fenster+1; i <= ANZFENSTER; i++)
+		for	(i = 1,pw = windows+1; i <= NUM_WINDOWS; i++)
 		{
 			w = *pw++;
 			if ((w) && (w != tw))
@@ -1072,7 +1079,8 @@ static int do_va_start(char *program, COMMAND *param,
 
 			if (param->length == 0xfe)
 				xarg2arg((char*) param, nxt_xarg, FALSE);
-			else	param->command_tail[param->length] = EOS;
+			else
+				param->command_tail[param->length] = EOS;
 
 			msg[0] = VA_START;
 			msg[5] = 'XA';			/* Kennung fÅr erweitertes V.. */
@@ -1097,9 +1105,9 @@ static int do_va_start(char *program, COMMAND *param,
 				if (!param->length)
 				{
 					/* erst alle Fenster ... */
-					wind_set(0, WF_TOPALL, dst_apid, 0,0,0);
+					wind_set_int(0, WF_TOPALL, dst_apid);
 					/* dann MenÅ und Hintergrund */
-					wind_set(-1, WF_TOP, dst_apid, 0,0,0);
+					wind_set_int(-1, WF_TOP, dst_apid);
 				}
 			}
 			return TRUE;
@@ -1303,7 +1311,8 @@ int starten(char *path, char *tail, int config, APPLICATION *ap,
 		ap = path_to_app(program);
 		if (ap)
 			config = (ap->config | (config & PGMT_TP));
-		else	config = (suffixtyp(program) | (config & PGMT_TP));
+		else
+			config = (suffixtyp(program) | (config & PGMT_TP));
 		arg1 = path;
 	}
 	else
@@ -1414,7 +1423,8 @@ int starten(char *path, char *tail, int config, APPLICATION *ap,
 		fix_xarg(xarg, nxt_xarg);
 		if (!shel_write(SHW_EXEC_ACC, 0, 0, program, NULL))
 			err_alert(ENSMEM);
-		else	success = TRUE;
+		else
+			success = TRUE;
 		goto ende;
 	}
 
@@ -1448,7 +1458,7 @@ int starten(char *path, char *tail, int config, APPLICATION *ap,
 
 	isover = SHW_CHAIN;
 	isgr = (config & PGMT_ISGEM) != 0;
-	if (status.resident)
+	if (settings.resident)
 		kbsh ^= K_ALT;				/* MAGIX: ggf. per Default parallel */
 	if (kbsh & K_ALT)
 		isover = SHW_PARALLEL;		/* MAGIX: Multitasking EXEC */
@@ -1503,7 +1513,7 @@ int starten(char *path, char *tail, int config, APPLICATION *ap,
 	v_clsvwk(vdi_handle);
 	wind_update(END_UPDATE);
 	/* Falls per ^O gestartet: MenÅtitel deselektieren */
-	adr_hauptmen[MM_DATEI].ob_state &= ~SELECTED;
+	tree_menu[MM_DATEI].ob_state &= ~SELECTED;
 	if (do_res_exec)
 		res_exec();
 	return -1;

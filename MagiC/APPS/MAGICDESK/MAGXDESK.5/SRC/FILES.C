@@ -76,7 +76,7 @@ long get_real_drive(char *path)
 			drv = buf[1] - 'A';
 	}
 
-	return(int) drv;
+	return (int) drv;
 }
 
 
@@ -91,7 +91,7 @@ static int qbreak(void)
 	if ((Kbshift(-1) & (K_LSHIFT | K_RSHIFT)) == (K_LSHIFT | K_RSHIFT))
 	{
 		if (1 == Rform_alert(1, ALRT_STOP_PROC))
-			return(TRUE);
+			return TRUE;
 	}
 	return FALSE;
 }
@@ -142,7 +142,7 @@ static char *_path;
 
 static long _walk_path(void)
 {
-	long	dir;
+	long dir;
 	int	dirlen;			/* Anzahl Eintr„ge in diesem Verzeichnis */
 	long errcode;
 	char *endp;
@@ -158,11 +158,11 @@ static long _walk_path(void)
 	{
 		err_alert(EPTHOV);
 		depth--;
-		return(E_OK);
+		return E_OK;
 	}
 
 	if (qbreak())
-		return(EBREAK);
+		return EBREAK;
 	dirlen = 0;
 
 	errcode = Dopendir(_path, DOPEN_NORMAL);
@@ -179,7 +179,7 @@ static long _walk_path(void)
 		{
 			ebreak:
 			Dclosedir(dir);
-			return(EBREAK);
+			return EBREAK;
 		}
 		if (errcode)
 			break;
@@ -205,7 +205,7 @@ static long _walk_path(void)
 			if (errcode)
 			{
 				Dclosedir(dir);
-				return(errcode);
+				return errcode;
 			}
 		}
 		else

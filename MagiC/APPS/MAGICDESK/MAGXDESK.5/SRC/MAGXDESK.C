@@ -2,7 +2,7 @@
 *
 * Beginn der Programmierung: 14.3.89
 *
-* Dieses Modul enthÑlt die Hauptsteuerung von KAOSDESK, also die
+* Dieses Modul enthÑlt die Hauptsteuerung von MAGXDESK, also die
 * event_multi - Schleife.
 *
 *********************************************************************/
@@ -20,12 +20,12 @@
 * global variables
 */
 
-char *pgm_ver = "5.05";	/* may not exceed four characters, due to .RSC file */
+const char *pgm_ver = "5.10";	/* may not exceed four characters, due to .RSC file */
 
 char *gmemptr = NULL;
-WINDOW *fenster[ANZFENSTER+1];
-ICON  *icon;
-MENUPROGRAM menuprograms[ANZPROGRAMS];
+WINDOW *windows[NUM_WINDOWS + 1];
+ICON *icon;
+MENUPROGRAM menuprograms[NUM_PROGRAMS];
 
 int ap_id;
 int *aes_global;
@@ -54,476 +54,34 @@ char *desk_patt;
 char ext_bat[4];			/* Dateityp .BAT */
 char ext_btp[4];			/* Dateityp .BTP */
 
-GRECT fensterg[ANZFENSTER+1];
+GRECT windows_g[NUM_WINDOWS + 1];
 int n_deskicons;
 
-char dirty_drives[ANZDRIVES];
-DISKINFO dinfo[ANZDRIVES];
+char dirty_drives[NUM_DRIVES];
+DISKINFO dinfo[NUM_DRIVES];
 
 /*
 * local variables
 */
 
-static WINDOW fenster0;		/* fÅr den Desktop-Hintergrund */
+static WINDOW windows0;		/* fÅr den Desktop-Hintergrund */
 
-/* int message[16]; */
 static int text_attrib[10];			 /* Default- Textattribute */
 
 /* Einstellungen */
 
-DEFAULTS status;
+DEFAULTS settings;
 
-OBJECT *adr_hauptmen;
-OBJECT *adr_icons;
-OBJECT *adr_einst;
-OBJECT *adr_ttppar;
-OBJECT *adr_about;
-OBJECT *adr_cpmvdl;
-OBJECT *adr_datinf;
+OBJECT *tree_menu;
+OBJECT *tree_icons;
+OBJECT *tree_settings;
+OBJECT *tree_ttppar;
+OBJECT *tree_about;
+OBJECT *tree_datinf;
 
 static MFDB folder_mfdb,parentfolder_mfdb;
 static int folder_y_offs;
 int folder_w;
-
-static int key_2_action( int key, char ascii, int kstate );
-
-
-void main()
-{
-	EVNT w_ev;
-	int button_waitclicks;
-/*	EVNTDATA ev;	*/
-	int  /* ev_mwhich, butt_nclicks, keycode, */ ascii,	mbuttons;
-	int	waitfor, mbmask, drv, client;
-	register int i;
-	WINDOW **pw;
-	WINDOW *w;
-	register WINDOW *w2;
-
-
-	anfang();
-	Mgraf_mouse(ARROW);
-
-	for (;;)
-	{
-		upd_drives();
-		upd_infos();
-		modify_menu();
-
-		/* Wenn ein Laufwerk mit Tastatur selektiert wurde, wird 200 ms	*/
-		/* lang auf den zweiten Klick gewartet							*/
-		/* ------------------------------------------------------------ */
-
-		waitfor = MU_KEYBD + MU_BUTTON + MU_MESAG + MU_TIMER;
-
-		if (status.rtbutt_dclick)
-		{
-			button_waitclicks = 0x102;	/* NOT und Doppelklicks */
-			mbuttons = 0;		/* keine Maustaste gedrÅckt */
-			mbmask = 3;		/* beide Maustasten */
-		}
-		else
-		{
-			button_waitclicks = 2; /* Doppelklicks erkennen 	*/
-			mbuttons = 1;		/* linke Maustaste gedrÅckt	*/
-			mbmask = 1;		/* nur linke Maustaste		*/
-		}
-		
-		w_ev.mwhich = evnt_multi(waitfor,
-						  button_waitclicks,
-						  mbmask,			
-						  mbuttons,
-						  0,NULL,		/* kein 1. Rechteck */
-						  0,NULL,		/* kein 2. Rechteck */
-						  w_ev.msg,
-						  AUTOUPDATE_MS,	/* ms */
-						  (EVNTDATA *) &(w_ev.mx),
-						  &w_ev.key,
-						  &w_ev.mclicks
-						  );
-
-		/* Fensterdialoge */
-		/* -------------- */
-
-		do_info_file_dialogs(&w_ev);
-
-		/* Timer-Ereignis */
-		/* -------------- */
-
-		if (w_ev.mwhich & MU_TIMER)
-		{
-			/* alternatively, we could omit the TIMER when auto-reload is deactivated. */
-			if (!status.auto_reload_off)
-			{
-				dirwindow_autoupdate();
-			}
-		}
-
-		/* Abfrage auf BetÑtigung einer Taste */
-		/* ---------------------------------- */
-
-		if (w_ev.mwhich & MU_KEYBD)
-		{
-			register int i, scancode;
-			int title, entry;
-
-
-		 do_key:
-
-			scancode = (w_ev.key >> 8) & 0xff;
-			if (w_ev.kstate & K_ALT)
-				ascii = alt_keycode_2_ascii(w_ev.key);
-			else ascii = w_ev.key & 0xff;
-			if (w_ev.kstate & (K_RSHIFT + K_LSHIFT))
-			{
-				w_ev.kstate |= K_LSHIFT;
-			}
-			w_ev.kstate &= (K_LSHIFT + K_CTRL + K_ALT);
-
-			/* 1. Fall: Alt-Shift-[A..Z] (Fenster îffnen) */
-			/* ----------------------------------------- */
-
-			if (w_ev.kstate == (K_ALT + K_LSHIFT))
-			{
-				drv = toupper(ascii);
-				if ((drv >= 'A') && (drv <= 'Z'))
-				{
-					if (0 > (i = drv_to_icn(drv)))
-						goto weiter_mesag;	/* Taste verarbeitet */
-
-					/* gefunden: Doppelklick simulieren */
-
-					wind_update(BEG_UPDATE);
-					dsel_all();
-					ob_sel(fenster[0]->pobj, i + 1);	/* ??? */
-					obj_malen(fenster[0], i + 1);
-					dclick(fenster[0], i + 1, 0);
-					wind_update(END_UPDATE);
-					goto weiter_mesag;	/* Taste verarbeitet */
-				}
-			}
-
-			/* 2. Fall: Alt-1 .. Alt-9 (Auflîsungswechsel) */
-			/* ------------------------------------------- */
-/*
-			if ((ev.kstate & K_ALT) &&
-				 !(ev.kstate & (K_LSHIFT+K_RSHIFT+K_CTRL)) &&
-				 (unsigned int) keycode >= 0x7800 &&
-				 (unsigned int) keycode <= 0x8100)
-			{
-				i = scancode - 0x77;
-				if (i != vdi_device);
-					shutdown(i, 0);
-				goto weiter_mesag;	/* Taste verarbeitet */
-			}
-*/
-
-			/* 3. Fall: Ctrl-Fn (MenÅprogramm ausfÅhren) */
-			/* ----------------------------------------- */
-
-			if ((w_ev.kstate & K_CTRL) &&
-					w_ev.key >= 0x3b00 &&
-					w_ev.key <= 0x4600)
-			{
-				wind_update(BEG_UPDATE);
-				start_path(menuprograms[scancode - 0x3b + INDEX_USER].path,
-							NULL, w_ev.kstate & K_ALT);
-				wind_update(END_UPDATE);
-				goto weiter_mesag;	/* Taste verarbeitet */
-			}
-
-			/* 4. Fall: MenÅeintrag Åber Tastatur angewÑhlt */
-			/* -------------------------------------------- */
-
-			if (key_2_menu( w_ev.key, w_ev.kstate, &title, &entry ))
-			{
-				if ((title >= 0) && 
-					 !(((adr_hauptmen + entry) -> ob_state) & DISABLED)
-					)
-				{
-					wind_update(BEG_UPDATE);
-					menu_tnormal(adr_hauptmen, title, FALSE);
-					do_menu(title, entry, 0);
-					wind_update(END_UPDATE);
-				}
-				goto weiter_mesag;	/* Taste verarbeitet */
-			}
-
-			/* 5. Fall: Aktion durchfÅhren */
-			/* --------------------------- */
-
-			if (key_2_action( w_ev.key, ascii, w_ev.kstate))
-				goto weiter_mesag;	/* Taste verarbeitet */
-
-
-			/* letzer Fall: Tastencode an Fenster durchreichen */
-			/* ----------------------------------------------- */
-
-			w = top_window();
-			if (w)
-			{
-				wind_update(BEG_UPDATE);
-				w->key(w, w_ev.kstate, w_ev.key);
-				wind_update(END_UPDATE);
-			}
-
-		}
-
-
-		weiter_mesag:
-
-		/* Abfrage auf Nachricht im Nachrichtenpuffer */
-		/* ------------------------------------------ */
-
-		if (w_ev.mwhich & MU_MESAG)
-		{
-			wind_update(BEG_UPDATE);
-
-			if (w_ev.msg[0] == MN_SELECTED)
-			{
-				do_menu(w_ev.msg[3], w_ev.msg[4], w_ev.kstate);
-			}
-			else
-			{
-				switch(w_ev.msg[0])
-				{
-					case 'AK':
-						switch(w_ev.msg[3])
-						{
-						 case 0:
-							re_read_icons(*(char **)(w_ev.msg+6));
-							break;
-						 case 1:
-						 	status.mode_ovwr = w_ev.msg[4];
-							break;
-						}
-						break;
-					case AV_PATH_UPDATE:
-						w_ev.msg[3] = (**(char **)(w_ev.msg+3)) - 'A';
-				     case SH_WDRAW:
-				     	if ((w_ev.msg[3] >= 0) &&
-				     		 (w_ev.msg[3] < ANZDRIVES))
-				     	{
-							dirty_drives[w_ev.msg[3]] = TRUE;
-							for	(i = 1,pw = fenster+1;
-								i <= ANZFENSTER;
-								i++,pw++)
-							{
-								w = *pw;
-								if ((w) && (w->path[0] -'A' == w_ev.msg[3]))
-									dirty_drives[w->real_drive] = TRUE;
-							}
-						}
-						else
-						{
-							for	(i = 0; i < ANZDRIVES; i++)
-								dirty_drives[i] = TRUE;
-						}
-						break;
-
-					case AV_PROTOKOLL:
-						client = w_ev.msg[1];
-						w_ev.msg[0] = VA_PROTOSTATUS;
-						w_ev.msg[1] = ap_id;
-						w_ev.msg[2] =
-						w_ev.msg[4] = w_ev.msg[5] = 0;
-						w_ev.msg[3] =
-							1 +		/* AV_SENDKEY */
-							16 +		/* AV_OPENWIND */
-							32 +		/* AV_STARTPROG */
-							512 +	/* AV_PATH_UPDATE,
-									   AV_WHAT_IZIT,
-									   AV_DRAG_ON_WINDOW */
-							1024 +	/* AV_EXIT */
-							2048 +	/* AV_XOPENWIND */
-							8192;	/* AV_STARTED */
-						(*(char **)(w_ev.msg+6)) = "MAGXDESK";
-						appl_write(client, 16, w_ev.msg);
-						break;/*
-					case AV_EXIT:
-						break;
-*/
-					case AV_SENDKEY:
-						wind_update(END_UPDATE);
-						w_ev.kstate = w_ev.msg[3];
-						w_ev.key = w_ev.msg[4];
-						w_ev.mwhich &= ~MU_MESAG;	/* bearbeitet */
-						goto do_key;
-
-					case AV_WHAT_IZIT:						client = w_ev.msg[1];
-						w = whdl2window(wind_find(w_ev.msg[3],
-											w_ev.msg[4]));
-						if (w)
-						{
-							if (w->handle)
-							{
-								w_ev.msg[4] = VA_OB_WINDOW;
-							}
-							else
-							{
-								/* hier erweitern! */
-								w_ev.msg[4] = VA_OB_UNKNOWN;
-							}
-
-							w_ev.msg[0] = VA_THAT_IZIT;
-							w_ev.msg[1] = ap_id;
-							w_ev.msg[2] =
-							w_ev.msg[7] = 0;
-							w_ev.msg[3] = ap_id;							(*(char **)(w_ev.msg+5)) = NULL;
-							appl_write(client, 16, w_ev.msg);
-						}						break;
-					case AV_DRAG_ON_WINDOW:						client = w_ev.msg[1];
-						w_ev.msg[0] = VA_DRAG_COMPLETE;
-						w_ev.msg[1] = ap_id;
-						w_ev.msg[2] =
-						w_ev.msg[3] =
-						w_ev.msg[4] =
-						w_ev.msg[5] =
-						w_ev.msg[6] =
-						w_ev.msg[7] = 0;
-						appl_write(client, 16, w_ev.msg);
-						break;
-					case AV_STARTED:
-						Mfree((*(char **)(w_ev.msg+3))-1);
-						break;
-
-					case AV_STARTPROG:
-						client = w_ev.msg[1];
-						i = start_path(*(char **)(w_ev.msg+3),
-								*(char **)(w_ev.msg+5),
-								-1);
-						w_ev.msg[0] = VA_PROGSTART;
-						w_ev.msg[1] = ap_id;
-						w_ev.msg[2] = w_ev.msg[4] =
-						w_ev.msg[5] = w_ev.msg[6] = 0;
-						w_ev.msg[3] = i;
-						appl_write(client, 16, w_ev.msg);
-						if (i == -1)
-							res_exec();
-						break;
-
-					case AV_OPENWIND:
-						w_ev.msg[7] = 0;
-					case AV_XOPENWIND:
-						if (w_ev.msg[7] & 2)
-							open_window(*(char **)(w_ev.msg+3),	/* path */
-									  "*",				/* mask */
-									  *(char **)(w_ev.msg+5),	/* selmask */
-									  ((w_ev.msg[7]&1) == 0));	/* new */
-						else	open_window(*(char **)(w_ev.msg+3),
-									  *(char **)(w_ev.msg+5),
-									  NULL,
-									  ((w_ev.msg[7]&1) == 0));
-
-						client = w_ev.msg[1];
-						w_ev.msg[0] += (VA_WINDOPEN-AV_OPENWIND);
-						w_ev.msg[1] = ap_id;
-						w_ev.msg[2] = w_ev.msg[4] =
-						w_ev.msg[5] = w_ev.msg[6] = 0;
-						w_ev.msg[3] = 1;	/* Erfolg */
-						appl_write(client, 16, w_ev.msg);
-
-						break;
-
-					case AP_DRAGDROP:
-					{
-						char *s;
-
-						s = "U:\\PIPE\\DRAGDROP.AA";
-						s[17] = ((char *) (w_ev.msg+7))[0];
-						s[18] = ((char *) (w_ev.msg+7))[1];
-						i = (int) Fopen(s, RMODE_WR);
-						if (i >= 0)
-						{
-							s[17] = DD_NAK;
-							Fwrite(i, 1L, &s[17]);
-							Fclose(i);
-						}
-					}
-						break;
-
-					case AP_TERM:
-						wind_update(END_UPDATE);
-						shutdown(-1, 0);
-						wind_update(BEG_UPDATE);
-						break;
-
-					default:
-						w = whdl2window(w_ev.msg[3]);
-						if (w)
-							switch(w_ev.msg[0])
-							{
-							 case WM_REDRAW:
-									redraw(w, (GRECT *) (w_ev.msg+4));
-									break;
-							 case WM_TOPPED:
-							 		w->topped(w);break;
-							 case WM_CLOSED:
-							 	   	w->closed(w, w_ev.kstate);break;
-							 case WM_ALLICONIFY:
-									for	(i = 1,pw = fenster+1; i <= ANZFENSTER; i++,pw++)
-									{
-										w2 = *pw;
-										if ((w2) && (w2->handle > 0) && (w2 != w))
-											w2->iconified(w2, NULL, ICONIFIED_MODE_HIDE);
-									}
-									w->iconified(w, (GRECT *) (w_ev.msg+4), ICONIFIED_MODE_ALL);
-									break;
-							 case WM_ICONIFY:
-							 	    w->iconified(w, (GRECT *) (w_ev.msg+4), ICONIFIED_MODE_NORMAL);
-							 	    break;
-							 case WM_UNICONIFY:
-									for	(i = 1,pw = fenster+1; i <= ANZFENSTER; i++,pw++)
-									{
-										w2 = *pw;
-										if ((w2) && (w2->path[0]) && (w2->handle < 0) && (w2 != w) && (w2->flags & WFLAG_ALLICONIFIED))
-											w2->uniconified(w2, NULL, TRUE);
-									}
-							 		if (w->flags & WFLAG_ALLICONIFIED)
-								 		w->topped(w);
-							 		w->uniconified(w, (GRECT *) (w_ev.msg+4), FALSE);
-							 		break;
-							 case WM_FULLED:	w->fulled(w);break;
-							 case WM_ARROWED:	w->arrowed(w, w_ev.msg[4]);break;
-							 case WM_HSLID:		w->hslid(w, w_ev.msg[4]);break;
-							 case WM_VSLID:		w->vslid(w, w_ev.msg[4]);break;
-							 case WM_SIZED:		w->sized(w, (GRECT *) (w_ev.msg+4));break;
-							 case WM_MOVED:		w->moved(w, (GRECT *) (w_ev.msg+4));break;
-						      case WM_NEWTOP:
-							 case WM_UNTOPPED:	w->message(w, w_ev.kstate, w_ev.msg);break;
-						     }
-						break;
-				}
-			}
-			wind_update(END_UPDATE);
-		}
-
-		/* Abfrage auf BetÑtigung eines Mausknopfs */
-		/* --------------------------------------- */
-
-		if (w_ev.mwhich & MU_BUTTON)
-		{
-			if(status.rtbutt_dclick && (w_ev.mbutton == 2))
-			{
-				w_ev.mclicks = 2;
-				w_ev.mbutton = 1;		/* Doppelklick simulieren */
-			}
-
-			mausknopf(w_ev.mclicks, (EVNTDATA *) &(w_ev.mx));
-
-			/* poll mouse and keyboard state */
-			graf_mkstate((EVNTDATA *) &(w_ev.mx));
-			if (w_ev.mbutton & 1)
-			{
-				/* left button still pressed, wait for release */
-				evnt_button(1, 1, 0, (EVNTDATA *) &(w_ev.mx));
-			}
-	}
-
-
-
-	} /* END FOREVER */
-}
 
 
 /****************************************************************
@@ -542,14 +100,14 @@ static int key_2_action(int key, char ascii, int kstate)
 /* SH-INS	*/
 	if (key == 0x5230)
 	{
-		status.resident = TRUE;
+		settings.resident = TRUE;
 		return 1;
 	}
 
 /* SH-DEL	*/
 	if (key == 0x537f)
 	{
-		status.resident = FALSE;
+		settings.resident = FALSE;
 		return 1;
 	}
 */
@@ -579,7 +137,7 @@ static int key_2_action(int key, char ascii, int kstate)
 	{
 		w = whdl2window(top_whdl());
 		if ((w) && (w->sel_maske[0]))
-			return(0);	/* sonst -> Auswahl */
+			return 0;	/* sonst -> Auswahl */
 	}
 
 	wind_update(BEG_UPDATE);
@@ -614,9 +172,9 @@ static int key_2_action(int key, char ascii, int kstate)
 			do
 			{
 				i++;
-				if (i > ANZFENSTER)
+				if (i > NUM_WINDOWS)
 					i = 1;
-				w = fenster[i];
+				w = windows[i];
 				if (w)
 				{
 					w->topped(w);
@@ -665,29 +223,31 @@ void init_popup(OBJECT *dialog, int objnr,
 *
 ****************************************************************/
 
-int walk_sel(WINDOW *w, int (*tue)(WINDOW *w, int obj, void *par), void *par)
+int walk_sel(WINDOW *w, int (*cb)(WINDOW *w, int obj, void *par), void *par)
 {
 	register int i,tail,ret;
 	register OBJECT *tree = w->pobj;
 
 
 	if ((i = (tree -> ob_head)) <= 0)
-		return(0);
+		return 0;
 	tail = (tree++ -> ob_tail);
 	ret = 0;
 	for	(; i <= tail; i++,tree++)
 	{
 		if (!(SELECTED&(tree->ob_state)) || (HIDETREE&(tree->ob_flags)))
 			continue;
-		if (tue)
+		if (cb)
 		{
-			ret = (*tue)(w, i, par);
+			ret = (*cb)(w, i, par);
 			if (ret < 0)
-				return(ret);
+				return ret;
 		}
-		else	ret++;
+		else
+			ret++;
 	}
-	return(ret);
+
+	return ret;
 }
 
 
@@ -767,7 +327,7 @@ typedef struct
                               z.B. { 8, 9, 10, 11, 12, 14, 18, 24, 36, 48 } */
 } XFNT_INFO;
 
-static WORD	vqt_xfntinfo( WORD handle, WORD flags, WORD id, WORD index, XFNT_INFO *info )
+static WORD	vqt_xfntinfo(WORD handle, WORD flags, WORD id, WORD index, XFNT_INFO *info)
 {
 	VDIPB pb;
 	WORD	contrl[12];
@@ -782,7 +342,7 @@ static WORD	vqt_xfntinfo( WORD handle, WORD flags, WORD id, WORD index, XFNT_INF
 	pb.intout = intout;
 	pb.ptsout = ptsout;
 
-	info->size = (LONG) sizeof( XFNT_INFO );
+	info->size = (LONG) sizeof(XFNT_INFO);
 
 	intin[0] = flags;
 	intin[1] = id;
@@ -807,12 +367,12 @@ static WORD	vqt_xfntinfo( WORD handle, WORD flags, WORD id, WORD index, XFNT_INF
 *
 ****************************************************************/
 
-static int Mvqt_name( int handle, int index, unsigned int *flags )
+static int Mvqt_name(int handle, int index, unsigned int *flags)
 {
 	VDIPB pb;
-	WORD	contrl[12];
-	WORD	intin[4];
-	WORD	intout[40];
+	WORD contrl[12];
+	WORD intin[4];
+	WORD intout[40];
 
 	pb.contrl = contrl;
 	pb.intin = intin;
@@ -826,7 +386,7 @@ static int Mvqt_name( int handle, int index, unsigned int *flags )
 	contrl[5] = 1;
 	contrl[6] = handle;
 
-	vdi( &pb );
+	vdi(&pb);
 
 /*
 Cconout(intout[1]);
@@ -840,7 +400,7 @@ Cconout(intout[8]);
 */
 
 	*flags = intout[34];
-	return(contrl[4] < 35);
+	return (contrl[4] < 35);
 }
 */
 
@@ -851,7 +411,7 @@ Cconout(intout[8]);
 *
 ****************************************************************/
 
-void set_char_dim( void )
+void set_char_dim(void)
 {
 	int dummy;
 /*	unsigned int flags;
@@ -862,8 +422,8 @@ void set_char_dim( void )
 
 
 	if (vq_gdos())
-		vst_font(vdi_handle, status.fontID);
-	vst_point(vdi_handle, status.fontH, &dummy, &dummy,
+		vst_font(vdi_handle, settings.fontID);
+	vst_point(vdi_handle, settings.fontH, &dummy, &dummy,
 			&char_w, &char_h);
 	/* linksbÅndig, Zeichenzellenoberkante */
 	vst_alignment(vdi_handle, 0, 5, &dummy, &dummy);
@@ -889,8 +449,8 @@ void set_char_dim( void )
 		parentfolder_index = I_PAR08;
 	}
 
-	folder_image = (adr_icons + folder_index)->ob_spec.bitblk;
-	parentfolder_image = (adr_icons + parentfolder_index)->ob_spec.bitblk;
+	folder_image = (tree_icons + folder_index)->ob_spec.bitblk;
+	parentfolder_image = (tree_icons + parentfolder_index)->ob_spec.bitblk;
 
 	folder_mfdb.fd_addr = folder_image->bi_pdata;
 	parentfolder_mfdb.fd_addr = parentfolder_image->bi_pdata;
@@ -917,11 +477,11 @@ void set_char_dim( void )
 *
 ****************************************************************/
 
-void redraw( WINDOW *w, GRECT *neu)
+void redraw(WINDOW *w, GRECT *neu)
 {
 	if (w->handle > 0 && !w->path[0])
 		return;						/* Fenster geschlossen */
-	objc_wdraw( w->pobj, 0, 1, neu, w->handle);
+	objc_wdraw(w->pobj, 0, 1, neu, w->handle);
 }
 
 
@@ -949,7 +509,7 @@ int icsel(WINDOW **rw, int *objn)
 
 
 	*rw = NULL;
-	for	(wnr = 0,pw = fenster; wnr <= ANZFENSTER; wnr++,pw++)
+	for	(wnr = 0,pw = windows; wnr <= NUM_WINDOWS; wnr++,pw++)
 	{
 		w = *pw;
 		if (!w)
@@ -964,14 +524,14 @@ int icsel(WINDOW **rw, int *objn)
 				if (!((tree+i)->ob_flags & HIDETREE) && selected(tree, i))
 				{
 					if (*rw)	/* noch einer ! */
-						return(-1);
+						return -1;
 					*rw = w;		/* erster gefundener */
 					*objn = i;
 				}
 			}
 		}
 	}
-	return(*rw != NULL);		/* nix gefunden */
+	return (*rw != NULL);		/* nix gefunden */
 }
 
 
@@ -987,7 +547,7 @@ int drv_to_icn(int drv)
 
 	for	(i = 0; i < n_deskicons; i++)
 		if (icon[i].isdisk == drv)
-			return(i);
+			return i;
 	return -1;
 }
 
@@ -1004,11 +564,11 @@ WINDOW *whdl2window(int whdl)
 	register WINDOW **pw,*w;
 
 
-	for	(i = 0,pw = fenster; i <= ANZFENSTER; i++,pw++)
+	for	(i = 0,pw = windows; i <= NUM_WINDOWS; i++,pw++)
 	{
 		w = *pw;
 		if ((w) && ((w)->handle == whdl))
-			return(w);
+			return w;
 	}
 	return NULL;
 }
@@ -1030,9 +590,9 @@ int is_dest(WINDOW *w, int objnr)
 	MYDTA *dummy;
 
 	obj_typ(w, objnr, NULL, &dummy, &obtyp, &config, NULL);
-	return((obtyp == '_X') || (obtyp == 'BX') ||
-		  (obtyp == 'DO') || (obtyp == '_O') ||
-		  (obtyp == 'P_') || (obtyp == 'D_'));
+	return ((obtyp == '_X') || (obtyp == 'BX') ||
+	        (obtyp == 'DO') || (obtyp == '_O') ||
+	        (obtyp == 'P_') || (obtyp == 'D_'));
 }
 
 
@@ -1044,7 +604,7 @@ int is_dest(WINDOW *w, int objnr)
 ****************************************************************/
 
 /*
-void zeichne( WINDOW *w, int gx, int gy, int gw, int gh)
+void zeichne(WINDOW *w, int gx, int gy, int gw, int gh)
 {
 	objc_draw(w->pobj,0,1,gx,gy,gw,gh);
 }
@@ -1077,13 +637,13 @@ int cdecl draw_userdef(PARMBLK *p)
 	int pos,offs;
 
 
-	for	(wnr = 0,pw = fenster; wnr <= ANZFENSTER; wnr++,pw++)
+	for	(wnr = 0,pw = windows; wnr <= NUM_WINDOWS; wnr++,pw++)
 	{
 		w = *pw;
 		if ((w) && (w->pobj == p->pb_tree))
 			goto found;
 	}
-	return(0);
+	return 0;
 	found:
 	pxy[0] = p->pb_xc;
 	pxy[1] = p->pb_yc;
@@ -1116,7 +676,7 @@ int cdecl draw_userdef(PARMBLK *p)
 	/* -------------------------------------------------------- */
 
 	offs = 0;
-	if ((status.fontID != 1) && (isdir))
+	if ((settings.fontID != 1) && (isdir))
 	{	/* G_IMAGE fÅr Ordner ausgeben */
 		int col[2] = {BLACK,WHITE};
 		MFDB mfdb_scr;
@@ -1138,7 +698,7 @@ int cdecl draw_userdef(PARMBLK *p)
 
 		vrt_cpyfm(vdi_handle, MD_TRANS, pxy,
 				mfdb_ic, &mfdb_scr, col);
-		if (!status.font_is_prop)
+		if (!settings.font_is_prop)
 		{
 			pos += 3 * char_w;
 			offs = 3;
@@ -1149,11 +709,11 @@ int cdecl draw_userdef(PARMBLK *p)
 	/* Die Ausgabe erfolgt einzeln in Spalten	*/
 	/* ----------------------------------------- */
 
-	if (status.font_is_prop)
+	if (settings.font_is_prop)
 	{
 		pos += folder_w + 4;
 
-		if (w->dos_mode && status.show_8p3 && (!isparentdir))
+		if (w->dos_mode && settings.show_8p3 && (!isparentdir))
 		{
 			t = strchr(fname, '.');
 			if (t)
@@ -1176,7 +736,7 @@ int cdecl draw_userdef(PARMBLK *p)
 		if (isparentdir)
 			goto ende;		/* keine weitere Ausgabe */
 
-		if (status.is_groesse)
+		if (settings.is_groesse)
 		{
 			pos += w->xtab_sizelen;
 			if (!isdir)
@@ -1186,27 +746,28 @@ int cdecl draw_userdef(PARMBLK *p)
 					ultoa((m -> filesize) >> 10L, buf, 10);
 					strcat(buf, "k");
 				}
-				else	ultoa(m -> filesize, buf, 10);
+				else
+					ultoa(m -> filesize, buf, 10);
 				/* Ausrichtung rechts */
 				vst_alignment(vdi_handle, 2, 5, &dummy, &dummy);
-				v_gtext(vdi_handle, pos,	p->pb_y, buf);
+				v_gtext(vdi_handle, pos, p->pb_y, buf);
 				vst_alignment(vdi_handle, 0, 5, &dummy, &dummy);
 			}
 			pos += spaltenabstand;
 		}
 
-		if (status.is_datum)
+		if (settings.is_datum)
 		{
-			date_to_str(buf, m -> date);
-			v_gtext(vdi_handle, pos,	p->pb_y, buf);
+			date_to_str(buf, m->date);
+			v_gtext(vdi_handle, pos, p->pb_y, buf);
 			pos += spaltenabstand + w->xtab_datelen;
 		}
 
-		if (status.is_zeit)
+		if (settings.is_zeit)
 		{
 			time_to_str(buf, m -> time);
 			buf[5] = EOS;
-			v_gtext(vdi_handle, pos,	p->pb_y, buf);
+			v_gtext(vdi_handle, pos, p->pb_y, buf);
 		}
 	}
 
@@ -1219,18 +780,23 @@ int cdecl draw_userdef(PARMBLK *p)
 		s = t = buf;
 
 		*s++ = ' ';
-		if ((m -> icontyp == ITYP_ORDNER) && (status.fontID == 1))
+
+		if ((m -> icontyp == ITYP_ORDNER) && (settings.fontID == 1))
 			*s++ = '\7';		/* Zeichen fÅr Ordner */
-		else if (m->icontyp == ITYP_PROGRA)
-				*s++ = '.';
-			else *s++ = ' ';
+		else
+		if (m->icontyp == ITYP_PROGRA)
+			*s++ = '.';
+		else
+			*s++ = ' ';
+
 		*s++ = ' ';
-		if (w->dos_mode && status.show_8p3 && (!isparentdir))
+		if (w->dos_mode && settings.show_8p3 && (!isparentdir))
 		{
 			if (*fname == '.' && fname[1] == EOS)
 				*s++ = *fname++;
-			else while(*fname != '.' && *fname != EOS)
-					*s++ = *fname++;
+			else
+			while(*fname != '.' && *fname != EOS)
+				*s++ = *fname++;
 			if (*fname == '.')
 				fname++;
 			t += 12;
@@ -1252,19 +818,21 @@ int cdecl draw_userdef(PARMBLK *p)
 		while(s < t)
 			*s++ = ' ';
 
-		if (status.is_groesse)
+		if (settings.is_groesse)
 		{
 			char gr[10],*g;
 
 			if (isdir)
 				gr[0] = EOS;
-			else {
+			else
+			{
 				if (m->filesize > 9999999L)
 				{
 					ultoa((m -> filesize) >> 10L, gr, 10);
 					strcat(gr, "k");
 				}
-				else	ultoa(m -> filesize, gr, 10);
+				else
+					ultoa(m -> filesize, gr, 10);
 			}
 			for	(wnr = 8 - (int) strlen(gr); wnr > 0; wnr--)
 				*s++ = ' ';
@@ -1272,14 +840,14 @@ int cdecl draw_userdef(PARMBLK *p)
 			while(*g)
 				*s++ = *g++;
 		}
-		if (status.is_datum)
+		if (settings.is_datum)
 		{
 			*s++ = ' ';
 			*s++ = ' ';
 			date_to_str(s, m -> date);
 			s += 8;
 		}
-		if (status.is_zeit)
+		if (settings.is_zeit)
 		{
 			*s++ = ' ';
 			*s++ = ' ';
@@ -1291,7 +859,7 @@ int cdecl draw_userdef(PARMBLK *p)
 		v_gtext(vdi_handle, pos, p->pb_y, buf+offs);
 	}
     ende:
-	return(p -> pb_currstate);
+	return p->pb_currstate;
 }
 
 USERBLK userblk = {draw_userdef, 0L};
@@ -1364,9 +932,9 @@ void close_all_wind(void)
 */
 	w = top_window();
 	deflt_topwnr = (w) ? w->wnr : -1;
-	menu_bar(adr_hauptmen, FALSE);
+	menu_bar(tree_menu, FALSE);
 	wind_set_ptr_int(SCREEN, WF_NEWDESK, NULL, 0);	/* Desktop- Hintergrund */
-	for	(i = 1, pw = fenster + 1; i <= ANZFENSTER; i++,pw++)
+	for	(i = 1, pw = windows + 1; i <= NUM_WINDOWS; i++,pw++)
 	{
 		w = *pw;
 		if (w)         /* wenn Fenster existiert... */
@@ -1377,7 +945,7 @@ void close_all_wind(void)
 			}
 			wind_close(w->handle);  /* ...dann schlieûen */
 			wind_delete(w->handle); /* ...und immer lîschen!  */
-			fensterg[i] = w->out;
+			windows_g[i] = w->out;
 			Mfree(w);
 			*pw = NULL;
 		}
@@ -1424,9 +992,10 @@ void shutdown(int dev, int txt)
 		itoa(txt, tail+1+strlen(tail+1), 10);
 		tail[0] = (char) strlen(tail+1);
 */
-		else	strcat(shutdown_prg, "shutdown.prg");
+		else
+			strcat(shutdown_prg, "shutdown.prg");
 
-		if (status.save_on_exit)
+		if (settings.save_on_exit)
 			save_status(TRUE);		/* VOR close_all_wind() */
 
 		close_all_wind();
@@ -1442,7 +1011,7 @@ void shutdown(int dev, int txt)
 			(dev == -2) ? "\1""1" : "");
 	}
 	else
-	if (status.save_on_exit)
+	if (settings.save_on_exit)
 		save_status(TRUE);
 
 	rsrc_free();
@@ -1485,7 +1054,7 @@ void open_all_wind(void)
 
 
 	Mgraf_mouse(HOURGLASS);
-	for	(i = 0; i < ANZDRIVES; i++)
+	for	(i = 0; i < NUM_DRIVES; i++)
 	{
 		dinfo[i].b_clsiz = 0L;		/* ungÅltig */
 	}
@@ -1493,17 +1062,17 @@ void open_all_wind(void)
 	/* MenÅzeile auf den Bildschirm */
 	/* ---------------------------- */
 
-	menu_bar(adr_hauptmen, TRUE);
+	menu_bar(tree_menu, TRUE);
 
 	/* Icons installieren und malen */
 	/* ---------------------------- */
 
-	fenster0.wnr = fenster0.handle = 0;
-	fenster0.key = wind0_keyed;
-	fenster0.fulled = wind0_fulled;
-	fenster0.closed = wind0_closed;
-	*((GRECT *) &(fenster0.pobj->ob_x)) = screen_g;
-	wind_set_ptr_int(SCREEN, WF_NEWDESK, fenster0.pobj, 0);
+	windows0.wnr = windows0.handle = 0;
+	windows0.key = wind0_keyed;
+	windows0.fulled = wind0_fulled;
+	windows0.closed = wind0_closed;
+	*((GRECT *) &(windows0.pobj->ob_x)) = screen_g;
+	wind_set_ptr_int(SCREEN, WF_NEWDESK, windows0.pobj, 0);
 	form_dial(FMD_FINISH, NULL, &screen_g);
 
 	/* Fenster îffnen */
@@ -1512,25 +1081,25 @@ void open_all_wind(void)
 	set_char_dim();		/* Zeichengrîûe einstellen */
 
 /*
-	for	(i = 1; i <= ANZFENSTER; i++)
+	for	(i = 1; i <= NUM_WINDOWS; i++)
 	{
-		fenster[i].handle = -1;			/* unbenutzt			*/
-		fenster[i].memblk = NULL; 		/* kein allozierter Speicher */
+		windows[i].handle = -1;			/* unbenutzt			*/
+		windows[i].memblk = NULL; 		/* kein allozierter Speicher */
 	}
 */
-	for	(set = FALSE,i = 1; i <= ANZFENSTER; i++)
+	for	(set = FALSE,i = 1; i <= NUM_WINDOWS; i++)
 	{
 		j = i;
 		if (i == deflt_topwnr)
 		{
-			j = ANZFENSTER;
+			j = NUM_WINDOWS;
 			set = TRUE;
 		}
-		if (set && i == ANZFENSTER)
+		if (set && i == NUM_WINDOWS)
 			j = deflt_topwnr;
-		if (fenster[j])
+		if (windows[j])
 		{
-			ret = opn_wnd(fenster[j], TRUE);
+			ret = opn_wnd(windows[j], TRUE);
 			if (ret == ENOWND)
 				ret = ENSMEM;
 			err_alert(ret);
@@ -1578,20 +1147,24 @@ void get_rsc(void)
 		if (lowres)
 		{
 			_rsrc_load("magxdesl.rsc");
-			rsrc_gaddr(0, HAUPTMEN, &adr_hauptmen);
+			rsrc_gaddr(0, HAUPTMEN, &tree_menu);
 		}
 		else
-		 adr_hauptmen = NULL;
+		{
+			tree_menu = NULL;
+		}
 
 		_rsrc_load("magxdesk.rsc");
-		if (!adr_hauptmen)
-			rsrc_gaddr(0, HAUPTMEN, &adr_hauptmen);
+		if (!tree_menu)
+		{
+			rsrc_gaddr(0, HAUPTMEN, &tree_menu);
+		}
 
-		rsrc_gaddr(0, T_ICONS,  &adr_icons);
-		rsrc_gaddr(0, T_EINST, &adr_einst);
-		rsrc_gaddr(0, T_TTPPAR, &adr_ttppar);
-		rsrc_gaddr(0, T_ABOUT,  &adr_about);
-		rsrc_gaddr(0, T_DATINF, &adr_datinf);
+		rsrc_gaddr(0, T_ICONS, &tree_icons);
+		rsrc_gaddr(0, T_EINST, &tree_settings);
+		rsrc_gaddr(0, T_TTPPAR, &tree_ttppar);
+		rsrc_gaddr(0, T_ABOUT,  &tree_about);
+		rsrc_gaddr(0, T_DATINF, &tree_datinf);
 		load_app_icons();
 	}
 
@@ -1606,33 +1179,22 @@ void get_rsc(void)
 
 	if (!isfirst)
 		return;
+
 	/* Gruppenrahmen anpassen */
-/*
-	i = gl_hhchar >> 1;
-	(adr_einste+EINST_S1)->ob_y		+= i;
-	(adr_einste+EINST_S1)->ob_height	+= i;
-	(adr_einste+EINST_S2)->ob_y		+= i;
-	(adr_einste+EINST_S2)->ob_height	+= i;
-	(adr_einste+EINST_R1)->ob_y -= i;
-	(adr_einste+EINST_R2)->ob_y -= i;
-	(adr_cpmvdl+CPMVD_R1)->ob_y -= i;
-	(adr_datinf+FI_R1   )->ob_y -= i;
-	(adr_ordinf+OI_R1   )->ob_y -= i;
-*/
-	image = adr_about + ABOU_IMG;
+	image = tree_about + ABOU_IMG;
 	image->ob_height = image->ob_spec.bitblk->bi_hl;
-	while((image->ob_y + image->ob_height > (adr_about + ABOU_OS) -> ob_y) &&
+	while((image->ob_y + image->ob_height > tree_about[ABOU_OS].ob_y) &&
 		 (image->ob_y > 0))
 		image->ob_y--;
 
-	strcpy((adr_about + ABOU_VER)->ob_spec.tedinfo->te_ptext + 11, pgm_ver);
-	(adr_about + ABOU_OS)->ob_spec.free_string = os_ver_s;
-	i = adr_about->ob_width;
+	strcpy(tree_about[ABOU_VER].ob_spec.tedinfo->te_ptext + 11, pgm_ver);
+	tree_about[ABOU_OS].ob_spec.free_string = os_ver_s;
+	i = tree_about[0].ob_width;
 	i -= (int) strlen(os_ver_s) * gl_hwchar;
 	i /= 2;
 	if (i < 0)
 		i = 0;
-	(adr_about + ABOU_OS)->ob_x = i;
+	tree_about[ABOU_OS].ob_x = i;
 
 	allg_init();
 	menu_init();
@@ -1648,7 +1210,7 @@ void get_rsc(void)
 *
 ****************************************************************/
 
-void anfang(void)
+static void pgm_init(void)
 {
 	register int i;
 	char srcmd[128],srtail[128];
@@ -1657,13 +1219,15 @@ void anfang(void)
 
 	Pdomain(PDOM_MINT);
 
-	for	(i = 0; i < ANZDRIVES; i++)
+	for	(i = 0; i < NUM_DRIVES; i++)
+	{
 		dirty_drives[i] = FALSE;
+	}
 
 	/* Applikation beim AES anmelden und Version feststellen */
 	/* ----------------------------------------------------- */
 
-	if   ((ap_id = appl_init()) < 0)
+	if ((ap_id = appl_init()) < 0)
 		Pterm(-1);
 
 	aes_handle = vdi_handle =
@@ -1704,10 +1268,10 @@ void anfang(void)
 	/* Koordinaten des Desktop- Fensters initialisieren */
 	/* ------------------------------------------------ */
 
-	fenster[0] = &fenster0;		/* alle anderen Zeiger sind NULL */
-	fenster0.handle = SCREEN;
-	fenster0.in = fenster0.out = desk_g;
-	fenster0.pmydta	= NULL;
+	windows[0] = &windows0;		/* alle anderen Zeiger sind NULL */
+	windows0.handle = SCREEN;
+	windows0.in = windows0.out = desk_g;
+	windows0.pmydta	= NULL;
 
 	/* numplanes-abhÑngige Variablen */
 	/* ----------------------------- */
@@ -1716,19 +1280,20 @@ void anfang(void)
 	if (aes_global[10] < 4)	/* 2,4 oder 8 Farben */
 	{
 		kachel_path = (MENUPROGRAM **) (&kachel_1);
-		desk_col = &(status.desk_col_1);
-		desk_patt = &(status.desk_patt_1);
+		desk_col = &(settings.desk_col_1);
+		desk_patt = &(settings.desk_patt_1);
 	}
 	else
 	{
-		desk_col = &(status.desk_col_4);
-		desk_patt = &(status.desk_patt_4);
+		desk_col = &(settings.desk_col_4);
+		desk_patt = &(settings.desk_patt_4);
 		if (aes_global[10] < 8)	/* 16 Farben */
 			kachel_path = (MENUPROGRAM **) (&kachel_4);
 		else
 		if (aes_global[10] == 8)	/* 256 Farben */
 			kachel_path = (MENUPROGRAM **) (&kachel_8);
-		else	kachel_path = (MENUPROGRAM **) (&kachel_m);
+		else
+			kachel_path = (MENUPROGRAM **) (&kachel_m);
 	}
 	
 
@@ -1755,7 +1320,7 @@ void anfang(void)
 	/* ggf. Disknamen initialisieren */
 	/* ----------------------------- */
 
-	if (status.dnam_init)
+	if (settings.dnam_init)
 	{
 		for	(i = 0; i < n_deskicons; i++)
 		{
@@ -1768,9 +1333,9 @@ void anfang(void)
 				nexticn:
 				continue;
 			drv = icon[i].isdisk;
-			for	(j = 1; j <= ANZFENSTER; j++)
+			for	(j = 1; j <= NUM_WINDOWS; j++)
 			{
-				if ((fenster[j]) && (fenster[j]->path[0] == drv))
+				if ((windows[j]) && (windows[j]->path[0] == drv))
 					goto nexticn;
 			}
 			if (drv < 'C')		/* nicht fÅr A: und B: */
@@ -1794,4 +1359,533 @@ void anfang(void)
 						"-c", NULL, NULL );
 		dirty_applicat_dat = FALSE;
 	}
+}
+
+
+/****************************************************************
+*
+* Tastenbehandlung
+*
+****************************************************************/
+
+static void handle_key(EVNT *w_ev)
+{
+	register int i, scancode;
+	int title, entry;
+	int ascii;
+	WINDOW *w;
+
+
+	scancode = (w_ev->key >> 8) & 0xff;
+
+	if (w_ev->kstate & K_ALT)
+		ascii = alt_keycode_2_ascii(w_ev->key);
+	else
+		ascii = w_ev->key & 0xff;
+
+	if (w_ev->kstate & (K_RSHIFT + K_LSHIFT))
+	{
+		w_ev->kstate |= K_LSHIFT;
+	}
+	w_ev->kstate &= (K_LSHIFT + K_CTRL + K_ALT);
+
+	/* 1. Fall: Alt-Shift-[A..Z] (Fenster îffnen) */
+	/* ----------------------------------------- */
+
+	if (w_ev->kstate == (K_ALT + K_LSHIFT))
+	{
+		int drv = toupper(ascii);
+		if ((drv >= 'A') && (drv <= 'Z'))
+		{
+			if (0 > (i = drv_to_icn(drv)))
+				return;	/* Taste verarbeitet */
+
+			/* gefunden: Doppelklick simulieren */
+
+			wind_update(BEG_UPDATE);
+			dsel_all();
+			ob_sel(windows[0]->pobj, i + 1);	/* ??? */
+			obj_malen(windows[0], i + 1);
+			dclick(windows[0], i + 1, 0);
+			wind_update(END_UPDATE);
+			return;	/* Taste verarbeitet */
+		}
+	}
+
+	/* 2. Fall: Alt-1 .. Alt-9 (Auflîsungswechsel) */
+	/* ------------------------------------------- */
+/*
+	if ((w_ev->kstate & K_ALT) &&
+		 !(w_ev->kstate & (K_LSHIFT+K_RSHIFT+K_CTRL)) &&
+		 (unsigned int) keycode >= 0x7800 &&
+		 (unsigned int) keycode <= 0x8100)
+	{
+		i = scancode - 0x77;
+		if (i != vdi_device);
+			shutdown(i, 0);
+		return;	/* Taste verarbeitet */
+	}
+*/
+
+	/* 3. Fall: Ctrl-Fn (MenÅprogramm ausfÅhren) */
+	/* ----------------------------------------- */
+
+	if ((w_ev->kstate & K_CTRL) &&
+			w_ev->key >= 0x3b00 &&
+			w_ev->key <= 0x4600)
+	{
+		wind_update(BEG_UPDATE);
+		start_path(menuprograms[scancode - 0x3b + INDEX_USER].path,
+					NULL, w_ev->kstate & K_ALT);
+		wind_update(END_UPDATE);
+		return;	/* Taste verarbeitet */
+	}
+
+	/* 4. Fall: MenÅeintrag Åber Tastatur angewÑhlt */
+	/* -------------------------------------------- */
+
+	if (key_2_menu(w_ev->key, w_ev->kstate, &title, &entry))
+	{
+		if ((title >= 0) && !((tree_menu[entry].ob_state) & DISABLED))
+		{
+			wind_update(BEG_UPDATE);
+			menu_tnormal(tree_menu, title, FALSE);
+			do_menu(title, entry, 0);
+			wind_update(END_UPDATE);
+		}
+		return;	/* Taste verarbeitet */
+	}
+
+	/* 5. Fall: Aktion durchfÅhren */
+	/* --------------------------- */
+
+	if (key_2_action(w_ev->key, ascii, w_ev->kstate))
+		return;	/* Taste verarbeitet */
+
+
+	/* letzer Fall: Tastencode an Fenster durchreichen */
+	/* ----------------------------------------------- */
+
+	w = top_window();
+	if (w)
+	{
+		wind_update(BEG_UPDATE);
+		w->key(w, w_ev->kstate, w_ev->key);
+		wind_update(END_UPDATE);
+	}
+
+}
+
+
+/****************************************************************
+*
+* "message"-Behandlung
+*
+****************************************************************/
+
+static void handle_message(EVNT *w_ev)
+{
+	if (w_ev->msg[0] == MN_SELECTED)
+	{
+		do_menu(w_ev->msg[3], w_ev->msg[4], w_ev->kstate);
+	}
+	else
+	{
+		switch(w_ev->msg[0])
+		{
+			case 'AK':
+				switch(w_ev->msg[3])
+				{
+				 case 0:
+					re_read_icons(*(char **)(w_ev->msg + 6));
+					break;
+
+				 case 1:
+				 	settings.mode_ovwr = w_ev->msg[4];
+					break;
+				}
+				break;
+
+			case AV_PATH_UPDATE:
+				w_ev->msg[3] = (**(char **)(w_ev->msg + 3)) - 'A';
+
+			case SH_WDRAW:
+		     	if ((w_ev->msg[3] >= 0) && (w_ev->msg[3] < NUM_DRIVES))
+		     	{
+		     		int i;
+					WINDOW **pw;
+					WINDOW *w;
+
+					dirty_drives[w_ev->msg[3]] = TRUE;
+					for	(i = 1,pw = windows+1;
+						i <= NUM_WINDOWS;
+						i++,pw++)
+					{
+						w = *pw;
+						if ((w) && (w->path[0] -'A' == w_ev->msg[3]))
+							dirty_drives[w->real_drive] = TRUE;
+					}
+				}
+				else
+				{
+		     		int i;
+
+					for	(i = 0; i < NUM_DRIVES; i++)
+						dirty_drives[i] = TRUE;
+				}
+				break;
+
+			case AV_PROTOKOLL:
+			{
+				int client = w_ev->msg[1];
+				w_ev->msg[0] = VA_PROTOSTATUS;
+				w_ev->msg[1] = ap_id;
+				w_ev->msg[2] =
+				w_ev->msg[4] = w_ev->msg[5] = 0;
+				w_ev->msg[3] =
+					1 +		/* AV_SENDKEY */
+					16 +		/* AV_OPENWIND */
+					32 +		/* AV_STARTPROG */
+					512 +	/* AV_PATH_UPDATE,
+							   AV_WHAT_IZIT,
+							   AV_DRAG_ON_WINDOW */
+					1024 +	/* AV_EXIT */
+					2048 +	/* AV_XOPENWIND */
+					8192;	/* AV_STARTED */
+				(*(char **)(w_ev->msg + 6)) = "MAGXDESK";
+				appl_write(client, 16, w_ev->msg);
+				break;
+			}/*
+			case AV_EXIT:
+				break;
+*/
+			case AV_SENDKEY:
+				w_ev->kstate = w_ev->msg[3];
+				w_ev->key = w_ev->msg[4];
+				w_ev->mwhich &= ~MU_MESAG;	/* bearbeitet */
+				return;
+
+			case AV_WHAT_IZIT:
+			{				int client = w_ev->msg[1];
+				WINDOW *w = whdl2window(wind_find(w_ev->msg[3], w_ev->msg[4]));
+				if (w)
+				{
+					if (w->handle)
+					{
+						w_ev->msg[4] = VA_OB_WINDOW;
+					}
+					else
+					{
+						/* hier erweitern! */
+						w_ev->msg[4] = VA_OB_UNKNOWN;
+					}
+
+					w_ev->msg[0] = VA_THAT_IZIT;
+					w_ev->msg[1] = ap_id;
+					w_ev->msg[2] =
+					w_ev->msg[7] = 0;
+					w_ev->msg[3] = ap_id;					(*(char **)(w_ev->msg + 5)) = NULL;
+					appl_write(client, 16, w_ev->msg);
+				}				break;
+			}
+			case AV_DRAG_ON_WINDOW:
+			{				int client = w_ev->msg[1];
+				w_ev->msg[0] = VA_DRAG_COMPLETE;
+				w_ev->msg[1] = ap_id;
+				w_ev->msg[2] =
+				w_ev->msg[3] =
+				w_ev->msg[4] =
+				w_ev->msg[5] =
+				w_ev->msg[6] =
+				w_ev->msg[7] = 0;
+				appl_write(client, 16, w_ev->msg);
+				break;
+			}
+			case AV_STARTED:
+				Mfree((*(char **)(w_ev->msg + 3)) - 1);
+				break;
+
+			case AV_STARTPROG:
+				{
+				int i;
+				int client = w_ev->msg[1];
+				i = start_path(*(char **)(w_ev->msg + 3),
+						*(char **)(w_ev->msg + 5),
+						-1);
+				w_ev->msg[0] = VA_PROGSTART;
+				w_ev->msg[1] = ap_id;
+				w_ev->msg[2] = w_ev->msg[4] =
+				w_ev->msg[5] = w_ev->msg[6] = 0;
+				w_ev->msg[3] = i;
+				appl_write(client, 16, w_ev->msg);
+				if (i == -1)
+					res_exec();
+				break;
+				}
+
+			case AV_OPENWIND:
+				w_ev->msg[7] = 0;
+			case AV_XOPENWIND:
+			{
+				int client;
+				if (w_ev->msg[7] & 2)
+					open_window(*(char **)(w_ev->msg + 3),	/* path */
+							  "*",				/* mask */
+							  *(char **)(w_ev->msg + 5),	/* selmask */
+							  ((w_ev->msg[7] & 1) == 0));	/* new */
+				else
+					open_window(*(char **)(w_ev->msg + 3),
+							  *(char **)(w_ev->msg + 5),
+							  NULL,
+							  ((w_ev->msg[7] & 1) == 0));
+
+				client = w_ev->msg[1];
+				w_ev->msg[0] += (VA_WINDOPEN-AV_OPENWIND);
+				w_ev->msg[1] = ap_id;
+				w_ev->msg[2] = w_ev->msg[4] =
+				w_ev->msg[5] = w_ev->msg[6] = 0;
+				w_ev->msg[3] = 1;	/* Erfolg */
+				appl_write(client, 16, w_ev->msg);
+				break;
+			}
+
+			case AP_DRAGDROP:
+			{
+				char *s;
+				int h;
+
+				s = "U:\\PIPE\\DRAGDROP.AA";
+				s[17] = ((char *) (w_ev->msg + 7))[0];
+				s[18] = ((char *) (w_ev->msg + 7))[1];
+				h = (int) Fopen(s, RMODE_WR);
+				if (h >= 0)
+				{
+					s[17] = DD_NAK;
+					Fwrite(h, 1L, &s[17]);
+					Fclose(h);
+				}
+				break;
+			}
+
+			case AP_TERM:
+				wind_update(END_UPDATE);
+				shutdown(-1, 0);
+				wind_update(BEG_UPDATE);
+				break;
+
+			default:
+			{
+				int i;
+				WINDOW **pw;
+				WINDOW *w = whdl2window(w_ev->msg[3]);
+
+				if (w)
+					switch(w_ev->msg[0])
+					{
+						case WM_REDRAW:
+							redraw(w, (GRECT *) (w_ev->msg + 4));
+							break;
+
+						case WM_TOPPED:
+					 		w->topped(w);
+					 		break;
+
+						case WM_CLOSED:
+					 	   	w->closed(w, w_ev->kstate);
+					 	   	break;
+
+						case WM_ALLICONIFY:
+							for	(i = 1,pw = windows+1; i <= NUM_WINDOWS; i++,pw++)
+							{
+								WINDOW *w2 = *pw;
+								if ((w2) && (w2->handle > 0) && (w2 != w))
+									w2->iconified(w2, NULL, ICONIFIED_MODE_HIDE);
+							}
+							w->iconified(w, (GRECT *) (w_ev->msg + 4), ICONIFIED_MODE_ALL);
+							break;
+
+						case WM_ICONIFY:
+					 	    w->iconified(w, (GRECT *) (w_ev->msg + 4), ICONIFIED_MODE_NORMAL);
+					 	    break;
+
+						case WM_UNICONIFY:
+							for	(i = 1,pw = windows + 1; i <= NUM_WINDOWS; i++,pw++)
+							{
+								WINDOW *w2 = *pw;
+								if ((w2) && (w2->path[0]) && (w2->handle < 0) && (w2 != w) && (w2->flags & WFLAG_ALLICONIFIED))
+									w2->uniconified(w2, NULL, TRUE);
+							}
+					 		if (w->flags & WFLAG_ALLICONIFIED)
+						 		w->topped(w);
+					 		w->uniconified(w, (GRECT *) (w_ev->msg + 4), FALSE);
+					 		break;
+
+						case WM_FULLED:
+							w->fulled(w);
+							break;
+
+						case WM_ARROWED:
+							w->arrowed(w, w_ev->msg[4]);
+							break;
+
+						case WM_HSLID:
+							w->hslid(w, w_ev->msg[4]);
+							break;
+
+						case WM_VSLID:
+							w->vslid(w, w_ev->msg[4]);
+							break;
+
+						case WM_SIZED:
+							w->sized(w, (GRECT *) (w_ev->msg + 4));
+							break;
+
+						case WM_MOVED:
+							w->moved(w, (GRECT *) (w_ev->msg + 4));
+							break;
+
+						case WM_NEWTOP:
+						case WM_UNTOPPED:
+							w->message(w, w_ev->kstate, w_ev->msg);
+							break;
+					}
+				break;
+			}
+		}
+	}
+}
+
+
+/****************************************************************
+*
+* Hauptfunktion
+*
+****************************************************************/
+
+void main()
+{
+	EVNT w_ev;
+	int button_waitclicks;
+	int mbuttons;
+	int	waitfor, mbmask;
+	long last_clicktime = 0;
+	unsigned dclick_interval_hz200;		/* in 5-ms-Einheiten */
+
+
+	pgm_init();
+	Mgraf_mouse(ARROW);
+
+	for (;;)
+	{
+		upd_drives();
+		upd_infos();
+		modify_menu();
+
+		/* Das eingestellte Doppelklick-Intervall kînnte geÑndert worden sein. */
+		dclick_interval_hz200 = get_dclick_interval_ms() / 5;
+
+		/* Wenn ein Laufwerk mit Tastatur selektiert wurde, wird 200 ms	*/
+		/* lang auf den zweiten Klick gewartet							*/
+		/* ------------------------------------------------------------ */
+
+		waitfor = MU_KEYBD + MU_BUTTON + MU_MESAG + MU_TIMER;
+
+		if (settings.rtbutt_dclick)
+		{
+			button_waitclicks = 0x101;	/* NOT und Doppelklicks manuell */
+			mbuttons = 0;		/* keine Maustaste gedrÅckt */
+			mbmask = 3;		/* beide Maustasten */
+		}
+		else
+		{
+			button_waitclicks = 1; /* Doppelklicks manuell erkennen, nicht vom System */
+			mbuttons = 1;		/* linke Maustaste gedrÅckt	*/
+			mbmask = 1;		/* nur linke Maustaste */
+		}
+		
+		w_ev.mwhich = evnt_multi(waitfor,
+						  button_waitclicks,
+						  mbmask,			
+						  mbuttons,
+						  0,NULL,		/* kein 1. Rechteck */
+						  0,NULL,		/* kein 2. Rechteck */
+						  w_ev.msg,
+						  AUTOUPDATE_MS,	/* ms */
+						  (EVNTDATA *) &(w_ev.mx),
+						  &w_ev.key,
+						  &w_ev.mclicks
+						  );
+
+		/* Fensterdialoge */
+		/* -------------- */
+
+		do_info_file_dialogs(&w_ev);
+
+		/* Timer-Ereignis */
+		/* -------------- */
+
+		if (w_ev.mwhich & MU_TIMER)
+		{
+			/* alternatively, we could omit the TIMER when auto-reload is deactivated. */
+			if (!settings.auto_reload_off)
+			{
+				dirwindow_autoupdate();
+			}
+		}
+
+		/* Abfrage auf BetÑtigung einer Taste */
+		/* ---------------------------------- */
+
+		if (w_ev.mwhich & MU_KEYBD)
+		{
+			handle_key(&w_ev);
+		}
+
+		/* Abfrage auf Nachricht im Nachrichtenpuffer */
+		/* ------------------------------------------ */
+
+		if (w_ev.mwhich & MU_MESAG)
+		{
+			wind_update(BEG_UPDATE);
+			handle_message(&w_ev);
+			wind_update(END_UPDATE);
+		}
+
+		/* Abfrage auf BetÑtigung eines Mausknopfs */
+		/* --------------------------------------- */
+
+		if (w_ev.mwhich & MU_BUTTON)
+		{
+			/* linken Doppelklick feststellen */
+
+			if (w_ev.mbutton & 1)
+			{
+				long clicktime = getHz200();
+				if (clicktime - last_clicktime < dclick_interval_hz200)
+				{
+					w_ev.mclicks = 2;
+				}
+				last_clicktime = clicktime;
+			}
+
+			/* Doppelklick mit rechter Maustaste simulieren */
+
+			if (settings.rtbutt_dclick && (w_ev.mbutton == 2))
+			{
+				w_ev.mclicks = 2;
+				w_ev.mbutton = 1;		/* Doppelklick simulieren */
+			}
+
+			handle_mouse_button(w_ev.mclicks, (EVNTDATA *) &(w_ev.mx));
+
+			/* poll mouse and keyboard state */
+			graf_mkstate((EVNTDATA *) &(w_ev.mx));
+			if (w_ev.mbutton & 1)
+			{
+				/* left button still pressed, wait for release */
+				evnt_button(1, 1, 0, (EVNTDATA *) &(w_ev.mx));
+			}
+		}
+
+	} /* END FOREVER */
 }

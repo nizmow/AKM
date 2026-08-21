@@ -139,7 +139,7 @@ int kachel_init(char *path, WORD max_pen)
 
 	err = load_IMG(path, &w, &h, &line_width, &planes, &palette, &pal_entries, &img);
 	if	(err < 0)
-		return(-2);		/* Fehler beim Laden */
+		return -2;		/* Fehler beim Laden */
 
 	fill = &pat;
 	fill->fd_w = w;
@@ -157,7 +157,7 @@ int kachel_init(char *path, WORD max_pen)
 		if	(! exp_img )
 		{
 			Mfree(img);
-			return(-3);
+			return -3;
 		}
 			
 		plane_len = (LONG) line_width * h;		/* L„nge einer Ebene */
@@ -171,7 +171,7 @@ int kachel_init(char *path, WORD max_pen)
 		{
 			Mfree(img);
 			Mfree(exp_img);
-			return(-4);
+			return -4;
 		}
 	}
 	else							/* monochromes IMG */

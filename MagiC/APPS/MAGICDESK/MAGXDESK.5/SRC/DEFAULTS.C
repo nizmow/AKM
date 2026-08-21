@@ -65,31 +65,31 @@ static void init_app_icons( void )
 		_stdr,_stdv,_stpa;
 
 
-	_stda.monoblk = *((adr_icons + I_PRO)->ob_spec.iconblk);
+	_stda.monoblk = *((tree_icons + I_PRO)->ob_spec.iconblk);
 	_stda.mainlist = NULL;
 	std_app_icon = &_stda;
-	_stdd.monoblk = *((adr_icons + I_DAT)->ob_spec.iconblk);
+	_stdd.monoblk = *((tree_icons + I_DAT)->ob_spec.iconblk);
 	_stdd.mainlist = NULL;
 	std_dat_icon = &_stdd;
-	_stfl.monoblk = *((adr_icons + I_ORD)->ob_spec.iconblk);
+	_stfl.monoblk = *((tree_icons + I_ORD)->ob_spec.iconblk);
 	_stfl.mainlist = NULL;
 	std_fld_icon = &_stfl;
-	_stdk.monoblk = *((adr_icons + I_DSK)->ob_spec.iconblk);
+	_stdk.monoblk = *((tree_icons + I_DSK)->ob_spec.iconblk);
 	_stdk.mainlist = NULL;
 	std_dsk_icon = &_stdk;
-	_stbt.monoblk = *((adr_icons + I_BAT)->ob_spec.iconblk);
+	_stbt.monoblk = *((tree_icons + I_BAT)->ob_spec.iconblk);
 	_stbt.mainlist = NULL;
 	std_bat_icon = &_stbt;
-	_sttr.monoblk = *((adr_icons + I_PAP)->ob_spec.iconblk);
+	_sttr.monoblk = *((tree_icons + I_PAP)->ob_spec.iconblk);
 	_sttr.mainlist = NULL;
 	std_tra_icon = &_sttr;
-	_stdr.monoblk = *((adr_icons + I_DRK)->ob_spec.iconblk);
+	_stdr.monoblk = *((tree_icons + I_DRK)->ob_spec.iconblk);
 	_stdr.mainlist = NULL;
 	std_prt_icon = &_stdr;
-	_stdv.monoblk = *((adr_icons + I_DAT)->ob_spec.iconblk);
+	_stdv.monoblk = *((tree_icons + I_DAT)->ob_spec.iconblk);
 	_stdv.mainlist = NULL;
 	std_dev_icon = &_stdv;
-	_stpa.monoblk = *((adr_icons + I_PAR)->ob_spec.iconblk);
+	_stpa.monoblk = *((tree_icons + I_PAR)->ob_spec.iconblk);
 	_stpa.mainlist = NULL;
 	std_par_icon = &_stpa;
 }
@@ -183,7 +183,8 @@ static int _load_app_icons(char *buf)
 		j = ((long) da->ap);	/* Index der APP */
 		if (j != -1L)
 			da->ap = apps + j;
-		else	da->ap = NULL;
+		else
+			da->ap = NULL;
 		da->icon = icons[(long) (da->icon)];
 	}
 	for	(i = 0, pa = paths; i < n_paths; i++,pa++)
@@ -214,27 +215,27 @@ static int _load_app_icons(char *buf)
 	if (stdci)
 	{
 		std_dsk_icon = stdci;
-		stdci->monoblk.ib_ptext = (adr_icons+I_DSK)->
+		stdci->monoblk.ib_ptext = (tree_icons+I_DSK)->
 								ob_spec.iconblk->ib_ptext;
 	}
 	stdci = specialkey_to_iconblk('TRSH');
 	if (stdci)
 	{
-		stdci->monoblk.ib_ptext = (adr_icons+I_PAP)->
+		stdci->monoblk.ib_ptext = (tree_icons+I_PAP)->
 								ob_spec.iconblk->ib_ptext;
 		std_tra_icon = stdci;
 	}
 	stdci = specialkey_to_iconblk('PRNT');
 	if (stdci)
 	{
-		stdci->monoblk.ib_ptext = (adr_icons+I_DRK)->
+		stdci->monoblk.ib_ptext = (tree_icons+I_DRK)->
 								ob_spec.iconblk->ib_ptext;
 		std_prt_icon = stdci;
 	}
 	stdci = specialkey_to_iconblk('BTCH');
 	if (stdci)
 	{
-		stdci->monoblk.ib_ptext = (adr_icons+I_BAT)->
+		stdci->monoblk.ib_ptext = (tree_icons+I_BAT)->
 								ob_spec.iconblk->ib_ptext;
 		std_bat_icon = stdci;
 	}
@@ -265,7 +266,8 @@ void load_app_icons( void )
 	retcode = Fcntl(fd, (long) &xa, FSTAT);
 	if (!retcode)
 		flen = xa.size;
-	else	goto err;
+	else
+		goto err;
 
 	buf = Malloc(flen);
 	if (!buf)
@@ -299,7 +301,7 @@ void	re_read_icons(void *data)
 		return;		/* Fehler */
 	set_deskt_icons(FALSE);
 	upd_icons();
-	upd_wind(fenster[0]);
+	upd_wind(windows[0]);
 }
 
 
@@ -432,7 +434,7 @@ CICONBLK * pgmname_to_iconblk(char *fname)
 	if ((extension) &&
 		(!stricmp(extension, ".ACC") ||
 		!stricmp(extension, ".ACX")))
-		return(datname_to_iconblk(fname));
+		return datname_to_iconblk(fname);
 
 	return std_app_icon;
 }
@@ -580,7 +582,7 @@ void set_desktop( void )
 
 
 	kachel_exit();		/* falls noch alte Kachel da */
-	o = fenster[0]->pobj;
+	o = windows[0]->pobj;
 	if (*kachel_path)
 	{
 		if ((*kachel_path)->path[0])
@@ -629,7 +631,7 @@ static void set_deskt_icons( int initial )
 	char **pname;
 
 
-	for	(i = 0,o=fenster[0]->pobj+1,ic = icon;
+	for	(i = 0,o=windows[0]->pobj+1,ic = icon;
 			i < n_deskicons; i++,o++,ic++)
 	{
 		typ = ic->icontyp;
@@ -688,7 +690,8 @@ static void set_deskt_icons( int initial )
 			if (initial)
 				o->ob_x -= o->ob_spec.iconblk->ib_xicon;
 		}
-		else o->ob_flags = HIDETREE;
+		else
+			o->ob_flags = HIDETREE;
 	} /* END FOR */
 }
 
@@ -804,7 +807,7 @@ void load_status(int pass)
 		gmemptr = NULL;
 
 		icon = NULL;
-		fenster[0]->pobj = NULL;
+		windows[0]->pobj = NULL;
 
 	}
 
@@ -814,41 +817,41 @@ void load_status(int pass)
 		/* zun„chst sicherheitshalber Defaults setzen */
 		/* ------------------------------------------ */
 
-		(((adr_ttppar+TTPPAR_1)->ob_spec.tedinfo)->te_ptext)[0] = EOS;
-		(((adr_ttppar+TTPPAR_2)->ob_spec.tedinfo)->te_ptext)[0] = EOS;
+		(((tree_ttppar+TTPPAR_1)->ob_spec.tedinfo)->te_ptext)[0] = EOS;
+		(((tree_ttppar+TTPPAR_2)->ob_spec.tedinfo)->te_ptext)[0] = EOS;
 
 /* Fenster: */
-		status.use_pp			= TRUE;		/* ".." zeigen */
-		status.show_prticon		= TRUE;
-		status.show_8p3			= TRUE;
-		status.auto_reload_off 	= FALSE;
-		status.h_icon_dist		= 3;
-		status.v_icon_dist		= 1;
-		status.sorttyp 			= M_SNAME;
-		status.showtyp 			= M_ABILDR;
-		status.is_1col			= FALSE;
-		status.is_groesse		= TRUE;
-		status.is_datum			= TRUE;
-		status.is_zeit			= TRUE;
-		status.font_is_prop		= FALSE;
-		status.fontID			= 1;
-		status.fontH			= 10;
+		settings.use_pp			= TRUE;		/* ".." zeigen */
+		settings.show_prticon		= TRUE;
+		settings.show_8p3			= TRUE;
+		settings.auto_reload_off 	= FALSE;
+		settings.h_icon_dist		= 3;
+		settings.v_icon_dist		= 1;
+		settings.sorttyp 			= M_SNAME;
+		settings.showtyp 			= M_ABILDR;
+		settings.is_1col			= FALSE;
+		settings.is_groesse		= TRUE;
+		settings.is_datum			= TRUE;
+		settings.is_zeit			= TRUE;
+		settings.font_is_prop		= FALSE;
+		settings.fontID			= 1;
+		settings.fontH			= 10;
 /* Kopieren: */
-		status.cnfm_del			= TRUE;
-		status.cnfm_copy		= TRUE;
-		status.mode_ovwr		= CONFIRM;
-		status.check_free		= TRUE;
-		status.resident			= TRUE;
-		status.show_all			= FALSE;
-		status.dnam_init		= TRUE;
-		status.copy_resident	= TRUE;
-		status.copy_use_kobold	= FALSE;
+		settings.cnfm_del			= TRUE;
+		settings.cnfm_copy		= TRUE;
+		settings.mode_ovwr		= CONFIRM;
+		settings.check_free		= TRUE;
+		settings.resident			= TRUE;
+		settings.show_all			= FALSE;
+		settings.dnam_init		= TRUE;
+		settings.copy_resident	= TRUE;
+		settings.copy_use_kobold	= FALSE;
 /* Desktop: */
-		status.desk_col_1		= BLACK;
-		status.desk_patt_1		= 3;
-		status.desk_col_4		= GREEN;
-		status.desk_patt_4		= 7;
-		status.desk_raster		= 1;
+		settings.desk_col_1		= BLACK;
+		settings.desk_patt_1		= 3;
+		settings.desk_col_4		= GREEN;
+		settings.desk_patt_4		= 7;
+		settings.desk_raster		= 1;
 		if (kachel_1)
 			Mfree(kachel_1);
 		if (kachel_4)
@@ -863,11 +866,11 @@ void load_status(int pass)
 		strcpy(ext_btp, "BTP");
 
 /* versch.: */
-		status.save_on_exit		= FALSE;
-		status.rtbutt_dclick	= FALSE;
-		status.disk_extinfo		= FALSE;
+		settings.save_on_exit		= FALSE;
+		settings.rtbutt_dclick	= FALSE;
+		settings.disk_extinfo		= FALSE;
 
-		for	(ln_wind = 1,g=fensterg+1; ln_wind <= ANZFENSTER;
+		for	(ln_wind = 1, g = windows_g + 1; ln_wind <= NUM_WINDOWS;
 				ln_wind++,g++)
 		{
 			g->g_x = 140+20*ln_wind;
@@ -948,57 +951,57 @@ void load_status(int pass)
 
 				deflt_topwnr = scndez();
 
-				status.sorttyp = scndez() + M_SNAME;
+				settings.sorttyp = scndez() + M_SNAME;
  
-				status.showtyp = (scnflg()) ? M_ATEXT : M_ABILDR;
+				settings.showtyp = (scnflg()) ? M_ATEXT : M_ABILDR;
 
 				scndez();		/* points */
 
-				status.is_1col			= scnflg();
-				status.is_groesse		= scnflg();
-				status.is_datum			= scnflg();
-				status.is_zeit			= scnflg();
+				settings.is_1col			= scnflg();
+				settings.is_groesse		= scnflg();
+				settings.is_datum			= scnflg();
+				settings.is_zeit			= scnflg();
 
-				status.rtbutt_dclick	= scnflg(); /* Alt: blitstate */
-				status.cnfm_del			= scnflg();
-				status.cnfm_copy		= scnflg();
-				status.mode_ovwr		= scnflg();
-				status.check_free		= scnflg();
-				status.use_pp			= scnflg();
-				status.resident			= scnflg();
-				status.show_all			= scnflg();
-				status.show_prticon		= scnflg(); /* V2: clock */
-				status.disk_extinfo		= scnflg(); /* Alt: resvd0 */
-				status.dnam_init		= scnflg();
-				status.auto_reload_off	= scnflg();		/* v5.05, previously reserved */
+				settings.rtbutt_dclick	= scnflg(); /* Alt: blitstate */
+				settings.cnfm_del			= scnflg();
+				settings.cnfm_copy		= scnflg();
+				settings.mode_ovwr		= scnflg();
+				settings.check_free		= scnflg();
+				settings.use_pp			= scnflg();
+				settings.resident			= scnflg();
+				settings.show_all			= scnflg();
+				settings.show_prticon		= scnflg(); /* V2: clock */
+				settings.disk_extinfo		= scnflg(); /* Alt: resvd0 */
+				settings.dnam_init		= scnflg();
+				settings.auto_reload_off	= scnflg();		/* v5.05, previously reserved */
 				scnflg();		/* resvd2 */
 				break;
 
 			case 'S2':
 				if (!pass)
 					break;
-				status.copy_resident = scnflg();
-				status.copy_use_kobold = scnflg();
-				status.save_on_exit	= scnflg();
-				status.show_8p3	= scnflg();
+				settings.copy_resident = scnflg();
+				settings.copy_use_kobold = scnflg();
+				settings.save_on_exit	= scnflg();
+				settings.show_8p3	= scnflg();
 
-				status.h_icon_dist	= scndez();
-				status.v_icon_dist	= scndez();
-				status.desk_raster	= scndez();
-				status.desk_col_1	= scndez();
-				status.desk_patt_1	= scndez();
-				status.desk_col_4	= scndez();
-				status.desk_patt_4	= scndez();
-				status.font_is_prop = scndez();
-				status.fontID		= scndez();
-				status.fontH		= scndez();
+				settings.h_icon_dist	= scndez();
+				settings.v_icon_dist	= scndez();
+				settings.desk_raster	= scndez();
+				settings.desk_col_1	= scndez();
+				settings.desk_patt_1	= scndez();
+				settings.desk_col_4	= scndez();
+				settings.desk_patt_4	= scndez();
+				settings.font_is_prop = scndez();
+				settings.fontID		= scndez();
+				settings.fontH		= scndez();
 
 				break;
 
 			case 'WN':
-				if (!pass || ln_wind > ANZFENSTER)
+				if (!pass || ln_wind > NUM_WINDOWS)
 					break;
-				g = fensterg+ln_wind;
+				g = windows_g + ln_wind;
 
 				/* Fensterpositionen einlesen */
 				/* -------------------------- */
@@ -1051,7 +1054,8 @@ void load_status(int pass)
 					}
 					shift = 0;
 				}
-				else	flags = 0;
+				else
+					flags = 0;
 
 				scnbstr(buf);
 
@@ -1070,7 +1074,7 @@ void load_status(int pass)
 				if (pass)
 				{
 					int *obx,*oby;
-					int ich = (adr_icons+I_DSK)->ob_height + 1;
+					int ich = (tree_icons+I_DSK)->ob_height + 1;
 
 
 					icon[ln_icns].is_alias = FALSE;
@@ -1078,8 +1082,8 @@ void load_status(int pass)
 					icon[ln_icns].isdisk = scnflg() + '0';
 					if (icon[ln_icns].isdisk == '@')
 						icon[ln_icns].isdisk = 0;
-					obx = &(fenster[0]->pobj+ln_icns+1)->ob_x;
-					oby = &(fenster[0]->pobj+ln_icns+1)->ob_y;
+					obx = &(windows[0]->pobj+ln_icns+1)->ob_x;
+					oby = &(windows[0]->pobj+ln_icns+1)->ob_y;
 					*obx = scndez();
 					*oby = scndez();
 					if (old_w != desk_g.g_w)
@@ -1105,7 +1109,7 @@ void load_status(int pass)
 				break;
 
 			case 'PG':
-				if (!pass || ln_pgms >= ANZPROGRAMS)
+				if (!pass || ln_pgms >= NUM_PROGRAMS)
 					break;
 				scnbstr(menuprograms[ln_pgms].path);
 				if (menuprograms[ln_pgms].path[0] == '*')
@@ -1161,8 +1165,8 @@ void load_status(int pass)
 				while((*s) && (*s != '\r') && (*s != '\n'))
 					*ziel1++ = *s++;
 				*ziel1 = EOS;
-				ziel1 = ((adr_ttppar+TTPPAR_1)->ob_spec.tedinfo)->te_ptext;
-				ziel2 = ((adr_ttppar+TTPPAR_2)->ob_spec.tedinfo)->te_ptext;
+				ziel1 = ((tree_ttppar+TTPPAR_1)->ob_spec.tedinfo)->te_ptext;
+				ziel2 = ((tree_ttppar+TTPPAR_2)->ob_spec.tedinfo)->te_ptext;
 				if (buf[0])
 				{
 					strncpy(ziel1, buf, TTPLEN);
@@ -1192,22 +1196,22 @@ void load_status(int pass)
 			err_alert(ENSMEM);
 			return;
 		}
-		fenster[0]->shownum  = fenster[0]->realnum = n_deskicons;
-		fenster[0]->pobj = (OBJECT *)      gmemptr;
-		icon		  	 = (ICON   *)      (fenster[0]->pobj + n_deskicons + 1);
+		windows[0]->shownum  = windows[0]->realnum = n_deskicons;
+		windows[0]->pobj = (OBJECT *)      gmemptr;
+		icon		  	 = (ICON   *)      (windows[0]->pobj + n_deskicons + 1);
 
 		/* Desktop- Hintergrund zusammenfummeln */
 		/* ------------------------------------ */
 
-		o = fenster[0]->pobj;
+		o = windows[0]->pobj;
 		o->ob_next = -1;
 		o->ob_head = 1;
 		o->ob_tail = n_deskicons;
 /*		o->ob_type = G_BOX;		*/
 
 		o->ob_flags = o->ob_state = 0;
-		icw = (adr_icons+I_DSK)->ob_width + 1;
-		ich = (adr_icons+I_DSK)->ob_height + 1;
+		icw = (tree_icons+I_DSK)->ob_width + 1;
+		ich = (tree_icons+I_DSK)->ob_height + 1;
 		dx = desk_g.g_x;
 		dy = desk_g.g_y;
 		for	(i = 0; i < n_deskicons; i++)
@@ -1242,7 +1246,7 @@ void load_status(int pass)
 
 	for	(; ln_icns <  n_deskicons;   ln_icns++)
 		icon[ln_icns].icontyp = icon[ln_icns].isdisk = 0;
-	for	(; ln_pgms < ANZPROGRAMS; ln_pgms++)
+	for	(; ln_pgms < NUM_PROGRAMS; ln_pgms++)
 		menuprograms[ln_pgms].path[0] = EOS;
 
 	/* allgemeine Installation der Icons */
@@ -1252,7 +1256,7 @@ void load_status(int pass)
 
 	/* Systemeinstellungen */
 
-	fslx_set_flags(status.show_8p3, &dummy);
+	fslx_set_flags(settings.show_8p3, &dummy);
 
 	Mgraf_mouse(ARROW);
 }
@@ -1277,7 +1281,7 @@ static void prtflg(int i)
 {
 	*s++ = (i) ? '1' : '0';
 }
-static void prtstr(char *str)
+static void prtstr(const char *str)
 {
 	while((*s++ = *str++) != '\0')
 		;
@@ -1310,87 +1314,88 @@ static void status_to_ascii(char *inf)
 	/* a  '0'/'1' = Anzeigen als Bilder/als Text 		*/
 	/* b  '08'/'09'/'10' = Punktgr”že fr Text			*/
 	/* c  1col/isgr/isdat/iszeit						*/
-	/* d  status.blitstate								*/
-	/*	 status.cnfm_del								*/
-	/*	 status.cnfm_copy								*/
-	/*	 status.mode_ovwr								*/
-	/*	 status.check_free								*/
-	/*	 status.use_fldl								*/
-	/*	 status.resident								*/
-	/*	 status.show_all								*/
-	/*	 status.show_prticon	V2: clock				*/
-	/*	 status.use_cache								*/
-	/*	 status.dnam_init								*/
-	/*	 status.auto_reload								*/
-	/*	 status.resvd2									*/
+	/* d  settings.blitstate								*/
+	/*	 settings.cnfm_del								*/
+	/*	 settings.cnfm_copy								*/
+	/*	 settings.mode_ovwr								*/
+	/*	 settings.check_free								*/
+	/*	 settings.use_fldl								*/
+	/*	 settings.resident								*/
+	/*	 settings.show_all								*/
+	/*	 settings.show_prticon	V2: clock				*/
+	/*	 settings.use_cache								*/
+	/*	 settings.dnam_init								*/
+	/*	 settings.auto_reload								*/
+	/*	 settings.resvd2									*/
 	/* ------------------------------------------------ */
 
 	prtdez(desk_g.g_w);
 	prtdez(desk_g.g_h);
 	prtdez(deflt_topwnr);
-	prtdez(status.sorttyp - M_SNAME);
+	prtdez(settings.sorttyp - M_SNAME);
 	*s++ = ' ';
-	prtflg(status.showtyp == M_ATEXT);
+	prtflg(settings.showtyp == M_ATEXT);
 /*
-	if (status.points == M_8_PKT)
+	if (settings.points == M_8_PKT)
 		i = 8;
-	else i = (status.points == M_9_PKT) ? 9 : 10;
+	else
+		i = (settings.points == M_9_PKT) ? 9 : 10;
 */
 	i = 10;
 
 	prtdez(i);
 	*s++ = ' ';
-	prtflg(status.is_1col);
-	prtflg(status.is_groesse);
-	prtflg(status.is_datum);
-	prtflg(status.is_zeit);
+	prtflg(settings.is_1col);
+	prtflg(settings.is_groesse);
+	prtflg(settings.is_datum);
+	prtflg(settings.is_zeit);
 	*s++ = ' ';
-	prtflg(status.rtbutt_dclick);	/* Alt: blitstate */
-	prtflg(status.cnfm_del);
-	prtflg(status.cnfm_copy);
-	*s++ = status.mode_ovwr + '0';
-	prtflg(status.check_free);
-	prtflg(status.use_pp);
-	prtflg(status.resident);
-	prtflg(status.show_all);
-	prtflg(status.show_prticon);	/* V2: clock */
-	prtflg(status.disk_extinfo);	/* V4: resvd0 */
-	prtflg(status.dnam_init);
-	prtflg(status.auto_reload_off);		/* v5.05, was resvd1 */
+	prtflg(settings.rtbutt_dclick);	/* Alt: blitstate */
+	prtflg(settings.cnfm_del);
+	prtflg(settings.cnfm_copy);
+	*s++ = settings.mode_ovwr + '0';
+	prtflg(settings.check_free);
+	prtflg(settings.use_pp);
+	prtflg(settings.resident);
+	prtflg(settings.show_all);
+	prtflg(settings.show_prticon);	/* V2: clock */
+	prtflg(settings.disk_extinfo);	/* V4: resvd0 */
+	prtflg(settings.dnam_init);
+	prtflg(settings.auto_reload_off);		/* v5.05, was resvd1 */
 	*s++ = '0';	/* resvd2 */
 
 	/* 3. Zeile: "#_DS2 aaaa b c x d e f g h i j"		*/
-	/* a	 status.copy_resident						*/
-	/* a	 status.copy_use_kobold						*/
-	/* a	 status.save_on_exit						*/
-	/* a	 status.show_8p3							*/
-	/* b	 status.h_icon_dist							*/
-	/* c	 status.v_icon_dist							*/
-	/* x	 status.desk_raster							*/
-	/* d	 status.desk_col_1							*/
-	/* e	 status.desk_patt_1							*/
-	/* f	 status.desk_col_4							*/
-	/* g	 status.desk_patt_4							*/
-	/* h	 status.font_is_prop						*/
-	/* i	 status.fontID								*/
-	/* j	 status.fontH								*/
+	/* a	 settings.copy_resident						*/
+	/* a	 settings.copy_use_kobold						*/
+	/* a	 settings.save_on_exit						*/
+	/* a	 settings.show_8p3							*/
+	/* b	 settings.h_icon_dist							*/
+	/* c	 settings.v_icon_dist							*/
+	/* x	 settings.desk_raster							*/
+	/* d	 settings.desk_col_1							*/
+	/* e	 settings.desk_patt_1							*/
+	/* f	 settings.desk_col_4							*/
+	/* g	 settings.desk_patt_4							*/
+	/* h	 settings.font_is_prop						*/
+	/* i	 settings.fontID								*/
+	/* j	 settings.fontH								*/
 	/* ------------------------------------------------ */
 
 	prtstr("\r\n#_DS2 ");
-	prtflg(status.copy_resident);
-	prtflg(status.copy_use_kobold);
-	prtflg(status.save_on_exit);
-	prtflg(status.show_8p3);
-	prtdez(status.h_icon_dist);
-	prtdez(status.v_icon_dist);
-	prtdez(status.desk_raster);
-	prtdez(status.desk_col_1);
-	prtdez(status.desk_patt_1);
-	prtdez(status.desk_col_4);
-	prtdez(status.desk_patt_4);
-	prtdez(status.font_is_prop);
-	prtdez(status.fontID);
-	prtdez(status.fontH);
+	prtflg(settings.copy_resident);
+	prtflg(settings.copy_use_kobold);
+	prtflg(settings.save_on_exit);
+	prtflg(settings.show_8p3);
+	prtdez(settings.h_icon_dist);
+	prtdez(settings.v_icon_dist);
+	prtdez(settings.desk_raster);
+	prtdez(settings.desk_col_1);
+	prtdez(settings.desk_patt_1);
+	prtdez(settings.desk_col_4);
+	prtdez(settings.desk_patt_4);
+	prtdez(settings.font_is_prop);
+	prtdez(settings.fontID);
+	prtdez(settings.fontH);
 	prtstr("\r\n");
 
 	/* 4. Zeile: "#_DK1 path"						*/
@@ -1439,7 +1444,7 @@ static void status_to_ascii(char *inf)
 	/* shift = -3: anderes Fenster ist all-ikonifiziert	   */
 	/* ------------------------------------------------------ */
 
-	for	(i = 1,pw=fenster+1,g=fensterg+1; i <= ANZFENSTER; i++,pw++,g++)
+	for	(i = 1,pw = windows + 1, g = windows_g + 1; i <= NUM_WINDOWS; i++,pw++,g++)
 	{
 		GRECT g2;
 
@@ -1450,30 +1455,38 @@ static void status_to_ascii(char *inf)
 		{
 			if (w->flags & WFLAG_ICONIFIED)
 				wind_get_grect(w->handle, WF_UNICONIFY, &g2);
-			else	g2 = w->out;
+			else
+				g2 = w->out;
 		}
-		else	g2 = *g;
+		else
+			g2 = *g;
 
 		prtdez(g2.g_x - desk_g.g_x);
 		prtdez(g2.g_y - desk_g.g_y);
 		prtdez(g2.g_w);
 		prtdez(g2.g_h);
+
 		if (w)
 		{
 			if (w->flags & WFLAG_ICONIFIED)
 			{
 				if (w->flags & WFLAG_ALLICONIFIED)
 					prtdez(-2);
-				else	prtdez(-1);
+				else
+					prtdez(-1);
 			}
-			else	if (w->flags & WFLAG_ALLICONIFIED)
+			else
+			if (w->flags & WFLAG_ALLICONIFIED)
 				prtdez(-3);
-			else	prtdez(w->yscroll);
+			else
+				prtdez(w->yscroll);
+
 			*s++ = ' ';
 			prtstr(w->path );
 			prtstr(w->maske);
 		}
-		else prtdez(0);
+		else
+			prtdez(0);
 		*s++ = '\r';
 		*s++ = '\n';
 	}
@@ -1481,7 +1494,7 @@ static void status_to_ascii(char *inf)
 	/* "#_DIC typ c x y path" */
 	/* ---------------------- */
 
-	for	(i = 0, ic=icon, o = fenster[0]->pobj+1;
+	for	(i = 0, ic=icon, o = windows[0]->pobj+1;
 		 i < n_deskicons;
 		 i++,ic++,o++)
 	{
@@ -1510,7 +1523,7 @@ static void status_to_ascii(char *inf)
 	/* "#_DPG path */
 	/* ----------- */
 
-	for	(i = 0; i < ANZPROGRAMS; i++)
+	for	(i = 0; i < NUM_PROGRAMS; i++)
 	{
 		prtstr("#_DPG ");
 		prtstr(menuprograms[i].path);
@@ -1522,8 +1535,8 @@ static void status_to_ascii(char *inf)
 	/* ------------ */
 
 	prtstr("#_DPP ");
-	prtstr(((adr_ttppar+TTPPAR_1)->ob_spec.tedinfo)->te_ptext);
-	prtstr(((adr_ttppar+TTPPAR_2)->ob_spec.tedinfo)->te_ptext);
+	prtstr(tree_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext);
+	prtstr(tree_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext);
 	*s++ = '\r';
 	*s++ = '\n';
 
@@ -1627,7 +1640,7 @@ void save_status(int is_inf)
 		gmemptr = NULL;
 
 		icon = NULL;
-		fenster[0]->pobj = NULL;
+		windows[0]->pobj = NULL;
 
 	}
 	if (doserr < E_OK)

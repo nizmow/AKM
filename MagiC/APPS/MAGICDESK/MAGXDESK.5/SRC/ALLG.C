@@ -27,10 +27,10 @@ static void (*date2str)(char *s, unsigned int date);
 *
 ****************************************************************/
 
-void allg_init( void )
+void allg_init(void)
 {
-	date2str = (( void *) xbios(39, 'AnKr', 5));
-	kilosep = adr_datinf[FI_SIZE].ob_spec.free_string[1];
+	date2str = ((void *) xbios(39, 'AnKr', 5));
+	kilosep = tree_datinf[FI_SIZE].ob_spec.free_string[1];
 }
 
 
@@ -41,11 +41,11 @@ void allg_init( void )
 *
 ****************************************************************/
 
-void top_all_my_windows( void )
+void top_all_my_windows(void)
 {
 	wind_set_int(0, 22367, ap_id);
 	if (menu_bar(NULL, -1) != ap_id)
-		menu_bar(adr_hauptmen, TRUE);
+		menu_bar(tree_menu, TRUE);
 }
 
 
@@ -55,7 +55,7 @@ void top_all_my_windows( void )
 *
 ****************************************************************/
 
-void xgrf_rbox( GRECT *clip, GRECT *box )
+void xgrf_rbox(GRECT *clip, GRECT *box)
 {
 	PARMDATA d;
 	static WORD	c[] = { 132, 8, 0, 0 };
@@ -73,7 +73,7 @@ void xgrf_rbox( GRECT *clip, GRECT *box )
 *
 ****************************************************************/
 
-int top_whdl( void )
+int top_whdl(void)
 {
 	int whdl;
 
@@ -180,7 +180,7 @@ void objc_visgrect(OBJECT *tree, int objn, GRECT *g)
 
 int in_grect(int x, int y, GRECT *g)
 {
-	return(x >= (g->g_x) && x < (g->g_x+g->g_w) &&
+	return (x >= (g->g_x) && x < (g->g_x+g->g_w) &&
 		  y >= (g->g_y) && y < (g->g_y+g->g_h));
 }
 
@@ -197,9 +197,9 @@ void subobj_wdraw(DIALOG *d, int obj, int startob, int depth)
 	OBJECT *tree;
 
 
-	wdlg_get_tree( d, &tree, &g );
-	objc_visgrect( tree, obj, &g);
-	wdlg_redraw( d, &g, startob, depth );
+	wdlg_get_tree(d, &tree, &g);
+	objc_visgrect(tree, obj, &g);
+	wdlg_redraw(d, &g, startob, depth);
 }
 
 
@@ -245,9 +245,9 @@ int find_obj(OBJECT *tree, int x, int y)
 
 
 	if ((i = (tree -> ob_head)) < 0)
-		return(0);
+		return 0;
 	if ((tree -> ob_flags) & HIDETREE)
-		return(-1);			/* etwa inaktiver Hintergrund */
+		return -1;			/* etwa inaktiver Hintergrund */
 	end = tree -> ob_tail;
 	x -= tree -> ob_x;			/* Position der Root abziehen */
 	y -= tree -> ob_y;
@@ -266,20 +266,21 @@ int find_obj(OBJECT *tree, int x, int y)
 			obw = icn->ib_wicon;
 			obh = icn->ib_hicon;
 			if (x >= obx && x < obx+obw && y >= oby && y < oby+obh)
-				return(i);
+				return i;
 			/* 2. Fall: Unterschrift */
 			obx = tree->ob_x + icn->ib_xtext;
 			oby = tree->ob_y + icn->ib_ytext;
 			obw = icn->ib_wtext;
 			obh = icn->ib_htext;
 			if (x >= obx && x < obx+obw && y >= oby && y < oby+obh)
-				return(i);
+				return i;
 		}
 		/* 2. Fall: sonst (STRING bzw. G_USERDEF) */
-		else {
+		else
+		{
 			if (x >= tree->ob_x && x < tree->ob_x+tree->ob_width &&
 				 y >= tree->ob_y && y < tree->ob_y+tree->ob_height)
-				return(i);
+				return i;
 		}
 	}
 
@@ -384,7 +385,8 @@ void objs_disable(OBJECT *tree, ...)
 			bft->interiorcol = LWHITE;
 			bft->textmode = TEXT_TRANSPARENT;
 		}
-		else	t->ob_state |= DISABLED;
+		else
+			t->ob_state |= DISABLED;
 	}
 	va_end(argpoint);
 }
@@ -394,13 +396,13 @@ void objs_disable(OBJECT *tree, ...)
 
 int selected(OBJECT *tree, int which)
 
-{ return( ((tree+which)->ob_state & SELECTED) ? 1 : 0 ); }
+{ return (tree[which].ob_state & SELECTED) ? 1 : 0; }
 
 /******* Objekt deselektieren **********/
 
 void ob_dsel(OBJECT *tree, int which)
 
-{ (tree+which)->ob_state &= ~SELECTED; }
+{ tree[which].ob_state &= ~SELECTED; }
 
 /******* Objekt selektieren/deselektieren **********/
 
@@ -408,16 +410,16 @@ void ob_sel_dsel(OBJECT *tree, int which, int sel)
 
 {
 	if (sel)
-		(tree+which)->ob_state |=  SELECTED;
+		tree[which].ob_state |=  SELECTED;
 	else
-		(tree+which)->ob_state &= ~SELECTED;
+		tree[which].ob_state &= ~SELECTED;
 }
 
 /***** Objekt selektieren **************/
 
 void ob_sel(OBJECT *tree, int which)
 
-{ (tree+which)->ob_state |= SELECTED; }
+{ tree[which].ob_state |= SELECTED; }
 
 /***************************************/
 
@@ -498,7 +500,7 @@ long err_alert(long e)
 *
 *********************************************************************/
 
-char *Rgetstring( WORD string_id )
+char *Rgetstring(WORD string_id)
 {
 	char *alert;
 
@@ -513,7 +515,7 @@ char *Rgetstring( WORD string_id )
 *
 *********************************************************************/
 
-WORD Rform_alert( WORD defbutton, WORD alert_id )
+WORD Rform_alert(WORD defbutton, WORD alert_id)
 {
 	return form_alert(defbutton, Rgetstring(alert_id));
 }
@@ -526,8 +528,8 @@ WORD Rform_alert( WORD defbutton, WORD alert_id )
 *
 *********************************************************************/
 
-WORD Rxform_alert( WORD defbutton, WORD alert_id,
-				char drv, char *path )
+WORD Rxform_alert(WORD defbutton, WORD alert_id,
+				char drv, char *path)
 {
 	register char *alert;
 	char buf[256];
@@ -575,7 +577,7 @@ WORD Rxform_alert( WORD defbutton, WORD alert_id,
 long Dxreaddir(int len, long dirhandle,
 			char *buf, XATTR *xattr, long *xr)
 {
-	return(gemdos(0x142, len, dirhandle, buf, xattr, xr));
+	return gemdos(0x142, len, dirhandle, buf, xattr, xr);
 }
 
 
@@ -612,7 +614,7 @@ char *get_name(char *path)
 	{
 		if ((*path) && (path[1] == ':'))
 			path += 2;
-		return(path);
+		return path;
 	}
 
 	return (n + 1);
@@ -637,7 +639,8 @@ void get_app_name(char *path, char apname[9])
 	{
 		if (*name == '.' || *name == EOS)
 			*apnamp++ = ' ';
-		else *apnamp++ = toupper(*name++);
+		else
+			*apnamp++ = toupper(*name++);
 	}
 	*apnamp = EOS;
 }
@@ -966,7 +969,8 @@ void fname_ext(char *s, char *d)
 	{
 		if (*p != ' ')
 			*d++ = *p++;
-		else p++;
+		else
+			p++;
 	}
 
 	if (*p)
@@ -1003,17 +1007,17 @@ int suffixtyp(char *s)
 		ext[2] = (*s++ & 0x5f);
 		ext[3] = '\0';
 		if (!strcmp(ext, "PRG") || !strcmp(ext, "APP"))
-			return(PGMT_ISGEM);
+			return PGMT_ISGEM;
 		if (!strcmp(ext, "TOS"))
-			return(0);
+			return 0;
 		if (!strcmp(ext, "TTP"))
-			return(PGMT_TP);
+			return PGMT_TP;
 		if (!strcmp(ext, ext_bat))
-			return(PGMT_BATCH);
+			return PGMT_BATCH;
 		if (!strcmp(ext, ext_btp))
-			return(PGMT_BATCH+PGMT_TP);
+			return PGMT_BATCH + PGMT_TP;
 		if ((!strcmp(ext, "ACC")) || (!strcmp(ext, "ACX")))
-			return(PGMT_ACC+PGMT_ISGEM);
+			return PGMT_ACC+PGMT_ISGEM;
 	}
 	return PGMT_NOEXE;
 }
@@ -1029,7 +1033,7 @@ int suffixtyp(char *s)
 int fname_match(char *fname, char *fmask)
 {
 	if (fmask[0] == '*' && fmask[1] == '.' && fmask[2] == '*')
-		return(1);
+		return 1;
 
 	while (*fmask && *fname)
 	{

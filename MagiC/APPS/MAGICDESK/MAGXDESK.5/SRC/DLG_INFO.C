@@ -138,7 +138,7 @@ int info_file(char *path, int drv, MYDTA *f,
 	if (!len_of_varstrings)
 	{
 		for	(obx = variable_strings; *obx; obx++)
-			len_of_varstrings += strlen(adr_datinf[*obx].ob_spec.free_string) + 1;
+			len_of_varstrings += strlen(tree_datinf[*obx].ob_spec.free_string) + 1;
 	}
 
 	/* Dialog-Info-Struktur erstellen */
@@ -154,16 +154,16 @@ int info_file(char *path, int drv, MYDTA *f,
 	/* Baum kopieren */
 	/* ------------- */
 
-	memcpy(ifd->_tree, adr_datinf, INFO_FILE_NOBJS * sizeof(OBJECT));
+	memcpy(ifd->_tree, tree_datinf, INFO_FILE_NOBJS * sizeof(OBJECT));
 	ifd->tree = ifd->_tree;
 
 	/* TEDINFOs (Text-Eingabefelder) erstellen */
 	/* --------------------------------------- */
 
-	memcpy(&ifd->fname_ted, (adr_datinf+FI_FILENAME)->ob_spec.tedinfo, sizeof(TEDINFO));
+	memcpy(&ifd->fname_ted, (tree_datinf+FI_FILENAME)->ob_spec.tedinfo, sizeof(TEDINFO));
 	(ifd->tree + FI_FILENAME)->ob_spec.tedinfo = &ifd->fname_ted;
 
-	memcpy(&ifd->alias_ted, (adr_datinf+FI_ALIAS)->ob_spec.tedinfo, sizeof(TEDINFO));
+	memcpy(&ifd->alias_ted, (tree_datinf+FI_ALIAS)->ob_spec.tedinfo, sizeof(TEDINFO));
 	(ifd->tree + FI_ALIAS)->ob_spec.tedinfo = &ifd->alias_ted;
 
 	/* Zu ver„ndernde "free_string"s (feste Zeichenketten, nicht editierbar) erstellen */
@@ -474,7 +474,7 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 			objs_hide(tree, DI_FLOP, DI_EXEC, 0);
 		}
 
-		ifd->extended_view = status.disk_extinfo;
+		ifd->extended_view = settings.disk_extinfo;
 		if (ifd->extended_view)
 		{
 			tree->ob_height += offs;
@@ -760,7 +760,7 @@ static long exit_info_file_tree(INFO_FILE_DATA *ifd)
 	/* Status fr erweiterte Informationen merken */
 	/* ------------------------------------------ */
 
-	status.disk_extinfo = ifd->extended_view;
+	settings.disk_extinfo = ifd->extended_view;
 	return err;
 }
 
@@ -834,7 +834,7 @@ static WORD cdecl hdl_info_file(DIALOG *d, EVNT *events,
 		{
 			graf_rubbox(
 						tree->ob_x, tree->ob_y,
-						adr_datinf->ob_width, adr_datinf->ob_height,
+						tree_datinf->ob_width, tree_datinf->ob_height,
 						&tree->ob_width, &dummy
 					);
 			resize_info_file_tree(ifd);
