@@ -39,7 +39,7 @@ void free_pool(int wnr)
 
 
 /*	Cconws("\x1b" "e" "\x1b" "HEintritt in free\r\n");
-	for	(i = 1; i <= ANZFENSTER; i++)
+	for	(i = 1; i <= NUM_WINDOWS; i++)
 		printf("Offset: %4ld Gr”že: %4ld\n", fenster[i].alloc_offs, fenster[i].alloc_size);
 	printf("Frei: %3d\n", poolsize);
 	Cnecin();
@@ -51,7 +51,7 @@ void free_pool(int wnr)
 
 	bottom = offs + size;
 	top = 0L;
-	for	(i = 1; i <= ANZFENSTER; i++)
+	for	(i = 1; i <= NUM_WINDOWS; i++)
 	{
 
 		/* Wenn das Fenster nicht unsereres ist, keinen allozierten		*/
@@ -89,7 +89,7 @@ void free_pool(int wnr)
 	poolsize += fenster[wnr].realnum;
 
 /*	Cconws("Austritt aus free\r\n");
-	for	(i = 1; i <= ANZFENSTER; i++)
+	for	(i = 1; i <= NUM_WINDOWS; i++)
 		printf("Offset: %4ld Gr”že: %4ld\n", fenster[i].alloc_offs, fenster[i].alloc_size);
 	printf("Frei: %3d\n", poolsize);
 	Cnecin(); */
@@ -111,7 +111,7 @@ void alloc_pool(int wnr)
 
 
 	Cconws("\x1b" "HEintritt in alloc \r\n");
-	for	(i = 1; i <= ANZFENSTER; i++)
+	for	(i = 1; i <= NUM_WINDOWS; i++)
 		printf("Offset: %4ld Gr”že: %4ld\n", fenster[i].alloc_offs, fenster[i].alloc_size);
 	printf("Frei: %3d\n", poolsize);
 	Cnecin();
@@ -128,7 +128,7 @@ void alloc_pool(int wnr)
 	poolsize -= num;
 
 /*	Cconws("Austritt aus alloc\r\n");
-	for	(i = 1; i <= ANZFENSTER; i++)
+	for	(i = 1; i <= NUM_WINDOWS; i++)
 		printf("Offset: %4ld Gr”že: %4ld\n", fenster[i].alloc_offs, fenster[i].alloc_size);
 	printf("Frei: %3d\n", poolsize);
 	Cnecin();*/
@@ -1642,7 +1642,7 @@ static void upd_disk(int lw, int free_flag)
 	dirty_drives[lw] = 0;		/* dirty- Flag l”schen */
 	if (free_flag)
 		dinfo[lw].b_clsiz = 0L;	  /* ungltig machen */
-	for	(i = 1; i <= ANZFENSTER; i++)
+	for	(i = 1; i <= NUM_WINDOWS; i++)
 		if (fenster[i].path[0] == (lw+'A'))
 		{
 			if (read_wind(i, free_flag))
@@ -1688,7 +1688,7 @@ void upd_show(void)
 {
 	register int i;
 
-	for	(i = 1; i <= ANZFENSTER; i++)
+	for	(i = 1; i <= NUM_WINDOWS; i++)
 		if (fenster[i].path[0])
 		{
 			save_select_status(i);
@@ -1712,7 +1712,7 @@ void upd_is(void)
 
 	if (status.showtyp == M_ABILDR)
 		return;
-	for	(i = 1; i <= ANZFENSTER; i++)
+	for	(i = 1; i <= NUM_WINDOWS; i++)
 		if (fenster[i].path[0])
 		{
 			save_select_status(i);
@@ -1734,7 +1734,7 @@ void upd_sort(void)
 {
 	register int i;
 
-	for	(i = 1; i <= ANZFENSTER; i++)
+	for	(i = 1; i <= NUM_WINDOWS; i++)
 		if (fenster[i].path[0])
 		{
 			save_select_status(i);
@@ -1779,7 +1779,7 @@ void upd_mask(int wnr)
 *
 ****************************************************************/
 
-char dirty[ANZFENSTER+1];
+char dirty[NUM_WINDOWS+1];
 
 void dirty_info(int wnr)
 {
@@ -1800,7 +1800,7 @@ void upd_infos(void)
 	register int wnr;
 	
 
-	for	(wnr = 1; wnr <= ANZFENSTER; wnr++)
+	for	(wnr = 1; wnr <= NUM_WINDOWS; wnr++)
 	{
 		if (dirty[wnr] && fenster[wnr].path[0])
 		{
@@ -1826,7 +1826,7 @@ void upd_col(void)
 
 	if (status.showtyp == M_ABILDR)
 		return;
-	for	(i = 1; i <= ANZFENSTER; i++)
+	for	(i = 1; i <= NUM_WINDOWS; i++)
 		if (fenster[i].path[0] && fenster[i].shownum > 1)
 		{
 			if (status.is_1col)

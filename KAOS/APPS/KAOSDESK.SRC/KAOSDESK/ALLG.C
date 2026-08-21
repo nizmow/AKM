@@ -6,9 +6,13 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
+#include <limits.h>
 #include <mgx_dos.h>	/* include before tos.h */
-#include <tos.h>
+#include <tos.h>		/* include before mt_aes.h */
 #include <tosdefs.h>
+#include <mt_aes.h>
+#include <vdi.h>
 #include "k.h"
 
 #define DATESEP 	'-'
@@ -469,4 +473,271 @@ int fname_match(char *fname, char *fmask)
 	}
 
 	return *fmask == *fname;
+}
+
+
+/****************************************************************
+*
+* Bestimmt die Begrenzung eines Objekts
+*
+****************************************************************/
+
+void objc_grect(OBJECT *tree, int objn, GRECT *g)
+{
+	objc_offset(tree, objn, &(g -> g_x), &(g -> g_y));
+	g -> g_w = (tree + objn) -> ob_width;
+	g -> g_h = (tree + objn) -> ob_height;
+}
+
+
+/****************************************************************
+*
+* Bestimmt die Begrenzung aller selektierten Unterobjekte
+* in absoluten Bildschirmkoordinaten.
+* (rechteckige Hlle aller selektierten Unterobjekte).
+*
+****************************************************************/
+
+void tree_sel_grect(OBJECT *tree, GRECT *g)
+{
+	register int i,rx,ry;
+	register int mx,my,mrx,mry;	/* Maxima */
+	int ox,oy,tail;
+
+
+	ox = tree->ob_x;
+	oy = tree->ob_y;
+	mx = my = INT_MAX;		/* Ecke links oben */
+	mrx = mry = -INT_MAX;	/* Ecke rechts unten (aužerhalb) */
+
+	if ((i = (tree -> ob_head)) > 0)
+	{
+		tail = (tree++ -> ob_tail);
+		for (; i <= tail; i++,tree++)
+		{
+			if ((SELECTED&(tree->ob_state)) && !(HIDETREE&(tree->ob_flags)))
+			{
+				rx = tree->ob_x;
+				ry = tree->ob_y;
+				if (rx < mx)
+					mx = rx;
+				if (ry < my)
+					my = ry;
+				rx += tree->ob_width;
+				ry += tree->ob_height;
+				if (rx > mrx)
+					mrx = rx;
+				if (ry > mry)
+					mry = ry;
+			}
+		}
+	}
+	g -> g_x = mx + ox;
+	g -> g_y = my + oy;
+	g -> g_w = mrx - mx;
+	g -> g_h = mry - my;
+}
+
+
+/****************************************************************
+*
+* Žndert den Selektionsstatus aller Unterobjekte von <tree>, die
+* sich im Rechteck <*g> befinden.
+* Bestimmt eine m”glichst kleine rechteckige Begrenzung aller
+* ge„nderten Objekte in absoluten Bildschirmkoordinaten.
+* (rechteckige Hlle aller ge„nderten selektierten Unterobjekte).
+*
+****************************************************************/
+
+void grect_toggle(OBJECT *tree, GRECT *g)
+{
+	register int i,rx,ry;
+	register int mx,my,mrx,mry;	/* Maxima */
+	int tx,ty;				/* Koordinaten des Wurzelobjekts */
+	int tail;
+	GRECT  ob;
+	register OBJECT *t = tree;
+	register ICONBLK *icn;
+
+
+	tx = tree -> ob_x;
+	ty = tree -> ob_y;
+	mx = my = INT_MAX;		/* Ecke links oben */
+	mrx = mry = -INT_MAX;	/* Ecke rechts unten (aužerhalb) */
+
+	if ((i = (t -> ob_head)) > 0)
+	{
+		tail = (t++ -> ob_tail);
+		for (; i <= tail; i++,t++)
+		{
+			if (HIDETREE & (t->ob_flags))
+				continue;
+			if (t -> ob_type == G_ICON)
+			{
+				int x = tx + t -> ob_x;
+				int y = ty + t -> ob_y;
+
+				icn = t -> ob_spec.iconblk;
+				/* 1. Fall: Icon selbst */
+				ob.g_x = x + icn->ib_xicon;
+				ob.g_y = y + icn->ib_yicon;
+				ob.g_w = icn->ib_wicon;
+				ob.g_h = icn->ib_hicon;
+				if (rc_intersect(g, &ob))
+					goto toggle;
+				/* 2. Fall: Unterschrift */
+				ob.g_x = x + icn->ib_xtext;
+				ob.g_y = y + icn->ib_ytext;
+				ob.g_w = icn->ib_wtext;
+				ob.g_h = icn->ib_htext;
+			}
+			/* 2. Fall: sonst (STRING bzw. G_USERDEF) */
+			else
+			{
+				ob = *((GRECT *) (&(t->ob_x)));
+				ob.g_x += tx;
+				ob.g_y += ty;
+			}
+
+			if (!rc_intersect(g, &ob))
+				continue;
+
+			toggle:
+			t->ob_state ^= SELECTED;
+			rx = t->ob_x;
+			ry = t->ob_y;
+			if (rx < mx)
+				mx = rx;
+			if (ry < my)
+				my = ry;
+			rx += t->ob_width;
+			ry += t->ob_height;
+			if (rx > mrx)
+				mrx = rx;
+			if (ry > mry)
+				mry = ry;
+		}
+	}
+	g -> g_x = mx + tree->ob_x;
+	g -> g_y = my + tree->ob_y;
+	g -> g_w = mrx - mx;
+	g -> g_h = mry - my;
+}
+
+
+/****************************************************************
+*
+* Rechnet Mausposition in Objektnummer um.
+* („hnlich objc_find, jedoch nur eine Ebene).
+* Rckgabe  0, falls kein Objekt unter dem Mauszeiger,
+* Rckgabe -1, falls inaktiver Hintergrund.
+*
+****************************************************************/
+
+int find_obj(OBJECT *tree, int x, int y)
+{
+	register int i,obx,oby,obw,obh;
+	register ICONBLK *icn;
+	int end;
+
+
+	if ((i = (tree -> ob_head)) < 0)
+		return 0;
+
+	if ((tree -> ob_flags) & HIDETREE)
+		return -1;			/* etwa inaktiver Hintergrund */
+
+	end = tree -> ob_tail;
+	x -= tree -> ob_x;			/* Position der Root abziehen */
+	y -= tree -> ob_y;
+
+	for (; i <= end; i++)
+	{
+		tree++;
+		if ((tree->ob_flags) & HIDETREE)
+			continue;
+		/* 1. Fall: ICON */
+		if (tree -> ob_type == G_ICON)
+		{
+			icn = tree->ob_spec.iconblk;
+			/* 1. Fall: Icon selbst */
+			obx = tree->ob_x + icn->ib_xicon;
+			oby = tree->ob_y + icn->ib_yicon;
+			obw = icn->ib_wicon;
+			obh = icn->ib_hicon;
+			if (x >= obx && x < obx+obw && y >= oby && y < oby+obh)
+				return i;
+
+			/* 2. Fall: Unterschrift */
+			obx = tree->ob_x + icn->ib_xtext;
+			oby = tree->ob_y + icn->ib_ytext;
+			obw = icn->ib_wtext;
+			obh = icn->ib_htext;
+			if (x >= obx && x < obx+obw && y >= oby && y < oby+obh)
+				return i;
+		}
+		/* 2. Fall: sonst (STRING bzw. G_USERDEF) */
+		else
+		{
+			if (x >= tree->ob_x && x < tree->ob_x+tree->ob_width &&
+				 y >= tree->ob_y && y < tree->ob_y+tree->ob_height)
+				return i;
+		}
+	}
+
+	return 0;
+}
+
+
+/****************************************************************
+*
+* Bestimmt die Schnittmenge zwischen zwei Rechtecken
+*
+****************************************************************/
+
+int rc_intersect(GRECT *p1, GRECT *p2)
+{
+	int tx, ty, tw, th;
+
+	tw = MIN(p2->g_x + p2->g_w, p1->g_x + p1->g_w);
+	th = MIN(p2->g_y + p2->g_h, p1->g_y + p1->g_h);
+	tx = MAX(p2->g_x, p1->g_x);
+	ty = MAX(p2->g_y, p1->g_y);
+	p2->g_x = tx;
+	p2->g_y = ty;
+	p2->g_w = tw - tx;
+	p2->g_h = th - ty;
+	return (tw > tx) && (th > ty);
+}
+
+
+/****************************************************************
+*
+* Durchl„uft alle selektierten Objekte eines Baums.
+* Wenn die Funktion "tue" < 0 liefert, wird abgebrochen.
+* gibt Anzahl dieser Objekte zurck.
+*
+****************************************************************/
+
+int walk_sel(int wnr, int (*tue)(int wnr, int obj))
+{
+	register int i,tail,anz;
+	register OBJECT *tree = fenster[wnr].pobj;
+
+
+	if ((i = (tree -> ob_head)) <= 0)
+		return 0;
+
+	anz = 0;
+	tail = (tree++ -> ob_tail);
+	for (; i <= tail; i++,tree++)
+	{
+		if (!(SELECTED&(tree->ob_state)) || (HIDETREE&(tree->ob_flags)))
+			continue;
+		anz++;
+		if (0 > (*tue)(wnr, i))
+			break;
+	}
+
+	return anz;
 }

@@ -223,7 +223,7 @@ static void move_icons(int x_koor, int y_koor, int wnr, OBJECT *tree, int kbsh)
 	/* Speicher holen */
 	/* -------------- */
 
-	mov_boxes = (OBJECT **) Malloc(ANZDATEIEN * sizeof(void *));
+	mov_boxes = (OBJECT **) Malloc(NUM_FILES_TOTAL * sizeof(void *));
 	if (mov_boxes == NULL)
 	{
 		err_alert(ENSMEM);
@@ -426,22 +426,22 @@ static void move_icons(int x_koor, int y_koor, int wnr, OBJECT *tree, int kbsh)
 *
 ****************************************************************/
 
-void mausknopf(int anzahl, const EVNTDATA *ev)
+void handle_mouse_button(int anzahl, const EVNTDATA *ev)
 {
 	int windhdl,icnobj,wnr;
 	int issel, dummy, dummy2;
 	OBJECT *tree;
 
 
-	/* Feststellen, ob in einem Fenster Icons angew„hlt sind		*/
-	/* ------------------------------------------------------------- */
+	/* Feststellen, ob in einem Fenster Icons angew„hlt sind */
+	/* ----------------------------------------------------- */
 
 	issel = icsel(&dummy, &dummy2);
 
-	/* windhdl := Handle des angeklickten Fensters oder <= 0		*/
-	/* icnobj := Objektnummer des Icons in diesem Fenster bzw. Desk.	*/
-	/* tree   := Objektbaum des Fensters bzw. des Desktop			*/
-	/* -------------------------------------------------------------	*/
+	/* windhdl := Handle des angeklickten Fensters oder <= 0 */
+	/* icnobj := Objektnummer des Icons in diesem Fenster bzw. Desk. */
+	/* tree   := Objektbaum des Fensters bzw. des Desktop */
+	/* -------------------------------------------------- */
 
 	if (0 < (windhdl = wind_find(ev->x, ev->y)))
 	{
@@ -466,10 +466,10 @@ void mausknopf(int anzahl, const EVNTDATA *ev)
 	if (icnobj < 0)
 		return;
 
-	/* 2. Fall: Ein Hintergrund wurde angeklickt.			*/
-	/*		  Alle Icons ggf. deselektieren				*/
-	/*          Falls noch Maustaste gedrckt, Box ziehen		*/
-	/* -------------------------------------------------------- */
+	/* 2. Fall: Ein Hintergrund wurde angeklickt. */
+	/*          Alle Icons ggf. deselektieren */
+	/*          Falls noch Maustaste gedrckt, Box ziehen */
+	/* -------------------------------------------------- */
 
 	if (icnobj == 0)
 	{
@@ -507,7 +507,7 @@ void mausknopf(int anzahl, const EVNTDATA *ev)
 	}
 
 	/* 3. Fall: selektiertes Objekt wurde einmal angeklickt	*/
-	/* -------------------------------------------------------- */
+	/* ---------------------------------------------------- */
 
 	if (anzahl < 2 && selected(tree, icnobj))
 	{

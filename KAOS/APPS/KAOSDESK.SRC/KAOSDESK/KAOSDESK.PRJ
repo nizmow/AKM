@@ -10,7 +10,7 @@ DIALOGS		(k.h,kaosdesk.h)	[-P -W-stv]	; DIALOGE
 KLICK		(k.h,kaosdesk.h)	[-P -W-stv] ; MAUSAKTIONEN
 WINDOWS		(k.h,kaosdesk.h)	[-P -W-stv]
 FILES		(k.h,kaosdesk.h)	[-P]		; DATEIOPERATIONEN (L™SCH,KOP,VERSCH,UMBEN)
-ALLG		(k.h,kaosdesk.h)
+ALLG		(k.h,kaosdesk.h)	[-P]
 SPEC		(k.h)				[-P]		; TOS- SPEZIFISCHES
 SHELSORT.O
 IMPORT\pcstdlib.lib ; standard lib

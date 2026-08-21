@@ -53,13 +53,13 @@
 #define SCREEN     0
 #define FENSTERTYP (NAME+CLOSER+FULLER+MOVER+INFO+SIZER+UPARROW+DNARROW+VSLIDE+HSLIDE)
 
-#define ANZDRIVES  16			/* Maximale Anzahl Laufwerke */
-#define ANZPROGRAMS 14			/* Anzahl Dateien in "Programme" */
-#define ANZFENSTER  5			/* Anzahl der Fenster */
-#define PLUSICONS   10			/* Anzahl freier Desktop- Icons */
-#define PLUSAPPS    10			/* noch anmeldbare Anwendungen */
-#define ANZDATEIEN  600			/* Dateien insgesamt in allen Fenstern */
-#define TTPLEN 63
+#define NUM_DRIVES      16			/* Maximale Anzahl Laufwerke */
+#define NUM_PROGRAMS    14			/* Anzahl Dateien in "Programme" */
+#define NUM_WINDOWS     5			/* Anzahl der Fenster */
+#define PLUSICONS       10			/* Anzahl freier Desktop- Icons */
+#define PLUSAPPS        10			/* noch anmeldbare Anwendungen */
+#define NUM_FILES_TOTAL 600			/* Dateien insgesamt in allen Fenstern */
+#define TTPLEN          63
 
 #define PGMICN_OFFS 20
 #define DATICN_OFFS 150
@@ -129,12 +129,12 @@ extern char	*poolptr;		/* Zeiger auf Pool			*/
 extern char	*poolfree;		/* Zeiger auf freien Teil	*/
 extern int	poolsize;		/* Anzahl freier Eintr„ge	*/
 
-extern WINDOW fenster[ANZFENSTER+1];
+extern WINDOW fenster[NUM_WINDOWS + 1];
 extern ICON *icon;
 extern APPLICATION	*application;
 
-extern char dirty_drives[ANZDRIVES];
-extern DISKINFO dinfo[ANZDRIVES];
+extern char dirty_drives[NUM_DRIVES];
+extern DISKINFO dinfo[NUM_DRIVES];
 
 enum { OVERWRITE, BACKUP, CONFIRM };
 
@@ -205,6 +205,12 @@ extern void fname_int(char *s, char *d);
 extern void fname_ext(char *s, char *d);
 extern void drv_to_str(char *s, char c);
 extern char *print_ul(unsigned long num, unsigned long factor, char *p);
+extern void objc_grect(OBJECT *tree, int objn, GRECT *g);
+extern void tree_sel_grect(OBJECT *tree, GRECT *g);
+extern void grect_toggle(OBJECT *tree, GRECT *g);
+extern int find_obj(OBJECT *tree, int x, int y);
+extern int rc_intersect	(GRECT *p1, GRECT *p2);
+extern int walk_sel(int wnr, int (*tue)(int wnr, int obj));
 
 /* KDSTART */
 
@@ -261,13 +267,7 @@ extern void objs_unhide(OBJECT *tree, ...);
 extern void set_deflt_clip(void);
 extern void redraw(int wnr, GRECT *neu);
 extern int icsel(int *rwnr, int *objn);
-extern int rc_intersect	(GRECT *p1, GRECT *p2);
-extern void objc_grect(OBJECT *tree, int objn, GRECT *g);
-extern void tree_sel_grect(OBJECT *tree, GRECT *g);
-extern void grect_toggle(OBJECT *tree, GRECT *g);
-extern int walk_sel(int wnr, int (*tue)(int wnr, int obj));
 extern int in_grect(int x, int y, GRECT *g);
-extern int find_obj(OBJECT *tree, int x, int y);
 extern void close_all_wind(void);
 extern void open_all_wind(void);
 void subobj_draw(OBJECT *tree, int obj, int n, char *s);
@@ -282,7 +282,7 @@ extern void cpmv_icns(int wnr, char *zielpfad, int kbsh);
 extern int is_dest(int wnr, int objnr);
 extern void obj_malen(int wnr, int index);
 extern void dsel_all(void);
-extern void mausknopf(int anzahl, const EVNTDATA *ev);
+extern void handle_mouse_button(int anzahl, const EVNTDATA *ev);
 extern void sel_all(int wnr);
 extern int obj_to_path(int wnr, int obj, char *path, MYDTA **f);
 
@@ -370,6 +370,8 @@ extern long format_floppy
 	int inter, int vtrk, int vsid,
 	void (*counter)(int n), int is_logic, char *dname
 );
+extern long getHz200(void);
+extern unsigned get_dclick_interval_ms(void);
 extern char chg_msg[];
 extern long cache_on (char *path);
 extern long cache_off(char *path);

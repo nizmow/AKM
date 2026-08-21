@@ -18,31 +18,33 @@
 
 /* AES von TOS 1.2: */
 
-#define SH_12_WPCMD_ADDR  	((char **)  0xc79e)		/* Programmname  */
-#define SH_12_WPTAIL_ADDR 	((char **)  0xc82a)		/* Kommandozeile */
-#define SH_12_DOEX_ADDR   	((int   *)  0x98a0)		/* doex- Flag */
-#define SH_12_WISGR_ADDR		((int   *)  0x96f4)		/* wisgr- Flag */
-#define SH_12_FLAG1_ADDR		((int   *)  0xc83c)		/* Flag fr "Daten ungltig" */
-#define SH_12_FLAG2_ADDR		((int   *)  0x96f2)		/* dito */
-#define MO_12_COUNT_ADDR		((int   *)  0xc86a)		/* Z„hler fr graf_mouse() */
+#define SH_12_WPCMD_ADDR  ((char **)  0xc79e)		/* Programmname  */
+#define SH_12_WPTAIL_ADDR ((char **)  0xc82a)		/* Kommandozeile */
+#define SH_12_DOEX_ADDR   ((int   *)  0x98a0)		/* doex- Flag */
+#define SH_12_WISGR_ADDR  ((int   *)  0x96f4)		/* wisgr- Flag */
+#define SH_12_FLAG1_ADDR  ((int   *)  0xc83c)		/* Flag fr "Daten ungltig" */
+#define SH_12_FLAG2_ADDR  ((int   *)  0x96f2)		/* dito */
+#define MO_12_COUNT_ADDR  ((int   *)  0xc86a)		/* Z„hler fr graf_mouse() */
 
 /* AES von TOS 1.4: */
 
-#define SH_14_WPCMD_ADDR  	((char **)  0x6d88)		/* Programmname  */
-#define SH_14_WPTAIL_ADDR 	((char **)  0x6dc2)		/* Kommandozeile */
-#define SH_14_DOEX_ADDR   	((int   *)  0x7006)		/* doex- Flag */
-#define SH_14_WISGR_ADDR		((int   *)  0x6f0c)		/* wisgr- Flag */
-#define MO_14_COUNT_ADDR		((int   *)  0x6e06)		/* Z„hler fr graf_mouse() */
+#define SH_14_WPCMD_ADDR  ((char **)  0x6d88)		/* Programmname  */
+#define SH_14_WPTAIL_ADDR ((char **)  0x6dc2)		/* Kommandozeile */
+#define SH_14_DOEX_ADDR   ((int   *)  0x7006)		/* doex- Flag */
+#define SH_14_WISGR_ADDR  ((int   *)  0x6f0c)		/* wisgr- Flag */
+#define MO_14_COUNT_ADDR  ((int   *)  0x6e06)		/* Z„hler fr graf_mouse() */
 
-#define CONTERM  	((unsigned char *)	0x484)
-#define HDV_BPB	((long *)			0x472)
-#define HDV_RW      ((long *)			0x476)
-#define HDV_MEDIACH ((long *)			0x47e)
-#define _SYSBASE	((long *)			0x4f2)
-#define P_COOKIES	((long *)			0x5a0)
+#define CONTERM     ((unsigned char *) 0x484)
+#define HDV_BPB     ((long *)          0x472)
+#define HDV_RW      ((long *)          0x476)
+#define HDV_MEDIACH ((long *)          0x47e)
+#define _HZ_200     ((long *)          0x4ba)
+#define _SYSBASE	((long *)          0x4f2)
+#define P_COOKIES	((long *)          0x5a0)
 
 
-typedef struct {
+typedef struct
+{
      char dir_name[11];       /* 0x00: Dateiname                           */
      char dir_attr;           /* 0x0b: Attribut                            */
      char dir_dummy[10];
@@ -177,6 +179,13 @@ static AESVARS_LIGHT *aesvars;
 #if	HICOL
 static int hicol;			/* h”chster Farbwert (7=ST,15=STE/TT) */
 #endif
+
+
+/****************************************************************
+*
+*
+*
+****************************************************************/
 
 void get_syshdr(void)
 {
@@ -1491,6 +1500,47 @@ static void set_apname(char *path)
 				*name++ = *path++;
 		}
 	}
+}
+
+
+/****************************************************************
+*
+* Systemzeit fr Intervall-Berechnungen
+*
+****************************************************************/
+
+long getHz200(void)
+{
+	return *_HZ_200;
+}
+
+
+/****************************************************************
+*
+* Doppelklick-Zeit in Millisekunden,
+* mu mit 5 multipliziert werden fr 5-ms-Einheiten fr den 200-Hz-Timer
+*
+****************************************************************/
+
+unsigned get_dclick_interval_ms(void)
+{
+	/* Tabelle aus dem MagiC-Kernel */
+	static const unsigned dclick_tab[] =
+	{
+		450,	/* in ms */
+		330,
+		275,
+		220,
+		165
+	};
+
+	unsigned v = (unsigned) evnt_dclick(0, 0);
+	if (v > 4)
+	{
+		v = 4;
+	}
+	
+	return dclick_tab[v];
 }
 
 

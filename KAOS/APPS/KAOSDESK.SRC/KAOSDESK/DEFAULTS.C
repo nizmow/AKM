@@ -240,7 +240,7 @@ void load_status(int pass)
 		fmtstat.sidincr	= 2;
 		fmtstat.clustsize	= 2;
 
-		for	(ln_wind = 1; ln_wind <= ANZFENSTER; ln_wind++)
+		for	(ln_wind = 1; ln_wind <= NUM_WINDOWS; ln_wind++)
 		{
 			fenster[ln_wind].shift = 0;
 			fenster[ln_wind].out.g_x = 140 + 20 * ln_wind;
@@ -417,7 +417,7 @@ void load_status(int pass)
 				break;
 
 			case 'WN':
-				if (!pass || ln_wind > ANZFENSTER)
+				if (!pass || ln_wind > NUM_WINDOWS)
 					break;
 				fenster[ln_wind].out.g_x = scndez();
 				fenster[ln_wind].out.g_y = scndez();
@@ -472,7 +472,7 @@ void load_status(int pass)
 				break;
 
 			case 'PG':
-				if (!pass || ln_pgms >= ANZPROGRAMS)
+				if (!pass || ln_pgms >= NUM_PROGRAMS)
 					break;
 				scnbstr(adr_prgrms[PG_1 + ln_pgms].ob_spec.tedinfo->te_ptext);
 				ln_pgms++;
@@ -590,11 +590,11 @@ void load_status(int pass)
 	/* unbenutzte Fenster/Icons/Programme/Applikationen */
 	/* ------------------------------------------------ */
 
-	for	(; ln_wind <= ANZFENSTER; ln_wind++)
+	for	(; ln_wind <= NUM_WINDOWS; ln_wind++)
 		fenster[ln_wind].path[0] = EOS;
 	for	(; ln_icns < n_icons; ln_icns++)
 		icon[ln_icns].icontyp = 0;
-	for	(; ln_pgms < ANZPROGRAMS; ln_pgms++)
+	for	(; ln_pgms < NUM_PROGRAMS; ln_pgms++)
 		adr_prgrms[PG_1 + ln_pgms].ob_spec.tedinfo->te_ptext[0] = EOS;
 	for	(; ln_apps < n_apps; ln_apps++)
 		application[ln_apps].path[0] = EOS;
@@ -763,7 +763,7 @@ static void status_to_ascii(char *inf)
 	/* 3. Zeile und folgende: "#_DWN x y w h shift path\mask" */
 	/* ------------------------------------------------------ */
 
-	for	(i = 1; i <= ANZFENSTER; i++)
+	for	(i = 1; i <= NUM_WINDOWS; i++)
 	{
 		prtstr("#_DWN");
 		prtdez(fenster[i].out.g_x - desk_g.g_x);
@@ -828,7 +828,7 @@ static void status_to_ascii(char *inf)
 	/* "#_DPG path */
 	/* ----------- */
 
-	for	(i = 0; i < ANZPROGRAMS; i++)
+	for	(i = 0; i < NUM_PROGRAMS; i++)
 	{
 		prtstr("#_DPG ");
 		prtstr(adr_prgrms[PG_1 + i].ob_spec.tedinfo->te_ptext);

@@ -302,7 +302,7 @@ void opn_newwnd(char *path)
 	long ret;
 
 
-	for	(wnr = 1; wnr <= ANZFENSTER; wnr++)
+	for	(wnr = 1; wnr <= NUM_WINDOWS; wnr++)
 	{
 		if (fenster[wnr].path[0] == EOS)
 		{
@@ -634,7 +634,7 @@ void get_param(char *pgm, int wnr, int obj, char *tail)
 	endppath = get_name(pgm);
 	rettc = *endppath;
 	*endppath = EOS;
-	for	(iwnr = 0; iwnr <= ANZFENSTER; iwnr++)
+	for	(iwnr = 0; iwnr <= NUM_WINDOWS; iwnr++)
 	{
 		if (iwnr && !fenster[iwnr].path[0])
 			continue;				/* Fenster unbenutzt */
@@ -714,7 +714,7 @@ long setpath(char *program, int stdpath, int isover)
 	else
 	{
 		/* KAOSDESK- Pfad */
-		for	(i = 1; i <= ANZFENSTER; i++)
+		for	(i = 1; i <= NUM_WINDOWS; i++)
 		{
 			path = fenster[i].path;
 			if (i != top && (*path))

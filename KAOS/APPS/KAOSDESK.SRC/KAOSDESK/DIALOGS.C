@@ -117,11 +117,11 @@ void dial_arbsic(void)
 void dial_prgrms(void)
 {
 	register int i;
-	char oldstrings[ANZPROGRAMS][41];
+	char oldstrings[NUM_PROGRAMS][41];
 	register char *src, *dst;
 
 
-	for	(i = 0; i < ANZPROGRAMS; i++)
+	for	(i = 0; i < NUM_PROGRAMS; i++)
 	{
 		src = adr_prgrms[PG_1 + i].ob_spec.tedinfo->te_ptext;
 		dst = oldstrings[i];
@@ -130,7 +130,7 @@ void dial_prgrms(void)
 
 	if 	(PG_OK != do_dialog(adr_prgrms))
 	{
-		for	(i = 0; i < ANZPROGRAMS; i++)
+		for	(i = 0; i < NUM_PROGRAMS; i++)
 		{
 			dst = adr_prgrms[PG_1 + i].ob_spec.tedinfo->te_ptext;
 			src = oldstrings[i];

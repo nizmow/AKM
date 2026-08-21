@@ -7,60 +7,61 @@
 *
 *********************************************************************/
 
-#include <tos.h>
-#include <vdi.h>
-#include <tosdefs.h>
-#include <limits.h>
-#include <string.h>
-#include <ctype.h>
+/*#include <stdio.h>*/
 #include <stdlib.h>
+#include <string.h>
 #include <stdarg.h>
-#include <mgx_dos.h>
+#include <ctype.h>
+#include <limits.h>
+#include <mgx_dos.h>	/* include before tos.h */
+#include <tos.h>		/* include before mt_aes.h */
+#include <tosdefs.h>
+#include <mt_aes.h>
+#include <vdi.h>
 #include "k.h"
 
 
-WINDOW fenster[ANZFENSTER+1];
+WINDOW fenster[NUM_WINDOWS + 1];
 ICON *icon;
 APPLICATION *application;
-char *poolptr;		/* Zeiger auf Pool					*/
+char *poolptr;		/* Zeiger auf Pool */
 char *poolfree;		/* Zeiger auf freien Teil des Pools	*/
-int	poolsize;		/* Anzahl freier EintrÑge			*/
+int poolsize;		/* Anzahl freier EintrÑge */
 
 int n_icons, n_apps;
 
 ICONFILE_HEADER iconfile_header;
 
-int  *icf_data;		/* Zeiger auf Speicherblock	*/
+int  *icf_data;		/* Zeiger auf Speicherblock */
 int  *icf_pgmicn;	/* Daten fÅr Programmicons */
 int  *icf_daticn;	/* Daten fÅr Dateiicons */
 char *icf_pgms;		/* Programmnamen */
 char *icf_fils;		/* Dateitypen */
 
-char dirty_drives[ANZDRIVES];
-DISKINFO dinfo[ANZDRIVES];
+char dirty_drives[NUM_DRIVES];
+DISKINFO dinfo[NUM_DRIVES];
 
 const char *pgm_ver = "2.42";
 
-int message[16];
 int work_out[57],work_in [12];	 /* VDI- Felder fÅr v_opnvwk() */
 int text_attrib[10];			 /* Default- Textattribute */
 
 int ap_id;
 int *aes_global;
 #if MAGIXDESK == 0
-int isgem2;					/* GEM 2.2 */
-int iskgem;					/* KAOS - GEM */
-int ismagix;					/* Multitasking - GEM */
-							/* MAGIXDesk lÑuft immer unter MAGIX! */
+int isgem2;				/* GEM 2.2 */
+int iskgem;				/* KAOS - GEM */
+int ismagix;			/* Multitasking - GEM */
+						/* MAGIXDesk lÑuft immer unter MAGIX! */
 #endif
-int isfirst;					/* KAOSDESK vom Desktop gestartet */
+int isfirst;			/* KAOSDESK vom Desktop gestartet */
 
-int	vdi_handle;
-int	vdi_device;
-int	gl_hhchar, gl_hwchar;
+int vdi_handle;
+int vdi_device;
+int gl_hhchar, gl_hwchar;
 static int gl_hhbox, gl_hwbox;
 GRECT desk_g;			/* Maûe fÅr Hintergrund */
-int	char_w, char_h;
+int char_w, char_h;
 
 /* Einstellungen */
 
@@ -82,12 +83,16 @@ OBJECT *adr_datinf;
 OBJECT *adr_ordinf;
 
 
-/********** Objekte verstecken *********/
+/****************************************************************
+*
+* Objekte verstecken
+*
+****************************************************************/
 
 void objs_hide(OBJECT *tree, ...)
 {
 	va_list argpoint;
-	int	objnr;
+	int objnr;
 
 	va_start(argpoint, tree);
 	for (;;)
@@ -101,12 +106,17 @@ void objs_hide(OBJECT *tree, ...)
 	va_end(argpoint);
 }
 
-/********** Objekte hervorholen *********/
+
+/****************************************************************
+*
+* Objekte hervorholen
+*
+****************************************************************/
 
 void objs_unhide(OBJECT *tree, ...)
 {
 	va_list argpoint;
-	int	objnr;
+	int objnr;
 
 	va_start(argpoint, tree);
 	for (;;)
@@ -120,22 +130,34 @@ void objs_unhide(OBJECT *tree, ...)
 	va_end(argpoint);
 }
 
-/***************************************/
 
-
-/********** Objekt selektiert? *********/
+/****************************************************************
+*
+* Objekte selektiert?
+*
+****************************************************************/
 
 int selected(OBJECT *tree, int which)
 
 { return (tree[which].ob_state & SELECTED) ? 1 : 0; }
 
-/******* Objekt deselektieren **********/
+
+/****************************************************************
+*
+* Objekte deselektieren
+*
+****************************************************************/
 
 void ob_dsel(OBJECT *tree, int which)
 
 { tree[which].ob_state &= ~SELECTED; }
 
-/******* Objekt selektieren/deselektieren **********/
+
+/****************************************************************
+*
+* Objekt selektieren/deselektieren
+*
+****************************************************************/
 
 void ob_sel_dsel(OBJECT *tree, int which, int sel)
 
@@ -146,7 +168,12 @@ void ob_sel_dsel(OBJECT *tree, int which, int sel)
 		tree[which].ob_state &= ~SELECTED;
 }
 
-/***** Objekt selektieren **************/
+
+/****************************************************************
+*
+* Objekt selektieren
+*
+****************************************************************/
 
 void ob_sel(OBJECT *tree, int which)
 
@@ -163,13 +190,13 @@ static void open_work(void)
 
 	for (i = 0; i < 10; work_in[i++] = 1)
 		;
-	work_in[10]=2;                     /* Rasterkoordinaten */
+	work_in[10] = 2;                        /* Rasterkoordinaten */
 	v_opnvwk(work_in, &vdi_handle, work_out);
-	vswr_mode(vdi_handle,MD_REPLACE);      /* Replace- Modus */
-	vsf_color(vdi_handle,WHITE);           /* FÅllfarbe weiû */
-	vsf_interior(vdi_handle,SOLID);        /* komplett ausfÅllen */
+	vswr_mode(vdi_handle, MD_REPLACE);      /* Replace- Modus */
+	vsf_color(vdi_handle, WHITE);           /* FÅllfarbe weiû */
+	vsf_interior(vdi_handle, SOLID);        /* komplett ausfÅllen */
 	vqt_attributes(vdi_handle, text_attrib);
-	Cursconf(0,0);
+	Cursconf(0, 0);
 }
 
 
@@ -177,14 +204,14 @@ static void open_work(void)
 *
 * gibt Nummer des "Fensters" zurÅck, in dem selektierte Objekte
 * liegen.
-* RÅckgabe : *rwnr = 1..ANZFENSTER		Fensternummer
-*            		 0				Desktop
-*		   		<0				kein Objekt selektiert
-*		   *objn =  Nummer des ersten selektierten Objekts oder undef.
+* RÅckgabe: *rwnr = 1..NUM_WINDOWS  Fensternummer
+*                   0              Desktop
+*                   < 0            kein Objekt selektiert
+*           *objn = Nummer des ersten selektierten Objekts oder undef.
 *
-*            icsel = 0	kein Objekt selektiert
-*			    = 1   genau ein Objekt selektiert
-*                  = -1  mehrere Objekte selektiert
+*           icsel = 0	kein Objekt selektiert
+*                 = 1   genau ein Objekt selektiert
+*                 = -1  mehrere Objekte selektiert
 *
 ****************************************************************/
 
@@ -195,14 +222,14 @@ int icsel(int *rwnr, int *objn)
 
 
 	*rwnr = -2;
-	for	(wnr = 0; wnr <= ANZFENSTER; wnr++)
+	for (wnr = 0; wnr <= NUM_WINDOWS; wnr++)
 	{
 		if (wnr && !fenster[wnr].path[0])
 			continue;				/* Fenster unbenutzt */
 		tree = fenster[wnr].pobj;
 		if ((i = (tree -> ob_head)) > 0)
 		{
-			for	(; i <= (tree -> ob_tail); i++)
+			for (; i <= (tree -> ob_tail); i++)
 			{
 				if (!(tree[i].ob_flags & HIDETREE) && selected(tree, i))
 				{
@@ -228,15 +255,15 @@ int icsel(int *rwnr, int *objn)
 
 int in_grect(int x, int y, GRECT *g)
 {
-	return x >= (g->g_x) && x < (g->g_x+g->g_w) &&
-		  y >= (g->g_y) && y < (g->g_y+g->g_h);
+	return x >= (g->g_x) && x < (g->g_x + g->g_w) &&
+		  y >= (g->g_y) && y < (g->g_y + g->g_h);
 }
 
 
 /****************************************************************
 *
 * Malt ein Unterobjekt. Wenn es sich um eine Zahl handelt, wird
-* sie ausgegeben, sonst ggf. der String
+* sie ausgegeben, sonst ggf. der Text
 *
 ****************************************************************/
 
@@ -272,7 +299,7 @@ int hdl_to_fnr(int whdl)
 {
 	register int i;
 
-	for (i = 0; i <= ANZFENSTER; i++)
+	for (i = 0; i <= NUM_WINDOWS; i++)
 		if ((fenster[i].handle >= 0) && (fenster[i].handle == whdl))
 			return i;
 
@@ -308,7 +335,7 @@ static void modify_menu(void)
 
 
 	top = top_wnr();
-	icn = icsel(&wnr,&sicn);
+	icn = icsel(&wnr, &sicn);
 	if (icn != 1)
 	{
 		info = format = anw = FALSE;
@@ -316,7 +343,7 @@ static void modify_menu(void)
 	else
 	{
 		obj_typ(wnr, sicn, NULL, NULL, &typ);
-		format = (wnr == 0 && icon[sicn-1].icontyp <= I_RAMDSK);
+		format = (wnr == 0 && icon[sicn - 1].icontyp <= I_RAMDSK);
 		info = TRUE;
 		anw = ((typ & 0x5f) == 'P');
 	}
@@ -514,7 +541,7 @@ void ende(void)
 
 		strcpy(path, "DESKTOP.APP");
 		if (!shel_find(path))
-			return;				/* Erfolglos */
+			return;				/* erfolglos */
 		endp = strrchr(path, '\\');
 		if (endp)
 			*(endp+1) = EOS;
@@ -757,14 +784,14 @@ static void get_rsc(void)
 	adr_format[FORMAT_T].ob_spec.tedinfo->te_ptext[0] = EOS;
 
 	/* Icongrîûen fÅr Auflîsungen korrigieren */
-	for	(i = I_FLPDSK; i <= I_BTCHDA; i++)
+	for (i = I_FLPDSK; i <= I_BTCHDA; i++)
 	{
 		(adr_icons+i) -> ob_width  = 72;
 		(adr_icons+i) -> ob_height = 36;
 	}
 
 	/* Icons im Dialog "Laufwerk anmelden" installieren */
-	for	(i = I_FLPDSK; i <= I_PAPIER; i++)
+	for (i = I_FLPDSK; i <= I_PAPIER; i++)
 	{
 		adr_laufwe[ICNCHG_F + i - 1].ob_type   = G_ICON;
 		adr_laufwe[ICNCHG_F + i - 1].ob_state  = NORMAL;
@@ -857,7 +884,7 @@ void anfang(void)
 	SHELTAIL *sht;
 
 
-	for	(i = 0; i < 16; i++)
+	for (i = 0; i < 16; i++)
 		dirty_drives[i] = FALSE;
 
 	/* Applikation beim AES anmelden und Version feststellen */
@@ -919,7 +946,7 @@ void anfang(void)
 
 	if (status.dnam_init)
 	{
-		for	(i = 0; i < n_icons; i++)
+		for (i = 0; i < n_icons; i++)
 		{
 			register int j;
 			int  drv;
@@ -930,7 +957,7 @@ void anfang(void)
 				nexticn:
 				continue;
 			drv = icon[i].isdisk;
-			for	(j = 1; j <= ANZFENSTER; j++)
+			for (j = 1; j <= NUM_WINDOWS; j++)
 			{
 				if (fenster[j].path[0] == drv)
 					goto nexticn;
@@ -953,7 +980,7 @@ void anfang(void)
 
 
 
-	for	(i = 0; i < 16; i++)
+	for (i = 0; i < 16; i++)
 		dirty_drives[i] = FALSE;
 
 	/* Applikation beim AES anmelden und Version feststellen */
@@ -1088,7 +1115,7 @@ void anfang(void)
 
 	if (status.dnam_init)
 	{
-		for	(i = 0; i < n_icons; i++)
+		for (i = 0; i < n_icons; i++)
 		{
 			register int j;
 			int  drv;
@@ -1102,7 +1129,7 @@ void anfang(void)
 
 			drv = icon[i].isdisk;
 
-			for	(j = 1; j <= ANZFENSTER; j++)
+			for (j = 1; j <= NUM_WINDOWS; j++)
 			{
 				if (fenster[j].path[0] == drv)
 					goto nexticn;
@@ -1117,6 +1144,235 @@ void anfang(void)
 	wind_update(END_UPDATE);
 }
 #endif
+
+
+
+
+/****************************************************************
+*
+* Gibt an, ob ein Objekt ein Ziel fÅr ein Verschieben von Icons
+* sein kann.
+* GÅltiges Ziel sind Ordner (O_), Laufwerke (?D), Programme bzw.
+* angemeldete Dateien (?P), Batchprogramme (?B),
+* Papierkorb und Drucker.
+*
+****************************************************************/
+
+int is_dest(int wnr, int objnr)
+{
+	int obtyp;
+	char obtyp2;
+	MYDTA *dummy;
+
+	obj_typ(wnr, objnr, NULL, &dummy, &obtyp);
+	obtyp2 = toupper((char) obtyp);
+	return (obtyp2 == 'P') || (obtyp2 == 'D') || (obtyp2 == 'B') ||
+		  (obtyp == '_O') || (obtyp == 'P_') || (obtyp == 'D_');
+}
+
+
+/****************************************************************
+*
+* Zeichnet die benutzerdefinierten Objekte (Texte verschiedener
+* Grîûe). Textgrîûe und Ausrichtung auf Zellenoberkante ist schon
+* eingestellt.
+* Der Clippingbereich wird nur dann neu gesetzt, wenn sich dieser
+* geÑndert hat, dadurch werden einige vs_clip()'s gespart.
+*
+****************************************************************/
+
+static int clip_rect[4];
+
+int cdecl draw_userdef(PARMBLK *p)
+{
+	char *t;
+	register int wnr;
+	int pxy[4];
+
+
+	for (wnr = 0; wnr <= NUM_WINDOWS; wnr++)
+		if (fenster[wnr].pobj == p->pb_tree)
+			goto found;
+
+	return 0;
+
+	found:
+	pxy[0] = p->pb_xc;
+	pxy[1] = p->pb_yc;
+	pxy[2] = pxy[0] + p->pb_wc - 1;
+	pxy[3] = pxy[1] + p->pb_hc - 1;
+	t = (char *) (fenster[wnr].pstr+(p->pb_obj - 1));
+	if (pxy[0] != clip_rect[0] || pxy[1] != clip_rect[1] ||
+		 pxy[2] != clip_rect[2] || pxy[3] != clip_rect[3])
+	{
+		clip_rect[0] = pxy[0];
+		clip_rect[1] = pxy[1];
+		clip_rect[2] = pxy[2];
+		clip_rect[3] = pxy[3];
+		vs_clip(vdi_handle, TRUE, pxy);
+	}
+
+	v_gtext(vdi_handle, p->pb_x, p->pb_y, t);
+	return p->pb_currstate;
+}
+
+
+USERBLK userblk = {draw_userdef, 0L};
+
+
+/****************************************************************
+*
+* Setzt den Clippingbereich auf die Bildschirmgrîûe.
+*
+****************************************************************/
+
+void set_deflt_clip(void)
+{
+	clip_rect[0] = desk_g.g_x;
+	clip_rect[1] = desk_g.g_y;
+	clip_rect[2] = desk_g.g_x + desk_g.g_w - 1;
+	clip_rect[3] = desk_g.g_y + desk_g.g_h - 1;
+	vs_clip(vdi_handle, TRUE, clip_rect);
+}
+
+
+/****************************************************************
+*
+* MenÅzeile abschalten
+* Speicher fÅr Fenster freigeben
+* Desktop- Hintergrund abmelden
+* Fenster schlieûen und lîschen
+*
+****************************************************************/
+
+int deflt_topwnr = -1;
+
+void close_all_wind(void)
+{
+	register int i;
+    int dummy;
+
+
+	/* Default- Zeichengrîûe wieder einstellen */
+	vst_height(vdi_handle, text_attrib[7], &char_w, &char_h, &dummy, &dummy);
+	deflt_topwnr = top_wnr();
+	menu_bar(adr_hauptmen, FALSE);
+
+	if (poolptr)
+	{
+		Mfree(poolptr);
+		poolptr = NULL;				/* sicher ist sicher */
+	}
+
+	wind_set_ptr_int(SCREEN, WF_NEWDESK, NULL, 0);	/* Desktop-Hintergrund */
+
+#if MAGIXDESK == 0
+	if (!isgem2 && !ismagix)
+		wind_set_int(1, WF_RESVD, 0);			/* Redraw ausschalten */
+#endif
+	for (i = 1; i <= NUM_WINDOWS; i++)
+		if (fenster[i].handle > 0)         /* wenn Fenster existiert... */
+		{
+			if (fenster[i].path[0] != EOS)		 /* ...und geîffnet   */
+			{
+				wind_close(fenster[i].handle);  /* ...dann schlieûen */
+			}
+
+			wind_delete(fenster[i].handle); /* ...und immer lîschen!  */
+			fenster[i].handle = -1;
+		}
+#if MAGIXDESK == 0
+	if (!isgem2 && !ismagix)
+	{
+		wind_set_int(0, WF_RESVD, 0);	/* Redraw ein */
+	}
+#endif
+}
+
+
+/****************************************************************
+*
+* Initialisierung aller Fenster, ggf. îffnen
+*
+****************************************************************/
+
+void open_all_wind(void)
+{
+	register int i,j,set;
+	long ret;
+
+#if MAGIXDESK == 0
+	set_colors();
+#endif
+	Mgraf_mouse(HOURGLASS);
+	for (i = 0; i < NUM_DRIVES; i++)
+	{
+		dinfo[i].b_clsiz = 0L;		/* ungÅltig */
+	}
+
+	/* MenÅzeile auf den Bildschirm */
+	/* ---------------------------- */
+
+	menu_bar(adr_hauptmen, TRUE);
+
+	/* Icons installieren und malen */
+	/* ---------------------------- */
+
+	fenster[0].pobj->ob_x = fenster[0].pobj->ob_y = 0;
+	fenster[0].pobj->ob_height = desk_g.g_y + desk_g.g_h;
+	fenster[0].pobj->ob_width  = desk_g.g_x + desk_g.g_w;
+	wind_set_ptr_int(SCREEN, WF_NEWDESK, fenster[0].pobj, 0);
+	exit_vt52();
+
+	/* Fenster îffnen */
+	/* -------------- */
+
+	get_char_dim();		/* Zeichengrîûe einstellen */
+
+	/* Speicher fÅr ANZDATEIEN Datei- EintrÑge holen */
+
+	poolsize = NUM_FILES_TOTAL;	/* alle EintrÑge frei */
+
+	ret = NUM_FILES_TOTAL * (sizeof(OBJECT) +
+					sizeof(MYDTA)  +
+					sizeof(ICONBLK) +
+					sizeof(MYFNAME)
+				    ) + NUM_WINDOWS * sizeof(OBJECT);
+
+	poolptr = Malloc(ret);
+	poolfree = poolptr;			/* frei ab Anfang */
+
+	for (i = 1; i <= NUM_WINDOWS; i++)
+	{
+		fenster[i].handle = -1;			/* unbenutzt */
+		fenster[i].alloc_offs = -1L; 	/* kein allozierter Speicher */
+		fenster[i].alloc_size = 0L; 	/* kein allozierter Speicher */
+	}
+
+	for (set = FALSE,i = 1; i <= NUM_WINDOWS; i++)
+	{
+		j = i;
+		if (i == deflt_topwnr)
+		{
+			j = NUM_WINDOWS;
+			set = TRUE;
+		}
+
+		if (set && i == NUM_WINDOWS)
+			j = deflt_topwnr;
+
+		if (fenster[j].path[0])
+		{
+			ret = opn_wnd(j, TRUE);
+			if (ret == ENOWND)
+				ret = ENSMEM;
+			err_alert(ret);
+		}
+	}
+
+	set_deflt_clip();
+	Mgraf_mouse(ARROW);
+}
 
 
 /****************************************************************
@@ -1211,7 +1467,7 @@ static void handle_key(EVNT *w_ev)
 	}
 
 	/* A..P */
-	for	(i = 0; i < n_icons; i++)
+	for (i = 0; i < n_icons; i++)
 		if (icon[i].isdisk == toupper(drv))
 			break;
 	if ((i < n_icons) && drv)
@@ -1486,7 +1742,7 @@ static void handle_key(EVNT *w_ev)
 			do
 			{
 				i++;
-				if (i > ANZFENSTER)
+				if (i > NUM_WINDOWS)
 					i = 1;
 				if (fenster[i].path[0])
 				{
@@ -1548,6 +1804,82 @@ static void handle_key(EVNT *w_ev)
 
 /****************************************************************
 *
+* "message"-Behandlung
+*
+****************************************************************/
+
+static void handle_message(const int *message, EVNT *w_ev)
+{
+	if (message[0] == MN_SELECTED)
+	{
+		do_menu(message[3], message[4]);
+	}
+	else
+	{
+		switch(message[0])
+		{
+			case WM_REDRAW:
+			redraw(hdl_to_fnr(message[3]), (GRECT *) (message + 4));
+			break;
+			
+			case WM_TOPPED:
+				topped(message[3]);
+				break;
+
+			case WM_CLOSED:
+				closed(message[3], w_ev->kstate);
+				break;
+
+			case WM_FULLED:
+				fulled(hdl_to_fnr(message[3]));
+				break;
+
+			case WM_ARROWED:
+				arrowed(hdl_to_fnr(message[3]), message[4]);
+				break;
+
+			case WM_HSLID:
+				hslid(message[3]);
+				break;
+
+			case WM_VSLID:
+				vslid(message[3], message[4]);
+				break;
+
+			case WM_SIZED:
+				sized(message[3], (GRECT *) (message + 4));
+				break;
+
+			case WM_MOVED:
+				moved(message[3], (GRECT *) (message + 4));
+				break;
+
+			case WM_NEWTOP:
+				newtop(message[3]);
+				break;
+
+			case WM_UNTOPPED:
+				untopped(message[3]);
+				break;
+
+			case SH_WDRAW:
+				if ((message[3] >= 0) && (message[3] < NUM_DRIVES))
+					dirty_drives[message[3]] = TRUE;
+				else
+				{
+					register int i;
+
+					for (i = 0; i < NUM_DRIVES; i++)
+						dirty_drives[i] = TRUE;
+				}
+				break;
+		}
+	}
+}
+
+
+/****************************************************************
+*
 * Hauptfunktion
 *
 ****************************************************************/
@@ -1555,9 +1887,12 @@ static void handle_key(EVNT *w_ev)
 void main()
 {
 	EVNT w_ev;
+	int message[16];
 	int ev_mwhich;
-	int	waitfor;
+	int waitfor;
 	int ltime;
+	long last_clicktime = 0;
+	unsigned dclick_interval_hz200;		/* in 5-ms-Einheiten */
 
 
 	anfang();
@@ -1567,6 +1902,9 @@ void main()
 		upd_drives();
 		upd_infos();
 		modify_menu();
+		
+		/* Das eingestellte Doppelklick-Intervall kînnte geÑndert worden sein. */
+		dclick_interval_hz200 = get_dclick_interval_ms() / 5;
 
 		/* Wenn ein Laufwerk mit Tastatur selektiert wurde, wird 200ms */
 		/* lang auf den zweiten Klick gewartet.                        */
@@ -1596,7 +1934,7 @@ void main()
 		}
 
 		ev_mwhich = evnt_multi(waitfor,
-						  2,			/* Doppelklicks erkennen 	*/
+						  1,			/* Doppelklicks selbermachen */
 						  1,			/* nur linke Maustaste		*/
 						  1,			/* linke Maustaste gedrÅckt	*/
 						  0,NULL,		/* kein 1. Rechteck			*/
@@ -1656,41 +1994,7 @@ void main()
 
 		if (ev_mwhich & MU_MESAG)
 		{
-			if (message[0] == MN_SELECTED)
-			{
-				do_menu(message[3], message[4]);
-			}
-			else
-			{
-				switch(message[0])
-				{
-				     case WM_REDRAW:   redraw(hdl_to_fnr(message[3]),
-				     				     (GRECT *) (message+4));
-				                       break;
-				     case WM_TOPPED:   topped(message[3]);break;
-				     case WM_CLOSED:   closed(message[3], w_ev.kstate);break;
-				     case WM_FULLED:   fulled(hdl_to_fnr(message[3]));break;
-				     case WM_ARROWED: arrowed(hdl_to_fnr(message[3]), message[4]);break;
-				     case WM_HSLID:	    hslid(message[3]);break;
-				     case WM_VSLID:     vslid(message[3], message[4]);break;
-				     case WM_SIZED:	    sized(message[3], (GRECT *) (message+4));break;
-				     case WM_MOVED:     moved(message[3], (GRECT *) (message+4));break;
-				     case WM_NEWTOP:   newtop(message[3]);break;
-				     case WM_UNTOPPED: untopped(message[3]);break;
-				     case SH_WDRAW:
-				     			if ((message[3] >= 0) &&
-				     				 (message[3] < ANZDRIVES))
-									dirty_drives[message[3]] = TRUE;
-								else
-								{
-									register int i;
-
-									for	(i = 0; i < ANZDRIVES; i++)
-										dirty_drives[i] = TRUE;
-								}
-								break;
-				     }
-			}
+			handle_message(message, &w_ev);
 		}
 
 		/* Abfrage auf BetÑtigung eines Mausknopfs */
@@ -1698,7 +2002,22 @@ void main()
 
 		if (ev_mwhich & MU_BUTTON)
 		{
-			mausknopf(w_ev.mclicks, (EVNTDATA *) &(w_ev.mx));
+			/* Doppelklick feststellen */
+
+			long clicktime = getHz200();
+#if 0
+			printf("\x1b" "H %lu->%lu (%lu ms # %u ms)   \n",
+					last_clicktime, clicktime,
+					(clicktime - last_clicktime) * 5,
+					dclick_interval_hz200 * 5);
+#endif
+			if (clicktime - last_clicktime < dclick_interval_hz200)
+			{
+				w_ev.mclicks = 2;
+			}
+			last_clicktime = clicktime;
+			
+			handle_mouse_button(w_ev.mclicks, (EVNTDATA *) &(w_ev.mx));
 
 			/* poll mouse and keyboard state */
 			graf_mkstate((EVNTDATA *) &(w_ev.mx));
@@ -1712,496 +2031,4 @@ void main()
 		wind_update(END_UPDATE);
 
 	} /* END FOREVER */
-}
-
-
-/****************************************************************
-*
-* Bestimmt die Schnittmenge zwischen zwei Rechtecken
-*
-****************************************************************/
-
-int rc_intersect(GRECT *p1, GRECT *p2)
-{
-	int	tx, ty, tw, th;
-
-	tw = MIN(p2->g_x + p2->g_w, p1->g_x + p1->g_w);
-	th = MIN(p2->g_y + p2->g_h, p1->g_y + p1->g_h);
-	tx = MAX(p2->g_x, p1->g_x);
-	ty = MAX(p2->g_y, p1->g_y);
-	p2->g_x = tx;
-	p2->g_y = ty;
-	p2->g_w = tw - tx;
-	p2->g_h = th - ty;
-	return (tw > tx) && (th > ty);
-}
-
-
-/****************************************************************
-*
-* DurchlÑuft alle selektierten Objekte eines Baums.
-* Wenn die Funktion "tue" < 0 liefert, wird abgebrochen.
-* gibt Anzahl dieser Objekte zurÅck.
-*
-****************************************************************/
-
-int walk_sel(int wnr, int (*tue)(int wnr, int obj))
-{
-	register int i,tail,anz;
-	register OBJECT *tree = fenster[wnr].pobj;
-
-
-	if ((i = (tree -> ob_head)) <= 0)
-		return 0;
-
-	anz = 0;
-	tail = (tree++ -> ob_tail);
-	for	(; i <= tail; i++,tree++)
-	{
-		if (!(SELECTED&(tree->ob_state)) || (HIDETREE&(tree->ob_flags)))
-			continue;
-		anz++;
-		if (0 > (*tue)(wnr, i))
-			break;
-	}
-
-	return anz;
-}
-
-
-/****************************************************************
-*
-* Bestimmt die Begrenzung eines Objekts
-*
-****************************************************************/
-
-void objc_grect(OBJECT *tree, int objn, GRECT *g)
-{
-	objc_offset(tree, objn, &(g -> g_x), &(g -> g_y));
-	g -> g_w = (tree + objn) -> ob_width;
-	g -> g_h = (tree + objn) -> ob_height;
-}
-
-
-/****************************************************************
-*
-* Bestimmt die Begrenzung aller selektierten Unterobjekte
-* in absoluten Bildschirmkoordinaten.
-* (rechteckige HÅlle aller selektierten Unterobjekte).
-*
-****************************************************************/
-
-void tree_sel_grect(OBJECT *tree, GRECT *g)
-{
-	register int i,rx,ry;
-	register int mx,my,mrx,mry;	/* Maxima */
-	int ox,oy,tail;
-
-
-	ox = tree->ob_x;
-	oy = tree->ob_y;
-	mx = my = INT_MAX;		/* Ecke links oben */
-	mrx = mry = -INT_MAX;	/* Ecke rechts unten (auûerhalb) */
-
-	if ((i = (tree -> ob_head)) > 0)
-	{
-		tail = (tree++ -> ob_tail);
-		for	(; i <= tail; i++,tree++)
-		{
-			if ((SELECTED&(tree->ob_state)) && !(HIDETREE&(tree->ob_flags)))
-			{
-				rx = tree->ob_x;
-				ry = tree->ob_y;
-				if (rx < mx)
-					mx = rx;
-				if (ry < my)
-					my = ry;
-				rx += tree->ob_width;
-				ry += tree->ob_height;
-				if (rx > mrx)
-					mrx = rx;
-				if (ry > mry)
-					mry = ry;
-			}
-		}
-	}
-	g -> g_x = mx + ox;
-	g -> g_y = my + oy;
-	g -> g_w = mrx - mx;
-	g -> g_h = mry - my;
-}
-
-
-/****************************************************************
-*
-* éndert den Selektionsstatus aller Unterobjekte von <tree>, die
-* sich im Rechteck <*g> befinden.
-* Bestimmt eine mîglichst kleine rechteckige Begrenzung aller
-* geÑnderten Objekte in absoluten Bildschirmkoordinaten.
-* (rechteckige HÅlle aller geÑnderten selektierten Unterobjekte).
-*
-****************************************************************/
-
-void grect_toggle(OBJECT *tree, GRECT *g)
-{
-	register int i,rx,ry;
-	register int mx,my,mrx,mry;	/* Maxima */
-	int tx,ty;				/* Koordinaten des Wurzelobjekts */
-	int tail;
-	GRECT  ob;
-	register OBJECT *t = tree;
-	register ICONBLK *icn;
-
-
-	tx = tree -> ob_x;
-	ty = tree -> ob_y;
-	mx = my = INT_MAX;		/* Ecke links oben */
-	mrx = mry = -INT_MAX;	/* Ecke rechts unten (auûerhalb) */
-
-	if ((i = (t -> ob_head)) > 0)
-	{
-		tail = (t++ -> ob_tail);
-		for	(; i <= tail; i++,t++)
-		{
-			if (HIDETREE & (t->ob_flags))
-				continue;
-			if (t -> ob_type == G_ICON)
-			{
-				int x = tx + t -> ob_x;
-				int y = ty + t -> ob_y;
-
-				icn = t -> ob_spec.iconblk;
-				/* 1. Fall: Icon selbst */
-				ob.g_x = x + icn->ib_xicon;
-				ob.g_y = y + icn->ib_yicon;
-				ob.g_w = icn->ib_wicon;
-				ob.g_h = icn->ib_hicon;
-				if (rc_intersect(g, &ob))
-					goto toggle;
-				/* 2. Fall: Unterschrift */
-				ob.g_x = x + icn->ib_xtext;
-				ob.g_y = y + icn->ib_ytext;
-				ob.g_w = icn->ib_wtext;
-				ob.g_h = icn->ib_htext;
-			}
-			/* 2. Fall: sonst (STRING bzw. G_USERDEF) */
-			else
-			{
-				ob = *((GRECT *) (&(t->ob_x)));
-				ob.g_x += tx;
-				ob.g_y += ty;
-			}
-
-			if (!rc_intersect(g, &ob))
-				continue;
-
-			toggle:
-			t->ob_state ^= SELECTED;
-			rx = t->ob_x;
-			ry = t->ob_y;
-			if (rx < mx)
-				mx = rx;
-			if (ry < my)
-				my = ry;
-			rx += t->ob_width;
-			ry += t->ob_height;
-			if (rx > mrx)
-				mrx = rx;
-			if (ry > mry)
-				mry = ry;
-		}
-	}
-	g -> g_x = mx + tree->ob_x;
-	g -> g_y = my + tree->ob_y;
-	g -> g_w = mrx - mx;
-	g -> g_h = mry - my;
-}
-
-
-/****************************************************************
-*
-* Rechnet Mausposition in Objektnummer um.
-* (Ñhnlich objc_find, jedoch nur eine Ebene).
-* RÅckgabe  0, falls kein Objekt unter dem Mauszeiger,
-* RÅckgabe -1, falls inaktiver Hintergrund.
-*
-****************************************************************/
-
-int find_obj(OBJECT *tree, int x, int y)
-{
-	register int i,obx,oby,obw,obh;
-	register ICONBLK *icn;
-	int end;
-
-
-	if ((i = (tree -> ob_head)) < 0)
-		return 0;
-
-	if ((tree -> ob_flags) & HIDETREE)
-		return -1;			/* etwa inaktiver Hintergrund */
-
-	end = tree -> ob_tail;
-	x -= tree -> ob_x;			/* Position der Root abziehen */
-	y -= tree -> ob_y;
-
-	for	(; i <= end; i++)
-	{
-		tree++;
-		if ((tree->ob_flags) & HIDETREE)
-			continue;
-		/* 1. Fall: ICON */
-		if (tree -> ob_type == G_ICON)
-		{
-			icn = tree->ob_spec.iconblk;
-			/* 1. Fall: Icon selbst */
-			obx = tree->ob_x + icn->ib_xicon;
-			oby = tree->ob_y + icn->ib_yicon;
-			obw = icn->ib_wicon;
-			obh = icn->ib_hicon;
-			if (x >= obx && x < obx+obw && y >= oby && y < oby+obh)
-				return i;
-
-			/* 2. Fall: Unterschrift */
-			obx = tree->ob_x + icn->ib_xtext;
-			oby = tree->ob_y + icn->ib_ytext;
-			obw = icn->ib_wtext;
-			obh = icn->ib_htext;
-			if (x >= obx && x < obx+obw && y >= oby && y < oby+obh)
-				return i;
-		}
-		/* 2. Fall: sonst (STRING bzw. G_USERDEF) */
-		else
-		{
-			if (x >= tree->ob_x && x < tree->ob_x+tree->ob_width &&
-				 y >= tree->ob_y && y < tree->ob_y+tree->ob_height)
-				return i;
-		}
-	}
-
-	return 0;
-}
-
-
-/****************************************************************
-*
-* Gibt an, ob ein Objekt ein Ziel fÅr ein Verschieben von Icons
-* sein kann.
-* GÅltiges Ziel sind Ordner (O_), Laufwerke (?D), Programme bzw.
-* angemeldete Dateien (?P), Batchprogramme (?B),
-* Papierkorb und Drucker.
-*
-****************************************************************/
-
-int is_dest(int wnr, int objnr)
-{
-	int obtyp;
-	char obtyp2;
-	MYDTA *dummy;
-
-	obj_typ(wnr, objnr, NULL, &dummy, &obtyp);
-	obtyp2 = toupper((char) obtyp);
-	return (obtyp2 == 'P') || (obtyp2 == 'D') || (obtyp2 == 'B') ||
-		  (obtyp == '_O') || (obtyp == 'P_') || (obtyp == 'D_');
-}
-
-
-/****************************************************************
-*
-* Zeichnet die benutzerdefinierten Objekte (Texte verschiedener
-* Grîûe). Textgrîûe und Ausrichtung auf Zellenoberkante ist schon
-* eingestellt.
-* Der Clippingbereich wird nur dann neu gesetzt, wenn sich dieser
-* geÑndert hat, dadurch werden einige vs_clip()'s gespart.
-*
-****************************************************************/
-
-static int clip_rect[4];
-
-int cdecl draw_userdef(PARMBLK *p)
-{
-	char *t;
-	register int wnr;
-	int pxy[4];
-
-
-	for	(wnr = 0; wnr <= ANZFENSTER; wnr++)
-		if (fenster[wnr].pobj == p->pb_tree)
-			goto found;
-
-	return 0;
-
-	found:
-	pxy[0] = p->pb_xc;
-	pxy[1] = p->pb_yc;
-	pxy[2] = pxy[0] + p->pb_wc - 1;
-	pxy[3] = pxy[1] + p->pb_hc - 1;
-	t = (char *) (fenster[wnr].pstr+(p->pb_obj - 1));
-	if (pxy[0] != clip_rect[0] || pxy[1] != clip_rect[1] ||
-		 pxy[2] != clip_rect[2] || pxy[3] != clip_rect[3])
-	{
-		clip_rect[0] = pxy[0];
-		clip_rect[1] = pxy[1];
-		clip_rect[2] = pxy[2];
-		clip_rect[3] = pxy[3];
-		vs_clip(vdi_handle, TRUE, pxy);
-	}
-
-	v_gtext(vdi_handle, p->pb_x, p->pb_y, t);
-	return p->pb_currstate;
-}
-
-
-USERBLK userblk = {draw_userdef, 0L};
-
-
-/****************************************************************
-*
-* Setzt den Clippingbereich auf die Bildschirmgrîûe.
-*
-****************************************************************/
-
-void set_deflt_clip(void)
-{
-	clip_rect[0] = desk_g.g_x;
-	clip_rect[1] = desk_g.g_y;
-	clip_rect[2] = desk_g.g_x + desk_g.g_w - 1;
-	clip_rect[3] = desk_g.g_y + desk_g.g_h - 1;
-	vs_clip(vdi_handle, TRUE, clip_rect);
-}
-
-
-/****************************************************************
-*
-* MenÅzeile abschalten
-* Speicher fÅr Fenster freigeben
-* Desktop- Hintergrund abmelden
-* Fenster schlieûen und lîschen
-*
-****************************************************************/
-
-int deflt_topwnr = -1;
-
-void close_all_wind(void)
-{
-	register int i;
-    int dummy;
-
-
-	/* Default- Zeichengrîûe wieder einstellen */
-	vst_height(vdi_handle, text_attrib[7], &char_w, &char_h, &dummy, &dummy);
-	deflt_topwnr = top_wnr();
-	menu_bar(adr_hauptmen, FALSE);
-
-	if (poolptr)
-	{
-		Mfree(poolptr);
-		poolptr = NULL;				/* sicher ist sicher */
-	}
-
-	wind_set_ptr_int(SCREEN, WF_NEWDESK, NULL, 0);	/* Desktop-Hintergrund */
-
-#if MAGIXDESK == 0
-	if (!isgem2 && !ismagix)
-		wind_set_int(1, WF_RESVD, 0);			/* Redraw ausschalten */
-#endif
-	for (i = 1; i <= ANZFENSTER; i++)
-		if (fenster[i].handle > 0)         /* wenn Fenster existiert... */
-		{
-			if (fenster[i].path[0] != EOS)		 /* ...und geîffnet   */
-			{
-				wind_close(fenster[i].handle);  /* ...dann schlieûen */
-			}
-
-			wind_delete(fenster[i].handle); /* ...und immer lîschen!  */
-			fenster[i].handle = -1;
-		}
-#if MAGIXDESK == 0
-	if (!isgem2 && !ismagix)
-	{
-		wind_set_int(0, WF_RESVD, 0);	/* Redraw ein */
-	}
-#endif
-}
-
-
-/****************************************************************
-*
-* Initialisierung aller Fenster, ggf. îffnen
-*
-****************************************************************/
-
-void open_all_wind(void)
-{
-	register int i,j,set;
-	long ret;
-
-#if MAGIXDESK == 0
-	set_colors();
-#endif
-	Mgraf_mouse(HOURGLASS);
-	for	(i = 0; i < ANZDRIVES; i++)
-	{
-		dinfo[i].b_clsiz = 0L;		/* ungÅltig */
-	}
-
-	/* MenÅzeile auf den Bildschirm */
-	/* ---------------------------- */
-
-	menu_bar(adr_hauptmen, TRUE);
-
-	/* Icons installieren und malen */
-	/* ---------------------------- */
-
-	fenster[0].pobj->ob_x = fenster[0].pobj->ob_y = 0;
-	fenster[0].pobj->ob_height = desk_g.g_y + desk_g.g_h;
-	fenster[0].pobj->ob_width  = desk_g.g_x + desk_g.g_w;
-	wind_set_ptr_int(SCREEN, WF_NEWDESK, fenster[0].pobj, 0);
-	exit_vt52();
-
-	/* Fenster îffnen */
-	/* -------------- */
-
-	get_char_dim();		/* Zeichengrîûe einstellen */
-
-	/* Speicher fÅr ANZDATEIEN Datei- EintrÑge holen */
-
-	poolsize = ANZDATEIEN;	/* alle EintrÑge frei */
-
-	ret = ANZDATEIEN * (sizeof(OBJECT) +
-					sizeof(MYDTA)  +
-					sizeof(ICONBLK) +
-					sizeof(MYFNAME)
-				    ) + ANZFENSTER * sizeof(OBJECT);
-
-	poolptr = Malloc(ret);
-	poolfree = poolptr;			/* frei ab Anfang */
-
-	for	(i = 1; i <= ANZFENSTER; i++)
-	{
-		fenster[i].handle = -1;			/* unbenutzt */
-		fenster[i].alloc_offs = -1L; 	/* kein allozierter Speicher */
-		fenster[i].alloc_size = 0L; 	/* kein allozierter Speicher */
-	}
-
-	for	(set = FALSE,i = 1; i <= ANZFENSTER; i++)
-	{
-		j = i;
-		if (i == deflt_topwnr)
-		{
-			j = ANZFENSTER;
-			set = TRUE;
-		}
-		if (set && i == ANZFENSTER)
-			j = deflt_topwnr;
-		if (fenster[j].path[0])
-		{
-			ret = opn_wnd(j, TRUE);
-			if (ret == ENOWND)
-				ret = ENSMEM;
-			err_alert(ret);
-		}
-	}
-
-	set_deflt_clip();
-	Mgraf_mouse(ARROW);
 }
