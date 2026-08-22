@@ -10,7 +10,6 @@
 /*#include <stdio.h>*/
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 #include <ctype.h>
 #include <limits.h>
 #include <mgx_dos.h>	/* include before tos.h */
@@ -21,7 +20,7 @@
 #include "k.h"
 
 
-WINDOW fenster[NUM_WINDOWS + 1];
+WINDOW windows[NUM_WINDOWS + 1];
 ICON *icon;
 APPLICATION *application;
 char *poolptr;		/* Zeiger auf Pool */
@@ -65,119 +64,22 @@ int char_w, char_h;
 
 /* Einstellungen */
 
-DEFAULTS status;
+DEFAULTS settings;
 FMT_DEFAULTS fmtstat;
 
-OBJECT *adr_hauptmen;
-OBJECT *adr_laufwe;
-OBJECT *adr_icons;
-OBJECT *adr_einste;
-OBJECT *adr_prgrms;
-OBJECT *adr_ttppar;
-OBJECT *adr_format;
-OBJECT *adr_fmtopt;
-OBJECT *adr_cpydsk;
-OBJECT *adr_about;
-OBJECT *adr_cpmvdl;
-OBJECT *adr_datinf;
-OBJECT *adr_ordinf;
-
-
-/****************************************************************
-*
-* Objekte verstecken
-*
-****************************************************************/
-
-void objs_hide(OBJECT *tree, ...)
-{
-	va_list argpoint;
-	int objnr;
-
-	va_start(argpoint, tree);
-	for (;;)
-	{
-		objnr = va_arg(argpoint, int);
-		if (objnr == 0)
-			break;
-		tree[objnr].ob_flags |= HIDETREE;
-	}
-
-	va_end(argpoint);
-}
-
-
-/****************************************************************
-*
-* Objekte hervorholen
-*
-****************************************************************/
-
-void objs_unhide(OBJECT *tree, ...)
-{
-	va_list argpoint;
-	int objnr;
-
-	va_start(argpoint, tree);
-	for (;;)
-	{
-		objnr = va_arg(argpoint, int);
-		if (objnr == 0)
-			break;
-		tree[objnr].ob_flags &= ~HIDETREE;
-	}
-
-	va_end(argpoint);
-}
-
-
-/****************************************************************
-*
-* Objekte selektiert?
-*
-****************************************************************/
-
-int selected(OBJECT *tree, int which)
-
-{ return (tree[which].ob_state & SELECTED) ? 1 : 0; }
-
-
-/****************************************************************
-*
-* Objekte deselektieren
-*
-****************************************************************/
-
-void ob_dsel(OBJECT *tree, int which)
-
-{ tree[which].ob_state &= ~SELECTED; }
-
-
-/****************************************************************
-*
-* Objekt selektieren/deselektieren
-*
-****************************************************************/
-
-void ob_sel_dsel(OBJECT *tree, int which, int sel)
-
-{
-	if (sel)
-		tree[which].ob_state |=  SELECTED;
-	else
-		tree[which].ob_state &= ~SELECTED;
-}
-
-
-/****************************************************************
-*
-* Objekt selektieren
-*
-****************************************************************/
-
-void ob_sel(OBJECT *tree, int which)
-
-{ tree[which].ob_state |= SELECTED; }
+OBJECT *tree_menu;
+OBJECT *tree_chg_symbol;
+OBJECT *tree_icons;
+OBJECT *tree_settings;
+OBJECT *tree_programs;
+OBJECT *tree_ttp_params;
+OBJECT *tree_format_dsk;
+OBJECT *tree_format_opt;
+OBJECT *tree_copy_disk;
+OBJECT *tree_about;
+OBJECT *tree_file_ops;
+OBJECT *tree_info_file;
+OBJECT *tree_info_folder;
 
 
 /****************************************************************
@@ -224,12 +126,12 @@ int icsel(int *rwnr, int *objn)
 	*rwnr = -2;
 	for (wnr = 0; wnr <= NUM_WINDOWS; wnr++)
 	{
-		if (wnr && !fenster[wnr].path[0])
+		if (wnr && !windows[wnr].path[0])
 			continue;				/* Fenster unbenutzt */
-		tree = fenster[wnr].pobj;
-		if ((i = (tree -> ob_head)) > 0)
+		tree = windows[wnr].pobj;
+		if ((i = (tree->ob_head)) > 0)
 		{
-			for (; i <= (tree -> ob_tail); i++)
+			for (; i <= (tree->ob_tail); i++)
 			{
 				if (!(tree[i].ob_flags & HIDETREE) && selected(tree, i))
 				{
@@ -300,7 +202,7 @@ int hdl_to_fnr(int whdl)
 	register int i;
 
 	for (i = 0; i <= NUM_WINDOWS; i++)
-		if ((fenster[i].handle >= 0) && (fenster[i].handle == whdl))
+		if ((windows[i].handle >= 0) && (windows[i].handle == whdl))
 			return i;
 
 	return -2;
@@ -316,8 +218,8 @@ int hdl_to_fnr(int whdl)
 
 static void modify_menu(void)
 {
-	static int last_sorttyp = -1;
-	static int last_showtyp = -1;
+	static int last_sort_mode = -1;
+	static int last_show_mode = -1;
 	static int last_info = -1;
 	static int last_loesch = -1;
 	static int last_format = -1;
@@ -331,7 +233,7 @@ static void modify_menu(void)
 	static int last_points = -1;
 	static int last_blittr = -1;
 	int top;
-	int icn,info,loesch,format,wnr,sicn,mytop,mytop0,anw,typ;
+	int icn,info,loesch,format,wnr,sicn,mytop,mytop0,anw,type;
 
 
 	top = top_wnr();
@@ -342,10 +244,10 @@ static void modify_menu(void)
 	}
 	else
 	{
-		obj_typ(wnr, sicn, NULL, NULL, &typ);
-		format = (wnr == 0 && icon[sicn - 1].icontyp <= I_RAMDSK);
+		get_obj_type(wnr, sicn, NULL, NULL, &type);
+		format = (wnr == 0 && icon[sicn - 1].icon_type <= I_RAMDSK);
 		info = TRUE;
-		anw = ((typ & 0x5f) == 'P');
+		anw = ((type & 0x5f) == 'P');
 	}
 
 	mytop = (0 < top);
@@ -353,79 +255,79 @@ static void modify_menu(void)
 
 	if (mytop != last_mytop)
 	{
-		menu_ienable(adr_hauptmen, M_NEUORD, mytop);
-		menu_ienable(adr_hauptmen, M_SCHLFN, mytop);
-		menu_ienable(adr_hauptmen, M_MASKE, mytop);
+		menu_ienable(tree_menu, M_NEUORD, mytop);
+		menu_ienable(tree_menu, M_SCHLFN, mytop);
+		menu_ienable(tree_menu, M_MASKE, mytop);
 		last_mytop = mytop;
 	}
 
 	loesch = (mytop && icn != 0 && wnr == top);
 	if (loesch != last_loesch)
 	{
-		menu_ienable(adr_hauptmen, M_LOESCH, loesch);
+		menu_ienable(tree_menu, M_LOESCH, loesch);
 		last_loesch = loesch;
 	}
 
 	if (mytop0 != last_mytop0)
 	{
-		menu_ienable(adr_hauptmen, M_SELALL, mytop0);
+		menu_ienable(tree_menu, M_SELALL, mytop0);
 		last_mytop0 = mytop0;
 	}
 
 	if (anw != last_anw)
 	{
-		menu_ienable(adr_hauptmen, M_ANWNDG, anw);
+		menu_ienable(tree_menu, M_ANWNDG, anw);
 		last_anw = anw;
 	}
 
 	if (info != last_info)
 	{
-		menu_ienable(adr_hauptmen, M_INFO,   info);
-		menu_ienable(adr_hauptmen, M_OPEN,   info);
+		menu_ienable(tree_menu, M_INFO,   info);
+		menu_ienable(tree_menu, M_OPEN,   info);
 		last_info = info;
 	}
 
 	if (format != last_format)
 	{
-		menu_ienable(adr_hauptmen, M_FORMAT, format);
+		menu_ienable(tree_menu, M_FORMAT, format);
 		last_format = format;
 	}
 
-	if (status.is_1col != last_1col)
+	if (settings.is_1col != last_1col)
 	{
-		menu_icheck(adr_hauptmen, M_SPALTN, status.is_1col);
-		last_1col = status.is_1col;
+		menu_icheck(tree_menu, M_SPALTN, settings.is_1col);
+		last_1col = settings.is_1col;
 	}
 
-	if (status.is_groesse != last_isg)
+	if (settings.is_size != last_isg)
 	{
-		menu_icheck(adr_hauptmen, M_ZGROES, status.is_groesse);
-		last_isg = status.is_groesse;
+		menu_icheck(tree_menu, M_ZGROES, settings.is_size);
+		last_isg = settings.is_size;
 	}
 
-	if (status.is_datum != last_isd)
+	if (settings.is_date != last_isd)
 	{
-		menu_icheck(adr_hauptmen, M_ZDATUM, status.is_datum);
-		last_isd = status.is_datum;
+		menu_icheck(tree_menu, M_ZDATUM, settings.is_date);
+		last_isd = settings.is_date;
 	}
 
-	if (status.is_zeit != last_isz)
+	if (settings.is_time != last_isz)
 	{
-		menu_icheck(adr_hauptmen, M_ZZEIT,  status.is_zeit);
-		last_isz = status.is_zeit;
+		menu_icheck(tree_menu, M_ZZEIT,  settings.is_time);
+		last_isz = settings.is_time;
 	}
 
-	if (status.blitstate != last_blittr)
+	if (settings.blitstate != last_blittr)
 	{
-		menu_icheck(adr_hauptmen, M_BLITTR, status.blitstate);
-		last_blittr = status.blitstate;
+		menu_icheck(tree_menu, M_BLITTR, settings.blitstate);
+		last_blittr = settings.blitstate;
 	}
 
-	if (status.sorttyp != last_sorttyp)
+	if (settings.sort_mode != last_sort_mode)
 	{
 		char *t;
 
-		switch(status.sorttyp)
+		switch (settings.sort_mode)
 		{
 #if LANGUAGE == LANG_GER
 			case M_SNAME:	t = "     NAMEN";	break;
@@ -441,27 +343,27 @@ static void modify_menu(void)
 			case M_SNICHT: t = "  UNSORTED";	break;
 #endif
 		}
-		subobj_draw(adr_hauptmen, MM_SMODE, -1, t);
-		if (last_sorttyp > 0)
-			menu_icheck(adr_hauptmen, last_sorttyp, FALSE);
-		menu_icheck(adr_hauptmen, status.sorttyp, TRUE);
-		last_sorttyp = status.sorttyp;
+		subobj_draw(tree_menu, MM_SMODE, -1, t);
+		if (last_sort_mode > 0)
+			menu_icheck(tree_menu, last_sort_mode, FALSE);
+		menu_icheck(tree_menu, settings.sort_mode, TRUE);
+		last_sort_mode = settings.sort_mode;
 	}
 
-	if (status.showtyp != last_showtyp)
+	if (settings.show_mode != last_show_mode)
 	{
-		if (last_showtyp > 0)
-			menu_icheck(adr_hauptmen, last_showtyp, FALSE);
-		menu_icheck(adr_hauptmen, status.showtyp, TRUE);
-		last_showtyp = status.showtyp;
+		if (last_show_mode > 0)
+			menu_icheck(tree_menu, last_show_mode, FALSE);
+		menu_icheck(tree_menu, settings.show_mode, TRUE);
+		last_show_mode = settings.show_mode;
 	}
 
-	if (status.points != last_points)
+	if (settings.points != last_points)
 	{
 		if (last_points > 0)
-			menu_icheck(adr_hauptmen, last_points, FALSE);
-		menu_icheck(adr_hauptmen, status.points, TRUE);
-		last_points = status.points;
+			menu_icheck(tree_menu, last_points, FALSE);
+		menu_icheck(tree_menu, settings.points, TRUE);
+		last_points = settings.points;
 	}
 }
 
@@ -476,7 +378,7 @@ void get_char_dim(void)
 {
 	int h, dummy;
 
-	switch(status.points)
+	switch (settings.points)
 	{
 		case M_10_PKT: h = 10; break;
 		case M_9_PKT:  h =  9; break;
@@ -535,8 +437,8 @@ void ende(void)
 
 	if (isgem2)
 	{
-		char	path[128];
-		char	*endp;
+		char path[128];
+		char *endp;
 
 
 		strcpy(path, "DESKTOP.APP");
@@ -563,148 +465,6 @@ void ende(void)
 	_ende(ret);
 }
 #endif
-
-
-/****************************************************************
-*
-* FÅhrt Reaktionen auf AnwÑhlen von MenÅeintrÑgen aus.
-*
-****************************************************************/
-
-static void do_menu(int title, int entry)
-{
-	int wnr, obj;
-
-
-	switch(entry)
-	{
-     	case M_ABOUT:
-     		dial_about();
-     		break;
-
-     	case M_OPEN:
-     		if (1 == icsel(&wnr, &obj))
-     			dclick(wnr, obj, K_CTRL);
-			break;
-
-		case M_INFO:
-			dial_info();
-			break;
-
-		case M_LOESCH:
-			if (top_wnr() > 0)
-				dl_icns(top_wnr());
-			break;
-
-		case M_NEUORD:
-			dial_neuord();
-			break;
-
-		case M_SCHLFN:
-			close_immed(top_wnr());
-			break;
-
-		case M_SELALL:
-			sel_all(top_wnr());
-			break;
-
-		case M_DCOPY:
-			dial_cpydsk();
-			break;
-
-		case M_FORMAT:
-			dial_format();
-			break;
-
-#if MAGIXDESK == 0
-		case M_ENDE:
-			ende();break;
-#endif
-		case M_ABILDR:
-		case M_ATEXT:
-			if (status.showtyp != entry)
-			{
-				status.showtyp = entry;
-				upd_show();
-			}
-			break;
-
-		case M_10_PKT:
-		case M_9_PKT:
-		case M_8_PKT:
-			if (status.points != entry)
-			{
-				status.points = entry;
-				get_char_dim();
-				if (status.showtyp == M_ATEXT)
-					upd_show();
-			}
-			break;
-
-		case M_SPALTN:
-			status.is_1col = !status.is_1col;
-			upd_col();
-			break;
-
-		case M_ZGROES:
-			status.is_groesse = !status.is_groesse;
-			upd_is();
-			break;
-
-		case M_ZDATUM:
-			status.is_datum = !status.is_datum;
-			upd_is();
-			break;
-
-		case M_ZZEIT:
-			status.is_zeit = !status.is_zeit;
-			upd_is();
-			break;
-
-		case M_SNAME:
-		case M_SDATUM:
-		case M_SGROES:
-		case M_STYP:
-		case M_SNICHT:
-			if (status.sorttyp != entry)
-			{
-				status.sorttyp = entry;
-				upd_sort();
-			}
-			break;
-
-		case M_MASKE:
-			dial_maske();
-			break;
-
-		case M_LAUFWE:
-			dial_laufwe();
-			break;
-
-		case M_ANWNDG:
-			dial_anwndg();
-			break;
-
-		case M_EINSTE:
-			dial_einste();
-			break;
-
-		case M_PRGRMS:
-			dial_prgrms();
-			break;
-
-		case M_ARBSIC:
-			dial_arbsic();
-			break;
-
-		case M_BLITTR:
-			status.blitstate = !status.blitstate;
-			Blitmode(status.blitstate);
-			break;
-	}
-
-	menu_tnormal(adr_hauptmen, title, 1);
-}
 
 
 /****************************************************************
@@ -750,54 +510,54 @@ static void get_rsc(void)
 		if (lowres)
 		{
 			_rsrc_load("magxdesl.rsc");
-			rsrc_gaddr(0, HAUPTMEN, &adr_hauptmen);
+			rsrc_gaddr(0, HAUPTMEN, &tree_menu);
 		}
 		else
 		{
-			adr_hauptmen = NULL;
+			tree_menu = NULL;
 		}
 
 		_rsrc_load("magxdesk.rsc");
-		if (!adr_hauptmen)
-			rsrc_gaddr(0, HAUPTMEN, &adr_hauptmen);
+		if (!tree_menu)
+			rsrc_gaddr(0, HAUPTMEN, &tree_menu);
 	}
 #else
 	_rsrc_load((lowres) ? "kdeskl.rsc" : "kaosdesk.rsc");
-	rsrc_gaddr(0, HAUPTMEN, &adr_hauptmen);
+	rsrc_gaddr(0, HAUPTMEN, &tree_menu);
 #endif
 	load_icons();
-	rsrc_gaddr(0, T_ICONS,  &adr_icons);
-	rsrc_gaddr(0, T_ICNCHG, &adr_laufwe);
-	rsrc_gaddr(0, T_EINSTE, &adr_einste);
-	rsrc_gaddr(0, T_PRGRMS, &adr_prgrms);
-	rsrc_gaddr(0, T_TTPPAR, &adr_ttppar);
-	rsrc_gaddr(0, T_FORMAT, &adr_format);
-	rsrc_gaddr(0, T_FMTOPT, &adr_fmtopt);
-	rsrc_gaddr(0, T_CPYDSK, &adr_cpydsk);
-	rsrc_gaddr(0, T_ABOUT,  &adr_about);
-	rsrc_gaddr(0, T_CPMVDL, &adr_cpmvdl);
-	rsrc_gaddr(0, T_DATINF, &adr_datinf);
-	rsrc_gaddr(0, T_ORDINF, &adr_ordinf);
-	ob_dsel(adr_hauptmen, MM_DATEI);
-	menu_ienable(adr_hauptmen, M_BLITTR, Blitmode(-1) & 2);
+	rsrc_gaddr(0, T_ICONS,  &tree_icons);
+	rsrc_gaddr(0, T_ICNCHG, &tree_chg_symbol);
+	rsrc_gaddr(0, T_EINSTE, &tree_settings);
+	rsrc_gaddr(0, T_PRGRMS, &tree_programs);
+	rsrc_gaddr(0, T_TTPPAR, &tree_ttp_params);
+	rsrc_gaddr(0, T_FORMAT, &tree_format_dsk);
+	rsrc_gaddr(0, T_FMTOPT, &tree_format_opt);
+	rsrc_gaddr(0, T_CPYDSK, &tree_copy_disk);
+	rsrc_gaddr(0, T_ABOUT,  &tree_about);
+	rsrc_gaddr(0, T_CPMVDL, &tree_file_ops);
+	rsrc_gaddr(0, T_DATINF, &tree_info_file);
+	rsrc_gaddr(0, T_ORDINF, &tree_info_folder);
+	ob_dsel(tree_menu, MM_DATEI);
+	menu_ienable(tree_menu, M_BLITTR, Blitmode(-1) & 2);
 	/* Diskname fÅrs Formatieren auf "" setzen 	*/
-	adr_format[FORMAT_T].ob_spec.tedinfo->te_ptext[0] = EOS;
+	tree_format_dsk[FORMAT_T].ob_spec.tedinfo->te_ptext[0] = EOS;
 
 	/* Icongrîûen fÅr Auflîsungen korrigieren */
 	for (i = I_FLPDSK; i <= I_BTCHDA; i++)
 	{
-		(adr_icons+i) -> ob_width  = 72;
-		(adr_icons+i) -> ob_height = 36;
+		tree_icons[i].ob_width  = 72;
+		tree_icons[i].ob_height = 36;
 	}
 
 	/* Icons im Dialog "Laufwerk anmelden" installieren */
 	for (i = I_FLPDSK; i <= I_PAPIER; i++)
 	{
-		adr_laufwe[ICNCHG_F + i - 1].ob_type   = G_ICON;
-		adr_laufwe[ICNCHG_F + i - 1].ob_state  = NORMAL;
-		adr_laufwe[ICNCHG_F + i - 1].ob_width  = adr_icons[i].ob_width;
-		adr_laufwe[ICNCHG_F + i - 1].ob_height = adr_icons[i].ob_height;
-		adr_laufwe[ICNCHG_F + i - 1].ob_spec   = adr_icons[i].ob_spec;
+		tree_chg_symbol[ICNCHG_F + i - 1].ob_type   = G_ICON;
+		tree_chg_symbol[ICNCHG_F + i - 1].ob_state  = NORMAL;
+		tree_chg_symbol[ICNCHG_F + i - 1].ob_width  = tree_icons[i].ob_width;
+		tree_chg_symbol[ICNCHG_F + i - 1].ob_height = tree_icons[i].ob_height;
+		tree_chg_symbol[ICNCHG_F + i - 1].ob_spec   = tree_icons[i].ob_spec;
 	}
 
 #if MAGIXDESK
@@ -806,65 +566,65 @@ static void get_rsc(void)
 	/* Gruppenrahmen anpassen */
 	i = gl_hhchar >> 1;
 
-	adr_einste[EINST_S1].ob_y		+= i;
-	adr_einste[EINST_S1].ob_height	+= i;
-	adr_einste[EINST_S2].ob_y		+= i;
-	adr_einste[EINST_S2].ob_height	+= i;
-	adr_einste[EINST_R1].ob_y -= i;
-	adr_einste[EINST_R2].ob_y -= i;
-	adr_cpydsk[CPYDS_R1].ob_y -= i;
-	adr_format[FORMT_R1].ob_y -= i;
-	adr_cpmvdl[CPMVD_R1].ob_y -= i;
-	adr_datinf[FI_R1   ].ob_y -= i;
-	adr_ordinf[OI_R1   ].ob_y -= i;
+	tree_settings[EINST_S1].ob_y += i;
+	tree_settings[EINST_S1].ob_height += i;
+	tree_settings[EINST_S2].ob_y += i;
+	tree_settings[EINST_S2].ob_height += i;
+	tree_settings[EINST_R1].ob_y -= i;
+	tree_settings[EINST_R2].ob_y -= i;
+	tree_copy_disk[CPYDS_R1].ob_y -= i;
+	tree_format_dsk[FORMT_R1].ob_y -= i;
+	tree_file_ops[CPMVD_R1].ob_y -= i;
+	tree_info_file[FI_R1].ob_y -= i;
+	tree_info_folder[OI_R1].ob_y -= i;
 
-	image = adr_about + ABOU_IMG;
+	image = tree_about + ABOU_IMG;
 	image->ob_height = image->ob_spec.bitblk->bi_hl;
-	while ((image->ob_y + image->ob_height > (adr_about + ABOU_OS) -> ob_y) && (image->ob_y > 0))
+	while ((image->ob_y + image->ob_height > tree_about [ABOU_OS].ob_y) && (image->ob_y > 0))
 	{
 		image->ob_y--;
 	}
 
-	strcpy(adr_about[ABOU_VER].ob_spec.tedinfo->te_ptext + 11, pgm_ver);
-	adr_about[ABOU_OS].ob_spec.free_string = os_ver_s;
-	i = adr_about->ob_width;
+	strcpy(tree_about[ABOU_VER].ob_spec.tedinfo->te_ptext + 11, pgm_ver);
+	tree_about[ABOU_OS].ob_spec.free_string = os_ver_s;
+	i = tree_about->ob_width;
 	i -= (int) strlen(os_ver_s) * gl_hwchar;
 	i /= 2;
 	if (i < 0)
 		i = 0;
 
-	adr_about[ABOU_OS].ob_x = i;
-	adr_hauptmen[M_ENDE].ob_state |= DISABLED;
+	tree_about[ABOU_OS].ob_x = i;
+	tree_menu[M_ENDE].ob_state |= DISABLED;
 
 	/* Uhrzeit in der MenÅleiste an den rechten Rand */
 	if (lowres)
 	{
-		objs_hide(adr_hauptmen, MM_TIMES, 0);
+		objs_hide(tree_menu, MM_TIMES, 0);
 	}
 	else
 	{
-		adr_hauptmen[MM_TIMES].ob_x = desk_g.g_w - 5 * gl_hwchar;
+		tree_menu[MM_TIMES].ob_x = desk_g.g_w - 5 * gl_hwchar;
 	}
 
 #else
-	strcpy(adr_about[ABOU_VER].ob_spec.free_string + 21, pgm_ver);
+	strcpy(tree_about[ABOU_VER].ob_spec.free_string + 21, pgm_ver);
 
 	/* Programmparameter auf "" setzen 	*/
-	adr_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext[0] = EOS;
-	adr_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext[0] = EOS;
+	tree_ttp_params[TTPPAR_1].ob_spec.tedinfo->te_ptext[0] = EOS;
+	tree_ttp_params[TTPPAR_2].ob_spec.tedinfo->te_ptext[0] = EOS;
 
 	/* Dialog "Einstellungen" fÅr KAOS/TOS bzw. MAGIX anpassen */
 	if (!ismagix)
 	{
-		adr_einste[EINST_TX].ob_flags = HIDETREE;
-		adr_einste[EINST_BD].ob_state |= DISABLED;
-		adr_einste[EINS_BDS].ob_state |= DISABLED;
+		tree_settings[EINST_TX].ob_flags = HIDETREE;
+		tree_settings[EINST_BD].ob_state |= DISABLED;
+		tree_settings[EINS_BDS].ob_state |= DISABLED;
 	}
 	/* Uhrzeit in der MenÅleiste an den rechten Rand */
 	if (isgem2)
-		objs_hide(adr_hauptmen, MM_TIMES, MM_SMODE, 0);
+		objs_hide(tree_menu, MM_TIMES, MM_SMODE, 0);
 	else
-		adr_hauptmen[MM_TIMES].ob_x = desk_g.g_w - 5 * gl_hwchar;
+		tree_menu[MM_TIMES].ob_x = desk_g.g_w - 5 * gl_hwchar;
 #endif
 }
 
@@ -929,12 +689,12 @@ void anfang(void)
 	/* Koordinaten des Desktop- Fensters initialisieren */
 	/* ------------------------------------------------ */
 
-	fenster[0].handle = SCREEN;
-	fenster[0].out = desk_g;
-	fenster[0].in = fenster[0].out;
-	fenster[0].pmydta	= NULL;
-	fenster[0].picb 	= NULL;
-	fenster[0].pstr	= NULL;
+	windows[0].handle = SCREEN;
+	windows[0].out = desk_g;
+	windows[0].in = windows[0].out;
+	windows[0].pmydta	= NULL;
+	windows[0].picb 	= NULL;
+	windows[0].pstr	= NULL;
 
 	/* INF- Datei laden oder Defaults setzen */
 	/* ------------------------------------- */
@@ -944,7 +704,7 @@ void anfang(void)
 
 	open_all_wind();
 
-	if (status.dnam_init)
+	if (settings.dnam_init)
 	{
 		for (i = 0; i < n_icons; i++)
 		{
@@ -959,7 +719,7 @@ void anfang(void)
 			drv = icon[i].isdisk;
 			for (j = 1; j <= NUM_WINDOWS; j++)
 			{
-				if (fenster[j].path[0] == drv)
+				if (windows[j].path[0] == drv)
 					goto nexticn;
 			}
 			drv -= 'A';
@@ -1099,13 +859,13 @@ void anfang(void)
 	/* Koordinaten des Desktop- Fensters initialisieren */
 	/* ------------------------------------------------ */
 
-	fenster[0].handle = SCREEN;
-	fenster[0].out = desk_g;
-	fenster[0].in = fenster[0].out;
-	fenster[0].pmydta	= NULL;
-	fenster[0].picb 	= NULL;
-	fenster[0].pstr	= NULL;
-	fenster[0].shownum  = fenster[0].realnum = n_icons;
+	windows[0].handle = SCREEN;
+	windows[0].out = desk_g;
+	windows[0].in = windows[0].out;
+	windows[0].pmydta	= NULL;
+	windows[0].picb 	= NULL;
+	windows[0].pstr	= NULL;
+	windows[0].shownum  = windows[0].realnum = n_icons;
 
 
 	/* INF- Datei laden oder Defaults setzen */
@@ -1113,7 +873,7 @@ void anfang(void)
 
 	reload_status(isfirst, -1);
 
-	if (status.dnam_init)
+	if (settings.dnam_init)
 	{
 		for (i = 0; i < n_icons; i++)
 		{
@@ -1121,7 +881,7 @@ void anfang(void)
 			int  drv;
 			char name[20];
 
-			if (icon[i].icontyp != I_HRDDSK && icon[i].icontyp != I_RAMDSK)
+			if ((icon[i].icon_type != I_HRDDSK) && (icon[i].icon_type != I_RAMDSK))
 			{
 				nexticn:
 				continue;
@@ -1131,7 +891,7 @@ void anfang(void)
 
 			for (j = 1; j <= NUM_WINDOWS; j++)
 			{
-				if (fenster[j].path[0] == drv)
+				if (windows[j].path[0] == drv)
 					goto nexticn;
 			}
 
@@ -1164,7 +924,7 @@ int is_dest(int wnr, int objnr)
 	char obtyp2;
 	MYDTA *dummy;
 
-	obj_typ(wnr, objnr, NULL, &dummy, &obtyp);
+	get_obj_type(wnr, objnr, NULL, &dummy, &obtyp);
 	obtyp2 = toupper((char) obtyp);
 	return (obtyp2 == 'P') || (obtyp2 == 'D') || (obtyp2 == 'B') ||
 		  (obtyp == '_O') || (obtyp == 'P_') || (obtyp == 'D_');
@@ -1191,7 +951,7 @@ int cdecl draw_userdef(PARMBLK *p)
 
 
 	for (wnr = 0; wnr <= NUM_WINDOWS; wnr++)
-		if (fenster[wnr].pobj == p->pb_tree)
+		if (windows[wnr].pobj == p->pb_tree)
 			goto found;
 
 	return 0;
@@ -1201,7 +961,7 @@ int cdecl draw_userdef(PARMBLK *p)
 	pxy[1] = p->pb_yc;
 	pxy[2] = pxy[0] + p->pb_wc - 1;
 	pxy[3] = pxy[1] + p->pb_hc - 1;
-	t = (char *) (fenster[wnr].pstr+(p->pb_obj - 1));
+	t = (char *) (windows[wnr].pstr+(p->pb_obj - 1));
 	if (pxy[0] != clip_rect[0] || pxy[1] != clip_rect[1] ||
 		 pxy[2] != clip_rect[2] || pxy[3] != clip_rect[3])
 	{
@@ -1256,7 +1016,7 @@ void close_all_wind(void)
 	/* Default- Zeichengrîûe wieder einstellen */
 	vst_height(vdi_handle, text_attrib[7], &char_w, &char_h, &dummy, &dummy);
 	deflt_topwnr = top_wnr();
-	menu_bar(adr_hauptmen, FALSE);
+	menu_bar(tree_menu, FALSE);
 
 	if (poolptr)
 	{
@@ -1271,15 +1031,15 @@ void close_all_wind(void)
 		wind_set_int(1, WF_RESVD, 0);			/* Redraw ausschalten */
 #endif
 	for (i = 1; i <= NUM_WINDOWS; i++)
-		if (fenster[i].handle > 0)         /* wenn Fenster existiert... */
+		if (windows[i].handle > 0)         /* wenn Fenster existiert... */
 		{
-			if (fenster[i].path[0] != EOS)		 /* ...und geîffnet   */
+			if (windows[i].path[0] != EOS)		 /* ...und geîffnet   */
 			{
-				wind_close(fenster[i].handle);  /* ...dann schlieûen */
+				wind_close(windows[i].handle);  /* ...dann schlieûen */
 			}
 
-			wind_delete(fenster[i].handle); /* ...und immer lîschen!  */
-			fenster[i].handle = -1;
+			wind_delete(windows[i].handle); /* ...und immer lîschen!  */
+			windows[i].handle = -1;
 		}
 #if MAGIXDESK == 0
 	if (!isgem2 && !ismagix)
@@ -1313,15 +1073,15 @@ void open_all_wind(void)
 	/* MenÅzeile auf den Bildschirm */
 	/* ---------------------------- */
 
-	menu_bar(adr_hauptmen, TRUE);
+	menu_bar(tree_menu, TRUE);
 
 	/* Icons installieren und malen */
 	/* ---------------------------- */
 
-	fenster[0].pobj->ob_x = fenster[0].pobj->ob_y = 0;
-	fenster[0].pobj->ob_height = desk_g.g_y + desk_g.g_h;
-	fenster[0].pobj->ob_width  = desk_g.g_x + desk_g.g_w;
-	wind_set_ptr_int(SCREEN, WF_NEWDESK, fenster[0].pobj, 0);
+	windows[0].pobj->ob_x = windows[0].pobj->ob_y = 0;
+	windows[0].pobj->ob_height = desk_g.g_y + desk_g.g_h;
+	windows[0].pobj->ob_width  = desk_g.g_x + desk_g.g_w;
+	wind_set_ptr_int(SCREEN, WF_NEWDESK, windows[0].pobj, 0);
 	exit_vt52();
 
 	/* Fenster îffnen */
@@ -1344,9 +1104,9 @@ void open_all_wind(void)
 
 	for (i = 1; i <= NUM_WINDOWS; i++)
 	{
-		fenster[i].handle = -1;			/* unbenutzt */
-		fenster[i].alloc_offs = -1L; 	/* kein allozierter Speicher */
-		fenster[i].alloc_size = 0L; 	/* kein allozierter Speicher */
+		windows[i].handle = -1;			/* unbenutzt */
+		windows[i].alloc_offs = -1L; 	/* kein allozierter Speicher */
+		windows[i].alloc_size = 0L; 	/* kein allozierter Speicher */
 	}
 
 	for (set = FALSE,i = 1; i <= NUM_WINDOWS; i++)
@@ -1361,7 +1121,7 @@ void open_all_wind(void)
 		if (set && i == NUM_WINDOWS)
 			j = deflt_topwnr;
 
-		if (fenster[j].path[0])
+		if (windows[j].path[0])
 		{
 			ret = opn_wnd(j, TRUE);
 			if (ret == ENOWND)
@@ -1389,10 +1149,10 @@ void redraw(int wnr, GRECT *neu)
 
 	if (wnr < 0)
 		return;						/* ungÅltiges Handle */
-	if (wnr > 0 && !fenster[wnr].path[0])
+	if (wnr > 0 && !windows[wnr].path[0])
 		return;						/* Fenster geschlossen */
 
-	whdl = fenster[wnr].handle;
+	whdl = windows[wnr].handle;
 	Mgraf_mouse(M_OFF);
 	wind_get_grect(whdl, WF_FIRSTXYWH, &g);
 
@@ -1400,13 +1160,155 @@ void redraw(int wnr, GRECT *neu)
 	{
 		if (rc_intersect(neu, &g))
 		{
-			objc_draw(fenster[wnr].pobj, 0, 1, &g);
+			objc_draw(windows[wnr].pobj, 0, 1, &g);
 		}
 		wind_get_grect(whdl, WF_NEXTXYWH, &g);
 	}
 	while (g.g_w > 0);		/* bis Rechteckliste vollstÑndig */
 
 	Mgraf_mouse(M_ON);
+}
+
+
+/****************************************************************
+*
+* FÅhrt Reaktionen auf AnwÑhlen von MenÅeintrÑgen aus.
+*
+****************************************************************/
+
+static void do_menu(int title, int entry)
+{
+	int wnr, obj;
+
+
+	switch (entry)
+	{
+     	case M_ABOUT:
+     		dial_about();
+     		break;
+
+     	case M_OPEN:
+     		if (1 == icsel(&wnr, &obj))
+     			dclick(wnr, obj, K_CTRL);
+			break;
+
+		case M_INFO:
+			dial_info();
+			break;
+
+		case M_LOESCH:
+			if (top_wnr() > 0)
+				dl_icns(top_wnr());
+			break;
+
+		case M_NEUORD:
+			dial_create_folder();
+			break;
+
+		case M_SCHLFN:
+			close_immed(top_wnr());
+			break;
+
+		case M_SELALL:
+			sel_all(top_wnr());
+			break;
+
+		case M_DCOPY:
+			dial_cpydsk();
+			break;
+
+		case M_FORMAT:
+			dial_format();
+			break;
+
+#if MAGIXDESK == 0
+		case M_ENDE:
+			ende();break;
+#endif
+		case M_ABILDR:
+		case M_ATEXT:
+			if (settings.show_mode != entry)
+			{
+				settings.show_mode = entry;
+				upd_show();
+			}
+			break;
+
+		case M_10_PKT:
+		case M_9_PKT:
+		case M_8_PKT:
+			if (settings.points != entry)
+			{
+				settings.points = entry;
+				get_char_dim();
+				if (settings.show_mode == M_ATEXT)
+					upd_show();
+			}
+			break;
+
+		case M_SPALTN:
+			settings.is_1col = !settings.is_1col;
+			upd_col();
+			break;
+
+		case M_ZGROES:
+			settings.is_size = !settings.is_size;
+			upd_is();
+			break;
+
+		case M_ZDATUM:
+			settings.is_date = !settings.is_date;
+			upd_is();
+			break;
+
+		case M_ZZEIT:
+			settings.is_time = !settings.is_time;
+			upd_is();
+			break;
+
+		case M_SNAME:
+		case M_SDATUM:
+		case M_SGROES:
+		case M_STYP:
+		case M_SNICHT:
+			if (settings.sort_mode != entry)
+			{
+				settings.sort_mode = entry;
+				upd_sort();
+			}
+			break;
+
+		case M_MASKE:
+			dial_file_pattern();
+			break;
+
+		case M_LAUFWE:
+			dial_register_drv();
+			break;
+
+		case M_ANWNDG:
+			dial_register_app();
+			break;
+
+		case M_EINSTE:
+			dial_settings();
+			break;
+
+		case M_PRGRMS:
+			dial_programs();
+			break;
+
+		case M_ARBSIC:
+			dial_save_settings();
+			break;
+
+		case M_BLITTR:
+			settings.blitstate = !settings.blitstate;
+			Blitmode(settings.blitstate);
+			break;
+	}
+
+	menu_tnormal(tree_menu, title, 1);
 }
 
 
@@ -1462,7 +1364,7 @@ static void handle_key(EVNT *w_ev)
 		(w_ev->key <= 0x4600))
 	{
 		i = scancode - 0x3b;
-		starten("", '#\0'+i+4, 0, 0, w_ev->kstate & K_ALT);
+		start_program("", '#\0'+i+4, 0, 0, w_ev->kstate & K_ALT);
 		w_ev->key = 0;
 	}
 
@@ -1475,8 +1377,8 @@ static void handle_key(EVNT *w_ev)
 		if (drv <= 'Z')
 		{
 			dsel_all();
-			ob_sel(fenster[0].pobj, i+1);
-			obj_malen(0, i+1);
+			ob_sel(windows[0].pobj, i+1);
+			draw_wind_obj(0, i+1);
 		}
 
 		if (last_wasopen == TRUE && last_drvopen == drv)
@@ -1491,10 +1393,10 @@ static void handle_key(EVNT *w_ev)
 				int wnr;
 
 				wnr = top_wnr();
-				if (wnr > 0 && fenster[wnr].path[0])
+				if (wnr > 0 && windows[wnr].path[0])
 				{
-					fenster[wnr].path[0] = toupper(drv);
-					fenster[wnr].path[3] = EOS;
+					windows[wnr].path[0] = toupper(drv);
+					windows[wnr].path[3] = EOS;
 					upd_path(wnr, TRUE);
 				}
 			}
@@ -1677,12 +1579,12 @@ static void handle_key(EVNT *w_ev)
 
 /* SH-INS	*/
 		case 0x5230:
-			status.resident = TRUE;
+			settings.resident = TRUE;
 			break;
 
 /* SH-DEL	*/
 		case 0x537f:
-			status.resident = FALSE;
+			settings.resident = FALSE;
 			break;
 
 /* Einfg */
@@ -1722,12 +1624,12 @@ static void handle_key(EVNT *w_ev)
 
 /* Ctrl-B */
 		case 0x3002:
-			starten("", '#\0', 0, 0, w_ev->kstate & K_ALT);
+			start_program("", '#\0', 0, 0, w_ev->kstate & K_ALT);
 			break;
 
 /* Ctrl-E */
 		case 0x1205:
-			starten("", '#\3', 0, 0, w_ev->kstate & K_ALT);
+			start_program("", '#\3', 0, 0, w_ev->kstate & K_ALT);
 			break;
 
 /* Ctrl-W */
@@ -1744,9 +1646,9 @@ static void handle_key(EVNT *w_ev)
 				i++;
 				if (i > NUM_WINDOWS)
 					i = 1;
-				if (fenster[i].path[0])
+				if (windows[i].path[0])
 				{
-					topped(fenster[i].handle);
+					topped(windows[i].handle);
 					break;
 				}
 			}
@@ -1763,7 +1665,7 @@ static void handle_key(EVNT *w_ev)
 			n = hdl_to_fnr(n);
 			if (n < 0)
 				break;
-			n = fenster[n].path[0];
+			n = windows[n].path[0];
 			if (n < 'A' || n > 'P')
 				break;
 			dirty_drives[n - 'A'] = TRUE;
@@ -1775,8 +1677,8 @@ static void handle_key(EVNT *w_ev)
 		{
 			int wnr;
 			wnr = top_wnr();
-			if (wnr > 0 && fenster[wnr].path[3])
-				closed(fenster[wnr].handle, w_ev->kstate);
+			if (wnr > 0 && windows[wnr].path[3])
+				closed(windows[wnr].handle, w_ev->kstate);
 		}
 			break;
 
@@ -1785,18 +1687,18 @@ static void handle_key(EVNT *w_ev)
 		{
 			int wnr;
 			wnr = top_wnr();
-			if (wnr > 0 && fenster[wnr].path[3])
+			if (wnr > 0 && windows[wnr].path[3])
 			{
-				fenster[wnr].path[3] = '\0';
+				windows[wnr].path[3] = '\0';
 				upd_path(wnr, FALSE);
 			}
 		}
 
 	}
 
-	if ((title >= 0) && !(((adr_hauptmen + entry) -> ob_state) & DISABLED))
+	if ((title >= 0) && !((tree_menu[entry].ob_state) & DISABLED))
 	{
-		menu_tnormal(adr_hauptmen, title, FALSE);
+		menu_tnormal(tree_menu, title, FALSE);
 		do_menu(title, entry);
 	}
 }
@@ -1816,7 +1718,7 @@ static void handle_message(const int *message, EVNT *w_ev)
 	}
 	else
 	{
-		switch(message[0])
+		switch (message[0])
 		{
 			case WM_REDRAW:
 			redraw(hdl_to_fnr(message[3]), (GRECT *) (message + 4));
@@ -1888,7 +1790,6 @@ void main()
 {
 	EVNT w_ev;
 	int message[16];
-	int ev_mwhich;
 	int waitfor;
 	int ltime;
 	long last_clicktime = 0;
@@ -1910,7 +1811,7 @@ void main()
 		/* lang auf den zweiten Klick gewartet.                        */
 		/* ----------------------------------------------------------- */
 
-		if (last_wasopen == -1 && !status.clock)
+		if (last_wasopen == -1 && !settings.clock)
 		{
 			last_wasopen = FALSE;
 		}
@@ -1922,7 +1823,7 @@ void main()
 		}
 		else
 		{
-			if (status.clock)
+			if (settings.clock)
 			{
 				ltime = 10000;
 				waitfor = MU_KEYBD+MU_BUTTON+MU_MESAG+MU_TIMER;
@@ -1933,7 +1834,7 @@ void main()
 			}
 		}
 
-		ev_mwhich = evnt_multi(waitfor,
+		w_ev.mwhich = evnt_multi(waitfor,
 						  1,			/* Doppelklicks selbermachen */
 						  1,			/* nur linke Maustaste		*/
 						  1,			/* linke Maustaste gedrÅckt	*/
@@ -1951,7 +1852,7 @@ void main()
 		/* Abfrage auf Timer- Ereignis	   */
 		/* ---------------------------------- */
 
-		if (last_wasopen == -1 || (ev_mwhich & MU_TIMER))
+		if (last_wasopen == -1 || (w_ev.mwhich & MU_TIMER))
 		{
 			char times[10];
 			static int lasttime = 0;
@@ -1960,9 +1861,9 @@ void main()
 
 			last_wasopen = FALSE;
 #if MAGIXDESK
-			if (status.clock)
+			if (settings.clock)
 #else
-			if (status.clock && !isgem2)
+			if (settings.clock && !isgem2)
 #endif
 			{
 				time = Tgettime();
@@ -1972,7 +1873,7 @@ void main()
 					lasttime = time;
 					time_to_str(times, time);
 					times[5] = EOS;	/* Stunden und Minuten */
-					subobj_draw(adr_hauptmen, MM_TIMES, -1, times);
+					subobj_draw(tree_menu, MM_TIMES, -1, times);
 				}
 			}
 		}
@@ -1980,7 +1881,7 @@ void main()
 		/* Abfrage auf BetÑtigung einer Taste */
 		/* ---------------------------------- */
 
-		if (ev_mwhich & MU_KEYBD)
+		if (w_ev.mwhich & MU_KEYBD)
 		{
 			handle_key(&w_ev);
 		}
@@ -1992,7 +1893,7 @@ void main()
 		/* Abfrage auf Nachricht im Nachrichtenpuffer */
 		/* ------------------------------------------ */
 
-		if (ev_mwhich & MU_MESAG)
+		if (w_ev.mwhich & MU_MESAG)
 		{
 			handle_message(message, &w_ev);
 		}
@@ -2000,7 +1901,7 @@ void main()
 		/* Abfrage auf BetÑtigung eines Mausknopfs */
 		/* --------------------------------------- */
 
-		if (ev_mwhich & MU_BUTTON)
+		if (w_ev.mwhich & MU_BUTTON)
 		{
 			/* Doppelklick feststellen */
 

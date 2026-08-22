@@ -13,9 +13,9 @@
 #include <tosdefs.h>
 #include "k.h"
 
-#define  WXOFFS	((status.showtyp == M_ATEXT) ? (2*char_w - 1) : (3))
+#define  WXOFFS	((settings.show_mode == M_ATEXT) ? (2*char_w - 1) : (3))
 #define  WYOFFS	(1)
-#define  WXDIST	((status.showtyp == M_ATEXT) ? (2*char_w) : (3))
+#define  WXDIST	((settings.show_mode == M_ATEXT) ? (2*char_w) : (3))
 #define  WYDIST	(1)
 
 static int showw, showh;		/* Objektgrîûen im Fenster */
@@ -40,14 +40,14 @@ void free_pool(int wnr)
 
 /*	Cconws("\x1b" "e" "\x1b" "HEintritt in free\r\n");
 	for	(i = 1; i <= NUM_WINDOWS; i++)
-		printf("Offset: %4ld Grîûe: %4ld\n", fenster[i].alloc_offs, fenster[i].alloc_size);
+		printf("Offset: %4ld Grîûe: %4ld\n", windows[i].alloc_offs, windows[i].alloc_size);
 	printf("Frei: %3d\n", poolsize);
 	Cnecin();
 */
-	if (0L == (size = fenster[wnr].alloc_size))
+	if (0L == (size = windows[wnr].alloc_size))
 		return;		/* war kein Speicher belegt */
-	offs = fenster[wnr].alloc_offs;
-	fenster[wnr].alloc_size = 0L;
+	offs = windows[wnr].alloc_offs;
+	windows[wnr].alloc_size = 0L;
 
 	bottom = offs + size;
 	top = 0L;
@@ -60,37 +60,37 @@ void free_pool(int wnr)
 		/* ------------------------------------------------------------- */
 
 		if (i == wnr ||
-			 !fenster[i].alloc_size ||
-			 fenster[i].alloc_offs < offs)
+			 !windows[i].alloc_size ||
+			 windows[i].alloc_offs < offs)
 			continue;
-		if (fenster[i].alloc_offs+fenster[i].alloc_size > top)
-			top = fenster[i].alloc_offs+fenster[i].alloc_size;
+		if (windows[i].alloc_offs+windows[i].alloc_size > top)
+			top = windows[i].alloc_offs+windows[i].alloc_size;
 
-		num = fenster[i].realnum;
-		for	(j = num,o = fenster[i].pobj + 1; j > 0; j--,o++)
+		num = windows[i].realnum;
+		for	(j = num,o = windows[i].pobj + 1; j > 0; j--,o++)
 		{
-			if (o -> ob_type == G_STRING || o -> ob_type == G_ICON)
-				o -> ob_spec.free_string -= size;
+			if ((o->ob_type == G_STRING) || (o->ob_type == G_ICON))
+				o->ob_spec.free_string -= size;
 		}
-		for	(j = num, icn = fenster[i].picb; j > 0; j--,icn++)
-			icn -> ib_ptext -= size;
+		for	(j = num, icn = windows[i].picb; j > 0; j--,icn++)
+			icn->ib_ptext -= size;
 
-		(char *) fenster[i].pmydta	-= size;
-		(char *) fenster[i].pobj 	-= size;
-		(char *) fenster[i].picb 	-= size;
-		(char *) fenster[i].pstr 	-= size;
-		fenster[i].alloc_offs -= size;
+		(char *) windows[i].pmydta	-= size;
+		(char *) windows[i].pobj 	-= size;
+		(char *) windows[i].picb 	-= size;
+		(char *) windows[i].pstr 	-= size;
+		windows[i].alloc_offs -= size;
 	}
 
 	if (top > bottom)
 		memmove(poolptr+offs, poolptr+bottom, top-bottom);
 
 	poolfree -= size;
-	poolsize += fenster[wnr].realnum;
+	poolsize += windows[wnr].realnum;
 
 /*	Cconws("Austritt aus free\r\n");
 	for	(i = 1; i <= NUM_WINDOWS; i++)
-		printf("Offset: %4ld Grîûe: %4ld\n", fenster[i].alloc_offs, fenster[i].alloc_size);
+		printf("Offset: %4ld Grîûe: %4ld\n", windows[i].alloc_offs, windows[i].alloc_size);
 	printf("Frei: %3d\n", poolsize);
 	Cnecin(); */
 }
@@ -112,24 +112,24 @@ void alloc_pool(int wnr)
 
 	Cconws("\x1b" "HEintritt in alloc \r\n");
 	for	(i = 1; i <= NUM_WINDOWS; i++)
-		printf("Offset: %4ld Grîûe: %4ld\n", fenster[i].alloc_offs, fenster[i].alloc_size);
+		printf("Offset: %4ld Grîûe: %4ld\n", windows[i].alloc_offs, windows[i].alloc_size);
 	printf("Frei: %3d\n", poolsize);
 	Cnecin();
 */
-	num = fenster[wnr].realnum;
+	num = windows[wnr].realnum;
 	size = sizeof(OBJECT) + num *
 			(sizeof(OBJECT)+sizeof(MYDTA)+sizeof(ICONBLK)+sizeof(MYFNAME));
-	fenster[wnr].alloc_offs = poolfree - poolptr;
-	fenster[wnr].alloc_size = size;
-	fenster[wnr].pobj = (OBJECT *)  (fenster[wnr].pmydta + num);
-	fenster[wnr].picb = (ICONBLK *) (fenster[wnr].pobj + num + 1);
-	fenster[wnr].pstr = (MYFNAME *) (fenster[wnr].picb + num);
+	windows[wnr].alloc_offs = poolfree - poolptr;
+	windows[wnr].alloc_size = size;
+	windows[wnr].pobj = (OBJECT *)  (windows[wnr].pmydta + num);
+	windows[wnr].picb = (ICONBLK *) (windows[wnr].pobj + num + 1);
+	windows[wnr].pstr = (MYFNAME *) (windows[wnr].picb + num);
 	poolfree += size;
 	poolsize -= num;
 
 /*	Cconws("Austritt aus alloc\r\n");
 	for	(i = 1; i <= NUM_WINDOWS; i++)
-		printf("Offset: %4ld Grîûe: %4ld\n", fenster[i].alloc_offs, fenster[i].alloc_size);
+		printf("Offset: %4ld Grîûe: %4ld\n", windows[i].alloc_offs, windows[i].alloc_size);
 	printf("Frei: %3d\n", poolsize);
 	Cnecin();*/
 }
@@ -141,29 +141,29 @@ void alloc_pool(int wnr)
 *
 ****************************************************************/
 
-void init_icnobj(OBJECT *o, ICONBLK *icn, int typ, char *text)
+void init_icnobj(OBJECT *o, ICONBLK *icn, int type, char *text)
 {
 	register OBJECT *srcobj;
 	register int typ2;
 
 
-	if (typ >= PGMICN_OFFS)			/* externes Icon */
-		typ2 = (typ < DATICN_OFFS) ? I_PROGRA : I_DATEI;
+	if (type >= PGMICN_OFFS)			/* externes Icon */
+		typ2 = (type < DATICN_OFFS) ? I_PROGRA : I_DATEI;
 	else
-		typ2 = typ;
+		typ2 = type;
 
-	srcobj = adr_icons + typ2;
-	*icn = * ((srcobj -> ob_spec.iconblk));
-	if (typ >= PGMICN_OFFS && typ < DATICN_OFFS) /* externes Programmicon */
+	srcobj = tree_icons + typ2;
+	*icn = * ((srcobj->ob_spec.iconblk));
+	if (type >= PGMICN_OFFS && type < DATICN_OFFS) /* externes Programmicon */
 	{
-		typ -= PGMICN_OFFS;	/* Offset lîschen */
-		icn -> ib_pdata = icf_pgmicn + typ * 0x38;
+		type -= PGMICN_OFFS;	/* Offset lîschen */
+		icn->ib_pdata = icf_pgmicn + type * 0x38;
 	}
 	else
-	if (typ >= DATICN_OFFS)		/* externes Dateiicon */
+	if (type >= DATICN_OFFS)		/* externes Dateiicon */
 	{
-		typ -= DATICN_OFFS;	/* Offset lîschen */
-		icn -> ib_pdata = icf_daticn + typ * 0x38;
+		type -= DATICN_OFFS;	/* Offset lîschen */
+		icn->ib_pdata = icf_daticn + type * 0x38;
 	}
 
 	if (text)
@@ -172,8 +172,8 @@ void init_icnobj(OBJECT *o, ICONBLK *icn, int typ, char *text)
 	o->ob_type   = G_ICON;
 	o->ob_flags  = NORMAL;
 	o->ob_state  = NORMAL;
-	o->ob_width  = srcobj -> ob_width;
-	o->ob_height = srcobj -> ob_height;
+	o->ob_width  = srcobj->ob_width;
+	o->ob_height = srcobj->ob_height;
 	o->ob_spec.iconblk = icn;
 }
 
@@ -245,17 +245,17 @@ int find_iconfile_dat(char *fname)
 static void save_select_status(int wnr)
 {
 	register int i,tail;
-	register OBJECT *tree = fenster[wnr].pobj;
+	register OBJECT *tree = windows[wnr].pobj;
 
 
-	if ((i = (tree -> ob_head)) <= 0)
+	if ((i = (tree->ob_head)) <= 0)
 		return;
-	tail = (tree++ -> ob_tail);
+	tail = (tree++->ob_tail);
 	for	(; i <= tail; i++,tree++)
 	{
 		if (!(SELECTED&(tree->ob_state)) || (HIDETREE&(tree->ob_flags)))
-			fenster[wnr].pmydta[i - 1].flags &= ~2;
-		else	fenster[wnr].pmydta[i - 1].flags |=  2;
+			windows[wnr].pmydta[i - 1].flags &= ~2;
+		else	windows[wnr].pmydta[i - 1].flags |=  2;
 	}
 }
 
@@ -297,11 +297,11 @@ void upd_wind(int wnr)
 	msg[0] = WM_REDRAW;
 	msg[1] = ap_id;
 	msg[2] = 0;
-	msg[3] = fenster[wnr].handle;
-	msg[4] = fenster[wnr].out.g_x;
-	msg[5] = fenster[wnr].out.g_y;
-	msg[6] = fenster[wnr].out.g_w;
-	msg[7] = fenster[wnr].out.g_h;
+	msg[3] = windows[wnr].handle;
+	msg[4] = windows[wnr].out.g_x;
+	msg[5] = windows[wnr].out.g_y;
+	msg[6] = windows[wnr].out.g_w;
+	msg[7] = windows[wnr].out.g_h;
 	appl_write(ap_id, 16, msg);
 }
 
@@ -310,7 +310,7 @@ void upd_wind(int wnr)
 *
 * Sortiert die Dateien fÅr Fenster <wnr>.
 * Auûerdem werden die "nicht zur Maske passenden" Dateien nach
-* hinten sortiert und <fenster[wnr].shownum> initialisiert.
+* hinten sortiert und <windows[wnr].shownum> initialisiert.
 *
 ****************************************************************/
 
@@ -324,7 +324,7 @@ static int cmp_mydtas(MYDTA *f1, MYDTA *f2)
 	if (((f1->flags)&1) != ((f2->flags)&1))		/* Match- Flag */
 		return ((f2->flags)&1 - ((f1->flags)&1));
 
-	if (status.sorttyp == M_SNICHT)
+	if (settings.sort_mode == M_SNICHT)
 		return f1->number - f2->number;
 
 	if (f1->attrib & F_SUBDIR)
@@ -338,7 +338,7 @@ static int cmp_mydtas(MYDTA *f1, MYDTA *f2)
 	if (f2->attrib & F_SUBDIR)
 		return 1;
 
-	switch(status.sorttyp)
+	switch (settings.sort_mode)
 	{
 		case M_SNAME:
 			name:
@@ -379,27 +379,27 @@ static int cmp_mydtas(MYDTA *f1, MYDTA *f2)
 
 static void sort_mydtas(int wnr)
 {
-	MYDTA *files = fenster[wnr].pmydta;
-	int anzahl  = fenster[wnr].realnum;
+	MYDTA *files = windows[wnr].pmydta;
+	int count  = windows[wnr].realnum;
 	register int i,match;
 	register MYDTA *dtas;
 
 
-	fenster[wnr].shownum = 0;
-	for	(dtas = files, i = 0; i < anzahl; i++, dtas++)
+	windows[wnr].shownum = 0;
+	for	(dtas = files, i = 0; i < count; i++, dtas++)
 	{
 		match = ((dtas->attrib & F_SUBDIR) ||
-			 (fname_match(dtas->filename, fenster[wnr].maske)));
+			 (fname_match(dtas->filename, windows[wnr].fpattern)));
 		if (match)
 		{
 			dtas->flags |=  1;
-			fenster[wnr].shownum++;
+			windows[wnr].shownum++;
 		}
 		else
 			dtas->flags &= ~1;
 	}
 
-	shelsort(fenster[wnr].pmydta, (size_t) fenster[wnr].realnum,
+	shelsort(windows[wnr].pmydta, (size_t) windows[wnr].realnum,
 		    sizeof(MYDTA), cmp_mydtas);
 }
 
@@ -415,9 +415,9 @@ static void set_title(int wnr)
 	register char *s,*p,*m;
 
 
-	s = fenster[wnr].title;
-	p = fenster[wnr].path;
-	m = fenster[wnr].maske;
+	s = windows[wnr].title;
+	p = windows[wnr].path;
+	m = windows[wnr].fpattern;
 	*s++ = ' ';
 	if (strlen(p) + strlen(m) > 124)
 	{
@@ -453,24 +453,24 @@ static void set_title(int wnr)
 
 static void set_info(int wnr)
 {
-	register char *s 			= fenster[wnr].info;
+	register char *s 			= windows[wnr].info;
 	register unsigned long size 	= 0L;
 		    unsigned long ssize	= 0L;
-	register int num 			= fenster[wnr].shownum;
+	register int num 			= windows[wnr].shownum;
 		    int snum			= 0;
 	register int i;
-	MYDTA *file 				= fenster[wnr].pmydta;
+	MYDTA *file 				= windows[wnr].pmydta;
 	MYDTA *sfile 				= NULL;
-	OBJECT *o					= fenster[wnr].pobj + 1;
+	OBJECT *o					= windows[wnr].pobj + 1;
 
 
 	for	(i = num; i > 0; i--,file++,o++)
 	{
-		size += (file -> filesize);
-		if ((o -> ob_state) & SELECTED)
+		size += file->filesize;
+		if ((o->ob_state) & SELECTED)
 		{
 			snum++;
-			ssize += (file -> filesize);
+			ssize += file->filesize;
 			sfile = file;
 		}
 	}
@@ -487,7 +487,7 @@ static void set_info(int wnr)
 		char *objs;
 
 
-		if (snum == 0 && fenster[wnr].too_much)
+		if (snum == 0 && windows[wnr].too_much)
 		{
 #if LANGUAGE == LANG_GER
 			strcpy(s, " mehr als ");
@@ -524,7 +524,7 @@ static void set_info(int wnr)
 	}
 	else
 	{
-		if (0 == ((sfile -> attrib) & F_SUBDIR))
+		if (0 == ((sfile->attrib) & F_SUBDIR))
 		{
 			if (size < 100000L)
 				*s++ = ' ';
@@ -545,24 +545,24 @@ static void set_info(int wnr)
 			s += strlen(s);
 		}
 
-		date_to_str(s, sfile -> date);
+		date_to_str(s, sfile->date);
 		strcat(s, " | ");
 		s += strlen(s);
-		time_to_str(s, sfile -> time);
-		i = suffixtyp(sfile->filename);
+		time_to_str(s, sfile->time);
+		i = suffix_type(sfile->filename);
 		if (i == '_T')
 			i = (NULL != file_to_defapp(sfile->filename));
 		else
 			i = TRUE;
-		if (i || ((sfile -> attrib) & (F_RDONLY+F_HIDDEN+F_SYSTEM+F_ARCHIVE)))
+		if (i || ((sfile->attrib) & (F_RDONLY+F_HIDDEN+F_SYSTEM+F_ARCHIVE)))
 			strcat(s, " | ");
-		if ((sfile -> attrib) & F_RDONLY)
+		if ((sfile->attrib) & F_RDONLY)
 			strcat(s, "R");
-		if ((sfile -> attrib) & F_SYSTEM)
+		if ((sfile->attrib) & F_SYSTEM)
 			strcat(s, "S");
-		if ((sfile -> attrib) & F_HIDDEN)
+		if ((sfile->attrib) & F_HIDDEN)
 			strcat(s, "H");
-		if ((sfile -> attrib) & F_ARCHIVE)
+		if ((sfile->attrib) & F_ARCHIVE)
 			strcat(s, "A");
 		if (i)
 			strcat(s, "E");		/* executable */
@@ -585,7 +585,7 @@ void show_free(int wnr)
 	int lwc;
 
 
-	lwc = fenster[wnr].path[0];
+	lwc = windows[wnr].path[0];
 	s = alertstr;
 #if LANGUAGE == LANG_GER
 	strcpy(s, "[0][Freier Platz auf Laufwerk ");
@@ -636,11 +636,11 @@ void set_dname(int lw, char *dname)
 			/* 2. Fall: Leerstring Åbergeben: Default einsetzen */
 			else
 			{
-				*p = ((adr_icons + icon[i].icontyp) -> ob_spec.iconblk) -> ib_ptext;
+				*p = ((tree_icons + icon[i].icon_type)->ob_spec.iconblk)->ib_ptext;
 			}
 
 			if (strcmp(old_text, *p))
-				obj_malen(0, i+1);
+				draw_wind_obj(0, i + 1);
 		}
 }
 
@@ -664,15 +664,15 @@ void set_dname(int lw, char *dname)
 static long read_wind(int wnr, int free_flag)
 {
 	char path[128];
-	register int anzahl,drv;
+	register int count,drv;
 	long errcode;
 	DTA  dta;
-	MYDTA *ziele;
+	MYDTA *dests;
 
 
 	Mgraf_mouse(HOURGLASS);
 	Fsetdta(&dta);
-	drv = fenster[wnr].path[0] - 'A';
+	drv = windows[wnr].path[0] - 'A';
 	dirty_drives[drv] = 0;		/* dirty- Flag lîschen */
 	errcode = E_OK;
 
@@ -683,18 +683,18 @@ static long read_wind(int wnr, int free_flag)
 	{
 		if (errcode != E_OK)
 		{
-			fenster[wnr].shift = 0;
-			if (errcode != EPTHNF || fenster[wnr].path[3] == EOS)
+			windows[wnr].shift = 0;
+			if (errcode != EPTHNF || windows[wnr].path[3] == EOS)
 			{
 				Mgraf_mouse(ARROW);
 				return errcode;
 			}
 			else
 			{
-				fenster[wnr].path[3] = EOS;
+				windows[wnr].path[3] = EOS;
 				free_flag = TRUE;
 				set_title(wnr);
-				wind_set_string(fenster[wnr].handle, WF_NAME, fenster[wnr].title);
+				wind_set_string(windows[wnr].handle, WF_NAME, windows[wnr].title);
 			}
 		}
 	
@@ -702,7 +702,7 @@ static long read_wind(int wnr, int free_flag)
 		/* ------------------------------------- */
 
 		Dsetdrv(drv);					/* wegen TOS- Fehler */
-		errcode = Dsetpath(fenster[wnr].path);
+		errcode = Dsetpath(windows[wnr].path);
 		if (errcode != E_OK)
 			continue;
 	
@@ -748,80 +748,80 @@ static long read_wind(int wnr, int free_flag)
 				slsize = ((b_total - b_free) * 1000L) / b_total;
 			}
 
-			wind_set_int(fenster[wnr].handle, WF_HSLSIZE, (int) slsize);
+			wind_set_int(windows[wnr].handle, WF_HSLSIZE, (int) slsize);
 		}
 
 		/* Speicherverwaltung, alten Speicher freigeben und */
 		/* gucken, wieviele Objekte noch reinpassen		  */
 
 		free_pool(wnr);
-		fenster[wnr].pmydta = (MYDTA *) poolfree;	/* hier ist Platz */
+		windows[wnr].pmydta = (MYDTA *) poolfree;	/* hier ist Platz */
 
 		/* Verzeichnis einlesen */
 		/* -------------------- */
 	
-		strcpy(path, fenster[wnr].path);
+		strcpy(path, windows[wnr].path);
 		strcat(path, "*.*");
-		ziele = fenster[wnr].pmydta;
-		anzahl = 0;
-		errcode = Fsfirst(path, (status.show_all) ? 0x37 : 0x10);
-		while (errcode == E_OK && anzahl < poolsize)
+		dests = windows[wnr].pmydta;
+		count = 0;
+		errcode = Fsfirst(path, (settings.show_all) ? 0x37 : 0x10);
+		while (errcode == E_OK && count < poolsize)
 		{
 			if (dta.d_fname[0] != '.' ||
 			      (dta.d_fname[1] != EOS && dta.d_fname[1] != '.')
 			     )
 			{
-				ziele->number = anzahl;
-				ziele->time = dta.d_time;
-				ziele->date = dta.d_date;
-				ziele->filesize = dta.d_length;
-				ziele->attrib = dta.d_attrib;
-				strcpy(ziele->filename,dta.d_fname);
-				anzahl++;
-				ziele++;
+				dests->number = count;
+				dests->time = dta.d_time;
+				dests->date = dta.d_date;
+				dests->filesize = dta.d_length;
+				dests->attrib = dta.d_attrib;
+				strcpy(dests->filename,dta.d_fname);
+				count++;
+				dests++;
 			}
 			errcode = Fsnext();
 		}
 
 		if (errcode == E_OK)
-			fenster[wnr].too_much = TRUE;
+			windows[wnr].too_much = TRUE;
 		else
 		{
-			fenster[wnr].too_much = FALSE;
+			windows[wnr].too_much = FALSE;
 			if (errcode == EFILNF || errcode == ENMFIL)
 				errcode = E_OK;
 		}
 	}
 	while (errcode != E_OK);
 
-	fenster[wnr].realnum = anzahl;
+	windows[wnr].realnum = count;
 	alloc_pool(wnr);
 
 	/* Icontypen und Exec- Flag festlegen */
 	/* ---------------------------------- */
 
-	ziele = fenster[wnr].pmydta;
-	for	(ziele = fenster[wnr].pmydta;
-		 ziele < fenster[wnr].pmydta + anzahl;
-		 ziele++)
+	dests = windows[wnr].pmydta;
+	for	(dests = windows[wnr].pmydta;
+		 dests < windows[wnr].pmydta + count;
+		 dests++)
 	{
-		int typ;
+		int type;
 
-		ziele -> flags = 0;					/* Datei */
+		dests->flags = 0;					/* Datei */
 
-		if ((ziele -> attrib) & F_SUBDIR)
+		if ((dests->attrib) & F_SUBDIR)
 		{
-			ziele -> icontyp = I_ORDNER;
+			dests->icon_type = I_ORDNER;
 			continue;
 		}
 
-		typ = suffixtyp(ziele -> filename);
+		type = suffix_type(dests->filename);
 
 		/* Batchdateien bekommen das Icon I_BTCHDA */
 		/* --------------------------------------- */
 
-		if ((typ & 0xff) == 'B')
-			typ = I_BTCHDA;
+		if ((type & 0xff) == 'B')
+			type = I_BTCHDA;
 
 		/* Programmdateien bekommen, entweder das ihnen	*/
 		/* zugeordnete Icon (Offset PGMICN_OFFS) oder	*/
@@ -829,10 +829,10 @@ static long read_wind(int wnr, int free_flag)
 		/* ---------------------------------------------- */
 
 		else
-		if ((typ & 0xff) == 'P')
+		if ((type & 0xff) == 'P')
 		{
-			ziele -> flags = 4;				/* Programm */
-			typ = find_iconfile_pgm(ziele -> filename);
+			dests->flags = 4;				/* Programm */
+			type = find_iconfile_pgm(dests->filename);
 		}
 
 		/* Sonstige Dateien bekommen das ihnen zugewiesene	*/
@@ -841,10 +841,10 @@ static long read_wind(int wnr, int free_flag)
 
 		else
 		{
-			typ = find_iconfile_dat(ziele -> filename);
+			type = find_iconfile_dat(dests->filename);
 		}
 
-		ziele -> icontyp = typ;
+		dests->icon_type = type;
 	}
 
 	Mgraf_mouse(ARROW);
@@ -864,10 +864,10 @@ static void calc_in(int wnr)
 	register int gescrollte_pixel;
 
 
-	f = &(fenster[wnr]);
+	f = &(windows[wnr]);
 	gescrollte_pixel = f->shift*(showh+WYDIST);
 
-	wind_calc(WC_WORK, FENSTERTYP, &f->out, &f->in);
+	wind_calc(WC_WORK, WINDOW_ATTRIBS, &f->out, &f->in);
 	(f->pobj)->ob_x = f->in.g_x;
 	(f->pobj)->ob_y = f->in.g_y - gescrollte_pixel;
 	(f->pobj)->ob_width  = f->in.g_w;
@@ -884,12 +884,12 @@ static void calc_in(int wnr)
 
 static void calc_collin(int wnr)
 {
-	int x = fenster[wnr].in.g_w - WXOFFS + WXDIST;
-	int y = fenster[wnr].in.g_h - WYOFFS + WYDIST;
+	int x = windows[wnr].in.g_w - WXOFFS + WXDIST;
+	int y = windows[wnr].in.g_h - WYOFFS + WYDIST;
 	int c;
 
 
-	if (status.is_1col && status.showtyp == M_ATEXT)
+	if (settings.is_1col && settings.show_mode == M_ATEXT)
 		c = 1;
 	else
 	{
@@ -898,10 +898,10 @@ static void calc_collin(int wnr)
 			c = 1;
 	}
 
-	fenster[wnr].cols = c;
-	fenster[wnr].wlins = y / (showh + WYDIST);
-	fenster[wnr].lins = (fenster[wnr].shownum + fenster[wnr].cols - 1) /
-					 fenster[wnr].cols;
+	windows[wnr].cols = c;
+	windows[wnr].wlins = y / (showh + WYDIST);
+	windows[wnr].lins = (windows[wnr].shownum + windows[wnr].cols - 1) /
+					 windows[wnr].cols;
 }
 
 
@@ -923,75 +923,75 @@ static void calc_collin(int wnr)
 
 static void calc_obj_look(int wnr, int dsel_flag)
 {
-	int anzahl 	= fenster[wnr].shownum;
-	OBJECT *o 	= fenster[wnr].pobj;
-	MYFNAME *f 	= fenster[wnr].pstr;
-	MYDTA *d 		= fenster[wnr].pmydta;
-	ICONBLK *c 	= fenster[wnr].picb;
-	int 	typ;
+	int count  = windows[wnr].shownum;
+	OBJECT *o  = windows[wnr].pobj;
+	MYFNAME *f = windows[wnr].pstr;
+	MYDTA *d   = windows[wnr].pmydta;
+	ICONBLK *c = windows[wnr].picb;
+	int type;
 	register int i;
 	register char *s,*t,*fname;
 
 
-	if (status.showtyp == M_ATEXT)
+	if (settings.show_mode == M_ATEXT)
 	{
 		showh = char_h;
-		showw = char_w * (16 + 8*status.is_groesse +
-							 10*status.is_datum +
-							 7*status.is_zeit
+		showw = char_w * (16 + 8*settings.is_size +
+							 10*settings.is_date +
+							 7*settings.is_time
 						);
 	}
 	else
 	{
-		showh = (adr_icons + I_DATEI) -> ob_height;
-		showw = (adr_icons + I_DATEI) -> ob_width;
+		showh = tree_icons[I_DATEI].ob_height;
+		showw = tree_icons[I_DATEI].ob_width;
 	}
 
 	/* Objekt der weiûen Hintergrundbox */
 
-	o -> ob_next = -1;
-	o -> ob_type = G_BOX;
-	o -> ob_state = NORMAL;
-	o -> ob_spec.index = (long) (WHITE);
+	o->ob_next = -1;
+	o->ob_type = G_BOX;
+	o->ob_state = NORMAL;
+	o->ob_spec.index = (long) (WHITE);
 
-	if (anzahl > 0)
+	if (count > 0)
 	{
-		o -> ob_flags = NONE;
-		o -> ob_head = 1;
-		o -> ob_tail = anzahl;
+		o->ob_flags = NONE;
+		o->ob_head = 1;
+		o->ob_tail = count;
 	}
 	else
 	{
-		o -> ob_flags = LASTOB;
-		o -> ob_head = o -> ob_tail = -1;
+		o->ob_flags = LASTOB;
+		o->ob_head = o->ob_tail = -1;
 	}
 
 	/* Objekte der Dateien */
 
-	for	(i = 1; i <= anzahl; i++,c++,d++,f++)
+	for	(i = 1; i <= count; i++,c++,d++,f++)
 	{
 		o++;
-		o -> ob_next = (i < anzahl) ? (i+1) : (0);
-		o -> ob_head = o -> ob_tail = -1;
-		o -> ob_flags = (i < anzahl) ? NONE : LASTOB;
+		o->ob_next = (i < count) ? (i+1) : (0);
+		o->ob_head = o->ob_tail = -1;
+		o->ob_flags = (i < count) ? NONE : LASTOB;
 
-		typ = d -> icontyp;
-		if (status.showtyp == M_ABILDR)
+		type = d->icon_type;
+		if (settings.show_mode == M_ABILDR)
 		{
-			strcpy((char *) f, d -> filename);
-			init_icnobj(o, c, typ, (char *) f);
-			o -> ob_state = ((!dsel_flag) && (d -> flags & 2))
+			strcpy((char *) f, d->filename);
+			init_icnobj(o, c, type, (char *) f);
+			o->ob_state = ((!dsel_flag) && (d->flags & 2))
 					 	? SELECTED+WHITEBAK : NORMAL+WHITEBAK;
 		}
 		else
 		{
 			s = t = (char *) f;
-			fname = d -> filename;
+			fname = d->filename;
 			*s++ = ' ';
-			if (typ == I_ORDNER)
+			if (type == I_ORDNER)
 				*s++ = '\7';
 			else
-			if (typ == I_PROGRA || (typ >= PGMICN_OFFS && typ < DATICN_OFFS))
+			if (type == I_PROGRA || (type >= PGMICN_OFFS && type < DATICN_OFFS))
 				*s++ = '.';
 			else
 				*s++ = ' ';
@@ -1026,15 +1026,15 @@ static void calc_obj_look(int wnr, int dsel_flag)
 			while (s < t)
 				*s++ = ' ';
 
-			if (status.is_groesse)
+			if (settings.is_size)
 			{
 				char gr[10],*g;
 				int  j;
 	
-				if ((d -> attrib) & F_SUBDIR)
+				if ((d->attrib) & F_SUBDIR)
 					gr[0] = EOS;
 				else
-					ultoa(d -> filesize, gr, 10);
+					ultoa(d->filesize, gr, 10);
 
 				for	(j = 8 - (int) strlen(gr); j > 0; j--)
 					*s++ = ' ';
@@ -1043,29 +1043,30 @@ static void calc_obj_look(int wnr, int dsel_flag)
 				while (*g)
 					*s++ = *g++;
 			}
-			if (status.is_datum)
+			if (settings.is_date)
 			{
 				*s++ = ' ';
 				*s++ = ' ';
-				date_to_str(s, d -> date);
+				date_to_str(s, d->date);
 				s += 8;
 			}
-			if (status.is_zeit)
+			if (settings.is_time)
 			{
 				*s++ = ' ';
 				*s++ = ' ';
-				time_to_str(s, d -> time);
+				time_to_str(s, d->time);
 				s += 5;
 			}
 			*s = EOS;
 	
-			o -> ob_type = G_USERDEF;
-			o -> ob_spec.userblk = &userblk;
-			o -> ob_state = ((!dsel_flag) && (d -> flags & 2))
+			o->ob_type = G_USERDEF;
+			o->ob_spec.userblk = &userblk;
+			o->ob_state = ((!dsel_flag) && (d->flags & 2))
 					 	? SELECTED : NORMAL;
 		}
-		o -> ob_width = showw;
-		o -> ob_height = showh;
+
+		o->ob_width = showw;
+		o->ob_height = showh;
 	}
 	set_info(wnr);
 }
@@ -1074,7 +1075,7 @@ static void calc_obj_look(int wnr, int dsel_flag)
 /****************************************************************
 *
 * Organisiert das Fenster neu, d.h. legt Position der Objekte fest.
-* gibt TRUE zurÅck, falls sich fenster.cols oder fenster.shift
+* gibt TRUE zurÅck, falls sich windows.cols oder windows.shift
 * geÑndert haben.
 *
 ****************************************************************/
@@ -1083,38 +1084,38 @@ static int re_arrange(int wnr)
 {
 	register int i,j;
 	int x,y,cols;
-	int oldcols 	= fenster[wnr].cols;
-	int oldshift 	= fenster[wnr].shift;
-	int anzahl 	= fenster[wnr].shownum;
-	OBJECT *o 	= fenster[wnr].pobj;
+	int oldcols = windows[wnr].cols;
+	int oldshift = windows[wnr].shift;
+	int count = windows[wnr].shownum;
+	OBJECT *o = windows[wnr].pobj;
 	long vsize,vpos;
 
 
 	calc_in(wnr);			/* Innenmaûe berechnen */
 	calc_collin(wnr);		/* Zeilen/Spalten berechnen */
-	cols = fenster[wnr].cols;
+	cols = windows[wnr].cols;
 
-	fenster[wnr].maxshift = fenster[wnr].lins - fenster[wnr].wlins;
-	if (fenster[wnr].maxshift < 0)
-		fenster[wnr].maxshift = 0;
+	windows[wnr].maxshift = windows[wnr].lins - windows[wnr].wlins;
+	if (windows[wnr].maxshift < 0)
+		windows[wnr].maxshift = 0;
 
-	if (fenster[wnr].shift < 0)
-		fenster[wnr].shift = 0;
-	if (fenster[wnr].shift > fenster[wnr].maxshift)
-		fenster[wnr].shift = fenster[wnr].maxshift;
+	if (windows[wnr].shift < 0)
+		windows[wnr].shift = 0;
+	if (windows[wnr].shift > windows[wnr].maxshift)
+		windows[wnr].shift = windows[wnr].maxshift;
 
-	if (fenster[wnr].lins > 0)
-		vsize = (1000L * fenster[wnr].wlins) / fenster[wnr].lins;
+	if (windows[wnr].lins > 0)
+		vsize = (1000L * windows[wnr].wlins) / windows[wnr].lins;
 	else
 		vsize = 1000L;
 
 	if (vsize > 1000L)
 		vsize = 1000L;
 
-	wind_set_int(fenster[wnr].handle, WF_VSLSIZE, (int) vsize);
+	wind_set_int(windows[wnr].handle, WF_VSLSIZE, (int) vsize);
 
-	if (fenster[wnr].maxshift > 0)
-		vpos = (1000L * fenster[wnr].shift) / fenster[wnr].maxshift;
+	if (windows[wnr].maxshift > 0)
+		vpos = (1000L * windows[wnr].shift) / windows[wnr].maxshift;
 	else
 		vpos = 1L;
 
@@ -1124,12 +1125,12 @@ static int re_arrange(int wnr)
 	if (vpos < 1)
 		vpos = 1;
 
-	wind_set_int(fenster[wnr].handle, WF_VSLIDE, (int) vpos);
+	wind_set_int(windows[wnr].handle, WF_VSLIDE, (int) vpos);
 
 	/* Position und Hîhe ggf. korrigieren (von calc_in schon gesetzt) */
-	o -> ob_y 	= fenster[wnr].in.g_y - fenster[wnr].shift*(showh+WYDIST);
-	o -> ob_height = fenster[wnr].in.g_h + fenster[wnr].shift*(showh+WYDIST);
-	for	(i = 0, y = WYOFFS, x = WXOFFS, j = anzahl; j > 0; i++,j--)
+	o->ob_y = windows[wnr].in.g_y - windows[wnr].shift*(showh+WYDIST);
+	o->ob_height = windows[wnr].in.g_h + windows[wnr].shift*(showh+WYDIST);
+	for	(i = 0, y = WYOFFS, x = WXOFFS, j = count; j > 0; i++,j--)
 	{
 		o++;
 		if (i >= cols)
@@ -1138,15 +1139,15 @@ static int re_arrange(int wnr)
 			x = WXOFFS;
 			y += showh + WYDIST;
 		}
-		o -> ob_x = x;
-		o -> ob_y = y;
+		o->ob_x = x;
+		o->ob_y = y;
 		x += showw + WXDIST;
 	}
-	if (anzahl < oldcols)
-		oldcols = anzahl;
-	if (anzahl < cols)
-		cols = anzahl;
-	return (oldcols != cols || oldshift != fenster[wnr].shift);
+	if (count < oldcols)
+		oldcols = count;
+	if (count < cols)
+		cols = count;
+	return (oldcols != cols || oldshift != windows[wnr].shift);
 }
 
 
@@ -1169,36 +1170,36 @@ long opn_wnd(int wnr, int fast)
 
 	if (poolptr)
 	{
-		fenster[wnr].handle = wind_create(FENSTERTYP, &desk_g);
+		windows[wnr].handle = wind_create(WINDOW_ATTRIBS, &desk_g);
 	}
 	else
 	{
-		fenster[wnr].handle = -1;
+		windows[wnr].handle = -1;
 	}
 
-	if (fenster[wnr].handle < 0)
+	if (windows[wnr].handle < 0)
 	{
 		ret = ENOWND;
 		goto err;
 	}
 
-	Dsetdrv(fenster[wnr].path[0] - 'A');
+	Dsetdrv(windows[wnr].path[0] - 'A');
 	for	(i = 0; i < n_icons; i++)
 	{
-		if (icon[i].isdisk == fenster[wnr].path[0])
+		if (icon[i].isdisk == windows[wnr].path[0])
 			break;
 	}
 	/* Verzeichnis einlesen */
 	if (!fast)
-		fenster[wnr].shift = 0;
-	dinfo[fenster[wnr].path[0] - 'A'].b_clsiz = 0L;	  /* ungÅltig machen */
+		windows[wnr].shift = 0;
+	dinfo[windows[wnr].path[0] - 'A'].b_clsiz = 0L;	  /* ungÅltig machen */
 	ret =  read_wind(wnr, TRUE);
 	if (ret)
 	{		/* Fehler */
-		wind_delete(fenster[wnr].handle);
-		fenster[wnr].handle = -1;
+		wind_delete(windows[wnr].handle);
+		windows[wnr].handle = -1;
 		err:
-		fenster[wnr].path[0] = EOS;	/* als unbenutzt markieren */
+		windows[wnr].path[0] = EOS;	/* als unbenutzt markieren */
 		return ret;
 	}
 
@@ -1213,12 +1214,12 @@ long opn_wnd(int wnr, int fast)
 
 	if (!fast)
 	{
-		graf_growbox((GRECT *) &(fenster[0].pobj+i+1)->ob_x, (GRECT *) &fenster[wnr].out);
+		graf_growbox((GRECT *) &(windows[0].pobj+i+1)->ob_x, (GRECT *) &windows[wnr].out);
 	}
 
-	wind_set_string(fenster[wnr].handle, WF_NAME, fenster[wnr].title);
-	wind_set_string(fenster[wnr].handle, WF_INFO, fenster[wnr].info);
-	wind_open(fenster[wnr].handle, &fenster[wnr].out);
+	wind_set_string(windows[wnr].handle, WF_NAME, windows[wnr].title);
+	wind_set_string(windows[wnr].handle, WF_INFO, windows[wnr].info);
+	wind_open(windows[wnr].handle, &windows[wnr].out);
 	return E_OK;
 }
 
@@ -1236,7 +1237,7 @@ void topped(int whdl)
 	if ((wnr = hdl_to_fnr(whdl)) > 0)
 	{
 		wind_set_int(whdl, WF_TOP, 0);
-		Dsetdrv(fenster[wnr].path[0] - 'A');
+		Dsetdrv(windows[wnr].path[0] - 'A');
 	}
 }
 
@@ -1254,9 +1255,9 @@ void upd_path(int wnr, int free_flag)
 	void dirty_info(int wnr);
 
 
-	fenster[wnr].shift = 0;
+	windows[wnr].shift = 0;
 	set_title(wnr);
-	wind_set_string(fenster[wnr].handle, WF_NAME, fenster[wnr].title);
+	wind_set_string(windows[wnr].handle, WF_NAME, windows[wnr].title);
 	if (read_wind(wnr, free_flag))
 	{
 		close_immed(wnr);
@@ -1292,11 +1293,11 @@ void closed(int whdl, int kstate)
 
 	if (kstate & K_ALT)
 	{
-		char	path[128];
+		char path[128];
 
-		if (fenster[n].path[3] == EOS)	/* schon Root */
+		if (windows[n].path[3] == EOS)	/* schon Root */
 			return;
-		strcpy(path, fenster[n].path);	/* Pfad erst kopieren */
+		strcpy(path, windows[n].path);	/* Pfad erst kopieren */
 		path[strlen(path) - 1] = EOS;		/* letzten '\' lîschen */
 		lastb = strrchr(path, '\\');		/* letzten '\' ermitteln */
 		*(lastb + 1) = EOS;				/* dahinter absÑgen */
@@ -1309,10 +1310,10 @@ void closed(int whdl, int kstate)
 	/* 1. Fall : Fenster war nicht die Root: zurÅckgehen */
 	/* ------------------------------------------------- */
 
-	if (fenster[n].path[3] != EOS)
+	if (windows[n].path[3] != EOS)
 	{
-		fenster[n].path[strlen(fenster[n].path) - 1] = EOS;
-		lastb = strrchr(fenster[n].path, '\\');
+		windows[n].path[strlen(windows[n].path) - 1] = EOS;
+		lastb = strrchr(windows[n].path, '\\');
 		*(lastb + 1) = EOS;
 		upd_path(n, FALSE);
 		return;
@@ -1323,15 +1324,18 @@ void closed(int whdl, int kstate)
 
 	for	(i = 0; i < n_icons; i++)
 	{
-		if (icon[i].isdisk == fenster[n].path[0])
+		if (icon[i].isdisk == windows[n].path[0])
 			break;
 	}
 	wind_close(whdl);
 	wind_delete(whdl);
-	fenster[n].handle = -1;
+	windows[n].handle = -1;
 	if (i < n_icons)
-		graf_shrinkbox((GRECT *) &(fenster[0].pobj+i+1)->ob_x, &fenster[n].out);
-	fenster[n].path[0] = EOS; /* als unbenutzt markieren */
+	{
+		graf_shrinkbox((GRECT *) &(windows[0].pobj+i+1)->ob_x, &windows[n].out);
+	}
+
+	windows[n].path[0] = EOS; /* als unbenutzt markieren */
 }
 
 
@@ -1343,11 +1347,11 @@ void closed(int whdl, int kstate)
 
 void close_immed(int wnr)
 {
-	if (fenster[wnr].path[0])
+	if (windows[wnr].path[0])
 	{
-		fenster[wnr].path[3] = EOS;		/* zurÅck auf Root */
-		Dsetpath(fenster[wnr].path);		/* Standardpfad auf Root */
-		closed(fenster[wnr].handle, 0);	/* Fenster schlieûen */
+		windows[wnr].path[3] = EOS;		/* zurÅck auf Root */
+		Dsetpath(windows[wnr].path);		/* Standardpfad auf Root */
+		closed(windows[wnr].handle, 0);	/* Fenster schlieûen */
 	}
 }
 
@@ -1368,9 +1372,11 @@ void fulled(int wnr)
 
 	if (wnr <= 0)
 		return;
-	f = &(fenster[wnr]);			/* f = Fenster */
+
+	f = &(windows[wnr]);			/* f = Fenster */
 	if ((whdl = f->handle) <=0 )
 		return;
+
 	out = &(f->out);				/* out = Auûenmaûe */
 	wind_get_grect(whdl, WF_PREVXYWH, &prev);
 	wind_get_grect(whdl, WF_FULLXYWH, &full);
@@ -1411,10 +1417,10 @@ void fulled(int wnr)
 
 static void vshift(int wnr, int newshift)
 {
-	register int diff;		/* um soviele Zeilen Scrollen */
+	register int diff;		/* um soviele Zeilen scrollen */
 	register int ycopy;		/* soviele y-Pixel werden kopiert */
 	MFDB src_mfdb,dest_mfdb;
-	int  pxy[8];
+	int pxy[8];
 	GRECT g;
 	register int whdl;
 
@@ -1422,18 +1428,18 @@ static void vshift(int wnr, int newshift)
 	if (newshift < 0)
 		newshift = 0;
 	else
-	if (newshift > fenster[wnr].maxshift)
-		newshift = fenster[wnr].maxshift;
+	if (newshift > windows[wnr].maxshift)
+		newshift = windows[wnr].maxshift;
 
-	if (0 == (diff = newshift - fenster[wnr].shift))
+	if (0 == (diff = newshift - windows[wnr].shift))
 		return;
 
-	fenster[wnr].shift = newshift;
+	windows[wnr].shift = newshift;
 	re_arrange(wnr);
 
-	/* wenn >= 1 Seite gescrollt, wird das Fenster neu aufgebaut */
+	/* wenn mindestens eine Seite gescrollt, wird das Fenster neu aufgebaut */
 
-	if (abs(diff) > fenster[wnr].wlins)
+	if (abs(diff) > windows[wnr].wlins)
 	{
 		upd_wind(wnr);
 		return;
@@ -1446,7 +1452,7 @@ static void vshift(int wnr, int newshift)
 
 	/* Fenster Åber Rechteckliste scrollen */
 
-	whdl = fenster[wnr].handle;
+	whdl = windows[wnr].handle;
 	Mgraf_mouse(M_OFF);
 	wind_get_grect(whdl, WF_FIRSTXYWH, &g);
 	do
@@ -1479,7 +1485,7 @@ static void vshift(int wnr, int newshift)
 					g.g_y += ycopy;
 			}
 
-			objc_draw(fenster[wnr].pobj, 0, 1, &g);
+			objc_draw(windows[wnr].pobj, 0, 1, &g);
 		}
 		wind_get_grect(whdl, WF_NEXTXYWH, &g);
 	}
@@ -1500,29 +1506,43 @@ static void vshift(int wnr, int newshift)
 
 void arrowed(int wnr, int arrow)
 {
-	int	newshift;
+	int newshift;
 
 
 	if (wnr <= 0)
 		return;
-	newshift = fenster[wnr].shift;
-	switch(arrow)
+	newshift = windows[wnr].shift;
+	switch (arrow)
 	{
-		case -1:			newshift  = 0;
-						break;
-		case -2:			newshift  = fenster[wnr].maxshift;
-						break;
-		case WA_UPPAGE:	newshift -= fenster[wnr].wlins;
-						break;
-		case WA_DNPAGE:	newshift += fenster[wnr].wlins;
-						break;
-		case WA_UPLINE:	newshift--;
-						break;
-		case WA_DNLINE:	newshift++;
-						break;
-		default:			show_free(wnr);
-						return;
+		case -1:
+			newshift  = 0;
+			break;
+
+		case -2:
+			newshift  = windows[wnr].maxshift;
+			break;
+
+		case WA_UPPAGE:
+			newshift -= windows[wnr].wlins;
+			break;
+
+		case WA_DNPAGE:
+			newshift += windows[wnr].wlins;
+			break;
+
+		case WA_UPLINE:
+			newshift--;
+			break;
+
+		case WA_DNLINE:
+			newshift++;
+			break;
+
+		default:
+			show_free(wnr);
+			return;
 	}
+
 	vshift(wnr, newshift);
 }
 
@@ -1553,13 +1573,13 @@ void hslid(int whdl)
 
 void vslid(int whdl, int newpos)
 {
-	int	wnr;
+	int wnr;
 	long newshift;
 
 
 	if ((wnr = hdl_to_fnr(whdl)) <= 0)
 		return;
-	newshift = (newpos * (fenster[wnr].maxshift + 1L))/1000L;
+	newshift = (newpos * (windows[wnr].maxshift + 1L))/1000L;
 	vshift(wnr, (int) newshift);
 }
 
@@ -1580,7 +1600,7 @@ void sized(int whdl, GRECT *g)
 		return;
 	if (wind_set_grect(whdl, WF_CURRXYWH, g))
 	{
-		fenster[n].out = *g;
+		windows[n].out = *g;
 		if (re_arrange(n))
 			upd_wind(n);
 	}
@@ -1603,7 +1623,7 @@ void moved(int whdl, GRECT *g)
 	g->g_x &= ~7;
 	if (wind_set_grect(whdl, WF_CURRXYWH, g))
 	{
-		fenster[n].out = *g;
+		windows[n].out = *g;
 		calc_in(n);
 	}
 }
@@ -1640,10 +1660,12 @@ static void upd_disk(int lw, int free_flag)
 	register int i;
 
 	dirty_drives[lw] = 0;		/* dirty- Flag lîschen */
+
 	if (free_flag)
 		dinfo[lw].b_clsiz = 0L;	  /* ungÅltig machen */
+
 	for	(i = 1; i <= NUM_WINDOWS; i++)
-		if (fenster[i].path[0] == (lw+'A'))
+		if (windows[i].path[0] == (lw+'A'))
 		{
 			if (read_wind(i, free_flag))
 			{
@@ -1652,7 +1674,7 @@ static void upd_disk(int lw, int free_flag)
 			}
 			sort_mydtas(i);
 			calc_obj_look(i, TRUE);
-			wind_set_string(fenster[i].handle, WF_INFO, fenster[i].info);
+			wind_set_string(windows[i].handle, WF_INFO, windows[i].info);
 			re_arrange(i);
 			upd_wind(i);
 		}
@@ -1689,7 +1711,7 @@ void upd_show(void)
 	register int i;
 
 	for	(i = 1; i <= NUM_WINDOWS; i++)
-		if (fenster[i].path[0])
+		if (windows[i].path[0])
 		{
 			save_select_status(i);
 			calc_obj_look(i, FALSE);
@@ -1710,10 +1732,10 @@ void upd_is(void)
 {
 	register int i;
 
-	if (status.showtyp == M_ABILDR)
+	if (settings.show_mode == M_ABILDR)
 		return;
 	for	(i = 1; i <= NUM_WINDOWS; i++)
-		if (fenster[i].path[0])
+		if (windows[i].path[0])
 		{
 			save_select_status(i);
 			calc_obj_look(i, FALSE);
@@ -1735,7 +1757,7 @@ void upd_sort(void)
 	register int i;
 
 	for	(i = 1; i <= NUM_WINDOWS; i++)
-		if (fenster[i].path[0])
+		if (windows[i].path[0])
 		{
 			save_select_status(i);
 			sort_mydtas(i);
@@ -1754,7 +1776,7 @@ void upd_sort(void)
 
 void upd_mask(int wnr)
 {
-	if (fenster[wnr].path[0])
+	if (windows[wnr].path[0])
 	{
 		int ow,ob;
 
@@ -1765,8 +1787,8 @@ void upd_mask(int wnr)
 		sort_mydtas(wnr);
 		calc_obj_look(wnr, FALSE);
 		re_arrange(wnr);
-		wind_set_string(fenster[wnr].handle, WF_NAME, fenster[wnr].title);
-		wind_set_string(fenster[wnr].handle, WF_INFO, fenster[wnr].info);
+		wind_set_string(windows[wnr].handle, WF_NAME, windows[wnr].title);
+		wind_set_string(windows[wnr].handle, WF_INFO, windows[wnr].info);
 		upd_wind(wnr);
 	}
 }
@@ -1783,7 +1805,7 @@ char dirty[NUM_WINDOWS+1];
 
 void dirty_info(int wnr)
 {
-	if (wnr > 0 && fenster[wnr].path[0])
+	if (wnr > 0 && windows[wnr].path[0])
 		dirty[wnr] = TRUE;
 }
 
@@ -1802,10 +1824,10 @@ void upd_infos(void)
 
 	for	(wnr = 1; wnr <= NUM_WINDOWS; wnr++)
 	{
-		if (dirty[wnr] && fenster[wnr].path[0])
+		if (dirty[wnr] && windows[wnr].path[0])
 		{
 			set_info(wnr);
-			wind_set_string(fenster[wnr].handle, WF_INFO, fenster[wnr].info);
+			wind_set_string(windows[wnr].handle, WF_INFO, windows[wnr].info);
 			dirty[wnr] = FALSE;
 		}
 	}
@@ -1824,23 +1846,24 @@ void upd_col(void)
 	register int i,oldcol;
 
 
-	if (status.showtyp == M_ABILDR)
+	if (settings.show_mode == M_ABILDR)
 		return;
+
 	for	(i = 1; i <= NUM_WINDOWS; i++)
-		if (fenster[i].path[0] && fenster[i].shownum > 1)
+		if (windows[i].path[0] && windows[i].shownum > 1)
 		{
-			if (status.is_1col)
+			if (settings.is_1col)
 			{
-				if (fenster[i].cols > 1)
+				if (windows[i].cols > 1)
 					goto doit;
 				else
 					continue;
 			}
 			else
 			{
-				oldcol = fenster[i].cols;
+				oldcol = windows[i].cols;
 				calc_collin(i);
-				if (oldcol == fenster[i].cols)
+				if (oldcol == windows[i].cols)
 					continue;
 			}
 
@@ -1848,4 +1871,36 @@ void upd_col(void)
 			re_arrange(i);
 			upd_wind(i);
 		}
+}
+
+
+/****************************************************************
+*
+* DurchlÑuft alle selektierten Objekte eines Baums.
+* Wenn die Funktion "cb" < 0 liefert, wird abgebrochen.
+* Gibt Anzahl dieser Objekte zurÅck.
+*
+****************************************************************/
+
+int walk_wind_sel_objs(int wnr, int (*cb)(int wnr, int obj))
+{
+	register int i,tail,count;
+	register OBJECT *tree = windows[wnr].pobj;
+
+
+	if ((i = (tree->ob_head)) <= 0)
+		return 0;
+
+	count = 0;
+	tail = (tree++->ob_tail);
+	for (; i <= tail; i++,tree++)
+	{
+		if (!(SELECTED & (tree->ob_state)) || (HIDETREE & (tree->ob_flags)))
+			continue;
+		count++;
+		if (0 > (*cb)(wnr, i))
+			break;
+	}
+
+	return count;
 }

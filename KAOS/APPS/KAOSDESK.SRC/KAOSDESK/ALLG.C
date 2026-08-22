@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include <ctype.h>
 #include <limits.h>
 #include <mgx_dos.h>	/* include before tos.h */
@@ -305,7 +306,7 @@ char *print_ul(unsigned long num, unsigned long factor, char *p)
 	register int len;
 	char hilfs[20];
 
-	while(factor > 1024)
+	while (factor > 1024)
 	{
 		factor >>= 10;
 		unit++;
@@ -410,7 +411,7 @@ void fname_ext(char *s, char *d)
 *
 *********************************************************************/
 
-int suffixtyp(char *s)
+int suffix_type(char *s)
 {
 	s = strrchr(s, '.');
 	if (s)
@@ -484,9 +485,9 @@ int fname_match(char *fname, char *fmask)
 
 void objc_grect(OBJECT *tree, int objn, GRECT *g)
 {
-	objc_offset(tree, objn, &(g -> g_x), &(g -> g_y));
-	g -> g_w = (tree + objn) -> ob_width;
-	g -> g_h = (tree + objn) -> ob_height;
+	objc_offset(tree, objn, &(g->g_x), &(g->g_y));
+	g->g_w = tree[objn].ob_width;
+	g->g_h = tree[objn].ob_height;
 }
 
 
@@ -510,9 +511,9 @@ void tree_sel_grect(OBJECT *tree, GRECT *g)
 	mx = my = INT_MAX;		/* Ecke links oben */
 	mrx = mry = -INT_MAX;	/* Ecke rechts unten (aužerhalb) */
 
-	if ((i = (tree -> ob_head)) > 0)
+	if ((i = (tree->ob_head)) > 0)
 	{
-		tail = (tree++ -> ob_tail);
+		tail = (tree++->ob_tail);
 		for (; i <= tail; i++,tree++)
 		{
 			if ((SELECTED&(tree->ob_state)) && !(HIDETREE&(tree->ob_flags)))
@@ -532,10 +533,10 @@ void tree_sel_grect(OBJECT *tree, GRECT *g)
 			}
 		}
 	}
-	g -> g_x = mx + ox;
-	g -> g_y = my + oy;
-	g -> g_w = mrx - mx;
-	g -> g_h = mry - my;
+	g->g_x = mx + ox;
+	g->g_y = my + oy;
+	g->g_w = mrx - mx;
+	g->g_h = mry - my;
 }
 
 
@@ -560,24 +561,24 @@ void grect_toggle(OBJECT *tree, GRECT *g)
 	register ICONBLK *icn;
 
 
-	tx = tree -> ob_x;
-	ty = tree -> ob_y;
+	tx = tree->ob_x;
+	ty = tree->ob_y;
 	mx = my = INT_MAX;		/* Ecke links oben */
 	mrx = mry = -INT_MAX;	/* Ecke rechts unten (aužerhalb) */
 
-	if ((i = (t -> ob_head)) > 0)
+	if ((i = (t->ob_head)) > 0)
 	{
-		tail = (t++ -> ob_tail);
+		tail = (t++->ob_tail);
 		for (; i <= tail; i++,t++)
 		{
 			if (HIDETREE & (t->ob_flags))
 				continue;
-			if (t -> ob_type == G_ICON)
+			if (t->ob_type == G_ICON)
 			{
-				int x = tx + t -> ob_x;
-				int y = ty + t -> ob_y;
+				int x = tx + t->ob_x;
+				int y = ty + t->ob_y;
 
-				icn = t -> ob_spec.iconblk;
+				icn = t->ob_spec.iconblk;
 				/* 1. Fall: Icon selbst */
 				ob.g_x = x + icn->ib_xicon;
 				ob.g_y = y + icn->ib_yicon;
@@ -618,10 +619,10 @@ void grect_toggle(OBJECT *tree, GRECT *g)
 				mry = ry;
 		}
 	}
-	g -> g_x = mx + tree->ob_x;
-	g -> g_y = my + tree->ob_y;
-	g -> g_w = mrx - mx;
-	g -> g_h = mry - my;
+	g->g_x = mx + tree->ob_x;
+	g->g_y = my + tree->ob_y;
+	g->g_w = mrx - mx;
+	g->g_h = mry - my;
 }
 
 
@@ -641,15 +642,15 @@ int find_obj(OBJECT *tree, int x, int y)
 	int end;
 
 
-	if ((i = (tree -> ob_head)) < 0)
+	if ((i = (tree->ob_head)) < 0)
 		return 0;
 
-	if ((tree -> ob_flags) & HIDETREE)
+	if ((tree->ob_flags) & HIDETREE)
 		return -1;			/* etwa inaktiver Hintergrund */
 
-	end = tree -> ob_tail;
-	x -= tree -> ob_x;			/* Position der Root abziehen */
-	y -= tree -> ob_y;
+	end = tree->ob_tail;
+	x -= tree->ob_x;			/* Position der Root abziehen */
+	y -= tree->ob_y;
 
 	for (; i <= end; i++)
 	{
@@ -657,7 +658,7 @@ int find_obj(OBJECT *tree, int x, int y)
 		if ((tree->ob_flags) & HIDETREE)
 			continue;
 		/* 1. Fall: ICON */
-		if (tree -> ob_type == G_ICON)
+		if (tree->ob_type == G_ICON)
 		{
 			icn = tree->ob_spec.iconblk;
 			/* 1. Fall: Icon selbst */
@@ -665,7 +666,7 @@ int find_obj(OBJECT *tree, int x, int y)
 			oby = tree->ob_y + icn->ib_yicon;
 			obw = icn->ib_wicon;
 			obh = icn->ib_hicon;
-			if (x >= obx && x < obx+obw && y >= oby && y < oby+obh)
+			if ((x >= obx) && (x < obx + obw) && (y >= oby) && (y < oby + obh))
 				return i;
 
 			/* 2. Fall: Unterschrift */
@@ -673,7 +674,7 @@ int find_obj(OBJECT *tree, int x, int y)
 			oby = tree->ob_y + icn->ib_ytext;
 			obw = icn->ib_wtext;
 			obh = icn->ib_htext;
-			if (x >= obx && x < obx+obw && y >= oby && y < oby+obh)
+			if ((x >= obx) && (x < obx + obw) && (y >= oby) && (y < oby + obh))
 				return i;
 		}
 		/* 2. Fall: sonst (STRING bzw. G_USERDEF) */
@@ -687,6 +688,103 @@ int find_obj(OBJECT *tree, int x, int y)
 
 	return 0;
 }
+
+
+/****************************************************************
+*
+* Objekte verstecken
+*
+****************************************************************/
+
+void objs_hide(OBJECT *tree, ...)
+{
+	va_list argpoint;
+	int objnr;
+
+	va_start(argpoint, tree);
+	for (;;)
+	{
+		objnr = va_arg(argpoint, int);
+		if (objnr == 0)
+			break;
+		tree[objnr].ob_flags |= HIDETREE;
+	}
+
+	va_end(argpoint);
+}
+
+
+/****************************************************************
+*
+* Objekte hervorholen
+*
+****************************************************************/
+
+void objs_unhide(OBJECT *tree, ...)
+{
+	va_list argpoint;
+	int objnr;
+
+	va_start(argpoint, tree);
+	for (;;)
+	{
+		objnr = va_arg(argpoint, int);
+		if (objnr == 0)
+			break;
+		tree[objnr].ob_flags &= ~HIDETREE;
+	}
+
+	va_end(argpoint);
+}
+
+
+/****************************************************************
+*
+* Objekte selektiert?
+*
+****************************************************************/
+
+int selected(OBJECT *tree, int which)
+
+{ return (tree[which].ob_state & SELECTED) ? 1 : 0; }
+
+
+/****************************************************************
+*
+* Objekte deselektieren
+*
+****************************************************************/
+
+void ob_dsel(OBJECT *tree, int which)
+
+{ tree[which].ob_state &= ~SELECTED; }
+
+
+/****************************************************************
+*
+* Objekt selektieren/deselektieren
+*
+****************************************************************/
+
+void ob_sel_dsel(OBJECT *tree, int which, int sel)
+
+{
+	if (sel)
+		tree[which].ob_state |=  SELECTED;
+	else
+		tree[which].ob_state &= ~SELECTED;
+}
+
+
+/****************************************************************
+*
+* Objekt selektieren
+*
+****************************************************************/
+
+void ob_sel(OBJECT *tree, int which)
+
+{ tree[which].ob_state |= SELECTED; }
 
 
 /****************************************************************
@@ -708,36 +806,4 @@ int rc_intersect(GRECT *p1, GRECT *p2)
 	p2->g_w = tw - tx;
 	p2->g_h = th - ty;
 	return (tw > tx) && (th > ty);
-}
-
-
-/****************************************************************
-*
-* Durchl„uft alle selektierten Objekte eines Baums.
-* Wenn die Funktion "tue" < 0 liefert, wird abgebrochen.
-* gibt Anzahl dieser Objekte zurck.
-*
-****************************************************************/
-
-int walk_sel(int wnr, int (*tue)(int wnr, int obj))
-{
-	register int i,tail,anz;
-	register OBJECT *tree = fenster[wnr].pobj;
-
-
-	if ((i = (tree -> ob_head)) <= 0)
-		return 0;
-
-	anz = 0;
-	tail = (tree++ -> ob_tail);
-	for (; i <= tail; i++,tree++)
-	{
-		if (!(SELECTED&(tree->ob_state)) || (HIDETREE&(tree->ob_flags)))
-			continue;
-		anz++;
-		if (0 > (*tue)(wnr, i))
-			break;
-	}
-
-	return anz;
 }

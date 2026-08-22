@@ -51,7 +51,7 @@
 **************************************************/
 
 #define SCREEN     0
-#define FENSTERTYP (NAME+CLOSER+FULLER+MOVER+INFO+SIZER+UPARROW+DNARROW+VSLIDE+HSLIDE)
+#define WINDOW_ATTRIBS (NAME+CLOSER+FULLER+MOVER+INFO+SIZER+UPARROW+DNARROW+VSLIDE+HSLIDE)
 
 #define NUM_DRIVES      16			/* Maximale Anzahl Laufwerke */
 #define NUM_PROGRAMS    14			/* Anzahl Dateien in "Programme" */
@@ -64,13 +64,15 @@
 #define PGMICN_OFFS 20
 #define DATICN_OFFS 150
 
+#define MOUSE_DRAG_DETECT_MS 100	/* gib dem Anwender 100 ms zum Loslassen der Maustaste */
+
 typedef struct
 {
 	int           number;		/* Eingangsreihenfolge */
 	unsigned char flags;		/* Bit 0: "paût zu Muster" */
 								/* Bit 1: versch (selected) */
 								/* Bit 2: ist Programm */
-	unsigned char icontyp;
+	unsigned char icon_type;
 	unsigned int  time;
 	unsigned int  date;
 	unsigned long filesize;
@@ -87,18 +89,18 @@ typedef struct
 {
 	int     handle;			/* Handle oder 0 				*/
 	char    path[128];		/* "", wenn nicht geîffnet 		*/
-	char    maske[13];		/* etwa "*.*" 					*/
+	char    fpattern[13];	/* etwa "*.*" 					*/
 	char    title[128];		/* Titelzeile 					*/
 	char    info[60];		/* Infozeile 					*/
 	GRECT   out;			/* Fenster- Gesamtmaûe 			*/
 	GRECT   in;				/* Fenster- Innenmaûe 			*/
-	int		realnum;		/* wahre Anzahl Dateien 		*/
-	int		shownum;		/* mit Maske angezeigte Anzahl	*/
-	int		too_much;		/* Flag fÅr "zuviele Dateien" 	*/
-	int		cols;			/* Objekte/Zeile 				*/
-	int		wlins;			/* Anzahl ganz sichtbarer Zeilen*/
-	int		lins;			/* Anzahl Zeilen 				*/
-	int		shift;			/* Nr. der obersten Zeile 		*/
+	int     realnum;		/* wahre Anzahl Dateien 		*/
+	int     shownum;		/* mit Maske angezeigte Anzahl	*/
+	int     too_much;		/* Flag fÅr "zuviele Dateien" 	*/
+	int     cols;			/* Objekte/Zeile 				*/
+	int     wlins;			/* Anzahl ganz sichtbarer Zeilen*/
+	int     lins;			/* Anzahl Zeilen 				*/
+	int     shift;			/* Nr. der obersten Zeile 		*/
 	int     maxshift;		/* Maximales <shift> 			*/
 	long    alloc_offs;		/* Offset auf Poolspeicher		*/
 	long    alloc_size;		/* Grîûe des Poolspeicherblocks	*/
@@ -110,7 +112,7 @@ typedef struct
 
 typedef struct
 {
-	int     icontyp;		/* Bildtyp I_FLPDSK...	*/
+	int     icon_type;		/* Bildtyp I_FLPDSK...	*/
 	int     isdisk;			/* Buchstabe fÅr Disk-Icon oder 0 */
 	char    text[80];		/* Text (Diskname, Pfad) */
 	ICONBLK data;
@@ -121,17 +123,17 @@ typedef struct
 	char path[80];			/* Dateiname mit vollst. Pfad	*/
 	char ext1[4];			/* Erster Dateityp			*/
 	char ext2[4];			/* Zweiter Dateityp			*/
-	int typ;				/* 'GP', ' P', 'PP'			*/
+	int type;				/* 'GP', ' P', 'PP'			*/
 							/* kleines 'p': single mode	*/
 } APPLICATION;
 
-extern char	*poolptr;		/* Zeiger auf Pool			*/
-extern char	*poolfree;		/* Zeiger auf freien Teil	*/
-extern int	poolsize;		/* Anzahl freier EintrÑge	*/
+extern char *poolptr;		/* Zeiger auf Pool			*/
+extern char *poolfree;		/* Zeiger auf freien Teil	*/
+extern int  poolsize;		/* Anzahl freier EintrÑge	*/
 
-extern WINDOW fenster[NUM_WINDOWS + 1];
+extern WINDOW windows[NUM_WINDOWS + 1];
 extern ICON *icon;
-extern APPLICATION	*application;
+extern APPLICATION *application;
 
 extern char dirty_drives[NUM_DRIVES];
 extern DISKINFO dinfo[NUM_DRIVES];
@@ -140,19 +142,19 @@ enum { OVERWRITE, BACKUP, CONFIRM };
 
 typedef struct
 {
-	char sorttyp;
-	char showtyp;
+	char sort_mode;		/* sortiere nach Namen, Datum, Grîûe, Typ oder gar nicht */ 
+	char show_mode;		/* Flag: Icons oder Text */
 	char points;
 
 	char is_1col;
-	char is_groesse;
-	char is_datum;
-	char is_zeit;
+	char is_size;
+	char is_date;
+	char is_time;
 
 	char blitstate;
-	char cnfm_del;		/* Flag: Lîschen bestÑtigen				*/
-	char cnfm_copy;		/* Flag: Kop./Versch. bestÑtigen			*/
-	char mode_ovwr;		/* Modus (0=öb,1=Backup,2=Best.)			*/
+	char cnfm_del;		/* Flag: Lîschen bestÑtigen	*/
+	char cnfm_copy;		/* Flag: Kop./Versch. bestÑtigen */
+	char mode_ovwr;		/* Modus (0=öb,1=Backup,2=Best.) */
 	char check_free;	/* Freien Speicher auf Ziellaufwerk prÅfen	*/
 	char use_fldl;
 	char resident;
@@ -164,7 +166,7 @@ typedef struct
 	char resvd2;
 } DEFAULTS;
 
-extern DEFAULTS status;
+extern DEFAULTS settings;
 
 typedef struct
 {
@@ -197,7 +199,7 @@ extern const char *err_string(int e);
 extern char *get_name(char *path);
 extern long err_alert(long e);
 extern void Mgraf_mouse(int type);
-extern int suffixtyp(char *s);
+extern int suffix_type(char *s);
 extern int fname_match(char *fname, char *fmask);
 extern void date_to_str(char *s, unsigned int date);
 extern void time_to_str(char *s, unsigned int time);
@@ -209,8 +211,13 @@ extern void objc_grect(OBJECT *tree, int objn, GRECT *g);
 extern void tree_sel_grect(OBJECT *tree, GRECT *g);
 extern void grect_toggle(OBJECT *tree, GRECT *g);
 extern int find_obj(OBJECT *tree, int x, int y);
+extern int selected(OBJECT *tree, int which);
+extern void	ob_sel(OBJECT *tree, int which);
+extern void	ob_dsel(OBJECT *tree, int which);
+extern void ob_sel_dsel(OBJECT *tree, int which, int sel);
+extern void objs_hide(OBJECT *tree, ...);
+extern void objs_unhide(OBJECT *tree, ...);
 extern int rc_intersect	(GRECT *p1, GRECT *p2);
-extern int walk_sel(int wnr, int (*tue)(int wnr, int obj));
 
 /* KDSTART */
 
@@ -221,24 +228,24 @@ extern char *_iconfile;		/* aus dem Startmodul */
 extern USERBLK userblk;
 extern int ap_id;
 extern GRECT desk_g;			/* Maûe fÅr Hintergrund */
-extern char	*err_file;
+extern char *err_file;
 extern int deflt_topwnr;
 extern int char_w, char_h;
 extern int vdi_handle;
 extern int n_icons, n_apps;
-extern OBJECT *adr_icons;
-extern OBJECT *adr_prgrms;
-extern OBJECT *adr_hauptmen;
-extern OBJECT *adr_cpmvdl;
-extern OBJECT *adr_laufwe;
-extern OBJECT *adr_einste;
-extern OBJECT *adr_ttppar;
-extern OBJECT *adr_format;
-extern OBJECT *adr_fmtopt;
-extern OBJECT *adr_cpydsk;
-extern OBJECT *adr_about;
-extern OBJECT *adr_datinf;
-extern OBJECT *adr_ordinf;
+extern OBJECT *tree_icons;
+extern OBJECT *tree_programs;
+extern OBJECT *tree_menu;
+extern OBJECT *tree_file_ops;
+extern OBJECT *tree_chg_symbol;
+extern OBJECT *tree_settings;
+extern OBJECT *tree_ttp_params;
+extern OBJECT *tree_format_dsk;
+extern OBJECT *tree_format_opt;
+extern OBJECT *tree_copy_disk;
+extern OBJECT *tree_about;
+extern OBJECT *tree_info_file;
+extern OBJECT *tree_info_folder;
 extern int vdi_device;
 extern int *aes_global;
 extern int gl_hhchar;
@@ -258,12 +265,6 @@ extern int iskgem;		/* KAOS 1.4 */
 #endif
 extern int hdl_to_fnr(int whdl);
 extern void get_char_dim(void);
-extern int selected(OBJECT *tree, int which);
-extern void	ob_sel(OBJECT *tree, int which);
-extern void	ob_dsel(OBJECT *tree, int which);
-extern void ob_sel_dsel(OBJECT *tree, int which, int sel);
-extern void objs_hide(OBJECT *tree, ...);
-extern void objs_unhide(OBJECT *tree, ...);
 extern void set_deflt_clip(void);
 extern void redraw(int wnr, GRECT *neu);
 extern int icsel(int *rwnr, int *objn);
@@ -274,15 +275,15 @@ void subobj_draw(OBJECT *tree, int obj, int n, char *s);
 
 /* KLICK */
 
-extern int make_icon(int typ, char c, char *icntext, char *path, int x, int y);
+extern int make_icon(int type, char c, char *icntext, char *path, int x, int y);
 extern void kill_icon(int objnr);
 extern void dl_icns(int wnr);
 extern void prt_icns(int wnr, int print);
-extern void cpmv_icns(int wnr, char *zielpfad, int kbsh);
+extern void cpmv_icns(int wnr, char *dest_path, int kbsh);
 extern int is_dest(int wnr, int objnr);
-extern void obj_malen(int wnr, int index);
+extern void draw_wind_obj(int wnr, int index);
 extern void dsel_all(void);
-extern void handle_mouse_button(int anzahl, const EVNTDATA *ev);
+extern void handle_mouse_button(int nclicks, const EVNTDATA *ev);
 extern void sel_all(int wnr);
 extern int obj_to_path(int wnr, int obj, char *path, MYDTA **f);
 
@@ -300,13 +301,13 @@ extern unsigned char waitkey(void);
 extern int show_file(char *path);
 extern int print_file(char *path);
 extern int dclick(int wnr, int obj, int kbsh);
-extern void starten(char *path, int typ, int wnr, int obj, int kbsh);
+extern void start_program(char *path, int type, int wnr, int obj, int kbsh);
 extern void exit_vt52(void);
-extern int obj_typ(int wnr, int obj, char *path, MYDTA **f, int *typ);
+extern int get_obj_type(int wnr, int obj, char *path, MYDTA **f, int *type);
 #if	MAGIXDESK
 extern void res_exec(void);
 #else
-extern long	res_exec(int doex, int isgr, char *program,
+extern long res_exec(int doex, int isgr, char *program,
 		  			    COMMAND *param, char *envptr);
 #endif
 
@@ -333,12 +334,13 @@ extern void upd_infos(void);
 extern void	upd_path(int wnr, int free_flag);
 extern void upd_mask(int wnr);
 extern long opn_wnd(int wnr, int fast);
-extern void init_icnobj(OBJECT *o, ICONBLK *icn, int typ, char *text);
+extern void init_icnobj(OBJECT *o, ICONBLK *icn, int type, char *text);
 extern int find_iconfile_dat(char *fname);
 extern int find_iconfile_pgm(char *fname);
 extern void get_syshdr(void);
 extern void set_dname(int lw, char *dname);
 extern void dirty_info( int wnr );
+extern int walk_wind_sel_objs(int wnr, int (*cb)(int wnr, int obj));
 
 /* SHELSORT.O */
 
@@ -376,7 +378,7 @@ extern char chg_msg[];
 extern long cache_on (char *path);
 extern long cache_off(char *path);
 extern void set_colors(void);
-extern long long MDfree( DISKINFO *ds, int driveno);
+extern long long MDfree(DISKINFO *ds, int driveno);
 
 /* DEFAULTS */
 
@@ -391,28 +393,28 @@ extern void load_icons(void);
 
 /* DIALOGS */
 
-extern int dial_datexi(char *name, int move_flag, int *do_redraw);
-extern int dial_ordexi(char *name, int *do_redraw);
+extern int dial_file_exists(char *name, int move_flag, int *do_redraw);
+extern int dial_folder_exists(char *name, int *do_redraw);
 extern int dial_ttppar(char *pgm, char *par);
 extern long memsize(void);
 extern void dial_about(void);
 extern void dial_info(void);
-extern void dial_neuord(void);
+extern void dial_create_folder(void);
 extern void dial_format(void);
-extern void dial_maske(void);
-extern void dial_laufwe(void);
-extern void dial_anwndg(void);
-extern void dial_einste(void);
-extern void dial_arbsic(void);
+extern void dial_file_pattern(void);
+extern void dial_register_drv(void);
+extern void dial_register_app(void);
+extern void dial_settings(void);
+extern void dial_save_settings(void);
 extern void dial_cpydsk(void);
-extern void dial_prgrms(void);
+extern void dial_programs(void);
 
 /* FILES */
 
-extern int copy_move_files(char *quell, char *ziel, int move_flag, int ispath);
+extern int copy_move_files(char *src_path, char *dst_path, int move_flag, int ispath);
 extern int delete_files(char *path, int ispath);
 extern int qbreak(void);
-extern long confirm(int wnr, int function, int ja, char *zielpfad);
+extern long confirm(int wnr, int function, int yes, char *dest_path);
 extern void end_confirm(void);
 extern long read_dname(int lw, char *name);
 extern int disk_type(int drvnr);

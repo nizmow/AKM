@@ -217,13 +217,13 @@ void get_syshdr(void)
 	os_ver_s[27] = (((aesvars->date)      ) & 0xf) + '0';
 #else
 	long oldssp;
-	unsigned long	kaos_vgl_date;		/* in der Form jjjjmmtt */
-	unsigned long	*cookie;
+	unsigned long kaos_vgl_date;		/* in der Form jjjjmmtt */
+	unsigned long *cookie;
 
 
 	/* Umschalten in den Supervisormodus */
 
-	oldssp    = Super(0L);
+	oldssp = Super(0L);
 
 	/* syshdr, sysver und aesvars holen */
 
@@ -320,7 +320,7 @@ void set_colors(void)
 	long oldssp;
 
 
-	Blitmode(status.blitstate);
+	Blitmode(settings.blitstate);
 	if (NULL == (buf = Malloc(8192L)))
 		return;
 	shel_get((char *) buf, 8192);
@@ -394,7 +394,7 @@ long cache_on(char *path)
 {
 	long doserr;
 
-	if (status.use_cache)
+	if (settings.use_cache)
 	{
 		Mgraf_mouse(-HOURGLASS);
 		doserr = Dskopen(path[0] - 'A');
@@ -416,7 +416,7 @@ long cache_off(char *path)
 {
 	long doserr;
 
-	if (status.use_cache)
+	if (settings.use_cache)
 	{
 		Mgraf_mouse(-HOURGLASS);
 		doserr = Dskclose(path[0] - 'A');
@@ -972,7 +972,7 @@ long MDfree(DISKINFO *ds, int driveno)
 			s++;
 		}
 
-		if ((bpb -> numcl) & 1)
+		if ((bpb->numcl) & 1)
 		{
 			c = s[1];
 			if (*s == 0 && (c & 0x0f) == 0)
@@ -1008,7 +1008,7 @@ long label(int lw, char *name)
 	long retcode;
 #if	MAGIXDESK == 0
 	DTA  dtapuffer;
-	char tmpdatei[50];
+	char tmp_file[50];
 	register BCB *buffer;
 	BCB	*bufl[2];		/* Hier DOS- Sektorpufferlisten */
 	long oldssp;
@@ -1111,15 +1111,15 @@ long label(int lw, char *name)
 
 					dirs->dir_attr = F_VOLUME;
 					buffer->b_dirty = TRUE;
-					tmpdatei[0] = pfad[0];
-					tmpdatei[1] = ':';
-			     	tmpnam(tmpdatei+2);
-			     	retcode = Fcreate(tmpdatei,0);
+					tmp_file[0] = pfad[0];
+					tmp_file[1] = ':';
+			     	tmpnam(tmp_file+2);
+			     	retcode = Fcreate(tmp_file,0);
 
 			     	if (retcode >= E_OK)
 			     		retcode = Fclose((int) retcode);
 
-			     	Fdelete(tmpdatei);
+			     	Fdelete(tmp_file);
 					return retcode;
 				}
 			}
@@ -1153,8 +1153,8 @@ char chg_msg[] = "[2][Insert source disk into X:!][OK|Cancel]";
 long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 		    int fmt, void (*feedb)(char *action, int n))
 {
-	int isquell;
-	char tmpdatei[128];
+	int src_dsk_present;
+	char tmp_file[128];
 	int gelesen;
 	int handle;
 	unsigned long bufsiz_char;	/* Puffergrîûe in Zeichen */
@@ -1181,7 +1181,7 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 	if (tmp == slw || tmp == dlw)
 		return EDRIVE;
 
-	isquell = TRUE;		/* Quelldisk ist eingelegt */
+	src_dsk_present = TRUE;		/* Quelldisk ist eingelegt */
 
 #if	MAGIXDESK
 	interlv = -1;
@@ -1194,9 +1194,9 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 
 	if (tmp >= 0)
 	{
-		tmpdatei[0] = tmp + 'A';
-		tmpdatei[1] = ':';
-     	tmpnam(tmpdatei+2);
+		tmp_file[0] = tmp + 'A';
+		tmp_file[1] = ':';
+     	tmpnam(tmp_file+2);
      	handle = -1;
 	}
 
@@ -1220,7 +1220,7 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 #endif
 			if (2 == form_alert(1, chg_msg))
 				return EBREAK;
-			isquell = FALSE;
+			src_dsk_present = FALSE;
 		}
 
 		doserr = read_bootsec(dlw, &ser,&bps,&spc,&res,&nfats,&ndirs,&nsects,
@@ -1244,7 +1244,7 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 		}
 	}
 
-	/* Speicher anfordern, ggf. Tmpdatei erstellen */
+	/* Speicher anfordern, ggf. tmporÑre Datei erstellen */
 	/* ------------------------------------------- */
 
 	if (fmt)
@@ -1278,7 +1278,7 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 
 	if (bufsiz_trk < trk && tmp >= 0)	/* Speicher reicht nicht fÅr ganze Disk */
 	{
-		doserr = Fcreate(tmpdatei, 0);
+		doserr = Fcreate(tmp_file, 0);
 		if (doserr < E_OK)
 			goto err;
 		handle = (int) doserr;
@@ -1303,7 +1303,7 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 
 		if (!gelesen)
 		{
-			if (slw == dlw && !isquell)
+			if (slw == dlw && !src_dsk_present)
 			{
 #if LANGUAGE == LANG_GER
 				strncpy(chg_msg+4, "Quell", 5);
@@ -1312,7 +1312,7 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 #endif
 				if (2 == form_alert(1, chg_msg))
 					goto abbruch;
-				isquell = TRUE;
+				src_dsk_present = TRUE;
 			}
 			for	(ctrack = ltrack, cbuf = buf;
 			      ctrack < c_tracks;
@@ -1361,10 +1361,10 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 				goto err;
 		}
 
-		/* Schreiben und ggf. Formatieren */
+		/* schreiben und ggf. formatieren */
 		/* ------------------------------ */
 
-		if (slw == dlw && isquell)
+		if (slw == dlw && src_dsk_present)
 		{
 #if LANGUAGE == LANG_GER
 			strncpy(chg_msg+4, " Ziel", 5);
@@ -1373,8 +1373,9 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 #endif
 			if (2 == form_alert(1, chg_msg))
 				goto abbruch;
-			isquell = FALSE;
+			src_dsk_present = FALSE;
 		}
+
 		for	(ctrack = ltrack, cbuf = buf;
 			 ctrack < c_tracks;
 			 ctrack++, cbuf += spt*sid*512)
@@ -1429,8 +1430,9 @@ long diskcopy(int slw, int dlw, int tmp, int sid, int trk, int spt,
 	if (tmp >= 0 && (handle >= 0))
 	{
 		Fclose(handle);
-		Fdelete(tmpdatei);
+		Fdelete(tmp_file);
 	}
+
 	Rwabs(0, NULL, 2, 0, dlw);
 	return doserr;
 }
@@ -1644,7 +1646,7 @@ static void Mshel_write(int doex, int isgr, char *program, char *param )
 static int Mshel_read(char *program, char *param, int *isgr )
 {
 	char cmd[128], tail[128];
-	int	doex;
+	int doex;
 
 
 	doex = FALSE;
@@ -1704,7 +1706,7 @@ long res_exec(int doex, int isgr, char *program,
 		    COMMAND *param, char *envptr)
 {
 	long doserr;
-	int	wait;
+	int wait;
 	int graphmode = TRUE;		/* Bildschirm ist im Grafikmodus */
 
 

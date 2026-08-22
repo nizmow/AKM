@@ -36,8 +36,8 @@ APPLICATION *file_to_defapp(char *filepath)
 		s++;
 		for	(a = application; a < application + n_apps; a++)
 		{
-			if (a -> path[0] && (!strcmp(s, (a -> ext1)) ||
-							   !strcmp(s, (a -> ext2))
+			if (a->path[0] && (!strcmp(s, (a->ext1)) ||
+							   !strcmp(s, (a->ext2))
 							  ))
 			return a;
 		}
@@ -66,7 +66,7 @@ APPLICATION *find_defapp(char *pgmpath)
 
 	for	(a = application; a < application + n_apps; a++)
 	{
-		if (!strcmp(s, get_name(a -> path)))
+		if (!strcmp(s, get_name(a->path)))
 			return a;
 	}
 
@@ -77,7 +77,7 @@ APPLICATION *find_defapp(char *pgmpath)
 /*********************************************************************
 *
 * Untersuchung des Objekts <obj> in <wnr.
-* typ =     'GP'	GEM - Programm  oder zugehîrige Datei	}
+* type =  'GP'	GEM - Programm  oder zugehîrige Datei	}
 *		  '_P'    TOS - Programm  oder zugehîrige Datei	}
 *		  'PP'    TTP - Programm  oder zugehîrige Datei	} ausfÅhrbar
 *		    p	 selbige im single mode				}
@@ -99,15 +99,16 @@ APPLICATION *find_defapp(char *pgmpath)
 *
 *********************************************************************/
 
-int obj_typ(int wnr, int obj, char *path, MYDTA **f, int *typ)
+int get_obj_type(int wnr, int obj, char *path, MYDTA **f, int *type)
 {
 	int ret;
 	char mpath[200];
 
 
-	*typ = '__';
+	*type = '__';
 	if (path == NULL)
 		path = mpath;
+
 	*path = EOS;
 	ret = obj_to_path(wnr, obj, path, f);
 
@@ -115,41 +116,41 @@ int obj_typ(int wnr, int obj, char *path, MYDTA **f, int *typ)
 	{
 		APPLICATION *a = NULL;
 
-		*typ = suffixtyp(path);
+		*type = suffix_type(path);
 
-		if (*typ == '_T')
+		if (*type == '_T')
 			a = file_to_defapp(path);
 		else
-			if ((*typ & 0xff) == 'P')
+			if ((*type & 0xff) == 'P')
 				a = find_defapp(path);
 		if (a)
-			*typ = a -> typ;
+			*type = a->type;
 
 		return ret;
 	}
 
 	if (obj == 0)
 	{
-		*typ = '_F';
+		*type = '_F';
 		return ret;
 	}
 
 	if (wnr == 0)
 	{
-		switch(icon[obj-1].icontyp)
+		switch (icon[obj - 1].icon_type)
 		{
-			case I_ORDNER: *typ = '_O';break;
-			case I_FLPDSK: *typ = 'FD';break;
-			case I_HRDDSK: *typ = 'HD';break;
-			case I_RAMDSK: *typ = 'RD';break;
-			case I_PAPIER:	*typ = 'P_';break;
-			case I_DRUCKR:	*typ = 'D_';break;
+			case I_ORDNER: *type = '_O';break;
+			case I_FLPDSK: *type = 'FD';break;
+			case I_HRDDSK: *type = 'HD';break;
+			case I_RAMDSK: *type = 'RD';break;
+			case I_PAPIER: *type = 'P_';break;
+			case I_DRUCKR: *type = 'D_';break;
 		}
 
 		return ret;
 	}
 
-	*typ = '_O';
+	*type = '_O';
 	return ret;
 }
 
@@ -170,14 +171,14 @@ int obj_typ(int wnr, int obj, char *path, MYDTA **f, int *typ)
 
 int dclick(int wnr, int obj, int kbsh)
 {
-	int ret,typ;
+	int ret,type;
 	int styp;
 	char path[200];
 	MYDTA *file;
 
 
 	path[0] = EOS;
-	ret = obj_typ(wnr, obj, path, &file, &typ);
+	ret = get_obj_type(wnr, obj, path, &file, &type);
 	if (strlen(path) > 127)
 	{
 		err_alert(EPTHOV);
@@ -186,7 +187,7 @@ int dclick(int wnr, int obj, int kbsh)
 
 	if (ret < 0)
 	{
-		switch(typ)
+		switch (type)
 		{
 			case 'D_':
 			case 'P_':
@@ -225,7 +226,7 @@ int dclick(int wnr, int obj, int kbsh)
 		/* Doppelklick auf Ordner in Fenster		 */
 		/* ------------------------------------------ */
 	
-		if (typ == '_O')
+		if (type == '_O')
 		{
 			if (kbsh & K_ALT)
 			{
@@ -233,7 +234,7 @@ int dclick(int wnr, int obj, int kbsh)
 			}
 			else
 			{
-				strcpy(fenster[wnr].path, path);
+				strcpy(windows[wnr].path, path);
 				upd_path(wnr, FALSE);
 			}
 		}
@@ -250,7 +251,7 @@ int dclick(int wnr, int obj, int kbsh)
 
 	else
 	{
-		styp = suffixtyp(path);
+		styp = suffix_type(path);
 
 		if (((styp & 0x5f) != 'P') && (kbsh & K_CTRL))
 		{
@@ -266,22 +267,22 @@ int dclick(int wnr, int obj, int kbsh)
 
 			else
 			{
-				strcpy(path, adr_prgrms[PG_4].ob_spec.tedinfo->te_ptext);
-				typ = suffixtyp(path);
-				starten(path, typ, 0, 0, kbsh & ~K_CTRL);
+				strcpy(path, tree_programs[PG_4].ob_spec.tedinfo->te_ptext);
+				type = suffix_type(path);
+				start_program(path, type, 0, 0, kbsh & ~K_CTRL);
 			}
 			return 0;
 		}
 
-		if (typ == '_T')
+		if (type == '_T')
 		{
 			prt_icns(wnr, 0);
 			return 0;
 		}
 
-	 	if (((typ & 0x5f) == 'P') || ((typ & 0xff) == 'B'))
+	 	if (((type & 0x5f) == 'P') || ((type & 0xff) == 'B'))
 	 	{
-			starten(path, typ, wnr, obj, kbsh);
+			start_program(path, type, wnr, obj, kbsh);
 			return kbsh & K_ALT;
 		}
 	}
@@ -304,17 +305,17 @@ void opn_newwnd(char *path)
 
 	for	(wnr = 1; wnr <= NUM_WINDOWS; wnr++)
 	{
-		if (fenster[wnr].path[0] == EOS)
+		if (windows[wnr].path[0] == EOS)
 		{
 			/* Maske ist "*.*" 				*/
 			/* ------------------------------- */
 		
-			strcpy(fenster[wnr].maske, "*.*");
+			strcpy(windows[wnr].fpattern, "*.*");
 		
 			/* Pfad ist schon festgelegt		*/
 			/* ------------------------------- */
 		
-			strcpy(fenster[wnr].path, path);
+			strcpy(windows[wnr].path, path);
 			ret = opn_wnd(wnr, FALSE);
 			if (ret == ENOWND)
 				goto err_wnd;
@@ -448,7 +449,7 @@ int show_file(char *path)
 							if (t >= 'a')
 								t &= 0x5f;
 
-							switch(t)
+							switch (t)
 							{
 								case 3:
 								case 'Q':
@@ -526,7 +527,7 @@ int show_file(char *path)
 	{
 		Fclose(handle);
 		exit_vt52();
-		menu_bar(adr_hauptmen, TRUE);
+		menu_bar(tree_menu, TRUE);
 		graf_mouse(M_ON, NULL);
 	}
 
@@ -636,12 +637,12 @@ void get_param(char *pgm, int wnr, int obj, char *tail)
 	*endppath = EOS;
 	for	(iwnr = 0; iwnr <= NUM_WINDOWS; iwnr++)
 	{
-		if (iwnr && !fenster[iwnr].path[0])
+		if (iwnr && !windows[iwnr].path[0])
 			continue;				/* Fenster unbenutzt */
-		tree = fenster[iwnr].pobj;
-		if ((i = (tree -> ob_head)) > 0)
+		tree = windows[iwnr].pobj;
+		if ((i = (tree->ob_head)) > 0)
 		{
-			for	(; i <= (tree -> ob_tail); i++)
+			for	(; i <= (tree->ob_tail); i++)
 			{
 				if (wnr == iwnr && i == obj)
 					continue;		/* Das Programm selbst */
@@ -716,14 +717,14 @@ long setpath(char *program, int stdpath, int isover)
 		/* KAOSDESK- Pfad */
 		for	(i = 1; i <= NUM_WINDOWS; i++)
 		{
-			path = fenster[i].path;
+			path = windows[i].path;
 			if (i != top && (*path))
 				Dsetpath(path);
 		}
 
 		if (top > 0)
 		{
-			path = fenster[top].path;
+			path = windows[top].path;
 			if (*path)
 			{
 				Dsetdrv (path[0] - 'A');
@@ -746,19 +747,19 @@ long setpath(char *program, int stdpath, int isover)
 
 /****************************************************************
 *
-* Ein Programm vom typ <typ> wird gestartet.
-* Wenn <typ> = '#x', werden angemeldete Programme gestartet.
+* Ein Programm vom Typ <type> wird gestartet.
+* Wenn <type> = '#x', werden angemeldete Programme gestartet.
 *
-* Wenn der typ mit '#' beginnt, wird das Programm in den KAOSDESK-
+* Wenn der type mit '#' beginnt, wird das Programm in den KAOSDESK-
 * Ordnern gestartet.
 * Wenn der zweite Buchstabe des Typs ein kleines 'p' ist, wird
 * das Programm (unter MagiX) im Single Tasking Modus gestartet.
 *
 ****************************************************************/
 
-void starten(char *path, int typ, int wnr, int obj, int kbsh)
+void start_program(char *path, int type, int wnr, int obj, int kbsh)
 {
-	char *pgm = fenster[0].path;		/* genÅgend Platz hier */
+	char *pgm = windows[0].path;		/* genÅgend Platz hier */
 	int stdpath;			/* Flag: in Fensterpfaden starten */
 	COMMAND param;
 	int isgr,doex,isover;
@@ -776,19 +777,19 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 #if	MAGIXDESK
 	isover = SHW_CHAIN;
 
-	if (status.resident)
+	if (settings.resident)
 		kbsh ^= K_ALT;				/* MAGIX: ggf. per Default parallel */
 
 	if (kbsh & K_ALT)
 		isover = SHW_PARALLEL;		/* MAGIX: Multitasking EXEC */
 
-	if ((typ & 0xff) == 'p')
+	if ((type & 0xff) == 'p')
 	{
 		isover = SHW_SINGLE;		/* MagiX: single mode */
-		typ &= 0xff5f;
+		type &= 0xff5f;
 	}
 #else
-	isover = !status.resident;
+	isover = !settings.resident;
 #endif
 	strcpy(pgm, path);
 	execpath = pgm;
@@ -812,30 +813,30 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 	/* werden soll.										*/
 	/* ------------------------------------------------------------- */
 
-	stdpath = ((typ & 0xff00) == '#\0');
-	if (typ == 'PB')
+	stdpath = ((type & 0xff00) == '#\0');
+	if (type == 'PB')
 		kbsh |= K_CTRL;
 
 	/* Falls es sich um eine Batchdatei handelt, deren Namen als	*/
 	/* Parameter und den des Batchprozessors als Programmnamen.		*/
 	/* ------------------------------------------------------------- */
 
-	if ((typ & 0x005f) == 'B' || (typ & 0xff00) == '#\0')	/* Batch */
+	if ((type & 0x005f) == 'B' || (type & 0xff00) == '#\0')	/* Batch */
 	{
 		int objnr;
 
-		if ((typ & 0x005f) == 'B')
+		if ((type & 0x005f) == 'B')
 		{
 			objnr = PG_1;
 			execpath = path;	/* Batchdatei bestimmt Standardpfad */
 		}
 		else
-			objnr = (typ & 0x00ff) + PG_1;
+			objnr = (type & 0x00ff) + PG_1;
 
 		if (objnr > PG_14)
 			objnr = PG_1;
 
-		program = adr_prgrms[objnr].ob_spec.tedinfo->te_ptext;
+		program = tree_programs[objnr].ob_spec.tedinfo->te_ptext;
 
 		if (program[0] == '*')
 		{
@@ -845,7 +846,7 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 
 		strcpy(param.command_tail, pgm);
 		strcpy(pgm, program);
-		typ = suffixtyp(program);
+		type = suffix_type(program);
 	}
 	else
 	{
@@ -854,7 +855,7 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 		/* die Defaultapplikation eingesetzt.					*/
 		/* -------------------------------------------------------- */
 
-		if ((suffixtyp(pgm) & 0x5f) != 'P')	/* nicht ausfÅhrbar */
+		if ((suffix_type(pgm) & 0x5f) != 'P')	/* nicht ausfÅhrbar */
 		{
 			APPLICATION *a;
 
@@ -863,9 +864,9 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 				return;
 
 			strcpy(param.command_tail, pgm);
-			strcpy(pgm, a -> path);
+			strcpy(pgm, a->path);
 
-			if (((a -> typ & 0xff) == 'p') && (isover == SHW_PARALLEL))
+			if (((a->type & 0xff) == 'p') && (isover == SHW_PARALLEL))
 				isover = SHW_SINGLE;
 		}
 	}
@@ -873,7 +874,7 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 	/* Grafikapplikationen (GEM) haben die Kennung 'GP'			*/
 	/* ------------------------------------------------------------- */
 
-	isgr = ((typ & 0xff00) == 'G\0');
+	isgr = ((type & 0xff00) == 'G\0');
 
 	/* alle aktivierten Icons auûer dem doppelgeklickten werden als	*/
 	/* Parameter Åbernommen (nicht bei Batchprozessor Åber ^B).		*/
@@ -887,7 +888,7 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 	/* Programm ist und sonst keine Parameter vorliegen			*/
 	/* ------------------------------------------------------------- */
 
-	if ((kbsh & K_CTRL) || (((typ & 0xff00) == 'P\0') && !param.command_tail[0]))
+	if ((kbsh & K_CTRL) || (((type & 0xff00) == 'P\0') && !param.command_tail[0]))
 	{
 		if (!dial_ttppar(pgm, param.command_tail))
 			return;
@@ -924,7 +925,7 @@ void starten(char *path, int typ, int wnr, int obj, int kbsh)
 	{
 		char *name,*apnamp;
 		char apname[9];
-		int	msg[8];
+		int msg[8];
 		int i;
 		/* Wenn mîglich, VA_START aufrufen */
 		

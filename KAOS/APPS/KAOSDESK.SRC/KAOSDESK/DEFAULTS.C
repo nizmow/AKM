@@ -179,13 +179,13 @@ void load_status(int pass)
 {
 	register int i,d,dx,dy,icw,ich;
 	char dummy_s[128];
-	int	i_version;
+	int i_version;
 #if	MAGIXDESK
 	char *inf;
 	unsigned int len;
 #endif
-	int	old_w,old_h;
-	int	ln_wind,ln_icns,ln_pgms,ln_apps;
+	int old_w,old_h;
+	int ln_wind,ln_icns,ln_pgms,ln_apps;
 	register long drvs;
 	register int code;
 
@@ -197,7 +197,7 @@ void load_status(int pass)
 			Mfree(gmemptr);
 		gmemptr = NULL;
 #if	DEBUG
-		icon = application = fenster[0].pobj = NULL;
+		icon = application = windows[0].pobj = NULL;
 #endif
 	}
 
@@ -207,49 +207,49 @@ void load_status(int pass)
 		/* zunÑchst sicherheitshalber Defaults setzen */
 		/* ------------------------------------------ */
 
-		adr_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext[0] = EOS;
-		adr_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext[0] = EOS;
+		tree_ttp_params[TTPPAR_1].ob_spec.tedinfo->te_ptext[0] = EOS;
+		tree_ttp_params[TTPPAR_2].ob_spec.tedinfo->te_ptext[0] = EOS;
 
-		status.clock		= TRUE;
-		status.blitstate	= TRUE;
+		settings.clock      = TRUE;
+		settings.blitstate  = TRUE;
 
-		status.sorttyp 	= M_SNAME;
-		status.showtyp 	= M_ABILDR;
-		status.points		= M_10_PKT;
-		status.is_1col		= FALSE;
-		status.is_groesse	= TRUE;
-		status.is_datum	= TRUE;
-		status.is_zeit		= TRUE;
+		settings.sort_mode 	= M_SNAME;
+		settings.show_mode 	= M_ABILDR;
+		settings.points		= M_10_PKT;
+		settings.is_1col    = FALSE;
+		settings.is_size	= TRUE;
+		settings.is_date	= TRUE;
+		settings.is_time    = TRUE;
 
-		status.cnfm_del	= TRUE;
-		status.cnfm_copy	= TRUE;
-		status.mode_ovwr	= CONFIRM;
-		status.check_free	= TRUE;
-		status.use_fldl	= MAGIXDESK;
-		status.resident	= TRUE;
-		status.show_all	= FALSE;
-		status.use_cache	= FALSE;
-		status.dnam_init	= TRUE;
+		settings.cnfm_del	= TRUE;
+		settings.cnfm_copy	= TRUE;
+		settings.mode_ovwr	= CONFIRM;
+		settings.check_free	= TRUE;
+		settings.use_fldl	= MAGIXDESK;
+		settings.resident	= TRUE;
+		settings.show_all	= FALSE;
+		settings.use_cache	= FALSE;
+		settings.dnam_init	= TRUE;
 
-		fmtstat.tmpdrv		= 0;
-		fmtstat.sides		= 2;
-		fmtstat.tracks		= 80;
+		fmtstat.tmpdrv  = 0;
+		fmtstat.sides   = 2;
+		fmtstat.tracks  = 80;
 		fmtstat.sectors	= 9;
 		fmtstat.interlv	= 1;
 		fmtstat.trkincr	= 2;
 		fmtstat.sidincr	= 2;
-		fmtstat.clustsize	= 2;
+		fmtstat.clustsize = 2;
 
 		for	(ln_wind = 1; ln_wind <= NUM_WINDOWS; ln_wind++)
 		{
-			fenster[ln_wind].shift = 0;
-			fenster[ln_wind].out.g_x = 140 + 20 * ln_wind;
-			fenster[ln_wind].out.g_y = desk_g.g_y + 10 * ln_wind;
-			fenster[ln_wind].out.g_w = 300;
-			fenster[ln_wind].out.g_h = 10 * gl_hhchar;
-			fenster[ln_wind].handle = -1;
-			fenster[ln_wind].path[0] = EOS;
-			fenster[ln_wind].maske[0] = EOS;
+			windows[ln_wind].shift = 0;
+			windows[ln_wind].out.g_x = 140 + 20 * ln_wind;
+			windows[ln_wind].out.g_y = desk_g.g_y + 10 * ln_wind;
+			windows[ln_wind].out.g_w = 300;
+			windows[ln_wind].out.g_h = 10 * gl_hhchar;
+			windows[ln_wind].handle = -1;
+			windows[ln_wind].path[0] = EOS;
+			windows[ln_wind].fpattern[0] = EOS;
 		}
 
 		drvs = Drvmap();
@@ -260,12 +260,12 @@ void load_status(int pass)
 			{
 				icon[ln_icns].isdisk = 'A' + d;
 				if (ln_icns < 2)
-					icon[ln_icns].icontyp = I_FLPDSK;
+					icon[ln_icns].icon_type = I_FLPDSK;
 				else
 				if (ln_icns < 6)
-					icon[ln_icns].icontyp = I_HRDDSK;
+					icon[ln_icns].icon_type = I_HRDDSK;
 				else
-					icon[ln_icns].icontyp = I_RAMDSK;
+					icon[ln_icns].icon_type = I_RAMDSK;
 				ln_icns++;
 			}
 			drvs >>= 1;
@@ -276,12 +276,12 @@ void load_status(int pass)
 		{
 			icon[ln_icns].isdisk = 0;
 			if (ln_icns == d)
-				icon[ln_icns].icontyp = I_DRUCKR;
+				icon[ln_icns].icon_type = I_DRUCKR;
 			else
 			if (ln_icns == d+1)
-				icon[ln_icns].icontyp = I_PAPIER;
+				icon[ln_icns].icon_type = I_PAPIER;
 			else
-				icon[ln_icns].icontyp = 0;
+				icon[ln_icns].icon_type = 0;
 		}
 	}	/* END IF (pass) */
 	else
@@ -358,7 +358,7 @@ void load_status(int pass)
 			break;
 		code |= *s++;				/* Lobyte holen */
 
-		switch(code)
+		switch (code)
 		{
 			case 'SW':
 				if (!pass)
@@ -369,37 +369,38 @@ void load_status(int pass)
 
 				deflt_topwnr = scndez();
 
-				status.sorttyp = scndez() + M_SNAME;
+				settings.sort_mode = scndez() + M_SNAME;
  
-				status.showtyp = (scnflg()) ? M_ATEXT : M_ABILDR;
+				settings.show_mode = (scnflg()) ? M_ATEXT : M_ABILDR;
 
-				status.points = (char) scndez();
+				settings.points = (char) scndez();
 
-				if (status.points == 8)
-					status.points = M_8_PKT;
-				else	if (status.points == 9)
-					status.points = M_9_PKT;
+				if (settings.points == 8)
+					settings.points = M_8_PKT;
 				else
-					status.points = M_10_PKT;
+				if (settings.points == 9)
+					settings.points = M_9_PKT;
+				else
+					settings.points = M_10_PKT;
 
-				status.is_1col		= scnflg();
-				status.is_groesse	= scnflg();
-				status.is_datum	= scnflg();
-				status.is_zeit	= scnflg();
+				settings.is_1col		= scnflg();
+				settings.is_size	= scnflg();
+				settings.is_date	= scnflg();
+				settings.is_time	= scnflg();
 
-				status.blitstate	= scnflg();
-				status.cnfm_del	= scnflg();
-				status.cnfm_copy	= scnflg();
-				status.mode_ovwr	= scnflg();
-				status.check_free	= scnflg();
-				status.use_fldl	= scnflg();
-				status.resident	= scnflg();
-				status.show_all	= scnflg();
-				status.clock		= scnflg();
-				status.use_cache	= scnflg();
-				status.dnam_init	= scnflg();
-				status.resvd1		= scnflg();
-				status.resvd2		= scnflg();
+				settings.blitstate	= scnflg();
+				settings.cnfm_del	= scnflg();
+				settings.cnfm_copy	= scnflg();
+				settings.mode_ovwr	= scnflg();
+				settings.check_free	= scnflg();
+				settings.use_fldl	= scnflg();
+				settings.resident	= scnflg();
+				settings.show_all	= scnflg();
+				settings.clock		= scnflg();
+				settings.use_cache	= scnflg();
+				settings.dnam_init	= scnflg();
+				settings.resvd1		= scnflg();
+				settings.resvd2		= scnflg();
 				break;
 
 			case 'FM':
@@ -419,32 +420,32 @@ void load_status(int pass)
 			case 'WN':
 				if (!pass || ln_wind > NUM_WINDOWS)
 					break;
-				fenster[ln_wind].out.g_x = scndez();
-				fenster[ln_wind].out.g_y = scndez();
-				fenster[ln_wind].out.g_w = scndez();
-				fenster[ln_wind].out.g_h = scndez();
+				windows[ln_wind].out.g_x = scndez();
+				windows[ln_wind].out.g_y = scndez();
+				windows[ln_wind].out.g_w = scndez();
+				windows[ln_wind].out.g_h = scndez();
 				if (old_w != desk_g.g_w)
 				{
-					recalc(&(fenster[ln_wind].out.g_x), old_w, desk_g.g_w);
-					recalc(&(fenster[ln_wind].out.g_w), old_w, desk_g.g_w);
+					recalc(&(windows[ln_wind].out.g_x), old_w, desk_g.g_w);
+					recalc(&(windows[ln_wind].out.g_w), old_w, desk_g.g_w);
 				}
 				if (old_h != desk_g.g_h)
 				{
-					recalc(&(fenster[ln_wind].out.g_y), old_h, desk_g.g_h);
-					recalc(&(fenster[ln_wind].out.g_h), old_h, desk_g.g_h);
+					recalc(&(windows[ln_wind].out.g_y), old_h, desk_g.g_h);
+					recalc(&(windows[ln_wind].out.g_h), old_h, desk_g.g_h);
 				}
-				fenster[ln_wind].out.g_x += desk_g.g_x;
-				fenster[ln_wind].out.g_y += desk_g.g_y;
-				fenster[ln_wind].shift = scndez();
+				windows[ln_wind].out.g_x += desk_g.g_x;
+				windows[ln_wind].out.g_y += desk_g.g_y;
+				windows[ln_wind].shift = scndez();
 			{
 				char buf[200];
 				char *name;
 
 				scnstr(buf);
 				name = get_name(buf);
-				strcpy(fenster[ln_wind].maske, name);
+				strcpy(windows[ln_wind].fpattern, name);
 				*name = '\0';
-				strcpy(fenster[ln_wind].path, buf);
+				strcpy(windows[ln_wind].path, buf);
 			}
 				ln_wind++;
 				break;
@@ -452,19 +453,19 @@ void load_status(int pass)
 			case 'IC':
 				if (pass)
 				{
-					icon[ln_icns].icontyp = scndez();
+					icon[ln_icns].icon_type = scndez();
 					icon[ln_icns].isdisk = scnflg() + '0';
 					if (icon[ln_icns].isdisk == '@')
 						icon[ln_icns].isdisk = 0;
-					(fenster[0].pobj+ln_icns+1)->ob_x = scndez();
-					(fenster[0].pobj+ln_icns+1)->ob_y = scndez();
+					(windows[0].pobj+ln_icns+1)->ob_x = scndez();
+					(windows[0].pobj+ln_icns+1)->ob_y = scndez();
 					if (old_w != desk_g.g_w)
-						recalc(&((fenster[0].pobj+ln_icns+1)->ob_x), old_w, desk_g.g_w);
+						recalc(&((windows[0].pobj+ln_icns+1)->ob_x), old_w, desk_g.g_w);
 					if (old_h != desk_g.g_h)
-						recalc(&((fenster[0].pobj+ln_icns+1)->ob_y), old_h, desk_g.g_h);
-					(fenster[0].pobj+ln_icns+1)->ob_x += desk_g.g_x;
-					(fenster[0].pobj+ln_icns+1)->ob_y += desk_g.g_y;
-					if (icon[ln_icns].icontyp >= I_ORDNER)
+						recalc(&((windows[0].pobj+ln_icns+1)->ob_y), old_h, desk_g.g_h);
+					(windows[0].pobj+ln_icns+1)->ob_x += desk_g.g_x;
+					(windows[0].pobj+ln_icns+1)->ob_y += desk_g.g_y;
+					if (icon[ln_icns].icon_type >= I_ORDNER)
 						scnstr(icon[ln_icns].text);
 				}
 
@@ -474,7 +475,7 @@ void load_status(int pass)
 			case 'PG':
 				if (!pass || ln_pgms >= NUM_PROGRAMS)
 					break;
-				scnbstr(adr_prgrms[PG_1 + ln_pgms].ob_spec.tedinfo->te_ptext);
+				scnbstr(tree_programs[PG_1 + ln_pgms].ob_spec.tedinfo->te_ptext);
 				ln_pgms++;
 				break;
 
@@ -484,7 +485,7 @@ void load_status(int pass)
 					while (*s == ' ')
 						s++;
 					if (s[0] && s[1])
-						memcpy(&(application[ln_apps].typ), s, 2L);
+						memcpy(&(application[ln_apps].type), s, 2L);
 					s += 2;
 					scnstr(application[ln_apps].path);
 					scnstr(application[ln_apps].ext1);
@@ -497,25 +498,25 @@ void load_status(int pass)
 				if (!pass)
 					break;
 			{
-				char	buf[200];
-				char *ziel1,*ziel2;
+				char buf[200];
+				char *dest1,*dest2;
 
 				buf[0] = EOS;
 				if (*s)
 					s++;
-				ziel1 = buf;
+				dest1 = buf;
 				while ((*s) && (*s != '\r') && (*s != '\n'))
-					*ziel1++ = *s++;
-				*ziel1 = EOS;
-				ziel1 = adr_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext;
-				ziel2 = adr_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext;
+					*dest1++ = *s++;
+				*dest1 = EOS;
+				dest1 = tree_ttp_params[TTPPAR_1].ob_spec.tedinfo->te_ptext;
+				dest2 = tree_ttp_params[TTPPAR_2].ob_spec.tedinfo->te_ptext;
 				if (buf[0])
 				{
-					strncpy(ziel1, buf, TTPLEN);
+					strncpy(dest1, buf, TTPLEN);
 					if (strlen(buf) >= TTPLEN)
 					{
-						ziel1[TTPLEN] = EOS;
-						strcpy(ziel2, buf + TTPLEN);
+						dest1[TTPLEN] = EOS;
+						strcpy(dest2, buf + TTPLEN);
 					}
 				}
 			}
@@ -536,31 +537,31 @@ void load_status(int pass)
 		n_icons = ln_icns + PLUSICONS;
 		n_apps  = ln_apps + PLUSAPPS;
 		gmemptr = Malloc(sizeof(ICON) * n_icons +
-					  sizeof(OBJECT) * (n_icons+1) +
+					  sizeof(OBJECT) * (n_icons + 1) +
 					  sizeof(APPLICATION) * n_apps);
 		if (!gmemptr)
 		{
 			err_alert(ENSMEM);
 			return;
 		}
-		fenster[0].shownum = fenster[0].realnum = n_icons;
-		fenster[0].pobj = (OBJECT *) gmemptr;
-		icon = (ICON *) (fenster[0].pobj + n_icons + 1);
+		windows[0].shownum = windows[0].realnum = n_icons;
+		windows[0].pobj = (OBJECT *) gmemptr;
+		icon = (ICON *) (windows[0].pobj + n_icons + 1);
 		application = (APPLICATION *) (icon + n_icons);
 
 		/* Desktop- Hintergrund zusammenfummeln */
 		/* ------------------------------------ */
 
-		o = fenster[0].pobj;
+		o = windows[0].pobj;
 		o->ob_next = -1;
 		o->ob_head = 1;
 		o->ob_tail = n_icons;
 		o->ob_type = G_BOX;
-		(o->ob_spec).index = adr_icons[(aes_global[10] > 1) ? I_BG_COL : I_BG_BW].ob_spec.index;
+		(o->ob_spec).index = tree_icons[(aes_global[10] > 1) ? I_BG_COL : I_BG_BW].ob_spec.index;
 /*		(o->ob_spec).index = (aes_global[10] > 1) ? 0x1173L : 0x1143L; */
 		o->ob_flags = o->ob_state = 0;
-		icw = adr_icons[I_FLPDSK].ob_width + 1;
-		ich = adr_icons[I_FLPDSK].ob_height + 1;
+		icw = tree_icons[I_FLPDSK].ob_width + 1;
+		ich = tree_icons[I_FLPDSK].ob_height + 1;
 
 		dx = desk_g.g_x;
 		dy = desk_g.g_y;
@@ -591,11 +592,11 @@ void load_status(int pass)
 	/* ------------------------------------------------ */
 
 	for	(; ln_wind <= NUM_WINDOWS; ln_wind++)
-		fenster[ln_wind].path[0] = EOS;
+		windows[ln_wind].path[0] = EOS;
 	for	(; ln_icns < n_icons; ln_icns++)
-		icon[ln_icns].icontyp = 0;
+		icon[ln_icns].icon_type = 0;
 	for	(; ln_pgms < NUM_PROGRAMS; ln_pgms++)
-		adr_prgrms[PG_1 + ln_pgms].ob_spec.tedinfo->te_ptext[0] = EOS;
+		tree_programs[PG_1 + ln_pgms].ob_spec.tedinfo->te_ptext[0] = EOS;
 	for	(; ln_apps < n_apps; ln_apps++)
 		application[ln_apps].path[0] = EOS;
 
@@ -604,38 +605,41 @@ void load_status(int pass)
 
 	for	(i = 0; i < n_icons; i++)
 	{
-		if (icon[i].icontyp != 0)
+		if (icon[i].icon_type != 0)
 		{
-			int typ;
+			int type;
 			char *txt,*name;
 
 
 			txt = icon[i].text;
-			typ = icon[i].icontyp;
-			if (typ >= I_ORDNER)
+			type = icon[i].icon_type;
+			if (type >= I_ORDNER)
 			{
 				name = get_name(txt);
-				if (typ == I_DATEI || typ >= DATICN_OFFS)
-					icon[i].icontyp = find_iconfile_dat(name);
+				if (type == I_DATEI || type >= DATICN_OFFS)
+					icon[i].icon_type = find_iconfile_dat(name);
 				else
-				if (typ == I_PROGRA || typ >= PGMICN_OFFS)
-					icon[i].icontyp = find_iconfile_pgm(name);
+				if (type == I_PROGRA || type >= PGMICN_OFFS)
+					icon[i].icon_type = find_iconfile_pgm(name);
 			}
 			else
+			{
 				name = NULL;
-			init_icnobj(fenster[0].pobj + i+1, &icon[i].data, icon[i].icontyp, name);
+			}
+
+			init_icnobj(windows[0].pobj + i + 1, &icon[i].data, icon[i].icon_type, name);
 			if (icon[i].isdisk)
 				icon[i].data.ib_char = icon[i].isdisk + 0x1000;
 		}
 		else
 		{
-			fenster[0].pobj[i + 1].ob_flags = HIDETREE;
+			windows[0].pobj[i + 1].ob_flags = HIDETREE;
 		}
 	}
 
 	Mgraf_mouse(ARROW);
 	get_char_dim();
-	Blitmode(status.blitstate & 1);
+	Blitmode(settings.blitstate & 1);
 }
 
 
@@ -691,51 +695,51 @@ static void status_to_ascii(char *inf)
 	/* a  '0'/'1' = Anzeigen als Bilder/als Text 		*/
 	/* b  '08'/'09'/'10' = Punktgrîûe fÅr Text			*/
 	/* c  1col/isgr/isdat/iszeit						*/
-	/* d  status.blitstate							*/
-	/*	 status.cnfm_del							*/
-	/*	 status.cnfm_copy							*/
-	/*	 status.mode_ovwr							*/
-	/*	 status.check_free							*/
-	/*	 status.use_fldl							*/
-	/*	 status.resident							*/
-	/*	 status.show_all							*/
-	/*	 status.clock								*/
-	/*	 status.use_cache							*/
-	/*	 status.dnam_init							*/
-	/*	 status.resvd1								*/
-	/*	 status.resvd2								*/
+	/* d  settings.blitstate							*/
+	/*	 settings.cnfm_del							*/
+	/*	 settings.cnfm_copy							*/
+	/*	 settings.mode_ovwr							*/
+	/*	 settings.check_free							*/
+	/*	 settings.use_fldl							*/
+	/*	 settings.resident							*/
+	/*	 settings.show_all							*/
+	/*	 settings.clock								*/
+	/*	 settings.use_cache							*/
+	/*	 settings.dnam_init							*/
+	/*	 settings.resvd1								*/
+	/*	 settings.resvd2								*/
 	/* --------------------------------------------------- */
 
 	prtdez(desk_g.g_w);
 	prtdez(desk_g.g_h);
 	prtdez(deflt_topwnr);
-	prtdez(status.sorttyp - M_SNAME);
+	prtdez(settings.sort_mode - M_SNAME);
 	*s++ = ' ';
-	prtflg(status.showtyp == M_ATEXT);
-	if (status.points == M_8_PKT)
+	prtflg(settings.show_mode == M_ATEXT);
+	if (settings.points == M_8_PKT)
 		i = 8;
 	else
-		i = (status.points == M_9_PKT) ? 9 : 10;
+		i = (settings.points == M_9_PKT) ? 9 : 10;
 	prtdez(i);
 	*s++ = ' ';
-	prtflg(status.is_1col);
-	prtflg(status.is_groesse);
-	prtflg(status.is_datum);
-	prtflg(status.is_zeit);
+	prtflg(settings.is_1col);
+	prtflg(settings.is_size);
+	prtflg(settings.is_date);
+	prtflg(settings.is_time);
 	*s++ = ' ';
-	prtflg(status.blitstate);
-	prtflg(status.cnfm_del);
-	prtflg(status.cnfm_copy);
-	*s++ = status.mode_ovwr + '0';
-	prtflg(status.check_free);
-	prtflg(status.use_fldl);
-	prtflg(status.resident);
-	prtflg(status.show_all);
-	prtflg(status.clock);
-	prtflg(status.use_cache);
-	prtflg(status.dnam_init);
-	prtflg(status.resvd1);
-	prtflg(status.resvd2);
+	prtflg(settings.blitstate);
+	prtflg(settings.cnfm_del);
+	prtflg(settings.cnfm_copy);
+	*s++ = settings.mode_ovwr + '0';
+	prtflg(settings.check_free);
+	prtflg(settings.use_fldl);
+	prtflg(settings.resident);
+	prtflg(settings.show_all);
+	prtflg(settings.clock);
+	prtflg(settings.use_cache);
+	prtflg(settings.dnam_init);
+	prtflg(settings.resvd1);
+	prtflg(settings.resvd2);
 	prtstr("\r\n#_DFM");
 
 	/* 3. Zeile: "#_DFM a b c d e f g h"				*/
@@ -766,16 +770,16 @@ static void status_to_ascii(char *inf)
 	for	(i = 1; i <= NUM_WINDOWS; i++)
 	{
 		prtstr("#_DWN");
-		prtdez(fenster[i].out.g_x - desk_g.g_x);
-		prtdez(fenster[i].out.g_y - desk_g.g_y);
-		prtdez(fenster[i].out.g_w);
-		prtdez(fenster[i].out.g_h);
-		if (fenster[i].path[0])
+		prtdez(windows[i].out.g_x - desk_g.g_x);
+		prtdez(windows[i].out.g_y - desk_g.g_y);
+		prtdez(windows[i].out.g_w);
+		prtdez(windows[i].out.g_h);
+		if (windows[i].path[0])
 		{
-			prtdez(fenster[i].shift);
+			prtdez(windows[i].shift);
 			*s++ = ' ';
-			prtstr(fenster[i].path );
-			prtstr(fenster[i].maske);
+			prtstr(windows[i].path);
+			prtstr(windows[i].fpattern);
 		}
 		else
 			prtdez(0);
@@ -783,20 +787,20 @@ static void status_to_ascii(char *inf)
 		*s++ = '\n';
 	}
 
-	/* "#_DIC typ c x y path" */
+	/* "#_DIC type c x y path" */
 	/* ---------------------- */
 
 	for	(i = 0; i < n_icons; i++)
 	{
-		if (0 == icon[i].icontyp)
+		if (0 == icon[i].icon_type)
 			continue;
 		prtstr("#_DIC");
-		prtdez(icon[i].icontyp);
+		prtdez(icon[i].icon_type);
 		*s++ = ' ';
 		*s++ = (icon[i].isdisk) ? (icon[i].isdisk) : '@';
-		prtdez((fenster[0].pobj+i+1)->ob_x - desk_g.g_x);
-		prtdez((fenster[0].pobj+i+1)->ob_y - desk_g.g_y);
-		if (icon[i].icontyp >= I_ORDNER)
+		prtdez((windows[0].pobj+i+1)->ob_x - desk_g.g_x);
+		prtdez((windows[0].pobj+i+1)->ob_y - desk_g.g_y);
+		if (icon[i].icon_type >= I_ORDNER)
 		{
 			*s++ = ' ';
 			prtstr(icon[i].text);
@@ -805,7 +809,7 @@ static void status_to_ascii(char *inf)
 		*s++ = '\n';
 	}
 
-	/* "#_DAP path typ ext1 ext2" */
+	/* "#_DAP path type ext1 ext2" */
 	/* -------------------------- */
 
 	for	(i = 0; i < n_apps; i++)
@@ -813,8 +817,8 @@ static void status_to_ascii(char *inf)
 		if (!application[i].path[0])
 			continue;
 		prtstr("#_DAP ");
-		*s++ = ((char *) (&(application[i].typ)))[0];
-		*s++ = ((char *) (&(application[i].typ)))[1];
+		*s++ = ((char *) (&(application[i].type)))[0];
+		*s++ = ((char *) (&(application[i].type)))[1];
 		*s++ = ' ';
 		prtstr(application[i].path);
 		*s++ = ' ';
@@ -831,7 +835,7 @@ static void status_to_ascii(char *inf)
 	for	(i = 0; i < NUM_PROGRAMS; i++)
 	{
 		prtstr("#_DPG ");
-		prtstr(adr_prgrms[PG_1 + i].ob_spec.tedinfo->te_ptext);
+		prtstr(tree_programs[PG_1 + i].ob_spec.tedinfo->te_ptext);
 		*s++ = '\r';
 		*s++ = '\n';
 	}
@@ -840,8 +844,8 @@ static void status_to_ascii(char *inf)
 	/* ------------ */
 
 	prtstr("#_DPP ");
-	prtstr(adr_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext);
-	prtstr(adr_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext);
+	prtstr(tree_ttp_params[TTPPAR_1].ob_spec.tedinfo->te_ptext);
+	prtstr(tree_ttp_params[TTPPAR_2].ob_spec.tedinfo->te_ptext);
 	*s++ = '\r';
 	*s++ = '\n';
 
@@ -942,7 +946,7 @@ void save_status(int is_inf)
 		Mfree(gmemptr);
 		gmemptr = NULL;
 #if	DEBUG
-		icon = application = fenster[0].pobj = NULL;
+		icon = application = windows[0].pobj = NULL;
 #endif
 	}
 	if (doserr < E_OK)
@@ -992,7 +996,7 @@ void save_status(int is_inf)
 		Mfree(gmemptr);
 		gmemptr = NULL;
 #if	DEBUG
-		icon = application = fenster[0].pobj = NULL;
+		icon = application = windows[0].pobj = NULL;
 #endif
 	}
 	if (doserr < E_OK)
@@ -1009,7 +1013,7 @@ void save_status(int is_inf)
 #if	MAGIXDESK
 void reload_status(int drv)
 {
-	int	handle;
+	int handle;
 	char *inf;
 	char olddrv;
 	long doserr;
@@ -1093,8 +1097,8 @@ void reload_status(int drv)
 #else
 void reload_status(int is_inf, int drv)
 {
-	int	handle;
-	char	*inf;
+	int handle;
+	char *inf;
 	char olddrv;
 	long doserr;
 

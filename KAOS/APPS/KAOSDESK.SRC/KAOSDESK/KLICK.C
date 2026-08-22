@@ -5,6 +5,7 @@
 *
 *********************************************************************/
 
+/* #include <stdio.h> */	/* for printf debugging */
 #include <string.h>
 #include <mgx_dos.h>	/* include before tos.h */
 #include <tos.h>
@@ -23,16 +24,16 @@
 
 static int xrel, yrel;
 
-void draw_boxes(OBJECT *tree, OBJECT *mov_boxes[], int anz_boxes,
+void draw_boxes(OBJECT *tree, OBJECT *mov_boxes[], int num_boxes,
 			 GRECT *grenz, int xoff, int yoff)
 {
 	int px, py;
 	int pxy[10];
 
 
-	vswr_mode	(vdi_handle, MD_XOR);
+	vswr_mode(vdi_handle, MD_XOR);
 	set_deflt_clip();
-	vsl_type	(vdi_handle, DASH);
+	vsl_type(vdi_handle, DASH);
 
 	if (grenz)
 	{
@@ -50,7 +51,7 @@ void draw_boxes(OBJECT *tree, OBJECT *mov_boxes[], int anz_boxes,
 	xrel = xoff;
 	yrel = yoff;
 
-	for	(; anz_boxes > 0; anz_boxes--,mov_boxes++)
+	for	(; num_boxes > 0; num_boxes--,mov_boxes++)
 	{
 		pxy[0] = (*mov_boxes)->ob_x + px;
 		pxy[1] = (*mov_boxes)->ob_y + py;
@@ -84,13 +85,13 @@ static int mvx,mvy;
 static int mv_obj(int wnr, int obj)
 {
 	GRECT g;
-	register OBJECT *tree = fenster[wnr].pobj;
+	register OBJECT *tree = windows[wnr].pobj;
 
 	objc_grect(tree, obj, &g);
 	(tree+obj)->ob_x += mvx;
 	(tree+obj)->ob_y += mvy;
 	redraw(wnr, &g);
-	obj_malen(wnr, obj);
+	draw_wind_obj(wnr, obj);
 	return 0;
 }
 
@@ -100,14 +101,14 @@ static void mv_dskt_icns(int x, int y)
 		return;
 	mvx = x;
 	mvy = y;
-	walk_sel(0, mv_obj);
+	walk_wind_sel_objs(0, mv_obj);
 }
 
 
 /****************************************************************
 *
 * Bringt ein neues Icon ins Desktop. Es soll ein Icon mit Typ
-*  <typ>, absoluter Position <x,y>, (optionalem) Buchstaben <c>
+*  <type>, absoluter Position <x,y>, (optionalem) Buchstaben <c>
 *  und (optionalem) Text <text>.
 * Wenn es sich um eine Datei handelt, die aufs Desktop gezogen
 *  wurde, wird <path> zugeordnet.
@@ -115,14 +116,15 @@ static void mv_dskt_icns(int x, int y)
 *
 ****************************************************************/
 
-int make_icon(int typ, char c, char *icntext, char *path, int x, int y)
+int make_icon(int type, char c, char *icntext, char *path, int x, int y)
 {
 	register int i;
 	register OBJECT *ob;
 
 
-	for	(i = 0; i < n_icons && icon[i].icontyp; i++)
+	for	(i = 0; i < n_icons && icon[i].icon_type; i++)
 		;
+
 	if (i >= n_icons)
 	{
 #if LANGUAGE == LANG_GER
@@ -143,10 +145,12 @@ int make_icon(int typ, char c, char *icntext, char *path, int x, int y)
 		strcpy(icon[i].text, path);
 	}
 	else
+	{
 		icon[i].text[0] = EOS;
+	}
 
-	ob = fenster[0].pobj+i+1;
-	icon[i].icontyp = typ;
+	ob = windows[0].pobj+i+1;
+	icon[i].icon_type = type;
 	icon[i].isdisk  = c;
 
 	if (icntext)
@@ -155,13 +159,15 @@ int make_icon(int typ, char c, char *icntext, char *path, int x, int y)
 		icntext = get_name(icon[i].text);
 	}
 
-	init_icnobj(ob, &icon[i].data, typ, icntext);
+	init_icnobj(ob, &icon[i].data, type, icntext);
 	if (c)
+	{
 		icon[i].data.ib_char = (c & 0x00ff) | 0x1000;
+	}
 
-	ob->ob_x = x - fenster[0].pobj->ob_x;
-	ob->ob_y = y - fenster[0].pobj->ob_y;
-	obj_malen(0, i + 1);
+	ob->ob_x = x - windows[0].pobj->ob_x;
+	ob->ob_y = y - windows[0].pobj->ob_y;
+	draw_wind_obj(0, i + 1);
 	return FALSE;
 }
 
@@ -175,15 +181,15 @@ int make_icon(int typ, char c, char *icntext, char *path, int x, int y)
 
 static int mk_obj(int wnr, int obj)
 {
-	int typ;
+	int type;
 	MYDTA *file;
-	register OBJECT *tree = fenster[wnr].pobj + obj;
+	register OBJECT *tree = windows[wnr].pobj + obj;
 
 
-	file = fenster[wnr].pmydta+obj-1;
-	typ = file -> icontyp;
-	if (make_icon(typ, 0, file->filename, fenster[wnr].path,
-			    tree->ob_x + mvx, tree -> ob_y + mvy))
+	file = windows[wnr].pmydta+obj-1;
+	type = file->icon_type;
+	if (make_icon(type, 0, file->filename, windows[wnr].path,
+			    tree->ob_x + mvx, tree->ob_y + mvy))
 		return -1;
 	return 0;
 }
@@ -191,9 +197,9 @@ static int mk_obj(int wnr, int obj)
 
 static void mk_dskt_icns(int wnr, int xrel, int yrel)
 {
-	mvx = fenster[wnr].pobj -> ob_x + xrel;
-	mvy = fenster[wnr].pobj -> ob_y + yrel;
-	walk_sel(wnr, mk_obj);
+	mvx = windows[wnr].pobj->ob_x + xrel;
+	mvy = windows[wnr].pobj->ob_y + yrel;
+	walk_wind_sel_objs(wnr, mk_obj);
 }
 
 
@@ -210,14 +216,14 @@ static void move_icons(int x_koor, int y_koor, int wnr, OBJECT *tree, int kbsh)
 	GRECT g;
 	GRECT *ptr_g;
 	OBJECT **mov_boxes;
-	int anz_boxes;
+	int num_boxes;
 	EVNTDATA ev;
 	int old_x,old_y;
 	register int i;
-	OBJECT *zieltree;
-	int zielwnr, zielobj;
-	int altwnr = -2, altobj = 0;
-	OBJECT *alttree = NULL;
+	OBJECT *dest_tree;
+	int dest_wnr, dest_obj;
+	int old_wnr = -2, old_obj = 0;
+	OBJECT *old_tree = NULL;
 
 
 	/* Speicher holen */
@@ -233,21 +239,21 @@ static void move_icons(int x_koor, int y_koor, int wnr, OBJECT *tree, int kbsh)
 	/* Zeiger auf alle zu verschiebenden Icons */
 	/* --------------------------------------- */
 
-	if ((i = (tree -> ob_head)) > 0)
+	if ((i = (tree->ob_head)) > 0)
 	{
-		for	(anz_boxes = 0; i <= (tree -> ob_tail); i++)
-			if (selected(tree, i) && !(HIDETREE&(tree+i)->ob_flags))
-				mov_boxes[anz_boxes++] = tree+i;
+		for	(num_boxes = 0; i <= (tree->ob_tail); i++)
+			if (selected(tree, i) && !(HIDETREE&(tree + i)->ob_flags))
+				mov_boxes[num_boxes++] = tree+i;
 	}
 
-	if (wnr == 0 || anz_boxes == 1)
+	if (wnr == 0 || num_boxes == 1)
 	{
-		tree_sel_grect	(tree, &g);
+		tree_sel_grect(tree, &g);
 		ptr_g = &g;
-		if ((anz_boxes == 1) && wnr)
+		if ((num_boxes == 1) && wnr)
 		{
-			if (g.g_w > 12*gl_hwchar)
-				g.g_w = 12*gl_hwchar;
+			if (g.g_w > 12 * gl_hwchar)
+				g.g_w = 12 * gl_hwchar;
 		}
 	}
 	else
@@ -260,7 +266,7 @@ static void move_icons(int x_koor, int y_koor, int wnr, OBJECT *tree, int kbsh)
 	ev.y = y_koor;
 	do
 	{
-		draw_boxes(tree, mov_boxes, anz_boxes, ptr_g, ev.x - x_koor, ev.y - y_koor);
+		draw_boxes(tree, mov_boxes, num_boxes, ptr_g, ev.x - x_koor, ev.y - y_koor);
 		Mgraf_mouse(M_ON);
 
 		old_x = ev.x;
@@ -273,57 +279,57 @@ static void move_icons(int x_koor, int y_koor, int wnr, OBJECT *tree, int kbsh)
 		while ((ev.x == old_x) && (ev.y == old_y) && (ev.bstate & 1));
 
 		Mgraf_mouse(M_OFF);
-		draw_boxes(tree, mov_boxes, anz_boxes, ptr_g,
-				 old_x-x_koor, old_y-y_koor);
+		draw_boxes(tree, mov_boxes, num_boxes, ptr_g,
+				 old_x - x_koor, old_y - y_koor);
 
-		zielwnr = hdl_to_fnr(wind_find(ev.x, ev.y));
-		if (zielwnr >= 0)
+		dest_wnr = hdl_to_fnr(wind_find(ev.x, ev.y));
+		if (dest_wnr >= 0)
 		{
-			zieltree = fenster[zielwnr].pobj;
-			if (in_grect(ev.x, ev.y, &(fenster[zielwnr].in)))
+			dest_tree = windows[dest_wnr].pobj;
+			if (in_grect(ev.x, ev.y, &(windows[dest_wnr].in)))
 			{
-				if (0 < (zielobj = find_obj(zieltree, ev.x, ev.y)))
+				if (0 < (dest_obj = find_obj(dest_tree, ev.x, ev.y)))
 				{
-					if (zielwnr == wnr && selected(zieltree, zielobj))
-						zielobj = -2;
+					if (dest_wnr == wnr && selected(dest_tree, dest_obj))
+						dest_obj = -2;
 					else
-					if (!is_dest(zielwnr, zielobj))
-						zielobj = 0;
+					if (!is_dest(dest_wnr, dest_obj))
+						dest_obj = 0;
 				}
 			}
 			else
-				zielobj = 0;
+				dest_obj = 0;
 		}
 		else
 		{
-			zieltree = NULL;
-			zielobj = -1;
+			dest_tree = NULL;
+			dest_obj = -1;
 		}
 
-		if (zieltree != alttree || zielobj != altobj)
+		if ((dest_tree != old_tree) || (dest_obj != old_obj))
 		{
-			if (alttree && altobj > 0)
+			if (old_tree && (old_obj > 0))
 			{
-				obj_malen(altwnr, altobj);
+				draw_wind_obj(old_wnr, old_obj);
 			}
-			if (zieltree && zielobj > 0)
+			if (dest_tree && dest_obj > 0)
 			{
-				ob_sel(zieltree, zielobj);
-				obj_malen(zielwnr, zielobj);
-				ob_dsel(zieltree, zielobj);
+				ob_sel(dest_tree, dest_obj);
+				draw_wind_obj(dest_wnr, dest_obj);
+				ob_dsel(dest_tree, dest_obj);
 			}
-			alttree = zieltree;
-			altobj  = zielobj;
-			altwnr  = zielwnr;
+			old_tree = dest_tree;
+			old_obj  = dest_obj;
+			old_wnr  = dest_wnr;
 		}
 	}
 	while (ev.bstate & 1);
 
 	Mfree(mov_boxes);
 
-	if (zielobj > 0)
+	if (dest_obj > 0)
 	{
-		obj_malen(zielwnr, zielobj);
+		draw_wind_obj(dest_wnr, dest_obj);
 	}
 
 	Mgraf_mouse(ARROW);
@@ -335,7 +341,7 @@ static void move_icons(int x_koor, int y_koor, int wnr, OBJECT *tree, int kbsh)
 	/*	ICONS AUF DEM DESKTOP VERSCHIEBEN					 */
 	/* --------------------------------------------------------- */
 
-	if (wnr == 0 && zielwnr == 0 && (zielobj == 0 || zielobj == -2) )
+	if ((wnr == 0) && (dest_wnr == 0) && (dest_obj == 0 || dest_obj == -2) )
 	{
 		mv_dskt_icns(xrel, yrel);
 		return;
@@ -346,9 +352,9 @@ static void move_icons(int x_koor, int y_koor, int wnr, OBJECT *tree, int kbsh)
 	/*	NICHTS TUN									 */
 	/* --------------------------------------------------------- */
 
-	if (zielobj < 0)
+	if (dest_obj < 0)
 	{
-		if (zielwnr == 0)
+		if (dest_wnr == 0)
 			Bconout(2,7);		/* pling */
 		return;
 	}
@@ -359,7 +365,7 @@ static void move_icons(int x_koor, int y_koor, int wnr, OBJECT *tree, int kbsh)
 	/*	FALLS 1 OBJEKT, DESKTOP- ICON ERSTELLEN				 */
 	/* --------------------------------------------------------- */
 
-	if (wnr > 0 && zielwnr == 0 && zielobj == 0)
+	if ((wnr > 0) && (dest_wnr == 0) && (dest_obj == 0))
 	{
 		if (ptr_g)
 			mk_dskt_icns(wnr, xrel, yrel);
@@ -378,14 +384,14 @@ static void move_icons(int x_koor, int y_koor, int wnr, OBJECT *tree, int kbsh)
 	/*	DRUCKER   	: DRUCKEN							 */
 	/* --------------------------------------------------------- */
 
-	if (zielwnr == 0 && zielobj > 0)
+	if ((dest_wnr == 0) && (dest_obj > 0))
 	{
-		if (icon[zielobj-1].icontyp == I_PAPIER)
+		if (icon[dest_obj - 1].icon_type == I_PAPIER)
 		{
 			dl_icns(wnr);
 			return;
 		}
-		if (icon[zielobj-1].icontyp == I_DRUCKR)
+		if (icon[dest_obj - 1].icon_type == I_DRUCKR)
 		{
 			prt_icns(wnr, TRUE);
 			return;
@@ -396,37 +402,82 @@ static void move_icons(int x_koor, int y_koor, int wnr, OBJECT *tree, int kbsh)
 	/* --------------------------------------------------------- */
 
 	{
-		char zielpfad[130];
+		char dest_path[130];
 
 
-		if (1 != obj_to_path(zielwnr, zielobj, zielpfad, NULL))
+		if (1 != obj_to_path(dest_wnr, dest_obj, dest_path, NULL))
 		{
-			dclick(zielwnr, zielobj, kbsh &= ~K_CTRL);
+			dclick(dest_wnr, dest_obj, kbsh &= ~K_CTRL);
 			return;
 		}
 
-		cache_on(zielpfad);					/* fÅr Zieldisk  */
-		if (wnr > 0 && anz_boxes > 1)
-			cache_on (fenster[wnr].path);		/* fÅr Quelldisk */
+		cache_on(dest_path);					/* fÅr Zieldisk  */
+		if ((wnr > 0) && (num_boxes > 1))
+			cache_on(windows[wnr].path);		/* fÅr Quelldisk */
 
-		cpmv_icns(wnr, zielpfad, kbsh);
+		cpmv_icns(wnr, dest_path, kbsh);
 
-		if (wnr > 0 && anz_boxes > 1)
-			cache_off(fenster[wnr].path);		/* fÅr Quelldisk */
+		if ((wnr > 0) && (num_boxes > 1))
+			cache_off(windows[wnr].path);		/* fÅr Quelldisk */
 
-		cache_off(zielpfad);				/* fÅr Zieldisk  */
+		cache_off(dest_path);				/* fÅr Zieldisk  */
 	}
 }
 
 
 /****************************************************************
 *
-* Der Benutzer hat an der Bildschirmposition (x_koor,y_koor) mit
-* dem <knopf> einen <anzahl>- fachen Mausklick ausgefÅhrt.
+* Nach der Bearbeitung eines Einfach-Mausklicks mÅssen wir
+* prÅfen, ob die Maustaste noch gedrÅckt ist. Insbesondere auf
+* schnellen Systemen mÅssen wir dem Anwender etwas Zeit lassen,
+* die linke Maustaste wieder loszulassen, ansonsten wird immer
+* ein "Drag" erkannt.
+*
+* RÅckgabe TRUE bei "timeout", d.h. Maustaste noch gedrÅckt.
 *
 ****************************************************************/
 
-void handle_mouse_button(int anzahl, const EVNTDATA *ev)
+static int detect_mouse_drag(void)
+{
+	EVNT w_ev;
+
+
+#if 0
+	long last_clicktime = getHz200();
+	long clicktime;
+#endif
+	w_ev.mwhich = evnt_multi(
+                      MU_BUTTON + MU_TIMER,
+					  1,			/* keine Doppelklicks */
+					  1,			/* nur linke Maustaste */
+					  0,			/* linke Maustaste losgelassen */
+					  0,NULL,		/* kein 1. Rechteck */
+					  0,NULL,		/* kein 2. Rechteck */
+					  NULL,			/* keine "message" */
+					  MOUSE_DRAG_DETECT_MS,		/* ms */
+					  (EVNTDATA *) &(w_ev.mx),
+					  &w_ev.key,
+					  &w_ev.mclicks
+					  );
+
+#if 0
+	clicktime = getHz200();
+	printf("\x1b" "H %lu->%lu (%lu ms) mwhich=0x%04x   \n",
+			last_clicktime, clicktime,
+			(clicktime - last_clicktime) * 5,
+			w_ev.mwhich);
+#endif
+	return (w_ev.mwhich & MU_TIMER) != 0;
+}
+
+
+/****************************************************************
+*
+* Der Benutzer hat einen Mausklick ausgefÅhrt.
+*
+****************************************************************/
+
+void handle_mouse_button(int nclicks, const EVNTDATA *ev)
 {
 	int windhdl,icnobj,wnr;
 	int issel, dummy, dummy2;
@@ -446,7 +497,7 @@ void handle_mouse_button(int anzahl, const EVNTDATA *ev)
 	if (0 < (windhdl = wind_find(ev->x, ev->y)))
 	{
 		wnr = hdl_to_fnr(windhdl);
-		if (wnr >= 0 && !in_grect(ev->x, ev->y, &(fenster[wnr].in)))
+		if (wnr >= 0 && !in_grect(ev->x, ev->y, &(windows[wnr].in)))
 			wnr = -1;
 	}
 	else
@@ -454,7 +505,7 @@ void handle_mouse_button(int anzahl, const EVNTDATA *ev)
 
 	if (wnr >= 0)
 	{
-		tree = fenster[wnr].pobj;
+		tree = windows[wnr].pobj;
 		icnobj = find_obj(tree, ev->x, ev->y);
 	}
 	else
@@ -473,14 +524,12 @@ void handle_mouse_button(int anzahl, const EVNTDATA *ev)
 
 	if (icnobj == 0)
 	{
-		EVNTDATA ev2;
-
 		if (issel & !(ev->kstate & (K_RSHIFT + K_LSHIFT)))
+		{
 			dsel_all();
+		}
 
-		graf_mkstate(&ev2);
-
-		if (ev2.bstate & 1)
+		if (detect_mouse_drag())
 		{
 			GRECT rub;
 
@@ -509,12 +558,12 @@ void handle_mouse_button(int anzahl, const EVNTDATA *ev)
 	/* 3. Fall: selektiertes Objekt wurde einmal angeklickt	*/
 	/* ---------------------------------------------------- */
 
-	if (anzahl < 2 && selected(tree, icnobj))
+	if ((nclicks < 2) && selected(tree, icnobj))
 	{
 		if (ev->kstate & (K_RSHIFT + K_LSHIFT))
 		{
 			ob_dsel(tree, icnobj);
-			obj_malen(wnr, icnobj);
+			draw_wind_obj(wnr, icnobj);
 			dirty_info(wnr);
 			return;
 		}
@@ -534,35 +583,34 @@ void handle_mouse_button(int anzahl, const EVNTDATA *ev)
 	}
 	else
 	{
-		if (anzahl != 2)
-			(tree + icnobj) -> ob_state ^= SELECTED;
+		if (nclicks != 2)
+			tree[icnobj].ob_state ^= SELECTED;
 		else
-			(tree + icnobj) -> ob_state |= SELECTED;
+			tree[icnobj].ob_state |= SELECTED;
 	}
 
-	obj_malen(wnr, icnobj);
+	draw_wind_obj(wnr, icnobj);
 	dirty_info(wnr);
 
-	if (anzahl < 2)
+	if (nclicks < 2)
 	{
-		EVNTDATA ev2;
-
 		tst_move:
-		graf_mkstate(&ev2);
-		if (ev2.bstate & 1)
+		if (detect_mouse_drag())
+		{
 			move_icons(ev->x, ev->y, wnr, tree, ev->kstate);
+		}
 		return;
 	}
 
 	/* Ab hier nur noch Doppelklicks berÅcksichtigen */
 	/* --------------------------------------------- */
 
-	if (anzahl == 2)
+	if (nclicks == 2)
 	{
 		if (dclick(wnr, icnobj, ev->kstate))
 		{
 			ob_dsel(tree, icnobj);
-			obj_malen(wnr, icnobj);
+			draw_wind_obj(wnr, icnobj);
 			dirty_info(wnr);
 		}
 	}
@@ -586,10 +634,10 @@ void dsel_all(void)
 
 	while (icsel(&wnr, &dummy))
 	{
-		tree = fenster[wnr].pobj;
+		tree = windows[wnr].pobj;
 		tree_sel_grect(tree, &g);
-		if ((i = (tree -> ob_head)) > 0)
-			for	(; i <= (tree -> ob_tail); i++)
+		if ((i = (tree->ob_head)) > 0)
+			for	(; i <= (tree->ob_tail); i++)
 				if (selected(tree, i))
 					ob_dsel(tree, i);
 		redraw(wnr, &g);
@@ -608,7 +656,7 @@ void dsel_all(void)
 
 void sel_all(int wnr)
 {
-	OBJECT *tree = fenster[wnr].pobj;
+	OBJECT *tree = windows[wnr].pobj;
 	GRECT g;
 	int   ownr,dummy;
 	register int i,head;
@@ -618,15 +666,15 @@ void sel_all(int wnr)
 		return;
 	if (icsel(&ownr, &dummy) && ownr != wnr)
 		dsel_all();
-	if ((head = (tree -> ob_head)) <= 0)
+	if ((head = (tree->ob_head)) <= 0)
 		return;
-	for	(i = head; i <= (tree -> ob_tail); i++)
+	for	(i = head; i <= (tree->ob_tail); i++)
 	{
 		if (0 == ((tree+i)->ob_flags & HIDETREE))
 			(tree+i)->ob_state ^= SELECTED;
 	}
 	tree_sel_grect(tree, &g);
-	for	(i = head; i <= (tree -> ob_tail); i++)
+	for	(i = head; i <= (tree->ob_tail); i++)
 	{
 		if (0 == ((tree+i)->ob_flags & HIDETREE))
 			(tree+i)->ob_state |= SELECTED;
@@ -647,23 +695,23 @@ void sel_all(int wnr)
 *
 ****************************************************************/
 
-void obj_malen(int wnr, int index)
+void draw_wind_obj(int wnr, int index)
 {
 	int whdl;
 	GRECT list, neu;
 	OBJECT *tree;
 
 
-	if (index > fenster[wnr].shownum)
+	if (index > windows[wnr].shownum)
 		return;
 
-	whdl = fenster[wnr].handle;
-	tree = fenster[wnr].pobj;
+	whdl = windows[wnr].handle;
+	tree = windows[wnr].pobj;
 	objc_offset(tree, index, &(neu.g_x), &(neu.g_y));
 	neu.g_w = (tree+index)->ob_width;
 	neu.g_h = (tree+index)->ob_height;
 
-	if (((tree + index) -> ob_type == G_USERDEF) || ((tree + index) -> ob_state & WHITEBAK))
+	if (((tree + index)->ob_type == G_USERDEF) || ((tree + index)->ob_state & WHITEBAK))
 	{
 		index = 0;
 	}
@@ -689,14 +737,14 @@ void obj_malen(int wnr, int index)
 
 void kill_icon(int objnr)
 {
-	OBJECT *ob = fenster[0].pobj+objnr;
-	ICON   *ic = icon+objnr-1;
+	OBJECT *ob = windows[0].pobj + objnr;
+	ICON   *ic = icon + objnr - 1;
 	GRECT  g;
 
 
-	ic -> icontyp = ic -> isdisk = 0;
-	ob -> ob_flags = HIDETREE;
-	objc_grect(fenster[0].pobj, objnr, &g);
+	ic->icon_type = ic->isdisk = 0;
+	ob->ob_flags = HIDETREE;
+	objc_grect(windows[0].pobj, objnr, &g);
 	redraw(0, &g);
 }
 
@@ -726,10 +774,10 @@ int obj_to_path(int wnr, int obj, char *path, MYDTA **f)
 			return -1;
 		icn = icon + (obj - 1);
 
-		if (icn->icontyp >= I_ORDNER) /* Ord,Prog,Dat,Bat */
+		if (icn->icon_type >= I_ORDNER) /* Ord,Prog,Dat,Bat */
 		{
 			strcpy(path, icn->text);
-			if (icn->icontyp == I_ORDNER)
+			if (icn->icon_type == I_ORDNER)
 				ispath = 1;
 		}
 		else
@@ -744,14 +792,14 @@ int obj_to_path(int wnr, int obj, char *path, MYDTA **f)
 	}
 	else
 	{
-		strcpy(path, fenster[wnr].path);
+		strcpy(path, windows[wnr].path);
 		if (obj)
 		{
-			file = fenster[wnr].pmydta+obj-1;
+			file = windows[wnr].pmydta+obj-1;
 			if (f)
 				*f = file;
 			strcat(path, file-> filename);
-			if ((file -> attrib) & F_SUBDIR)
+			if ((file->attrib) & F_SUBDIR)
 				ispath = 1;
 		}
 		else
@@ -774,7 +822,7 @@ int obj_to_path(int wnr, int obj, char *path, MYDTA **f)
 
 static int dli_obj(int wnr, int obj)
 {
-	if (wnr == 0 && icon[obj-1].icontyp >= I_ORDNER)
+	if (wnr == 0 && icon[obj - 1].icon_type >= I_ORDNER)
 		kill_icon(obj);
 	return 0;
 }
@@ -798,17 +846,21 @@ void dl_icns(int wnr)
 	if (wnr < 0)
 		return;
 	if (wnr > 0)
-		cache_on (fenster[wnr].path);
-	walk_sel(wnr, dli_obj);
-	if (!confirm(wnr, 0, status.cnfm_del, fenster[wnr].path))
+		cache_on (windows[wnr].path);
+
+	walk_wind_sel_objs(wnr, dli_obj);
+	if (!confirm(wnr, 0, settings.cnfm_del, windows[wnr].path))
 	{
 		Mgraf_mouse(HOURGLASS);
-		walk_sel(wnr, dl_obj);
+		walk_wind_sel_objs(wnr, dl_obj);
 		Mgraf_mouse(ARROW);
 	}
+
 	end_confirm();
 	if (wnr > 0)
-		cache_off(fenster[wnr].path);
+	{
+		cache_off(windows[wnr].path);
+	}
 }
 
 
@@ -839,7 +891,7 @@ static int prt_obj(int wnr, int obj)
 void prt_icns(int wnr, int print)
 {
 	char *pgm;
-	int  typ;
+	int type;
 
 
 	if (wnr < 0)
@@ -852,18 +904,18 @@ void prt_icns(int wnr, int print)
 #endif
 		return;
 
-	pgm = ((adr_prgrms+PG_2+print)->ob_spec.tedinfo)->te_ptext;
+	pgm = tree_programs[PG_2 + print].ob_spec.tedinfo->te_ptext;
 	if (*pgm)		/* Druck- bzw. Anzeigeprogramm angegeben */
 	{
-		typ = suffixtyp(pgm);
-		if (typ == 'PP')		/* .TTP -> .TOS */
-			typ = '_P';
-		starten(pgm, typ, 0, 0, 0);
+		type = suffix_type(pgm);
+		if (type == 'PP')		/* .TTP -> .TOS */
+			type = '_P';
+		start_program(pgm, type, 0, 0, 0);
 		return;
 	}
 
 	_prt = print;
-	walk_sel(wnr, prt_obj);
+	walk_wind_sel_objs(wnr, prt_obj);
 }
 
 
@@ -874,8 +926,8 @@ void prt_icns(int wnr, int print)
 *
 ****************************************************************/
 
-static char *zielp;
-static int  mflag;
+static char *_dest_path;
+static int _mflag;
 
 static int cpmv_obj(int wnr, int obj)
 {
@@ -889,17 +941,17 @@ static int cpmv_obj(int wnr, int obj)
 	if (0 > (ret = obj_to_path(wnr, obj, path, NULL)))
 		return 0;
 
-	return copy_move_files(path, zielp, mflag, ret);
+	return copy_move_files(path, _dest_path, _mflag, ret);
 }
 
-void cpmv_icns(int wnr, char *zielpfad, int kbsh)
+void cpmv_icns(int wnr, char *dest_path, int kbsh)
 {
-	zielp = zielpfad;
-	mflag = (kbsh & K_CTRL) ? 1 : 0;
-	if (!confirm(wnr, 1+mflag, status.cnfm_copy, zielpfad))
+	_dest_path = dest_path;
+	_mflag = (kbsh & K_CTRL) ? 1 : 0;
+	if (!confirm(wnr, 1 + _mflag, settings.cnfm_copy, dest_path))
 	{
 		Mgraf_mouse(HOURGLASS);
-		walk_sel(wnr, cpmv_obj);
+		walk_wind_sel_objs(wnr, cpmv_obj);
 		Mgraf_mouse(ARROW);
 	}
 	end_confirm();

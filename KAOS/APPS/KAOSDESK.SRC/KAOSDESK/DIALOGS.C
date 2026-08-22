@@ -28,7 +28,7 @@ static int do_dialog(OBJECT *dialog)
 
 
 	flyinf = NULL;
-	p_flyinf = (status.use_fldl) ? & flyinf : NULL;
+	p_flyinf = (settings.use_fldl) ? & flyinf : NULL;
 	form_center(dialog, &g);
 	form_xdial(FMD_START, NULL, &g, p_flyinf);
 	objc_draw(dialog, ROOT, MAX_DEPTH, &g);
@@ -56,7 +56,7 @@ static int do_exdialog(OBJECT *dialog,
 
 
 	flyinf = NULL;
-	p_flyinf = (status.use_fldl) ? &flyinf : NULL;
+	p_flyinf = (settings.use_fldl) ? &flyinf : NULL;
 	form_center(dialog, &g);
 	form_xdial(FMD_START, NULL, &g, p_flyinf);
 	objc_draw(dialog, ROOT, MAX_DEPTH, &g);
@@ -87,7 +87,7 @@ static int do_exdialog(OBJECT *dialog,
 *
 ****************************************************************/
 
-void dial_arbsic(void)
+void dial_save_settings(void)
 {
 	char alrts[200];
 
@@ -114,7 +114,7 @@ void dial_arbsic(void)
 *
 ****************************************************************/
 
-void dial_prgrms(void)
+void dial_programs(void)
 {
 	register int i;
 	char oldstrings[NUM_PROGRAMS][41];
@@ -123,16 +123,16 @@ void dial_prgrms(void)
 
 	for	(i = 0; i < NUM_PROGRAMS; i++)
 	{
-		src = adr_prgrms[PG_1 + i].ob_spec.tedinfo->te_ptext;
+		src = tree_programs[PG_1 + i].ob_spec.tedinfo->te_ptext;
 		dst = oldstrings[i];
 		strcpy(dst, src);
 	}
 
-	if 	(PG_OK != do_dialog(adr_prgrms))
+	if 	(PG_OK != do_dialog(tree_programs))
 	{
 		for	(i = 0; i < NUM_PROGRAMS; i++)
 		{
-			dst = adr_prgrms[PG_1 + i].ob_spec.tedinfo->te_ptext;
+			dst = tree_programs[PG_1 + i].ob_spec.tedinfo->te_ptext;
 			src = oldstrings[i];
 			strcpy(dst, src);
 		}
@@ -141,7 +141,7 @@ void dial_prgrms(void)
 	{
 		for	(i = PG_2; i <= PG_3; i++)
 		{
-			dst = adr_prgrms[i].ob_spec.tedinfo->te_ptext;
+			dst = tree_programs[i].ob_spec.tedinfo->te_ptext;
 			while (*dst && *dst != ' ')
 			{
 				*dst = toupper(*dst);
@@ -165,7 +165,7 @@ void dial_about(void)
 	char *dst, *src;
 
 
-	dst = adr_about[O_SPEICH].ob_spec.tedinfo->te_ptext;
+	dst = tree_about[O_SPEICH].ob_spec.tedinfo->te_ptext;
 	ltoa(memsize(), mems + 10, 10);
 	src = mems + strlen(mems) - 7;
 	strncpy(dst + 11, src, strlen(src));
@@ -173,7 +173,7 @@ void dial_about(void)
 	src = mems + strlen(mems) - 7;
 	strncpy(dst+36, src, strlen(src));
 #endif
-	do_dialog(adr_about);
+	do_dialog(tree_about);
 }
 
 
@@ -183,11 +183,11 @@ void dial_about(void)
 *
 ****************************************************************/
 
-void info_spec(int typ)
+void info_spec(int type)
 {
 	register char *alrts;
 
-	switch(typ)
+	switch (type)
 	{
 		case 'P_':
 #if LANGUAGE == LANG_GER
@@ -254,7 +254,7 @@ static void num2text(unsigned long num, unsigned long factor, char *text)
 	{
 		unsigned unit = 0;
 
-		while(factor > 1024)
+		while (factor > 1024)
 		{
 			factor >>= 10;
 			unit++;
@@ -287,7 +287,7 @@ static void num2text(unsigned long num, unsigned long factor, char *text)
 *
 ****************************************************************/
 
-void info_disk(char *path, int typ)
+void info_disk(char *path, int type)
 {
 	int lw;
 	long dummy;
@@ -367,7 +367,7 @@ void info_disk(char *path, int typ)
 	num2text(bytes_files, 1, adr_dskinf[DI_B_DAT].ob_spec.free_string);
 	num2text(bytes_hidden_files, 1, adr_dskinf[DI_B_VDA].ob_spec.free_string);
 
-	if (typ == 'FD')
+	if (type == 'FD')
 	{
 		long ser;
 		int bps,spc,res,nfats,ndirs,nsects,media,spf,spt,nsides,nhid,exec;
@@ -452,30 +452,30 @@ void info_file(char *path, MYDTA *f)
 	unsigned char new_attr;
 
 
-	dst = adr_datinf[DATINF_T].ob_spec.tedinfo->te_ptext;
+	dst = tree_info_file[DATINF_T].ob_spec.tedinfo->te_ptext;
 
 	fname_int(f->filename, dst);
-	time_to_str(adr_datinf[FI_ZEIT].ob_spec.free_string, f->time);
-	date_to_str(adr_datinf[FI_DATUM].ob_spec.free_string, f->date);
-	ultoa(f->filesize, adr_datinf[FI_SIZE].ob_spec.free_string, 10);
-	ob_dsel(adr_datinf, FI_SETDA);
-	ob_sel_dsel(adr_datinf, FI_RDONL, (f->attrib) & F_RDONLY);
-	ob_sel_dsel(adr_datinf, FI_SYSTE, (f->attrib) & F_SYSTEM);
-	ob_sel_dsel(adr_datinf, FI_HIDDE, (f->attrib) & F_HIDDEN);
-	ob_sel_dsel(adr_datinf, FI_ARCHI, (f->attrib) & F_ARCHIVE);
+	time_to_str(tree_info_file[FI_ZEIT].ob_spec.free_string, f->time);
+	date_to_str(tree_info_file[FI_DATUM].ob_spec.free_string, f->date);
+	ultoa(f->filesize, tree_info_file[FI_SIZE].ob_spec.free_string, 10);
+	ob_dsel(tree_info_file, FI_SETDA);
+	ob_sel_dsel(tree_info_file, FI_RDONL, (f->attrib) & F_RDONLY);
+	ob_sel_dsel(tree_info_file, FI_SYSTE, (f->attrib) & F_SYSTEM);
+	ob_sel_dsel(tree_info_file, FI_HIDDE, (f->attrib) & F_HIDDEN);
+	ob_sel_dsel(tree_info_file, FI_ARCHI, (f->attrib) & F_ARCHIVE);
 
-	if (FI_OK != do_dialog(adr_datinf))
+	if (FI_OK != do_dialog(tree_info_file))
 		return;
 
 	fname_ext(dst, new_name);
-	new_attr  = selected(adr_datinf, FI_RDONL) * F_RDONLY;
-	new_attr += selected(adr_datinf, FI_SYSTE) * F_SYSTEM;
-	new_attr += selected(adr_datinf, FI_HIDDE) * F_HIDDEN;
-	new_attr += selected(adr_datinf, FI_ARCHI) * F_ARCHIVE;
+	new_attr  = selected(tree_info_file, FI_RDONL) * F_RDONLY;
+	new_attr += selected(tree_info_file, FI_SYSTE) * F_SYSTEM;
+	new_attr += selected(tree_info_file, FI_HIDDE) * F_HIDDEN;
+	new_attr += selected(tree_info_file, FI_ARCHI) * F_ARCHIVE;
 	
 	Mgraf_mouse(HOURGLASS);
 	err = 0x1234L;
-	if (selected(adr_datinf, FI_SETDA))
+	if (selected(tree_info_file, FI_SETDA))
 	{
 		int hdl;
 
@@ -542,11 +542,11 @@ void info_folder(char *path, MYDTA *f)
 	char new_name[13];
 
 
-	dst = adr_ordinf[ORDINF_T].ob_spec.tedinfo->te_ptext;
+	dst = tree_info_folder[ORDINF_T].ob_spec.tedinfo->te_ptext;
 
 	fname_int(f->filename, dst);
-	time_to_str(adr_ordinf[OI_ZEIT].ob_spec.free_string, f->time);
-	date_to_str(adr_ordinf[OI_DATUM].ob_spec.free_string, f->date);
+	time_to_str(tree_info_folder[OI_ZEIT].ob_spec.free_string, f->time);
+	date_to_str(tree_info_folder[OI_DATUM].ob_spec.free_string, f->date);
 
 	endp = path + strlen(path);
 	strcat(path, "\\");
@@ -556,17 +556,17 @@ void info_folder(char *path, MYDTA *f)
 	*endp = EOS;
 	#if 0	/* just continue in case of an error deep in the tree */
 	if (err != E_OK)
-		goto fehler;
+		goto error_label;
 	#endif
 
-	ultoa(n_folders, adr_ordinf[OI_N_ORD].ob_spec.free_string, 10);
-	ultoa(n_files, adr_ordinf[OI_N_DAT].ob_spec.free_string, 10);
-	ultoa(n_hidden_files, adr_ordinf[OI_N_VDA].ob_spec.free_string, 10);
-	ultoa(bytes_hidden_files, adr_ordinf[OI_B_VDA].ob_spec.free_string, 10);
-	ultoa(bytes_files + n_hidden_files, adr_ordinf[OI_BYTES].ob_spec.free_string, 10);
+	ultoa(n_folders, tree_info_folder[OI_N_ORD].ob_spec.free_string, 10);
+	ultoa(n_files, tree_info_folder[OI_N_DAT].ob_spec.free_string, 10);
+	ultoa(n_hidden_files, tree_info_folder[OI_N_VDA].ob_spec.free_string, 10);
+	ultoa(bytes_hidden_files, tree_info_folder[OI_B_VDA].ob_spec.free_string, 10);
+	ultoa(bytes_files + n_hidden_files, tree_info_folder[OI_BYTES].ob_spec.free_string, 10);
 
 	Mgraf_mouse(ARROW);
-	if (OI_OK != do_dialog(adr_ordinf))
+	if (OI_OK != do_dialog(tree_info_folder))
 		return;
 	fname_ext(dst, new_name);
 
@@ -607,7 +607,7 @@ void dial_info(void)
 	if (1 != icsel(&wnr, &obj))
 		return;
 
-	ret = obj_typ(wnr, obj, path, &file, &obj_type);
+	ret = get_obj_type(wnr, obj, path, &file, &obj_type);
 	if (ret == -1)
 	{
 		info_spec(obj_type);
@@ -665,7 +665,7 @@ void dial_info(void)
 *
 ****************************************************************/
 
-void dial_maske(void)
+void dial_file_pattern(void)
 {
 	OBJECT *adr_maske;
 	char oldmask[20];
@@ -678,7 +678,7 @@ void dial_maske(void)
 
 	rsrc_gaddr(0, T_MASKE, &adr_maske);
 	dst = adr_maske[MASKE_TX].ob_spec.tedinfo->te_ptext;
-	src = fenster[wnr].maske;
+	src = windows[wnr].fpattern;
 	fname_int(src, dst);		/* in GEM- Format wandeln */
 	ret = do_dialog(adr_maske);
 
@@ -705,7 +705,7 @@ void dial_maske(void)
 *
 ****************************************************************/
 
-void dial_neuord(void)
+void dial_create_folder(void)
 {
 	OBJECT *adr_neuord;
 	register char *input;
@@ -731,12 +731,12 @@ void dial_neuord(void)
 
 	fname_ext(input, name);
 	Mgraf_mouse(HOURGLASS);
-	doserr = GDcreate(fenster[wnr].path, name);
+	doserr = GDcreate(windows[wnr].path, name);
 	Mgraf_mouse(ARROW);
 
 	if (doserr == EPTHNF)
 	{
-		fenster[wnr].path[3] = EOS;	/* zurck zur Root */
+		windows[wnr].path[3] = EOS;	/* zurck zur Root */
 		upd_path(wnr, FALSE);
 	}
 }
@@ -774,7 +774,7 @@ static int chk_ordexi(OBJECT *tree, int exitbutton)
 *
 ****************************************************************/
 
-int dial_ordexi(char *name, int *do_redraw)
+int dial_folder_exists(char *name, int *do_redraw)
 {
 	OBJECT *adr_ordexi;
 	register char *old, *new;
@@ -832,7 +832,7 @@ static int chk_datexi(OBJECT *tree, int exitbutton)
 *
 ****************************************************************/
 
-int dial_datexi(char *name, int move_flag, int *do_redraw)
+int dial_file_exists(char *name, int move_flag, int *do_redraw)
 {
 	OBJECT *adr_datexi;
 	register char *old, *new, *title;
@@ -886,7 +886,7 @@ static char _inter,_trk_incr,_side_incr,_clsize;
 
 static void up_cnt(int n)
 {
-	subobj_draw(adr_format, FORMT_DT, n, NULL);
+	subobj_draw(tree_format_dsk, FORMT_DT, n, NULL);
 }
 
 
@@ -1093,16 +1093,16 @@ void dial_format(void)
 	if (1 != icsel(&wnr, &obj))
 		return;
 
-	ret = obj_typ(wnr, obj, path, NULL, &obj_type);
+	ret = get_obj_type(wnr, obj, path, NULL, &obj_type);
 	if (ret != 1 || (obj_type & 0xff) != '\0D')	/* nur, wenn Disk- Icon */
 		return;
 
 	devno = path[0] - 'A';
 
 	if (obj_type == 'FD')
-		adr_format[FORMT_OK].ob_state &= ~DISABLED;
+		tree_format_dsk[FORMT_OK].ob_state &= ~DISABLED;
 	else
-		adr_format[FORMT_OK].ob_state |= DISABLED;
+		tree_format_dsk[FORMT_OK].ob_state |= DISABLED;
 
 	if (obj_type == 'HD')
 	{
@@ -1111,40 +1111,40 @@ void dial_format(void)
 			return;
 	}
 
-	drv_to_str(adr_format[FORMAT_T].ob_spec.tedinfo->te_ptmplt, path[0]);
+	drv_to_str(tree_format_dsk[FORMAT_T].ob_spec.tedinfo->te_ptmplt, path[0]);
 	if (fmtstat.sides == 2)
 	{
-		ob_dsel(adr_format, FORMT_S1);
-		ob_sel(adr_format, FORMT_S2);
+		ob_dsel(tree_format_dsk, FORMT_S1);
+		ob_sel(tree_format_dsk, FORMT_S2);
 	}
 	else
 	{
-		ob_dsel(adr_format, FORMT_S2);
-		ob_sel (adr_format, FORMT_S1);
+		ob_dsel(tree_format_dsk, FORMT_S2);
+		ob_sel (tree_format_dsk, FORMT_S1);
 	}
 
-	s = adr_format[TRK_NUM].ob_spec.free_string;
+	s = tree_format_dsk[TRK_NUM].ob_spec.free_string;
 	ultoa(fmtstat.tracks, s, 10);
-	s = adr_format[SEC_NUM].ob_spec.free_string;
+	s = tree_format_dsk[SEC_NUM].ob_spec.free_string;
 	ultoa(fmtstat.sectors, s, 10);
 
 	do
 	{
 		do_options = FALSE;
-		objs_hide(adr_format, FORMT_H1, FORMT_DT, 0);
-		do_exdialog(adr_format, chk_format, NULL);
+		objs_hide(tree_format_dsk, FORMT_H1, FORMT_DT, 0);
+		do_exdialog(tree_format_dsk, chk_format, NULL);
 		if (do_options)
 		{
-			s = adr_fmtopt[INT_NUM].ob_spec.free_string;
+			s = tree_format_opt[INT_NUM].ob_spec.free_string;
 			ultoa(fmtstat.interlv, s, 10);
-			s = adr_fmtopt[SPV_NUM].ob_spec.free_string;
+			s = tree_format_opt[SPV_NUM].ob_spec.free_string;
 			ultoa(fmtstat.trkincr, s, 10);
-			s = adr_fmtopt[SEV_NUM].ob_spec.free_string;
+			s = tree_format_opt[SEV_NUM].ob_spec.free_string;
 			ultoa(fmtstat.sidincr, s, 10);
-			s = adr_fmtopt[CLU_NUM].ob_spec.free_string;
+			s = tree_format_opt[CLU_NUM].ob_spec.free_string;
 			ultoa(fmtstat.clustsize, s, 10);
 
-			do_exdialog(adr_fmtopt, chk_fmtopt, NULL);
+			do_exdialog(tree_format_opt, chk_fmtopt, NULL);
 		}
 	}
 	while (do_options);
@@ -1168,8 +1168,8 @@ static int slw,dlw;
 
 static void fmt_feedb(char *action, int n)
 {
-	subobj_draw(adr_cpydsk, CPYDS_DO, -1, action);
-	subobj_draw(adr_cpydsk, CPYDS_DT, n, NULL);
+	subobj_draw(tree_copy_disk, CPYDS_DO, -1, action);
+	subobj_draw(tree_copy_disk, CPYDS_DT, n, NULL);
 }
 
 
@@ -1194,7 +1194,7 @@ static int chk_cpydsk(OBJECT *tree, int exitbutton)
 
 	if (exitbutton == CPYDS_ZI)			/* Ziel- Laufwerk */
 	{
-		lw_anzeig:
+		drv_show:
 
 		do
 		{
@@ -1212,7 +1212,7 @@ static int chk_cpydsk(OBJECT *tree, int exitbutton)
 	if (exitbutton == CPYDS_QU)			/* Quell- Laufwerk */
 	{
 		dlw = slw;
-		goto lw_anzeig;
+		goto drv_show;
 	}
 
 	if (exitbutton == CPYDS_CN)			/* Abbruch */
@@ -1231,7 +1231,7 @@ static int chk_cpydsk(OBJECT *tree, int exitbutton)
 			)
 		{
 			doserr = EDRIVE;
-			fehler:
+			error_label:
 			Mgraf_mouse(ARROW);
 			err_alert(doserr);
 			return FALSE;
@@ -1250,11 +1250,11 @@ static int chk_cpydsk(OBJECT *tree, int exitbutton)
 	doserr = read_bootsec(slw, &ser,&bps,&spc,&res,&nfats,&ndirs,&nsects,
 					   &media,&spf,&spt,&nsides,&nhid,&exec);
 	if (doserr != E_OK)
-		goto fehler;
+		goto error_label;
 	if (nsides <= 0 || spt <= 0 || nsects <= 0)
 	{
 		doserr = EMEDIA;
-		goto fehler;
+		goto error_label;
 	}
 
 	objs_unhide(tree, CPYDS_SI, CPYDS_TR, CPYDS_SC, CPYDS_DO, CPYDS_DT,
@@ -1299,16 +1299,16 @@ static int chk_cpydsk(OBJECT *tree, int exitbutton)
 void dial_cpydsk(void)
 {
 	
-	objs_hide(adr_cpydsk, CPYDS_SI, CPYDS_TR, CPYDS_SC, CPYDS_DO, CPYDS_DT,
+	objs_hide(tree_copy_disk, CPYDS_SI, CPYDS_TR, CPYDS_SC, CPYDS_DO, CPYDS_DT,
 					  CPYDS_H1, CPYDS_H2, CPYDS_H3, CPYDS_H4, 0);
-	adr_cpydsk[CPYDS_TM].ob_spec.tedinfo->te_ptext[0] = fmtstat.tmpdrv;
-	do_exdialog(adr_cpydsk, chk_cpydsk, NULL);
+	tree_copy_disk[CPYDS_TM].ob_spec.tedinfo->te_ptext[0] = fmtstat.tmpdrv;
+	do_exdialog(tree_copy_disk, chk_cpydsk, NULL);
 }
 
 
 /****************************************************************
 *
-* Callback fr dial_laufwe()
+* Callback fr dial_register_drv()
 *
 ****************************************************************/
 
@@ -1342,30 +1342,30 @@ static int chk_laufwe(OBJECT *tree, int exitbutton)
 *
 ****************************************************************/
 
-void dial_laufwe(void)
+void dial_register_drv(void)
 {
 	int ret,wnr,obj,x,y;
 	register char *lw;
 
 
-	lw = adr_laufwe[ICNCHG_L].ob_spec.tedinfo->te_ptext;
-	if (1 == icsel(&wnr, &obj) && wnr == 0 && icon[obj - 1].icontyp < I_ORDNER)
+	lw = tree_chg_symbol[ICNCHG_L].ob_spec.tedinfo->te_ptext;
+	if (1 == icsel(&wnr, &obj) && wnr == 0 && icon[obj - 1].icon_type < I_ORDNER)
 	{
 		lw[0] = icon[obj - 1].isdisk;
 		lw[1] = EOS;
-		adr_laufwe[ICNCH_DL].ob_state &= ~DISABLED;
-		adr_laufwe[ICNCH_OK].ob_state &= ~DISABLED;
+		tree_chg_symbol[ICNCH_DL].ob_state &= ~DISABLED;
+		tree_chg_symbol[ICNCH_OK].ob_state &= ~DISABLED;
 	}
 	else
 	{
 		obj = 0;
 		lw[0] = EOS;
-		adr_laufwe[ICNCH_DL].ob_state |= DISABLED;
-		adr_laufwe[ICNCH_OK].ob_state |= DISABLED;
+		tree_chg_symbol[ICNCH_DL].ob_state |= DISABLED;
+		tree_chg_symbol[ICNCH_OK].ob_state |= DISABLED;
 	}
 
-	ob_sel_dsel(adr_laufwe, ICNCH_OK, obj);
-	ret = do_exdialog(adr_laufwe, chk_laufwe, NULL);
+	ob_sel_dsel(tree_chg_symbol, ICNCH_OK, obj);
+	ret = do_exdialog(tree_chg_symbol, chk_laufwe, NULL);
 
 	if (ret == ICNCH_DL && obj)				/* "Entfernen */
 	{
@@ -1376,24 +1376,24 @@ void dial_laufwe(void)
 	if (ret < ICNCHG_F || ret > ICNCHG_P)		/* "Abbruch" */
 		return;
 
-	if (selected(adr_laufwe, ICNCH_OK))		/* "Žndern" */
+	if (selected(tree_chg_symbol, ICNCH_OK))		/* "Žndern" */
 	{
 		OBJECT *ob;
 
-		ob = fenster[0].pobj+obj;
-		x = ob->ob_x + fenster[0].pobj->ob_x;
-		y = ob->ob_y + fenster[0].pobj->ob_y;
+		ob = windows[0].pobj+obj;
+		x = ob->ob_x + windows[0].pobj->ob_x;
+		y = ob->ob_y + windows[0].pobj->ob_y;
 		kill_icon(obj);
 	}
 	else
 	{
-		objc_offset(adr_laufwe, ret, &x, &y);	/* "Neu" */
+		objc_offset(tree_chg_symbol, ret, &x, &y);	/* "Neu" */
 		graf_dragbox(
-					adr_laufwe[ret].ob_width,
-					adr_laufwe[ret].ob_height,
+					tree_chg_symbol[ret].ob_width,
+					tree_chg_symbol[ret].ob_height,
 					x,
 					y,
-					&fenster[0].in,
+					&windows[0].in,
 					&x,
 					&y);
 	}
@@ -1408,12 +1408,12 @@ void dial_laufwe(void)
 *
 ****************************************************************/
 
-void dial_anwndg(void)
+void dial_register_app(void)
 {
 	char path[128];
 	char *e1,*e2;
-	OBJECT *adr_anwndg;
-	int wnr,obj,typ,ret;
+	OBJECT *tree_register_appl;
+	int wnr,obj,type,ret;
 	APPLICATION *a;
 
 
@@ -1428,62 +1428,62 @@ void dial_anwndg(void)
 	/* -------------------------------------------------------- */
 
 	if (a)
-		strcpy(path, a -> path);
+		strcpy(path, a->path);
 
-	rsrc_gaddr(0, T_ANWNDG, &adr_anwndg);
-	e1 = adr_anwndg[ANWND_E1].ob_spec.tedinfo->te_ptext;
-	e2 = adr_anwndg[ANWND_E2].ob_spec.tedinfo->te_ptext;
-	strcpy(adr_anwndg[ANWNDG_T].ob_spec.free_string, get_name(path));
+	rsrc_gaddr(0, T_ANWNDG, &tree_register_appl);
+	e1 = tree_register_appl[ANWND_E1].ob_spec.tedinfo->te_ptext;
+	e2 = tree_register_appl[ANWND_E2].ob_spec.tedinfo->te_ptext;
+	strcpy(tree_register_appl[ANWNDG_T].ob_spec.free_string, get_name(path));
 
 	/* Es wird geprft, ob die Applikation bereits angemeldet ist */
 	/* ---------------------------------------------------------- */
 
-	ob_dsel(adr_anwndg, ANWNDG_1);
-	ob_dsel(adr_anwndg, ANWNDG_2);
-	ob_dsel(adr_anwndg, ANWNDG_3);
+	ob_dsel(tree_register_appl, ANWNDG_1);
+	ob_dsel(tree_register_appl, ANWNDG_2);
+	ob_dsel(tree_register_appl, ANWNDG_3);
 	a = find_defapp(path);
 
 	if (a)
 	{
-		strcpy(e1, a -> ext1);
-		strcpy(e2, a -> ext2);
-		typ = a -> typ;
-		adr_anwndg[ANWND_DL].ob_state &= ~DISABLED;
+		strcpy(e1, a->ext1);
+		strcpy(e2, a->ext2);
+		type = a->type;
+		tree_register_appl[ANWND_DL].ob_state &= ~DISABLED;
 	}
 	else
 	{
 		*e1 = *e2 = EOS;
-		typ = suffixtyp(path);
-		adr_anwndg[ANWND_DL].ob_state |= DISABLED;
+		type = suffix_type(path);
+		tree_register_appl[ANWND_DL].ob_state |= DISABLED;
 	}
 
 #if	MAGIXDESK
-	ob_sel_dsel(adr_anwndg, ANWND_SI, ((typ & 0xff) == 'p'));
+	ob_sel_dsel(tree_register_appl, ANWND_SI, ((type & 0xff) == 'p'));
 #endif
-	typ &= 0xff5f;						/* Grožschrift */
+	type &= 0xff5f;						/* Grožschrift */
 
-	switch(typ)
+	switch (type)
 	{
 		case 'GP':
-			ob_sel(adr_anwndg, ANWNDG_1);
+			ob_sel(tree_register_appl, ANWNDG_1);
 			break;
 
 		case '_P':
-			ob_sel(adr_anwndg, ANWNDG_2);
+			ob_sel(tree_register_appl, ANWNDG_2);
 			break;
 
 		case 'PP':
-			ob_sel(adr_anwndg, ANWNDG_3);
+			ob_sel(tree_register_appl, ANWNDG_3);
 			 break;
 	}
 	
-	if (ANWND_CN == (ret = do_dialog(adr_anwndg)))
+	if (ANWND_CN == (ret = do_dialog(tree_register_appl)))
 		return;
 
 	if (ret == ANWND_DL)
 	{
 		if (a)
-			a -> path[0] = EOS;
+			a->path[0] = EOS;
 		return;
 	}
 
@@ -1506,20 +1506,20 @@ void dial_anwndg(void)
 		return;
 	}
 
-	strcpy(a -> path, path);
-	strcpy(a -> ext1, e1);
-	strcpy(a -> ext2, e2);
-	if (selected(adr_anwndg, ANWNDG_1))
-		typ = 'GP';
-	if (selected(adr_anwndg, ANWNDG_2))
-		typ = '_P';
-	if (selected(adr_anwndg, ANWNDG_3))
-		typ = 'PP';
+	strcpy(a->path, path);
+	strcpy(a->ext1, e1);
+	strcpy(a->ext2, e2);
+	if (selected(tree_register_appl, ANWNDG_1))
+		type = 'GP';
+	if (selected(tree_register_appl, ANWNDG_2))
+		type = '_P';
+	if (selected(tree_register_appl, ANWNDG_3))
+		type = 'PP';
 #if	MAGIXDESK
-	if (selected(adr_anwndg, ANWND_SI))
-		typ |= 0x20;			/* 'P' -> 'p' */
+	if (selected(tree_register_appl, ANWND_SI))
+		type |= 0x20;			/* 'P' -> 'p' */
 #endif
-	a -> typ = typ;
+	a->type = type;
 }
 
 
@@ -1531,7 +1531,7 @@ void dial_anwndg(void)
 *
 ****************************************************************/
 
-void dial_einste(void)
+void dial_settings(void)
 {
 	register int ndrvr;
 	int ret;
@@ -1542,35 +1542,35 @@ void dial_einste(void)
 
 	rsrc_gaddr(0, T_DEVICE, &pop_device.tree);
 	pop_device.obnum = vdi_device + DEVICE_1 - 1;
-	(adr_einste[EINST_DV].ob_spec.free_string) = (char *) &pop_device;
-	adr_einste[EINST_DV].ob_type = G_POPUP;
+	(tree_settings[EINST_DV].ob_spec.free_string) = (char *) &pop_device;
+	tree_settings[EINST_DV].ob_type = G_POPUP;
 #else
 	register int i;
 
 	for	(i = EINST_G1; i <= EINST_GL; i++)
-		ob_sel_dsel(adr_einste, i, (i - EINST_G1 + 1) == vdi_device);
+		ob_sel_dsel(tree_settings, i, (i - EINST_G1 + 1) == vdi_device);
 #endif
-	txtheights = adr_einste[EINST_TX].ob_spec.tedinfo->te_ptext;
+	txtheights = tree_settings[EINST_TX].ob_spec.tedinfo->te_ptext;
 	txtheights[0] = '0';
 	txtheights[1] = EOS;
 
-	ob_sel_dsel(adr_einste, EINST_BL, status.cnfm_del);
-	ob_sel_dsel(adr_einste, EINST_BK, status.cnfm_copy);
+	ob_sel_dsel(tree_settings, EINST_BL, settings.cnfm_del);
+	ob_sel_dsel(tree_settings, EINST_BK, settings.cnfm_copy);
 
-	ob_sel_dsel(adr_einste, EINST_KU, status.mode_ovwr == OVERWRITE);
-	ob_sel_dsel(adr_einste, EINST_KA, status.mode_ovwr == BACKUP);
-	ob_sel_dsel(adr_einste, EINST_KB, status.mode_ovwr == CONFIRM);
+	ob_sel_dsel(tree_settings, EINST_KU, settings.mode_ovwr == OVERWRITE);
+	ob_sel_dsel(tree_settings, EINST_KA, settings.mode_ovwr == BACKUP);
+	ob_sel_dsel(tree_settings, EINST_KB, settings.mode_ovwr == CONFIRM);
 
-	ob_sel_dsel(adr_einste, EINST_KF, status.check_free);
+	ob_sel_dsel(tree_settings, EINST_KF, settings.check_free);
 
-	ob_sel_dsel(adr_einste, EINST_BD, status.use_fldl);
-	ob_sel_dsel(adr_einste, EINST_RS, status.resident);
-	ob_sel_dsel(adr_einste, EINST_VE, status.show_all);
-	ob_sel_dsel(adr_einste, EINST_UR, status.clock);
-	ob_sel_dsel(adr_einste, EINST_CA, status.use_cache);
-	ob_sel_dsel(adr_einste, EINST_DN, status.dnam_init);
+	ob_sel_dsel(tree_settings, EINST_BD, settings.use_fldl);
+	ob_sel_dsel(tree_settings, EINST_RS, settings.resident);
+	ob_sel_dsel(tree_settings, EINST_VE, settings.show_all);
+	ob_sel_dsel(tree_settings, EINST_UR, settings.clock);
+	ob_sel_dsel(tree_settings, EINST_CA, settings.use_cache);
+	ob_sel_dsel(tree_settings, EINST_DN, settings.dnam_init);
 
-	ret = do_dialog(adr_einste);
+	ret = do_dialog(tree_settings);
 
 	if (ret == EINST_LD)
 	{
@@ -1585,24 +1585,24 @@ void dial_einste(void)
 	if (ret == EINST_OK)		/* OK */
 	{
 		txtheight = atoi(txtheights);
-		status.cnfm_del  = selected(adr_einste, EINST_BL);
-		status.cnfm_copy = selected(adr_einste, EINST_BK);
+		settings.cnfm_del  = selected(tree_settings, EINST_BL);
+		settings.cnfm_copy = selected(tree_settings, EINST_BK);
 
-		if (selected(adr_einste, EINST_KB))
-			status.mode_ovwr = CONFIRM;
+		if (selected(tree_settings, EINST_KB))
+			settings.mode_ovwr = CONFIRM;
 		else
-		if (selected(adr_einste, EINST_KA))
-			status.mode_ovwr = BACKUP;
+		if (selected(tree_settings, EINST_KA))
+			settings.mode_ovwr = BACKUP;
 		else
-			status.mode_ovwr = OVERWRITE;
+			settings.mode_ovwr = OVERWRITE;
 
-		status.check_free = selected(adr_einste, EINST_KF);
-		status.use_fldl   = selected(adr_einste, EINST_BD);
-		status.resident   = selected(adr_einste, EINST_RS);
-		status.show_all   = selected(adr_einste, EINST_VE);
-		status.clock      = selected(adr_einste, EINST_UR);
-		status.use_cache  = selected(adr_einste, EINST_CA);
-		status.dnam_init  = selected(adr_einste, EINST_DN);
+		settings.check_free = selected(tree_settings, EINST_KF);
+		settings.use_fldl   = selected(tree_settings, EINST_BD);
+		settings.resident   = selected(tree_settings, EINST_RS);
+		settings.show_all   = selected(tree_settings, EINST_VE);
+		settings.clock      = selected(tree_settings, EINST_UR);
+		settings.use_cache  = selected(tree_settings, EINST_CA);
+		settings.dnam_init  = selected(tree_settings, EINST_DN);
 
 #if MAGIXDESK
 		ndrvr = pop_device.obnum - DEVICE_1 + 1;
@@ -1610,7 +1610,7 @@ void dial_einste(void)
 		ndrvr = vdi_device;
 		for	(i = EINST_G1; i <= EINST_GL; i++)
 		{
-			if (selected(adr_einste, i))
+			if (selected(tree_settings, i))
 				ndrvr = i - EINST_G1 + 1;
 		}
 #endif
@@ -1637,11 +1637,11 @@ int dial_ttppar(char *pgm, char *par)
 	register char *dst1, *dst2;
 
 
-	dst1 = adr_ttppar[TTPPAR_T].ob_spec.free_string;
+	dst1 = tree_ttp_params[TTPPAR_T].ob_spec.free_string;
 	strcpy(dst1, get_name(pgm));
 
-	dst1 = adr_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext;
-	dst2 = adr_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext;
+	dst1 = tree_ttp_params[TTPPAR_1].ob_spec.tedinfo->te_ptext;
+	dst2 = tree_ttp_params[TTPPAR_2].ob_spec.tedinfo->te_ptext;
 	if (*par)
 	{
 		strncpy(dst1, par, TTPLEN);
@@ -1652,7 +1652,7 @@ int dial_ttppar(char *pgm, char *par)
 		}
 	}
 
-	if 	(TTPPA_OK != do_dialog(adr_ttppar))
+	if 	(TTPPA_OK != do_dialog(tree_ttp_params))
 		return 0;
 
 	strcpy(par, dst1);
