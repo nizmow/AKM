@@ -441,7 +441,7 @@ static int get_param(char *pgm, WINDOW *w, int obj,
 			{
 				if (w == iw && i == obj)
 					continue;		/* Das Programm selbst */
-				if (!((tree+i)->ob_flags & HIDETREE) && selected(tree, i))
+				if (!(tree[i].ob_flags & HIDETREE) && selected(tree, i))
 				{
 					char rettc1;
 					char *e;

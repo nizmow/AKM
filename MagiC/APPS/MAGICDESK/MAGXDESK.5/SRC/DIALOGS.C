@@ -1148,7 +1148,7 @@ int dial_ttppar(char *pgm, char *par)
 	register char *dest_1,*dest_2;
 
 
-	dest_1 = (tree_ttppar+TTPPAR_T)->ob_spec.free_string;
+	dest_1 = tree_ttppar[TTPPAR_T].ob_spec.free_string;
 	strcpy(dest_1, get_name(pgm));
 
 	dest_1 = tree_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext;

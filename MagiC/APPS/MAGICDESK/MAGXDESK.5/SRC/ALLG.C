@@ -215,17 +215,15 @@ void subobj_draw(OBJECT *tree, int obj, int n, char *s)
 {
 	GRECT g;
 	char *z;
-	void objc_grect(OBJECT *tree, int objn, GRECT *g);
 
-
-	z = (tree+obj)->ob_spec.free_string;
+	z = tree[obj].ob_spec.free_string;
 	if (s)
 		strcpy(z,s);
 	else
 	if (n >= 0)
 		ultoa(n, z, 10);
 	objc_grect(tree, obj, &g);
-	objc_draw (tree, 0, MAX_DEPTH, &g);
+	objc_draw(tree, 0, MAX_DEPTH, &g);
 }
 
 
@@ -302,7 +300,7 @@ void objs_hide(OBJECT *tree, ...)
 		objnr = va_arg(argpoint, int);
 		if (objnr == 0)
 			break;
-		(tree+objnr)->ob_flags |= HIDETREE;
+		tree[objnr].ob_flags |= HIDETREE;
 	}
 	while (TRUE);
 	va_end(argpoint);
@@ -321,7 +319,7 @@ void objs_unhide(OBJECT *tree, ...)
 		objnr = va_arg(argpoint, int);
 		if (objnr == 0)
 			break;
-		(tree+objnr)->ob_flags &= ~HIDETREE;
+		tree[objnr].ob_flags &= ~HIDETREE;
 	}
 	while (TRUE);
 	va_end(argpoint);
@@ -340,7 +338,7 @@ void objs_editable(OBJECT *tree, ...)
 		objnr = va_arg(argpoint, int);
 		if (objnr == 0)
 			break;
-		(tree+objnr)->ob_flags |= EDITABLE;
+		tree[objnr].ob_flags |= EDITABLE;
 	}
 	va_end(argpoint);
 }
@@ -358,7 +356,7 @@ void objs_uneditable(OBJECT *tree, ...)
 		objnr = va_arg(argpoint, int);
 		if (objnr == 0)
 			break;
-		(tree+objnr)->ob_flags &= ~EDITABLE;
+		tree[objnr].ob_flags &= ~EDITABLE;
 	}
 	va_end(argpoint);
 }

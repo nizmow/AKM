@@ -451,7 +451,7 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 	GRECT *ptr_g;
 	OBJECT *tree;
 	OBJECT **mov_boxes;
-	int anz_boxes;
+	int num_boxes;
 	int old_x,old_y,old_kbsh;
 	register int i;
 	OBJECT *dest_tree;
@@ -490,16 +490,16 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 
 	if ((i = (tree->ob_head)) > 0)
 	{
-		for	(anz_boxes = 0; i <= (tree->ob_tail); i++)
-			if (selected(tree, i) && !(HIDETREE&(tree+i)->ob_flags))
-				mov_boxes[anz_boxes++] = tree+i;
+		for	(num_boxes = 0; i <= (tree->ob_tail); i++)
+			if (selected(tree, i) && !(HIDETREE & tree[i].ob_flags))
+				mov_boxes[num_boxes++] = tree + i;
 	}
 
-	if ((!w->handle) || anz_boxes == 1)	/* Desktop */
+	if ((!w->handle) || num_boxes == 1)	/* Desktop */
 	{
 		tree_sel_grect	(tree, &g);
 		ptr_g = &g;
-		if ((anz_boxes == 1) && (w->handle))	/* echtes Fenster */
+		if ((num_boxes == 1) && (w->handle))	/* echtes Fenster */
 		{
 			if (g.g_w > 12*gl_hwchar)
 				g.g_w = 12*gl_hwchar;
@@ -526,7 +526,7 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 
 	do
 	{
-		draw_boxes(tree, mov_boxes, anz_boxes, ptr_g,
+		draw_boxes(tree, mov_boxes, num_boxes, ptr_g,
 				 ev.x-x, ev.y-boxes_y);
 
 		if (ev.kstate & K_CTRL)
@@ -595,7 +595,7 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 
 		Mgraf_mouse(M_OFF);
 
-		draw_boxes(tree, mov_boxes, anz_boxes, ptr_g,
+		draw_boxes(tree, mov_boxes, num_boxes, ptr_g,
 				 old_x-x, old_y-boxes_y);
 
 		/* Beginn des Scrollens: Anfangsverz”gerung berwunden */
@@ -1017,9 +1017,9 @@ void handle_mouse_button(int nclicks, const EVNTDATA *ev)
 		else
 		{
 			if (nclicks != 2)
-				(tree + icnobj)->ob_state ^= SELECTED;
+				tree[icnobj].ob_state ^= SELECTED;
 			else
-				(tree + icnobj)->ob_state |= SELECTED;
+				tree[icnobj].ob_state |= SELECTED;
 		}
 
 		redraw_window_object(w, icnobj);

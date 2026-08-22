@@ -65,31 +65,31 @@ static void init_app_icons(void)
 		_stdr,_stdv,_stpa;
 
 
-	_stda.monoblk = *((tree_icons + I_PRO)->ob_spec.iconblk);
+	_stda.monoblk = *(tree_icons[I_PRO].ob_spec.iconblk);
 	_stda.mainlist = NULL;
 	std_app_icon = &_stda;
-	_stdd.monoblk = *((tree_icons + I_DAT)->ob_spec.iconblk);
+	_stdd.monoblk = *(tree_icons[I_DAT].ob_spec.iconblk);
 	_stdd.mainlist = NULL;
 	std_dat_icon = &_stdd;
-	_stfl.monoblk = *((tree_icons + I_ORD)->ob_spec.iconblk);
+	_stfl.monoblk = *(tree_icons[I_ORD].ob_spec.iconblk);
 	_stfl.mainlist = NULL;
 	std_fld_icon = &_stfl;
-	_stdk.monoblk = *((tree_icons + I_DSK)->ob_spec.iconblk);
+	_stdk.monoblk = *(tree_icons[I_DSK].ob_spec.iconblk);
 	_stdk.mainlist = NULL;
 	std_dsk_icon = &_stdk;
-	_stbt.monoblk = *((tree_icons + I_BAT)->ob_spec.iconblk);
+	_stbt.monoblk = *(tree_icons[I_BAT].ob_spec.iconblk);
 	_stbt.mainlist = NULL;
 	std_bat_icon = &_stbt;
-	_sttr.monoblk = *((tree_icons + I_PAP)->ob_spec.iconblk);
+	_sttr.monoblk = *(tree_icons[I_PAP].ob_spec.iconblk);
 	_sttr.mainlist = NULL;
 	std_tra_icon = &_sttr;
-	_stdr.monoblk = *((tree_icons + I_DRK)->ob_spec.iconblk);
+	_stdr.monoblk = *(tree_icons[I_DRK].ob_spec.iconblk);
 	_stdr.mainlist = NULL;
 	std_prt_icon = &_stdr;
-	_stdv.monoblk = *((tree_icons + I_DAT)->ob_spec.iconblk);
+	_stdv.monoblk = *(tree_icons[I_DAT].ob_spec.iconblk);
 	_stdv.mainlist = NULL;
 	std_dev_icon = &_stdv;
-	_stpa.monoblk = *((tree_icons + I_PAR)->ob_spec.iconblk);
+	_stpa.monoblk = *(tree_icons[I_PAR].ob_spec.iconblk);
 	_stpa.mainlist = NULL;
 	std_par_icon = &_stpa;
 }
@@ -215,28 +215,24 @@ static int _load_app_icons(char *buf)
 	if (stdci)
 	{
 		std_dsk_icon = stdci;
-		stdci->monoblk.ib_ptext = (tree_icons+I_DSK)->
-								ob_spec.iconblk->ib_ptext;
+		stdci->monoblk.ib_ptext = tree_icons[I_DSK].ob_spec.iconblk->ib_ptext;
 	}
 	stdci = specialkey_to_iconblk('TRSH');
 	if (stdci)
 	{
-		stdci->monoblk.ib_ptext = (tree_icons+I_PAP)->
-								ob_spec.iconblk->ib_ptext;
+		stdci->monoblk.ib_ptext = tree_icons[I_PAP].ob_spec.iconblk->ib_ptext;
 		std_tra_icon = stdci;
 	}
 	stdci = specialkey_to_iconblk('PRNT');
 	if (stdci)
 	{
-		stdci->monoblk.ib_ptext = (tree_icons+I_DRK)->
-								ob_spec.iconblk->ib_ptext;
+		stdci->monoblk.ib_ptext = tree_icons[I_DRK].ob_spec.iconblk->ib_ptext;
 		std_prt_icon = stdci;
 	}
 	stdci = specialkey_to_iconblk('BTCH');
 	if (stdci)
 	{
-		stdci->monoblk.ib_ptext = (tree_icons+I_BAT)->
-								ob_spec.iconblk->ib_ptext;
+		stdci->monoblk.ib_ptext = tree_icons[I_BAT].ob_spec.iconblk->ib_ptext;
 		std_bat_icon = stdci;
 	}
 	stdci = specialkey_to_iconblk('DEVC');
@@ -817,8 +813,8 @@ void load_status(int pass)
 		/* zun„chst sicherheitshalber Defaults setzen */
 		/* ------------------------------------------ */
 
-		(((tree_ttppar+TTPPAR_1)->ob_spec.tedinfo)->te_ptext)[0] = EOS;
-		(((tree_ttppar+TTPPAR_2)->ob_spec.tedinfo)->te_ptext)[0] = EOS;
+		(tree_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext)[0] = EOS;
+		(tree_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext)[0] = EOS;
 
 /* Fenster: */
 		settings.use_pp			= TRUE;		/* ".." zeigen */
@@ -1074,7 +1070,7 @@ void load_status(int pass)
 				if (pass)
 				{
 					int *obx,*oby;
-					int ich = (tree_icons+I_DSK)->ob_height + 1;
+					int ich = tree_icons[I_DSK].ob_height + 1;
 
 
 					icon[ln_icns].is_alias = FALSE;
@@ -1082,8 +1078,8 @@ void load_status(int pass)
 					icon[ln_icns].isdisk = scnflg() + '0';
 					if (icon[ln_icns].isdisk == '@')
 						icon[ln_icns].isdisk = 0;
-					obx = &(windows[0]->pobj+ln_icns+1)->ob_x;
-					oby = &(windows[0]->pobj+ln_icns+1)->ob_y;
+					obx = &(windows[0]->pobj + ln_icns + 1)->ob_x;
+					oby = &(windows[0]->pobj + ln_icns + 1)->ob_y;
 					*obx = scndez();
 					*oby = scndez();
 					if (old_w != desk_g.g_w)
@@ -1165,8 +1161,8 @@ void load_status(int pass)
 				while ((*s) && (*s != '\r') && (*s != '\n'))
 					*dest_1++ = *s++;
 				*dest_1 = EOS;
-				dest_1 = ((tree_ttppar+TTPPAR_1)->ob_spec.tedinfo)->te_ptext;
-				dest_2 = ((tree_ttppar+TTPPAR_2)->ob_spec.tedinfo)->te_ptext;
+				dest_1 = tree_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext;
+				dest_2 = tree_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext;
 				if (buf[0])
 				{
 					strncpy(dest_1, buf, TTPLEN);
@@ -1210,8 +1206,8 @@ void load_status(int pass)
 /*		o->ob_type = G_BOX;		*/
 
 		o->ob_flags = o->ob_state = 0;
-		icw = (tree_icons+I_DSK)->ob_width + 1;
-		ich = (tree_icons+I_DSK)->ob_height + 1;
+		icw = tree_icons[I_DSK].ob_width + 1;
+		ich = tree_icons[I_DSK].ob_height + 1;
 		dx = desk_g.g_x;
 		dy = desk_g.g_y;
 		for	(i = 0; i < n_deskicons; i++)

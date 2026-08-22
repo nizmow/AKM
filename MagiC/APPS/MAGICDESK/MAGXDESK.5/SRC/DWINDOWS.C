@@ -570,7 +570,7 @@ void set_dname(int lw, char *dname)
 			/* 2. Fall: Leerstring bergeben: Default einsetzen */
 			else
 			{
-				*p = ((tree_icons + icon[i].icon_type)->ob_spec.iconblk)->ib_ptext;
+				*p = tree_icons[icon[i].icon_type].ob_spec.iconblk->ib_ptext;
 			}
 			if (strcmp(old_text, *p))
 			{
@@ -1063,24 +1063,24 @@ static long read_wind(WINDOW *w, int free_flag)
 
 static void calc_in(WINDOW *w)
 {
-	register int gescrollte_pixel;
+	register int scrolled_pixels;
 
 
 	if (w->flags & WFLAG_ICONIFIED)
 	{
 		wind_get_grect(w->handle, WF_WORKXYWH, &(w->in));
-		gescrollte_pixel = 0;
+		scrolled_pixels = 0;
 	}
 	else
 	{
-		gescrollte_pixel = w->yscroll*(w->showh+w->ydist);
+		scrolled_pixels = w->yscroll * (w->showh + w->ydist);
 
 		wind_calc(WC_WORK, w->kind, &w->out, &w->in);
 	}
 	(w->pobj)->ob_x = w->in.g_x;
-	(w->pobj)->ob_y = w->in.g_y - gescrollte_pixel;
+	(w->pobj)->ob_y = w->in.g_y - scrolled_pixels;
 	(w->pobj)->ob_width  = w->in.g_w;
-	(w->pobj)->ob_height = w->in.g_h + gescrollte_pixel;
+	(w->pobj)->ob_height = w->in.g_h + scrolled_pixels;
 }
 
 

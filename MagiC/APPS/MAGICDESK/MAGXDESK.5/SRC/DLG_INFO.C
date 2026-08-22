@@ -160,11 +160,11 @@ int info_file(char *path, int drv, MYDTA *f,
 	/* TEDINFOs (Text-Eingabefelder) erstellen */
 	/* --------------------------------------- */
 
-	memcpy(&ifd->fname_ted, (tree_datinf+FI_FILENAME)->ob_spec.tedinfo, sizeof(TEDINFO));
-	(ifd->tree + FI_FILENAME)->ob_spec.tedinfo = &ifd->fname_ted;
+	memcpy(&ifd->fname_ted, tree_datinf[FI_FILENAME].ob_spec.tedinfo, sizeof(TEDINFO));
+	ifd->tree[FI_FILENAME].ob_spec.tedinfo = &ifd->fname_ted;
 
-	memcpy(&ifd->alias_ted, (tree_datinf+FI_ALIAS)->ob_spec.tedinfo, sizeof(TEDINFO));
-	(ifd->tree + FI_ALIAS)->ob_spec.tedinfo = &ifd->alias_ted;
+	memcpy(&ifd->alias_ted, tree_datinf[FI_ALIAS].ob_spec.tedinfo, sizeof(TEDINFO));
+	ifd->tree[FI_ALIAS].ob_spec.tedinfo = &ifd->alias_ted;
 
 	/* Zu ver„ndernde "free_string"s (feste Zeichenketten, nicht editierbar) erstellen */
 	/* ------------------------------------------------------------------------------- */
@@ -311,7 +311,7 @@ static void resize_info_file_tree(INFO_FILE_DATA *ifd)
 
 	if (!ifd->is_8_3)
 	{
-		o = tree+FI_FILENAME;
+		o = tree + FI_FILENAME;
 		t = &ifd->fname_ted;
 		xted = &ifd->fname_xted;
 		vislen = ((tree->ob_width - o->ob_x) / gl_hwchar) - 2;
@@ -322,7 +322,7 @@ static void resize_info_file_tree(INFO_FILE_DATA *ifd)
 		{
 			subobj_wdraw(d, FI_FILENAME, 0, 0);
 			xted->xte_vislen = vislen;
-			(tree+FI_FILENAME)->ob_width = vislen*gl_hwchar;
+			tree[FI_FILENAME].ob_width = vislen*gl_hwchar;
 			subobj_wdraw(d, FI_FILENAME, 0, 1);
 		}
 	}
@@ -334,7 +334,7 @@ static void resize_info_file_tree(INFO_FILE_DATA *ifd)
 		xted = &ifd->alias_xted;
 		vislen = (tree->ob_width / gl_hwchar) - 4;
 		xted->xte_vislen = vislen;
-		(tree+FI_ALIAS)->ob_width = vislen*gl_hwchar;
+		tree[FI_ALIAS].ob_width = vislen*gl_hwchar;
 		subobj_wdraw(d, FI_ALIAS, 0, 1);
 	}
 
@@ -392,7 +392,7 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int further)
 
 	if (ifd->isdrive)
 	{
-		DISKINFO frei;
+		DISKINFO diskinfo;
 		int lw;
 		int offs;
 
@@ -408,30 +408,30 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int further)
 		}
 
 		lw = ifd->path[0] - 'A';
-		err = Dfree(&frei, lw + 1);
+		err = Dfree(&diskinfo, lw + 1);
 		if (err != E_OK)
 			goto fehler;
 	
 		/* Anzahl von Clustern auf dem Laufwerk: */
-		ultoa(frei.b_total, (tree + DI_CLUST)->ob_spec.free_string, 10);
+		ultoa(diskinfo.b_total, tree[DI_CLUST].ob_spec.free_string, 10);
 		/* Sektoren pro Cluster: */
-		ultoa(frei.b_clsiz, (tree + DI_SECCL)->ob_spec.free_string, 10);
+		ultoa(diskinfo.b_clsiz, tree[DI_SECCL].ob_spec.free_string, 10);
 		/* Bytes pro Sektor: */
-		ultoa(frei.b_secsiz,(tree + DI_BYSEC)->ob_spec.free_string, 10);
+		ultoa(diskinfo.b_secsiz, tree[DI_BYSEC].ob_spec.free_string, 10);
 		/* Bytes pro Cluster: */
-		frei.b_secsiz *= frei.b_clsiz;
+		diskinfo.b_secsiz *= diskinfo.b_clsiz;
 	
 		/* Benutzte Bytes auf Laufwerk: total - frei */
-		ullmul(frei.b_total-frei.b_free, frei.b_secsiz, bytes);
-		print_ull(bytes, (tree+DI_BUSED)->ob_spec.free_string);
+		ullmul(diskinfo.b_total - diskinfo.b_free, diskinfo.b_secsiz, bytes);
+		print_ull(bytes, tree[DI_BUSED].ob_spec.free_string);
 	
 		/* freie Bytes auf Laufwerk: */
-		ullmul(frei.b_free, frei.b_secsiz, bytes);
-		print_ull(bytes, (tree+DI_BFREE)->ob_spec.free_string);
+		ullmul(diskinfo.b_free, diskinfo.b_secsiz, bytes);
+		print_ull(bytes, tree[DI_BFREE].ob_spec.free_string);
 
 		/* Gesamt Bytes auf Laufwerk: */
-		ullmul(frei.b_total, frei.b_secsiz, bytes);
-		print_ull(bytes, (tree+DI_BTOTAL)->ob_spec.free_string);
+		ullmul(diskinfo.b_total, diskinfo.b_secsiz, bytes);
+		print_ull(bytes, tree[DI_BTOTAL].ob_spec.free_string);
 
 		offs = 4*gl_hhchar;
 
@@ -455,7 +455,7 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int further)
 			}
 
 			flp_info = ifd->old_alias;
-			(tree+DI_FLOP)->ob_spec.free_string = flp_info;
+			tree[DI_FLOP].ob_spec.free_string = flp_info;
 			flp_info[0] = EOS;
 			cati(flp_info, nsides);
 			strcat(flp_info, Rgetstring(STR_SIDES));
@@ -548,7 +548,7 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int further)
 /*		objs_unhide(tree, FI_ISALI, FI_ALIAS, 0);	*/
 
 		strcpy(ifd->new_alias, ifd->old_alias);
-		t = (tree + FI_ALIAS)->ob_spec.tedinfo;
+		t = tree[FI_ALIAS].ob_spec.tedinfo;
 		xted = &ifd->alias_xted;
 
 		t->te_ptext = ifd->new_alias;
@@ -568,7 +568,7 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int further)
 		t->te_pvalid = (void *) xted;
 		vislen = (tree->ob_width / gl_hwchar) - 4;
 		xted->xte_vislen = vislen;
-		(tree + FI_ALIAS)->ob_width = vislen*gl_hwchar;
+		tree[FI_ALIAS].ob_width = vislen * gl_hwchar;
 	}
 	else
 	{
@@ -576,8 +576,8 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int further)
 		objs_uneditable(tree, FI_ALIAS, 0);
 	}
 
-	time_to_str((tree+FI_ZEIT )->ob_spec.free_string, ifd->f.time);
-	date_to_str((tree+FI_DATUM)->ob_spec.free_string, ifd->f.date);
+	time_to_str(tree[FI_ZEIT].ob_spec.free_string, ifd->f.time);
+	date_to_str(tree[FI_DATUM].ob_spec.free_string, ifd->f.date);
 
 	if (ifd->isfolder)
 	{
@@ -605,10 +605,10 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int further)
 		}
 		else
 		{
-			ultoa(n_ord, (tree+OI_N_ORD)->ob_spec.free_string, 10);
-			ultoa(n_dat, (tree+OI_N_DAT)->ob_spec.free_string, 10);
-			ultoa(n_vda, (tree+OI_N_VDA)->ob_spec.free_string, 10);
-			ultoa(b_vda, (tree+OI_B_VDA)->ob_spec.free_string, 10);
+			ultoa(n_ord, tree[OI_N_ORD].ob_spec.free_string, 10);
+			ultoa(n_dat, tree[OI_N_DAT].ob_spec.free_string, 10);
+			ultoa(n_vda, tree[OI_N_VDA].ob_spec.free_string, 10);
+			ultoa(b_vda, tree[OI_B_VDA].ob_spec.free_string, 10);
 	
 			bytes[1] = b_dat + b_vda;
 		}
@@ -625,8 +625,8 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int further)
 		ob_sel_dsel(tree, FI_ARCHI, (ifd->f.attrib) & F_ARCHIVE);
 	}
 
-	print_ull(bytes, (tree+FI_SIZE)->ob_spec.free_string);
-	strcat((tree + FI_SIZE)->ob_spec.free_string, " Bytes");
+	print_ull(bytes, tree[FI_SIZE].ob_spec.free_string);
+	strcat(tree[FI_SIZE].ob_spec.free_string, " Bytes");
 
 	return 0;
 }

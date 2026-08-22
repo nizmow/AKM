@@ -449,8 +449,8 @@ void set_char_dim(void)
 		parentfolder_index = I_PAR08;
 	}
 
-	folder_image = (tree_icons + folder_index)->ob_spec.bitblk;
-	parentfolder_image = (tree_icons + parentfolder_index)->ob_spec.bitblk;
+	folder_image = tree_icons[folder_index].ob_spec.bitblk;
+	parentfolder_image = tree_icons[parentfolder_index].ob_spec.bitblk;
 
 	folder_mfdb.fd_addr = folder_image->bi_pdata;
 	parentfolder_mfdb.fd_addr = parentfolder_image->bi_pdata;
@@ -520,7 +520,7 @@ int icsel(WINDOW **rw, int *objn)
 		{
 			for	(; i <= (tree->ob_tail); i++)
 			{
-				if (!((tree+i)->ob_flags & HIDETREE) && selected(tree, i))
+				if (!(tree[i].ob_flags & HIDETREE) && selected(tree, i))
 				{
 					if (*rw)	/* noch einer ! */
 						return -1;
