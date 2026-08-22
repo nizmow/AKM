@@ -1876,7 +1876,7 @@ void main()
 				w_ev.mbutton = 1;		/* Doppelklick simulieren */
 			}
 
-			handle_mouse_button(w_ev.mclicks, (EVNTDATA *) &(w_ev.mx));
+			handle_mouse_button(w_ev.mclicks, (const EVNTDATA *) &(w_ev.mx));
 
 			/* poll mouse and keyboard state */
 			graf_mkstate((EVNTDATA *) &(w_ev.mx));

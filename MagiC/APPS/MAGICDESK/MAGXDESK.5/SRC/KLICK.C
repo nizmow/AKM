@@ -252,8 +252,8 @@ void rubberbox( WINDOW *w, int x, int y, int mx, int my )
 	ev.x = mx;
 	ev.y = my;
 
-	/* Merkt den Selectstatus */
-	/* ---------------------- */
+	/* Merkt den "select"-Status */
+	/* ------------------------- */
 
 	if ((i = (tree -> ob_head)) > 0)
 	{
@@ -828,58 +828,97 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 
 /****************************************************************
 *
+* Nach der Bearbeitung eines Einfach-Mausklicks mÅssen wir
+* prÅfen, ob die Maustaste noch gedrÅckt ist. Insbesondere auf
+* schnellen Systemen mÅssen wir dem Anwender etwas Zeit lassen,
+* die linke Maustaste wieder loszulassen, ansonsten wird immer
+* ein "Drag" erkannt.
+*
+* RÅckgabe TRUE bei "timeout", d.h. Maustaste noch gedrÅckt.
+*
+****************************************************************/
+
+static int detect_mouse_drag(EVNT *w_ev)
+{
+	w_ev->mwhich = evnt_multi(
+                      MU_BUTTON + MU_TIMER,
+					  1,			/* keine Doppelklicks */
+					  1,			/* nur linke Maustaste */
+					  0,			/* linke Maustaste losgelassen */
+					  0,NULL,		/* kein 1. Rechteck */
+					  0,NULL,		/* kein 2. Rechteck */
+					  NULL,			/* keine "message" */
+					  MOUSE_DRAG_DETECT_MS,		/* ms */
+					  (EVNTDATA *) &(w_ev->mx),
+					  &w_ev->key,
+					  &w_ev->mclicks
+					  );
+
+	return (w_ev->mwhich & MU_TIMER) != 0;
+}
+
+
+/****************************************************************
+*
 * Der Benutzer hat an der Bildschirmposition (x_koor,y_koor) mit
 * dem <knopf> einen <anzahl>- fachen Mausklick ausgefÅhrt.
 * Es ist kein BEG_UPDATE ausgefÅhrt worden.
 *
 ****************************************************************/
 
-void handle_mouse_button(int anzahl, EVNTDATA *ev)
+void handle_mouse_button(int nclicks, const EVNTDATA *ev)
 {
 	WINDOW *w,*w2;
-	EVNTDATA ev2;
+	EVNT ev2;
 	int icnobj;
 	int issel,dummy2;
 	OBJECT *tree;
+	int mouse_drag = -1;	/* unknown, yet */
 
 
-	/* whdl := Handle des angeklickten Fensters oder < 0			*/
-	/* w	:= angeklicktes Fenster oder == NULL					*/
-	/* icnobj := Objektnummer des Icons in diesem Fenster bzw. Desk.	*/
-	/* tree   := Objektbaum des Fensters bzw. des Desktop			*/
-	/* -------------------------------------------------------------	*/
+	/*
+	 * whdl := Handle des angeklickten Fensters oder < 0
+	 * w	:= angeklicktes Fenster oder == NULL
+	 * icnobj := Objektnummer des Icons in diesem Fenster bzw. Desktop
+	 * tree   := Objektbaum des Fensters bzw. des Desktop
+	 */
 
 	w = whdl2window(wind_find(ev->x, ev->y));
 	if (!w)
 		return;		/* keins oder nicht unser Fenster */
 
-	if (w->handle)	/* echtes Fenster (nicht der Desktop) */
+	if (w->handle)
 	{
 
-		/* Klick auf Hintergrundfenster.					*/
-		/* Weil WF_BEVENT gesetzt ist, wird das Fenster nicht	*/
-		/* vom System nach oben gebracht. Dies muû daher		*/
-		/* manuell erfolgen. Hier nur bei kurzem Einfachklick	*/
-		/* mit nur der linken Maustaste und ohne			*/
-		/* Umschalttasten!								*/
-		/* --------------------------------------------------- */
+		/* echtes Fenster (nicht der Desktop) */
 
-		if ((anzahl == 1) && (ev->bstate == 1) && (!ev->kstate) &&
+		if ((nclicks == 1) && (ev->bstate == 1) && (!ev->kstate) &&
 				(w->handle != top_whdl()))
 		{
-			graf_mkstate(&ev2);
-			if (!ev2.bstate)	/* wieder losgelassen! */
+			/*
+			 * Klick auf Hintergrundfenster.
+			 * Weil WF_BEVENT gesetzt ist, wird das Fenster nicht
+			 * vom System nach oben gebracht. Dies muû daher
+			 * manuell erfolgen. Hier nur bei kurzem Einfachklick
+			 * mit nur der linken Maustaste und ohne Umschalttasten!
+			 */
+
+			mouse_drag = detect_mouse_drag(&ev2);
+			if (!mouse_drag)
 			{
+				/* wieder losgelassen! */
+
 				wind_set_int(w->handle, WF_TOP, 0);
 				wind_set_int(-1, WF_TOP, -1);	/* MenÅ nach oben! */
 				return;
 			}
 		}
 
-		/* In MagiC 6 kriegen wir jetzt auch Klicks auf die	*/
-		/* INFO-Zeile. Wir behandeln einfach alle Klicks		*/
-		/* auûerhalb des Arbeitsbereichs als INFO			*/
-		/* --------------------------------------------------- */
+		/*
+		 * Ab MagiC 6 kriegen wir jetzt auch Klicks auf die
+		 * INFO-Zeile. Wir behandeln einfach alle Klicks
+		 * auûerhalb des Arbeitsbereichs als INFO.
+		 */
 
 		if (!in_grect(ev->x, ev->y, &(w->in)))
 		{
@@ -890,7 +929,10 @@ void handle_mouse_button(int anzahl, EVNTDATA *ev)
 				g.g_x += w->out.g_x;
 				g.g_y += w->out.g_y;
 				if (in_grect(ev->x, ev->y, &g))
+				{
 					show_free(w);
+					return;
+				}
 			}
 		}
 	}
@@ -898,19 +940,21 @@ void handle_mouse_button(int anzahl, EVNTDATA *ev)
 	tree = w->pobj;
 	icnobj = find_obj(tree, ev->x, ev->y);
 
-	/* 1. Fall: Kein Objekt wurde angeklickt. Nichts passiert. */
-	/* ------------------------------------------------------- */
+	/*
+	 * 1. Fall: Kein Objekt wurde angeklickt. Nichts passiert.
+	 */
 
 	if (icnobj < 0)
 		return;
 
 	issel = icsel(&w2, &dummy2);	/* irgendwo Icons angewÑhlt? */
 
-	/* 2. Fall: Ein Hintergrund wurde angeklickt.			*/
-	/*		  Alle Icons ggf. deselektieren				*/
-	/*          Falls noch Maustaste gedrÅckt, Box ziehen		*/
-	/*		  ggf. alle meine Fenster toppen				*/
-	/* -------------------------------------------------------- */
+	/*
+	 * 2. Fall: Ein Hintergrund wurde angeklickt.
+	 *	Alle Icons ggf. deselektieren.
+	 *	Falls noch Maustaste gedrÅckt, Box ziehen
+	 *	Ggf. alle meine Fenster nach oben
+	 */
 
 	if (icnobj == 0)
 	{
@@ -921,10 +965,14 @@ void handle_mouse_button(int anzahl, EVNTDATA *ev)
 			if (issel)
 				dsel_all();
 		}
-		graf_mkstate(&ev2);
-		if (ev2.bstate & 1)
+
+		if (mouse_drag < 0)
 		{
-			rubberbox(w, ev->x, ev->y, ev2.x, ev2.y);
+			mouse_drag = detect_mouse_drag(&ev2);
+		}
+		if (mouse_drag)
+		{
+			rubberbox(w, ev->x, ev->y, ev2.mx, ev2.my);
 		}
 		else
 		{
@@ -938,7 +986,7 @@ void handle_mouse_button(int anzahl, EVNTDATA *ev)
 	/* 3. Fall: selektiertes Objekt wurde einmal angeklickt	*/
 	/* -------------------------------------------------------- */
 
-	if (anzahl < 2 && selected(tree, icnobj))
+	if ((nclicks < 2) && selected(tree, icnobj))
 	{
 		if (ev->kstate & (K_RSHIFT + K_LSHIFT))
 		{
@@ -967,7 +1015,7 @@ void handle_mouse_button(int anzahl, EVNTDATA *ev)
 		}
 		else
 		{
-			if (anzahl != 2)
+			if (nclicks != 2)
 				(tree + icnobj) -> ob_state ^= SELECTED;
 			else
 				(tree + icnobj) -> ob_state |= SELECTED;
@@ -979,14 +1027,19 @@ void handle_mouse_button(int anzahl, EVNTDATA *ev)
 	}
 	else
 	{
-		anzahl = 2;	/* Klick auf ".." wie Doppelklick */
+		nclicks = 2;	/* Klick auf ".." wie Doppelklick */
 	}
 
-	if ((anzahl < 2) && (!(tree[icnobj].ob_flags & EXIT)))
-	{	/* einmal geklickt, nicht ".." */
+	if ((nclicks < 2) && (!(tree[icnobj].ob_flags & EXIT)))
+	{
+		/* einmal geklickt, nicht ".." */
+
 		tst_move:
-		graf_mkstate(&ev2);
-		if (ev2.bstate & 1)
+		if (mouse_drag < 0)
+		{
+			mouse_drag = detect_mouse_drag(&ev2);
+		}
+		if (mouse_drag)
 		{
 			upd_infos();
 			move_icons(ev->x, ev->y, w, ev->kstate);
@@ -997,7 +1050,7 @@ void handle_mouse_button(int anzahl, EVNTDATA *ev)
 	/* Ab hier nur noch Doppelklicks berÅcksichtigen */
 	/* --------------------------------------------- */
 
-	if (anzahl == 2)
+	if (nclicks == 2)
 	{
 		if (dclick(w, icnobj, ev->kstate))
 		{

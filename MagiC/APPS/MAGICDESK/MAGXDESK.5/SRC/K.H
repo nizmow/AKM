@@ -97,6 +97,8 @@ extern CICONBLK **icons;
 #define TTPLEN 63
 #define AUTOUPDATE_MS	2000L	/* fÅr Fenster-Autoupdate */
 
+#define MOUSE_DRAG_DETECT_MS 100	/* gib dem Anwender 100 ms zum Loslassen der Maustaste */
+
 #define FIRSTMAXMEMBLK	0x40000L	/* fÅr Fenster: Beginne mit 256k */
 #define NEXTMEMBLK		0x40000L	/* fÅr Fenster: Steigere 256k */
 #define LASTMAXMEMBLK	0x200000L	/* fÅr Fenster: Ende mit 2M */
@@ -413,7 +415,7 @@ extern int spaltenabstand;		/* FÅr Textausgabe */
 
 extern void obj_malen(WINDOW *w, int index);
 extern void dsel_all(void);
-extern void handle_mouse_button(int anzahl, EVNTDATA *ev);
+extern void handle_mouse_button(int nclicks, const EVNTDATA *ev);
 extern void sel_all(WINDOW *w);
 extern int  make_icon(int typ, CICONBLK *cic, char c, char *icntext,
 					char *path, int is_alias, int x, int y);
