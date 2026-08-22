@@ -93,7 +93,7 @@ int top_whdl(void)
 
 int rc_intersect(GRECT *p1, GRECT *p2)
 {
-	int	tx, ty, tw, th;
+	int tx, ty, tw, th;
 
 	tw = MIN(p2->g_x + p2->g_w, p1->g_x + p1->g_w);
 	th = MIN(p2->g_y + p2->g_h, p1->g_y + p1->g_h);
@@ -115,10 +115,10 @@ int rc_intersect(GRECT *p1, GRECT *p2)
 
 void objc_grect(OBJECT *tree, int objn, GRECT *g)
 {
-	objc_offset(tree, objn, &(g -> g_x), &(g -> g_y));
+	objc_offset(tree, objn, &(g->g_x), &(g->g_y));
 	tree += objn;
-	g -> g_w = tree -> ob_width;
-	g -> g_h = tree -> ob_height;
+	g->g_w = tree->ob_width;
+	g->g_h = tree->ob_height;
 /*
 	if (tree->ob_type == G_FTEXT)
 	{
@@ -127,11 +127,11 @@ void objc_grect(OBJECT *tree, int objn, GRECT *g)
 		thickness = tree->ob_spec.tedinfo->te_thickness;
 		if (thickness < 0)
 		{
-			g -> g_x += thickness;
-			g -> g_y += thickness;
+			g->g_x += thickness;
+			g->g_y += thickness;
 			thickness <<= 1;
-			g -> g_w -= thickness;
-			g -> g_h -= thickness;
+			g->g_w -= thickness;
+			g->g_h -= thickness;
 		}
 	}
 */
@@ -151,7 +151,7 @@ void objc_visgrect(OBJECT *tree, int objn, GRECT *g)
 
 	o = tree + objn;
 	objc_offset(tree, objn, &nx, &ny);
-	if (((o -> ob_type == G_BUTTON) || (o -> ob_type == G_FTEXT)) &&
+	if (((o->ob_type == G_BUTTON) || (o->ob_type == G_FTEXT)) &&
 		 (o-> ob_flags & FL3DMASK))
 	{
 		x = o->ob_x;
@@ -162,11 +162,12 @@ void objc_visgrect(OBJECT *tree, int objn, GRECT *g)
 		o->ob_x = x;
 		o->ob_y = y;
 	}
-	else{
-		g -> g_x = nx;
-		g -> g_y = ny;
-		g -> g_w = o -> ob_width;
-		g -> g_h = o -> ob_height;
+	else
+	{
+		g->g_x = nx;
+		g->g_y = ny;
+		g->g_w = o->ob_width;
+		g->g_h = o->ob_height;
 	}
 }
 
@@ -244,20 +245,20 @@ int find_obj(OBJECT *tree, int x, int y)
 	int end;
 
 
-	if ((i = (tree -> ob_head)) < 0)
+	if ((i = (tree->ob_head)) < 0)
 		return 0;
-	if ((tree -> ob_flags) & HIDETREE)
+	if ((tree->ob_flags) & HIDETREE)
 		return -1;			/* etwa inaktiver Hintergrund */
-	end = tree -> ob_tail;
-	x -= tree -> ob_x;			/* Position der Root abziehen */
-	y -= tree -> ob_y;
+	end = tree->ob_tail;
+	x -= tree->ob_x;			/* Position der Root abziehen */
+	y -= tree->ob_y;
 	for	(; i <= end; i++)
 	{
 		tree++;
 		if ((tree->ob_flags) & HIDETREE)
 			continue;
 		/* 1. Fall: ICON */
-		if ((tree -> ob_type == G_ICON) || (tree -> ob_type == G_CICON))
+		if ((tree->ob_type == G_ICON) || (tree->ob_type == G_CICON))
 		{
 			icn = tree->ob_spec.iconblk;
 			/* 1. Fall: Icon selbst */
@@ -293,7 +294,7 @@ int find_obj(OBJECT *tree, int x, int y)
 void objs_hide(OBJECT *tree, ...)
 {
 	va_list argpoint;
-	int	objnr;
+	int objnr;
 
 	va_start(argpoint, tree);
 	do
@@ -312,10 +313,11 @@ void objs_hide(OBJECT *tree, ...)
 void objs_unhide(OBJECT *tree, ...)
 {
 	va_list argpoint;
-	int	objnr;
+	int objnr;
 
 	va_start(argpoint, tree);
-	do{
+	do
+	{
 		objnr = va_arg(argpoint, int);
 		if (objnr == 0)
 			break;
@@ -330,7 +332,7 @@ void objs_unhide(OBJECT *tree, ...)
 void objs_editable(OBJECT *tree, ...)
 {
 	va_list argpoint;
-	int	objnr;
+	int objnr;
 
 	va_start(argpoint, tree);
 	for	(;;)
@@ -348,7 +350,7 @@ void objs_editable(OBJECT *tree, ...)
 void objs_uneditable(OBJECT *tree, ...)
 {
 	va_list argpoint;
-	int	objnr;
+	int objnr;
 
 	va_start(argpoint, tree);
 	for	(;;)
@@ -367,7 +369,7 @@ void objs_disable(OBJECT *tree, ...)
 {
 	register OBJECT *t;
 	va_list argpoint;
-	int	objnr;
+	int objnr;
 	bfcolspec *bft;
 
 	va_start(argpoint, tree);
@@ -835,7 +837,7 @@ char *print_ull(unsigned long z[2], char *p)
 
 
 #define STR_END(p) \
-    while(*p) (p)++;
+    while (*p) (p)++;
 
 
 /*********************************************************************

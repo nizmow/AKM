@@ -99,7 +99,7 @@ static WORD *palette;
 
 /* max_pen = work_out[13] - 1;	*/	/* hîchste Farbstiftnummer */
 
-int kachel_init(char *path, WORD max_pen)
+int tile_init(char *path, WORD max_pen)
 {
 	LONG err;
 	WORD index;
@@ -207,7 +207,7 @@ int kachel_init(char *path, WORD max_pen)
 }
 
 
-void kachel_exit( void )
+void tile_exit( void )
 {
 	if (exp_img)
 		Mfree(exp_img);	/* Speicher fÅr expandiertes IMG freigeben */

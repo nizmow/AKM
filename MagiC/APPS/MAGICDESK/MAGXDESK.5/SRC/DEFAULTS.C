@@ -59,7 +59,7 @@ static void set_deskt_icons(int initial);
 *
 ****************************************************************/
 
-static void init_app_icons( void )
+static void init_app_icons(void)
 {
 	static CICONBLK _stda,_stdd,_stfl,_stbt,_stdk,_sttr,
 		_stdr,_stdv,_stpa;
@@ -109,12 +109,12 @@ static int _load_app_icons(char *buf)
 	register SPECIALOBJECT *sp;
 	struct
 	{
-		long		magic;
-		int		subfn;
-		int		numicns;
-		CICONBLK	**cictab;
-		char		*data;
-		char		*endptr;
+		long     magic;
+		int      subfn;
+		int      numicns;
+		CICONBLK **cictab;
+		char     *data;
+		char     *endptr;
 	} magic_rcfix;
 
 
@@ -247,7 +247,7 @@ static int _load_app_icons(char *buf)
 }
 
 
-void load_app_icons( void )
+void load_app_icons(void)
 {
 	XATTR xa;
 	char path[128];
@@ -297,7 +297,7 @@ void load_app_icons( void )
 
 void	re_read_icons(void *data)
 {
-	if (_load_app_icons( data ))
+	if (_load_app_icons(data))
 		return;		/* Fehler */
 	set_deskt_icons(FALSE);
 	upd_icons();
@@ -381,19 +381,20 @@ DATAFILE * find_datafile(char *fname)
 	return NULL;
 }
 
-PATHNAME * find_path(char *path, char *nurname)
+PATHNAME * find_path(char *path, char *just_name)
 {
 	register PATHNAME *pa;
 	register int i;
 
 
-	if (!nurname)
+	if (just_name)
 	{
-		nurname = path + strlen(path) - 2;
-		while((nurname > path) && (*nurname != '\\'))
-			nurname--;
-		nurname++;
+		just_name = path + strlen(path) - 2;
+		while ((just_name > path) && (*just_name != '\\'))
+			just_name--;
+		just_name++;
 	}
+
 	for	(i = 0,pa = paths; i < n_paths; i++,pa++)
 	{
 		if (pa->path[1] == ':')	/* abs. Pfad */
@@ -403,7 +404,7 @@ PATHNAME * find_path(char *path, char *nurname)
 		}
 		else
 		{
-			if (!stricmp(nurname, pa->path))
+			if (!stricmp(just_name, pa->path))
 				return pa;
 		}
 	}
@@ -464,7 +465,7 @@ CICONBLK * datname_to_iconblk(char *fname)
 *
 * Sucht <path> in der Icondatei.
 * <path> ist der volle Pfad mit abschliežendem '\'
-* <nurname> ist ggf. der Ordnername mit abschliežendem '\'
+* <just_name> ist ggf. der Ordnername mit abschliežendem '\'
 *	oder NULL, dann wird er berechnet.
 *
 * Rckgabe:	Zeiger auf Iconblk.
@@ -486,11 +487,11 @@ CICONBLK * diskname_to_iconblk(int diskname, char **name)
 }
 
 
-CICONBLK * foldername_to_iconblk(char *path, char *nurname)
+CICONBLK * foldername_to_iconblk(char *path, char *just_name)
 {
 	register PATHNAME *p;
 
-	p = find_path(path, nurname);
+	p = find_path(path, just_name);
 	if (p)
 		return p->icon;
 	if (path[3])
@@ -500,7 +501,7 @@ CICONBLK * foldername_to_iconblk(char *path, char *nurname)
 
 
 #pragma warn -par
-CICONBLK * parentname_to_iconblk(char *path, char *nurname)
+CICONBLK * parentname_to_iconblk(char *path, char *just_name)
 {
 	return std_par_icon;
 }
@@ -574,20 +575,20 @@ void recalc(int *wert, int old, int new)
 *
 ****************************************************************/
 
-void set_desktop( void )
+void set_desktop(void)
 {
 	register OBJECT *o;
-	static USERBLK	desktop;
+	static USERBLK desktop;
 	extern int work_out[];
 
 
-	kachel_exit();		/* falls noch alte Kachel da */
+	tile_exit();		/* falls noch alte Kachel da */
 	o = windows[0]->pobj;
-	if (*kachel_path)
+	if (*bg_tile_path)
 	{
-		if ((*kachel_path)->path[0])
+		if ((*bg_tile_path)->path[0])
 		{
-			if (!kachel_init((*kachel_path)->path, work_out[13] - 1))
+			if (!tile_init((*bg_tile_path)->path, work_out[13] - 1))
 			{
 				o->ob_type = G_USERDEF;
 				desktop.ub_code = drawdesk;
@@ -597,8 +598,8 @@ void set_desktop( void )
 		}
 		else
 		{
-			Mfree(*kachel_path);
-			*kachel_path = NULL;
+			Mfree(*bg_tile_path);
+			*bg_tile_path = NULL;
 		}
 	}
 
@@ -620,12 +621,12 @@ void set_desktop( void )
 *
 ****************************************************************/
 
-static void set_deskt_icons( int initial )
+static void set_deskt_icons(int initial)
 {
 	register int i;
 	register OBJECT *o;
 	register ICON *ic;
-	int typ;
+	int type;
 	char path[128];
 	char *txt,*name;
 	char **pname;
@@ -634,8 +635,8 @@ static void set_deskt_icons( int initial )
 	for	(i = 0,o=windows[0]->pobj+1,ic = icon;
 			i < n_deskicons; i++,o++,ic++)
 	{
-		typ = ic->icontyp;
-		if (typ)				/* Icon gltig */
+		type = ic->icon_type;
+		if (type)				/* Icon gltig */
 		{
 			txt = ic->text;
 			name = NULL;
@@ -651,13 +652,13 @@ static void set_deskt_icons( int initial )
 				}
 				ic->data = *(diskname_to_iconblk(ic->isdisk, pname));
 				ic->data.monoblk.ib_char = ic->isdisk + 0x1000;
-				ic->icontyp = ITYP_DISK;
+				ic->icon_type = ITYP_DISK;
 			}
 			else
-			if (typ >= ITYP_ORDNER)
+			if (type >= ITYP_ORDNER)
 			{
 				name = get_name(txt);
-				if (typ == ITYP_ORDNER)
+				if (type == ITYP_ORDNER)
 				{
 					strcpy(path, txt);
 					if (path[strlen(txt)-1] != '\\')
@@ -665,28 +666,27 @@ static void set_deskt_icons( int initial )
 					ic->data = *(foldername_to_iconblk(path, NULL));
 				}
 				else
-				if (typ == ITYP_BTCHDA)
+				if (type == ITYP_BTCHDA)
 					ic->data = *(batchname_to_iconblk(name));
 				else
-				if (typ == ITYP_DEVICE)
+				if (type == ITYP_DEVICE)
 					ic->data = *(devicename_to_iconblk(name));
 				else
-				if (typ == ITYP_PROGRA)
+				if (type == ITYP_PROGRA)
 					ic->data = *(pgmname_to_iconblk(name));
 				else
-/*				if (typ == ITYP_DATEI)	*/
+/*				if (type == ITYP_DATEI)	*/
 					ic->data = *(datname_to_iconblk(name));
 			}
 			else
 			{
-				if (typ == ITYP_DRUCKR)
+				if (type == ITYP_DRUCKR)
 					ic->data = *std_prt_icon;
 				else
-/*				if (typ == ITYP_PAPIER)	*/
+/*				if (type == ITYP_PAPIER)	*/
 					ic->data = *std_tra_icon;
 			}
-			init_icnobj(o, &(ic->data),
-					ic->icontyp, name, ic->is_alias);
+			init_icnobj(o, &(ic->data), ic->icon_type, name, ic->is_alias);
 			if (initial)
 				o->ob_x -= o->ob_spec.iconblk->ib_xicon;
 		}
@@ -712,9 +712,9 @@ static char *s;
 *  Liest eine Zeile bis zum Zeilenende.
 */
 
-static int scnlin( void )
+static int scnlin(void)
 {
-	while(1)
+	for (;;)
 	{
 		if (!*s)
 			return 0;
@@ -730,11 +730,11 @@ static int scnlin( void )
 *  Liest eine Zeichenkette bis zum n„chsten ' '
 */
 
-static void scnstr( char *t )
+static void scnstr(char *t)
 {
-	while(*s == ' ')
+	while (*s == ' ')
 		s++;
-	while(*s != ' ' && *s != '\0' && *s != '\r' && *s != '\n')
+	while (*s != ' ' && *s != '\0' && *s != '\r' && *s != '\n')
 		*t++ = *s++;
 	*t = '\0';
 }
@@ -743,11 +743,11 @@ static void scnstr( char *t )
 *  Liest Zeichenkette bis Zeilenende
 */
 
-static void scnbstr( char *t )
+static void scnbstr(char *t)
 {
-	while(*s == ' ')
+	while (*s == ' ')
 		s++;
-	while(*s != '\0' && *s != '\r' && *s != '\n')
+	while (*s != '\0' && *s != '\r' && *s != '\n')
 		*t++ = *s++;
 	*t = '\0';
 }
@@ -756,9 +756,9 @@ static void scnbstr( char *t )
 *  Liest Dezimalzahl (int).
 */
 
-static int scndez( void )
+static int scndez(void)
 {
-	while(*s == ' ')
+	while (*s == ' ')
 		s++;
 	return (int) strtol(s, &s, 10);
 }
@@ -771,7 +771,7 @@ static char scnflg(void)
 {
 	char c;
 
-	while(*s == ' ')
+	while (*s == ' ')
 		s++;
 	if (*s)
 	{
@@ -787,12 +787,12 @@ void load_status(int pass)
 	char **p;
 	int dummy;
 	char dummy_s[128];
-	int	i_version;
+	int i_version;
 	char *inf;
 	unsigned int len;
-	int	old_w,old_h;
+	int old_w,old_h;
 	GRECT *g;
-	int	ln_wind,ln_icns,ln_pgms;
+	int ln_wind,ln_icns,ln_pgms;
 	register int code;
 	register OBJECT *o;
 	LONG err;
@@ -827,8 +827,8 @@ void load_status(int pass)
 		settings.auto_reload_off 	= FALSE;
 		settings.h_icon_dist		= 3;
 		settings.v_icon_dist		= 1;
-		settings.sorttyp 			= M_SNAME;
-		settings.showtyp 			= M_ABILDR;
+		settings.sort_mode 			= M_SNAME;
+		settings.show_mode 			= M_ABILDR;
 		settings.is_1col			= FALSE;
 		settings.is_groesse		= TRUE;
 		settings.is_datum			= TRUE;
@@ -852,15 +852,15 @@ void load_status(int pass)
 		settings.desk_col_4		= GREEN;
 		settings.desk_patt_4		= 7;
 		settings.desk_raster		= 1;
-		if (kachel_1)
-			Mfree(kachel_1);
-		if (kachel_4)
-			Mfree(kachel_4);
-		if (kachel_8)
-			Mfree(kachel_8);
-		if (kachel_m)
-			Mfree(kachel_m);
-		kachel_1 = kachel_4 = kachel_8 = kachel_m = NULL;
+		if (bg_tile_1)
+			Mfree(bg_tile_1);
+		if (bg_tile_4)
+			Mfree(bg_tile_4);
+		if (bg_tile_8)
+			Mfree(bg_tile_8);
+		if (bg_tile_m)
+			Mfree(bg_tile_m);
+		bg_tile_1 = bg_tile_4 = bg_tile_8 = bg_tile_m = NULL;
 
 		strcpy(ext_bat, "BAT");
 		strcpy(ext_btp, "BTP");
@@ -941,7 +941,7 @@ void load_status(int pass)
 			break;
 		code |= *s++;				/* Lobyte holen */
 
-		switch(code)
+		switch (code)
 		{
 			case 'SW':
 				if (!pass)
@@ -951,9 +951,9 @@ void load_status(int pass)
 
 				deflt_topwnr = scndez();
 
-				settings.sorttyp = scndez() + M_SNAME;
+				settings.sort_mode = scndez() + M_SNAME;
  
-				settings.showtyp = (scnflg()) ? M_ATEXT : M_ABILDR;
+				settings.show_mode = (scnflg()) ? M_ATEXT : M_ABILDR;
 
 				scndez();		/* points */
 
@@ -1043,7 +1043,7 @@ void load_status(int pass)
 				shift = scndez();
 				if (shift < 0)
 				{
-					switch(shift)
+					switch (shift)
 					{
 						case -1: flags = WFLAG_ICONIFIED;
 								break;
@@ -1064,7 +1064,7 @@ void load_status(int pass)
 					name = get_name(buf);
 					strcpy(buf2, name);
 					*name = '\0';
-					create_wnd( ln_wind, buf, buf2, shift, flags, &err);
+					create_wnd(ln_wind, buf, buf2, shift, flags, &err);
 				}
 			}
 				ln_wind++;
@@ -1078,7 +1078,7 @@ void load_status(int pass)
 
 
 					icon[ln_icns].is_alias = FALSE;
-					icon[ln_icns].icontyp = scndez();
+					icon[ln_icns].icon_type = scndez();
 					icon[ln_icns].isdisk = scnflg() + '0';
 					if (icon[ln_icns].isdisk == '@')
 						icon[ln_icns].isdisk = 0;
@@ -1101,7 +1101,7 @@ void load_status(int pass)
 						*oby = desk_g.g_h-ich;
 					*obx += desk_g.g_x;
 					*oby += desk_g.g_y;
-					if (icon[ln_icns].icontyp >= ITYP_ORDNER)
+					if (icon[ln_icns].icon_type >= ITYP_ORDNER)
 						scnbstr(icon[ln_icns].text);
 				}
 
@@ -1118,8 +1118,8 @@ void load_status(int pass)
 				ln_pgms++;
 				break;
 
-			case	'K1':
-				p = &kachel_1;
+			case 'K1':
+				p = &bg_tile_1;
 			 kachel:
 				if (!pass)
 					break;
@@ -1132,19 +1132,19 @@ void load_status(int pass)
 				}
 				break;
 
-			case	'K4':
-				p = &kachel_4;
+			case 'K4':
+				p = &bg_tile_4;
 			 	goto kachel;
 
-			case	'K8':
-				p = &kachel_8;
+			case 'K8':
+				p = &bg_tile_8;
 			 	goto kachel;
 
-			case	'KM':
-				p = &kachel_m;
+			case 'KM':
+				p = &bg_tile_m;
 			 	goto kachel;
 
-			case	'EX':
+			case 'EX':
 				scnstr(ext_bat);
 				scnstr(ext_btp);
 				break;
@@ -1155,25 +1155,25 @@ void load_status(int pass)
 				if (!pass)
 					break;
 			{
-				char	buf[200];
-				char *ziel1,*ziel2;
+				char buf[200];
+				char *dest_1,*dest_2;
 
 				buf[0] = EOS;
 				if (*s)
 					s++;
-				ziel1 = buf;
-				while((*s) && (*s != '\r') && (*s != '\n'))
-					*ziel1++ = *s++;
-				*ziel1 = EOS;
-				ziel1 = ((tree_ttppar+TTPPAR_1)->ob_spec.tedinfo)->te_ptext;
-				ziel2 = ((tree_ttppar+TTPPAR_2)->ob_spec.tedinfo)->te_ptext;
+				dest_1 = buf;
+				while ((*s) && (*s != '\r') && (*s != '\n'))
+					*dest_1++ = *s++;
+				*dest_1 = EOS;
+				dest_1 = ((tree_ttppar+TTPPAR_1)->ob_spec.tedinfo)->te_ptext;
+				dest_2 = ((tree_ttppar+TTPPAR_2)->ob_spec.tedinfo)->te_ptext;
 				if (buf[0])
 				{
-					strncpy(ziel1, buf, TTPLEN);
+					strncpy(dest_1, buf, TTPLEN);
 					if (strlen(buf) >= TTPLEN)
 					{
-						ziel1[TTPLEN] = EOS;
-						strcpy(ziel2, buf + TTPLEN);
+						dest_1[TTPLEN] = EOS;
+						strcpy(dest_2, buf + TTPLEN);
 					}
 				}
 			}
@@ -1245,7 +1245,7 @@ void load_status(int pass)
 	/* ------------------------------------------------ */
 
 	for	(; ln_icns <  n_deskicons;   ln_icns++)
-		icon[ln_icns].icontyp = icon[ln_icns].isdisk = 0;
+		icon[ln_icns].icon_type = icon[ln_icns].isdisk = 0;
 	for	(; ln_pgms < NUM_PROGRAMS; ln_pgms++)
 		menuprograms[ln_pgms].path[0] = EOS;
 
@@ -1273,7 +1273,7 @@ static void prtdez(int i)
 {
 	*s++ = ' ';
 	itoa(i, s, 10);
-	while(*s++)
+	while (*s++)
 		;
 	s--;
 }
@@ -1283,7 +1283,7 @@ static void prtflg(int i)
 }
 static void prtstr(const char *str)
 {
-	while((*s++ = *str++) != '\0')
+	while ((*s++ = *str++) != '\0')
 		;
 	s--;
 }
@@ -1332,9 +1332,9 @@ static void status_to_ascii(char *inf)
 	prtdez(desk_g.g_w);
 	prtdez(desk_g.g_h);
 	prtdez(deflt_topwnr);
-	prtdez(settings.sorttyp - M_SNAME);
+	prtdez(settings.sort_mode - M_SNAME);
 	*s++ = ' ';
-	prtflg(settings.showtyp == M_ATEXT);
+	prtflg(settings.show_mode == M_ATEXT);
 /*
 	if (settings.points == M_8_PKT)
 		i = 8;
@@ -1404,28 +1404,28 @@ static void status_to_ascii(char *inf)
 	/* 7. Zeile: "#_DKM path"						*/
 	/* Pfade fr Kachel-IMGs							*/
 
-	if (kachel_1 && *kachel_1)
+	if (bg_tile_1 && *bg_tile_1)
 	{
 		prtstr("#_DK1 ");
-		prtstr(kachel_1);
+		prtstr(bg_tile_1);
 		prtstr("\r\n");
 	}
-	if (kachel_4 && *kachel_4)
+	if (bg_tile_4 && *bg_tile_4)
 	{
 		prtstr("#_DK4 ");
-		prtstr(kachel_4);
+		prtstr(bg_tile_4);
 		prtstr("\r\n");
 	}
-	if (kachel_8 && *kachel_8)
+	if (bg_tile_8 && *bg_tile_8)
 	{
 		prtstr("#_DK8 ");
-		prtstr(kachel_8);
+		prtstr(bg_tile_8);
 		prtstr("\r\n");
 	}
-	if (kachel_m && *kachel_m)
+	if (bg_tile_m && *bg_tile_m)
 	{
 		prtstr("#_DKM ");
-		prtstr(kachel_m);
+		prtstr(bg_tile_m);
 		prtstr("\r\n");
 	}
 
@@ -1482,7 +1482,7 @@ static void status_to_ascii(char *inf)
 				prtdez(w->yscroll);
 
 			*s++ = ' ';
-			prtstr(w->path );
+			prtstr(w->path);
 			prtstr(w->maske);
 		}
 		else
@@ -1498,15 +1498,15 @@ static void status_to_ascii(char *inf)
 		 i < n_deskicons;
 		 i++,ic++,o++)
 	{
-		if (ic->icontyp)
+		if (ic->icon_type)
 		{
 			prtstr("#_DIC");
-			prtdez(ic->icontyp);
+			prtdez(ic->icon_type);
 			*s++ = ' ';
 			*s++ = (ic->isdisk) ? (ic->isdisk) : '@';
 			prtdez(o->ob_x - desk_g.g_x + o->ob_spec.iconblk->ib_xicon);
 			prtdez(o->ob_y - desk_g.g_y);
-			if (ic->icontyp >= ITYP_ORDNER)
+			if (ic->icon_type >= ITYP_ORDNER)
 			{
 				*s++ = ' ';
 				prtstr(ic->text);
@@ -1516,7 +1516,7 @@ static void status_to_ascii(char *inf)
 		}
 	}
 
-	/* "#_DAP path typ ext1 ext2"		*/
+	/* "#_DAP path type ext1 ext2"		*/
 	/* wird in V3 nicht mehr verwendet */
 	/* ------------------------------- */
 
@@ -1557,7 +1557,7 @@ void save_status(int is_inf)
 	if (inf == NULL)
 	{
 		doserr = ENSMEM;
-		goto ende;
+		goto end_ret;
 	}
 
 	if (is_inf)
@@ -1577,23 +1577,25 @@ void save_status(int is_inf)
 						"#[shelbuf]\r\n"
 						"#_CTR\r\n";
 				strncpy(os_ver_s2+13, os_ver_s+7, 5);
-				Fwrite( (int) doserr, strlen(os_ver_s2), os_ver_s2);
+				Fwrite((int) doserr, strlen(os_ver_s2), os_ver_s2);
 				Fseek(0L, handle, SEEK_SET);
 			}
 		}
 		if (doserr < E_OK)
-			goto ende;
+			goto end_ret;
+
 		doserr = Fread(handle, 32768L, inf);
 		if (doserr < E_OK)
-			goto ende;
+			goto end_ret;
+
 		s = inf;
-		while(strncmp(s, "#_CTR", 5))
+		while (strncmp(s, "#_CTR", 5))
 		{
 			if (!scnlin())
 			{
 				err2:
 				doserr = ERROR;
-				goto ende;			/* unerwartetes Dateiende */
+				goto end_ret;			/* unerwartetes Dateiende */
 			}
 		}
 		if (!scnlin())
@@ -1609,7 +1611,7 @@ void save_status(int is_inf)
 		{
 			if (doserr >= E_OK)
 				doserr = EWRITF;
-			goto ende;
+			goto end_ret;
 		}
 		Fshrink(handle);
 	}
@@ -1627,7 +1629,7 @@ void save_status(int is_inf)
 			Rform_alert(1, ALRT_OVL_AES_BUF);
 	}
 
-	ende:
+	end_ret:
 
 	if (handle > 0)
 		Fclose(handle);
@@ -1657,8 +1659,8 @@ void save_status(int is_inf)
 
 void reload_status(int drv)
 {
-	int	handle;
-	char	*inf;
+	int handle;
+	char *inf;
 	char olddrv;
 	long doserr;
 
@@ -1708,7 +1710,7 @@ void reload_status(int drv)
 		goto err;
 	inf[doserr] = EOS;
 	s = inf;
-	while(strncmp(s, "#_CTR", 5))
+	while (strncmp(s, "#_CTR", 5))
 	{
 		if (!scnlin())
 		{

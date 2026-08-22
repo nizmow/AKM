@@ -33,20 +33,20 @@ int work_out[57], work_in [12];	 /* VDI- Felder fr v_opnvwk() */
 int isfirst;					/* MAGXDESK gebootet */
 int is_primary_shell;			/* Haupt-Shell */
 
-int	aes_handle;
-int	vdi_handle;
-int	vdi_device;
-int	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
+int aes_handle;
+int vdi_handle;
+int vdi_device;
+int gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
 GRECT desk_g,screen_g;				/* Maže fr Hintergrund */
-int	char_w,char_h;
-int	spaltenabstand;				/* Fr Textausgabe */
-int	dirty_applicat_dat;
+int char_w,char_h;
+int text_column_dist;				/* Fr Textausgabe */
+int dirty_applicat_dat;
 
-char *kachel_1;			/* Kachel 1 Plane (monochrom) */
-char *kachel_4;			/* Kachel 4 Planes (16 Farben) */
-char *kachel_8;			/* Kachel 8 Planes (256 Farben) */
-char *kachel_m;			/* Kachel > 256 Farben */
-MENUPROGRAM **kachel_path;
+char *bg_tile_1;		/* Kachel 1 Plane (monochrom) */
+char *bg_tile_4;			/* Kachel 4 Planes (16 Farben) */
+char *bg_tile_8;			/* Kachel 8 Planes (256 Farben) */
+char *bg_tile_m;			/* Kachel > 256 Farben */
+MENUPROGRAM **bg_tile_path;
 
 char *desk_col;
 char *desk_patt;
@@ -115,7 +115,7 @@ static int key_2_action(int key, char ascii, int kstate)
 	if ((kstate == K_LSHIFT+K_ALT) && (ascii == '<'))
 	{
 		int dst_apid;
-		int	msg[8];
+		int msg[8];
 
 		dst_apid = appl_find("START   ");
 		if (dst_apid >= 0)
@@ -141,7 +141,7 @@ static int key_2_action(int key, char ascii, int kstate)
 	}
 
 	wind_update(BEG_UPDATE);
-	switch(key)
+	switch (key)
 	{
 
 /* SPACE  */
@@ -229,9 +229,9 @@ int walk_sel(WINDOW *w, int (*cb)(WINDOW *w, int obj, void *par), void *par)
 	register OBJECT *tree = w->pobj;
 
 
-	if ((i = (tree -> ob_head)) <= 0)
+	if ((i = (tree->ob_head)) <= 0)
 		return 0;
-	tail = (tree++ -> ob_tail);
+	tail = (tree++->ob_tail);
 	ret = 0;
 	for	(; i <= tail; i++,tree++)
 	{
@@ -271,9 +271,9 @@ void tree_sel_grect(OBJECT *tree, GRECT *g)
 	mx = my = INT_MAX;		/* Ecke links oben */
 	mrx = mry = -INT_MAX;	/* Ecke rechts unten (aužerhalb) */
 
-	if ((i = (tree -> ob_head)) > 0)
+	if ((i = (tree->ob_head)) > 0)
 	{
-		tail = (tree++ -> ob_tail);
+		tail = (tree++->ob_tail);
 		for	(; i <= tail; i++,tree++)
 		{
 			if ((SELECTED&(tree->ob_state)) && !(HIDETREE&(tree->ob_flags)))
@@ -293,10 +293,10 @@ void tree_sel_grect(OBJECT *tree, GRECT *g)
 			}
 		}
 	}
-	g -> g_x = mx + ox;
-	g -> g_y = my + oy;
-	g -> g_w = mrx - mx;
-	g -> g_h = mry - my;
+	g->g_x = mx + ox;
+	g->g_y = my + oy;
+	g->g_w = mrx - mx;
+	g->g_h = mry - my;
 }
 
 
@@ -330,11 +330,11 @@ typedef struct
 static WORD	vqt_xfntinfo(WORD handle, WORD flags, WORD id, WORD index, XFNT_INFO *info)
 {
 	VDIPB pb;
-	WORD	contrl[12];
-	WORD	intin[16];
-	WORD	ptsin[16];
-	WORD	intout[16];
-	WORD	ptsout[16];
+	WORD contrl[12];
+	WORD intin[16];
+	WORD ptsin[16];
+	WORD intout[16];
+	WORD ptsout[16];
 
 	pb.contrl = contrl;
 	pb.intin = intin;
@@ -430,7 +430,7 @@ void set_char_dim(void)
 
 	/* Spaltenabstand fr Textmodus */
 	vqt_extent(vdi_handle, "M", out);
-	spaltenabstand = out[2] - out[0];
+	text_column_dist = out[2] - out[0];
 
 	if (char_h >= 24)
 	{
@@ -472,16 +472,15 @@ void set_char_dim(void)
 
 /****************************************************************
 *
-* Malt das Fenster <w> im Bereich
-* neu_x,neu_y,neu_b,neu_h  nach.
+* Malt das Fenster <w> im Bereich <new_g> nach.
 *
 ****************************************************************/
 
-void redraw(WINDOW *w, GRECT *neu)
+void redraw(const WINDOW *w, const GRECT *new_g)
 {
 	if (w->handle > 0 && !w->path[0])
 		return;						/* Fenster geschlossen */
-	objc_wdraw(w->pobj, 0, 1, neu, w->handle);
+	objc_wdraw(w->pobj, 0, 1, new_g, w->handle);
 }
 
 
@@ -517,9 +516,9 @@ int icsel(WINDOW **rw, int *objn)
 		if (!w->pobj)
 			continue;				/* auch unbenutzt */
 		tree = w->pobj;
-		if ((i = (tree -> ob_head)) > 0)
+		if ((i = (tree->ob_head)) > 0)
 		{
-			for	(; i <= (tree -> ob_tail); i++)
+			for	(; i <= (tree->ob_tail); i++)
 			{
 				if (!((tree+i)->ob_flags & HIDETREE) && selected(tree, i))
 				{
@@ -586,29 +585,14 @@ WINDOW *whdl2window(int whdl)
 
 int is_dest(WINDOW *w, int objnr)
 {
-	int obtyp,config;
+	int obtype,config;
 	MYDTA *dummy;
 
-	obj_typ(w, objnr, NULL, &dummy, &obtyp, &config, NULL);
-	return ((obtyp == '_X') || (obtyp == 'BX') ||
-	        (obtyp == 'DO') || (obtyp == '_O') ||
-	        (obtyp == 'P_') || (obtyp == 'D_'));
+	get_obj_type(w, objnr, NULL, &dummy, &obtype, &config, NULL);
+	return ((obtype == '_X') || (obtype == 'BX') ||
+	        (obtype == 'DO') || (obtype == '_O') ||
+	        (obtype == 'P_') || (obtype == 'D_'));
 }
-
-
-/****************************************************************
-*
-* Zeichnet den Ausschnitt x,y,b,h des Fensters
-* neu.
-*
-****************************************************************/
-
-/*
-void zeichne(WINDOW *w, int gx, int gy, int gw, int gh)
-{
-	objc_draw(w->pobj,0,1,gx,gy,gw,gh);
-}
-*/
 
 
 /****************************************************************
@@ -629,9 +613,9 @@ int cdecl draw_userdef(PARMBLK *p)
 	register int wnr;
 	register WINDOW **pw,*w;
 	register MYDTA *m;
-	int	isalias,isdir,isparentdir;
-	int	dummy;
-	int	pxy[4];
+	int isalias,isdir,isparentdir;
+	int dummy;
+	int pxy[4];
 	char buf[256];
 	static int last_cursive = FALSE;
 	int pos,offs;
@@ -659,8 +643,8 @@ int cdecl draw_userdef(PARMBLK *p)
 		clip_rect[3] = pxy[3];
 		vs_clip(vdi_handle, TRUE, pxy);
 	}
-	fname = m -> filename;
-	isdir = ((m -> attrib) & F_SUBDIR);
+	fname = m->filename;
+	isdir = ((m->attrib) & F_SUBDIR);
 	isparentdir = (isdir) && (!strcmp(fname, ".."));
 	isalias = (int) m->is_alias;
 	if (isalias != last_cursive)
@@ -725,7 +709,7 @@ int cdecl draw_userdef(PARMBLK *p)
 				*t++ = '.';
 				v_gtext(vdi_handle, pos, p->pb_y, t);
 			}
-			pos += spaltenabstand + w->xtab_typelen;
+			pos += text_column_dist + w->xtab_typelen;
 		}
 		else
 		{
@@ -734,7 +718,7 @@ int cdecl draw_userdef(PARMBLK *p)
 		}
 
 		if (isparentdir)
-			goto ende;		/* keine weitere Ausgabe */
+			goto end_ret;		/* keine weitere Ausgabe */
 
 		if (settings.is_groesse)
 		{
@@ -743,29 +727,29 @@ int cdecl draw_userdef(PARMBLK *p)
 			{
 				if (m->filesize > 9999999L)
 				{
-					ultoa((m -> filesize) >> 10L, buf, 10);
+					ultoa((m->filesize) >> 10L, buf, 10);
 					strcat(buf, "k");
 				}
 				else
-					ultoa(m -> filesize, buf, 10);
+					ultoa(m->filesize, buf, 10);
 				/* Ausrichtung rechts */
 				vst_alignment(vdi_handle, 2, 5, &dummy, &dummy);
 				v_gtext(vdi_handle, pos, p->pb_y, buf);
 				vst_alignment(vdi_handle, 0, 5, &dummy, &dummy);
 			}
-			pos += spaltenabstand;
+			pos += text_column_dist;
 		}
 
 		if (settings.is_datum)
 		{
 			date_to_str(buf, m->date);
 			v_gtext(vdi_handle, pos, p->pb_y, buf);
-			pos += spaltenabstand + w->xtab_datelen;
+			pos += text_column_dist + w->xtab_datelen;
 		}
 
 		if (settings.is_zeit)
 		{
-			time_to_str(buf, m -> time);
+			time_to_str(buf, m->time);
 			buf[5] = EOS;
 			v_gtext(vdi_handle, pos, p->pb_y, buf);
 		}
@@ -781,10 +765,10 @@ int cdecl draw_userdef(PARMBLK *p)
 
 		*s++ = ' ';
 
-		if ((m -> icontyp == ITYP_ORDNER) && (settings.fontID == 1))
+		if ((m->icon_type == ITYP_ORDNER) && (settings.fontID == 1))
 			*s++ = '\7';		/* Zeichen fr Ordner */
 		else
-		if (m->icontyp == ITYP_PROGRA)
+		if (m->icon_type == ITYP_PROGRA)
 			*s++ = '.';
 		else
 			*s++ = ' ';
@@ -795,12 +779,12 @@ int cdecl draw_userdef(PARMBLK *p)
 			if (*fname == '.' && fname[1] == EOS)
 				*s++ = *fname++;
 			else
-			while(*fname != '.' && *fname != EOS)
+			while (*fname != '.' && *fname != EOS)
 				*s++ = *fname++;
 			if (*fname == '.')
 				fname++;
 			t += 12;
-			while(s < t)
+			while (s < t)
 				*s++ = ' ';
 			t += 3;
 		}
@@ -813,9 +797,9 @@ int cdecl draw_userdef(PARMBLK *p)
 		if (isparentdir)
 			goto gtext;		/* keine weitere Ausgabe */
 
-		while(*fname)
+		while (*fname)
 			*s++ = *fname++;
-		while(s < t)
+		while (s < t)
 			*s++ = ' ';
 
 		if (settings.is_groesse)
@@ -828,37 +812,38 @@ int cdecl draw_userdef(PARMBLK *p)
 			{
 				if (m->filesize > 9999999L)
 				{
-					ultoa((m -> filesize) >> 10L, gr, 10);
+					ultoa((m->filesize) >> 10L, gr, 10);
 					strcat(gr, "k");
 				}
 				else
-					ultoa(m -> filesize, gr, 10);
+					ultoa(m->filesize, gr, 10);
 			}
 			for	(wnr = 8 - (int) strlen(gr); wnr > 0; wnr--)
 				*s++ = ' ';
 			g = gr;
-			while(*g)
+			while (*g)
 				*s++ = *g++;
 		}
 		if (settings.is_datum)
 		{
 			*s++ = ' ';
 			*s++ = ' ';
-			date_to_str(s, m -> date);
+			date_to_str(s, m->date);
 			s += 8;
 		}
 		if (settings.is_zeit)
 		{
 			*s++ = ' ';
 			*s++ = ' ';
-			time_to_str(s, m -> time);
+			time_to_str(s, m->time);
 			s += 5;
 		}
 		*s = EOS;
 	    gtext:
 		v_gtext(vdi_handle, pos, p->pb_y, buf+offs);
 	}
-    ende:
+
+    end_ret:
 	return p->pb_currstate;
 }
 
@@ -1172,8 +1157,8 @@ void get_rsc(void)
 /*
 	for	(i = I_FLPDSK; i <= I_BTCHDA; i++)
 	{
-		(adr_icons+i) -> ob_width  = 72;
-		(adr_icons+i) -> ob_height = 36;
+		tree_icons[i].ob_width  = 72;
+		tree_icons[i].ob_height = 36;
 	}
 */
 
@@ -1183,8 +1168,8 @@ void get_rsc(void)
 	/* Gruppenrahmen anpassen */
 	image = tree_about + ABOU_IMG;
 	image->ob_height = image->ob_spec.bitblk->bi_hl;
-	while((image->ob_y + image->ob_height > tree_about[ABOU_OS].ob_y) &&
-		 (image->ob_y > 0))
+	while ((image->ob_y + image->ob_height > tree_about[ABOU_OS].ob_y) &&
+		   (image->ob_y > 0))
 		image->ob_y--;
 
 	strcpy(tree_about[ABOU_VER].ob_spec.tedinfo->te_ptext + 11, pgm_ver);
@@ -1276,10 +1261,10 @@ static void pgm_init(void)
 	/* numplanes-abh„ngige Variablen */
 	/* ----------------------------- */
 
-	kachel_1 = kachel_4 = kachel_8 = kachel_m = NULL;
+	bg_tile_1 = bg_tile_4 = bg_tile_8 = bg_tile_m = NULL;
 	if (aes_global[10] < 4)	/* 2,4 oder 8 Farben */
 	{
-		kachel_path = (MENUPROGRAM **) (&kachel_1);
+		bg_tile_path = (MENUPROGRAM **) (&bg_tile_1);
 		desk_col = &(settings.desk_col_1);
 		desk_patt = &(settings.desk_patt_1);
 	}
@@ -1288,12 +1273,12 @@ static void pgm_init(void)
 		desk_col = &(settings.desk_col_4);
 		desk_patt = &(settings.desk_patt_4);
 		if (aes_global[10] < 8)	/* 16 Farben */
-			kachel_path = (MENUPROGRAM **) (&kachel_4);
+			bg_tile_path = (MENUPROGRAM **) (&bg_tile_4);
 		else
 		if (aes_global[10] == 8)	/* 256 Farben */
-			kachel_path = (MENUPROGRAM **) (&kachel_8);
+			bg_tile_path = (MENUPROGRAM **) (&bg_tile_8);
 		else
-			kachel_path = (MENUPROGRAM **) (&kachel_m);
+			bg_tile_path = (MENUPROGRAM **) (&bg_tile_m);
 	}
 	
 
@@ -1314,7 +1299,7 @@ static void pgm_init(void)
 			goto disk_found;
 	}
 
-	dial_laufwe();		/* Laufwerke anmelden */
+	dial_register_drv();		/* Laufwerke anmelden */
 	disk_found:
 
 	/* ggf. Disknamen initialisieren */
@@ -1355,8 +1340,8 @@ static void pgm_init(void)
 
 	if (dirty_applicat_dat)
 	{
-		starte_dienstpgm("APPLICAT.APP", FALSE, FALSE,
-						"-c", NULL, NULL );
+		start_util_program("APPLICAT.APP", FALSE, FALSE,
+						"-c", NULL, NULL);
 		dirty_applicat_dat = FALSE;
 	}
 }
@@ -1405,7 +1390,7 @@ static void handle_key(EVNT *w_ev)
 			wind_update(BEG_UPDATE);
 			dsel_all();
 			ob_sel(windows[0]->pobj, i + 1);	/* ??? */
-			obj_malen(windows[0], i + 1);
+			redraw_window_object(windows[0], i + 1);
 			dclick(windows[0], i + 1, 0);
 			wind_update(END_UPDATE);
 			return;	/* Taste verarbeitet */
@@ -1491,18 +1476,18 @@ static void handle_message(EVNT *w_ev)
 	}
 	else
 	{
-		switch(w_ev->msg[0])
+		switch (w_ev->msg[0])
 		{
 			case 'AK':
-				switch(w_ev->msg[3])
+				switch (w_ev->msg[3])
 				{
-				 case 0:
-					re_read_icons(*(char **)(w_ev->msg + 6));
-					break;
+					case 0:
+						re_read_icons(*(char **)(w_ev->msg + 6));
+						break;
 
-				 case 1:
-				 	settings.mode_ovwr = w_ev->msg[4];
-					break;
+					case 1:
+				 		settings.mode_ovwr = w_ev->msg[4];
+						break;
 				}
 				break;
 
@@ -1680,7 +1665,7 @@ static void handle_message(EVNT *w_ev)
 				WINDOW *w = whdl2window(w_ev->msg[3]);
 
 				if (w)
-					switch(w_ev->msg[0])
+					switch (w_ev->msg[0])
 					{
 						case WM_REDRAW:
 							redraw(w, (GRECT *) (w_ev->msg + 4));
@@ -1767,7 +1752,7 @@ void main()
 	EVNT w_ev;
 	int button_waitclicks;
 	int mbuttons;
-	int	waitfor, mbmask;
+	int waitfor, mbmask;
 	long last_clicktime = 0;
 	unsigned dclick_interval_hz200;		/* in 5-ms-Einheiten */
 

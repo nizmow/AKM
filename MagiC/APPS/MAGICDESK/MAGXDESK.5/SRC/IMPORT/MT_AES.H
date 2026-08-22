@@ -685,7 +685,7 @@ extern WORD MT_objc_xedit( OBJECT *tree, WORD objnr, WORD key, WORD *cursor_xpos
 extern WORD MT_objc_change( OBJECT *tree, WORD objnr, WORD resvd, GRECT *g, WORD newstate, WORD redraw, WORD *global );
 extern WORD MT_objc_sysvar( WORD mode, WORD which, WORD ival1, WORD ival2, WORD *oval1, WORD *oval2, WORD *global );	/* AES 4.0     */
 
-extern void MT_objc_wdraw( OBJECT *tree, WORD object, WORD depth, GRECT *clip,
+extern void MT_objc_wdraw( const OBJECT *tree, WORD object, WORD depth, const GRECT *clip,
 					WORD windowhandle, WORD *global );
 extern void MT_objc_wchange( OBJECT *tree, WORD object, WORD newstate,
 					GRECT *clip, WORD windowhandle,

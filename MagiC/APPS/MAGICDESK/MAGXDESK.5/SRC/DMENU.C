@@ -184,7 +184,7 @@ void do_menu(int title, int entry, int kbsh)
 				w->topped(w);
 		}
 
-		goto ende;
+		goto end_ret;
 	}
 
 	if ((entry >= M_PGM1) && (entry <= M_PGM10))
@@ -199,12 +199,12 @@ void do_menu(int title, int entry, int kbsh)
 			start_path(mp->path, NULL, 0);
 			return;
 		}
-		goto ende;
+		goto end_ret;
 	}
 
 	tw = top_window();
 
-	switch(entry)
+	switch (entry)
 	{
 		case M_ABOUT:
 			dial_about();
@@ -240,7 +240,7 @@ void do_menu(int title, int entry, int kbsh)
 			break;
 
 		case M_NEUORD:
-			dial_neuord();
+			dial_create_folder();
 			break;
 
 		case M_SEARCH:
@@ -290,9 +290,9 @@ void do_menu(int title, int entry, int kbsh)
 
 		case M_ABILDR:
 		case M_ATEXT:
-			if (settings.showtyp != entry)
+			if (settings.show_mode != entry)
 			{
-				settings.showtyp = entry;
+				settings.show_mode = entry;
 				upd_show();
 			}
 			break;
@@ -326,23 +326,43 @@ void do_menu(int title, int entry, int kbsh)
 		case M_SGROES:
 		case M_STYP:
 		case M_SNICHT:
-			if (settings.sorttyp != entry)
+			if (settings.sort_mode != entry)
 			{
-				settings.sorttyp = entry;
+				settings.sort_mode = entry;
 				upd_sort();
 			}
 			break;
 
-		case M_MASKE:  dial_maske();break;
-		case M_LAUFWE: dial_laufwe();break;
-		case M_ANWNDG: dial_anwndg();break;
-		case M_ICASGN: dial_assign_icon();break;
-		case M_EINSTE: dial_einste();break;
-		case M_CHGRES: dial_chgres();break;
-		case M_ARBSIC: dial_arbsic();break;
+		case M_MASKE:
+			dial_file_pattern();
+			break;
+
+		case M_LAUFWE:
+			dial_register_drv();
+			break;
+
+		case M_ANWNDG:
+			dial_register_app();
+			break;
+
+		case M_ICASGN:
+			dial_assign_icon();
+			break;
+
+		case M_EINSTE:
+			dial_settings();
+			break;
+
+		case M_CHGRES:
+			dial_chgres();
+			break;
+
+		case M_ARBSIC:
+			dial_save_settings();
+			break;
 	}
 
-	ende:
+	end_ret:
 	menu_tnormal(tree_menu, title, 1);
 }
 
@@ -354,13 +374,13 @@ void do_menu(int title, int entry, int kbsh)
 *
 ****************************************************************/
 
-void modify_menu( void )
+void modify_menu(void)
 {
 	static int last_top = -1;
-	static int last_sorttyp = -1;
-	static int last_showtyp = -1;
+	static int last_sort_mode = -1;
+	static int last_show_mode = -1;
 	static int last_info = -1;		/* Informationen/™ffnen */
-	static int last_loesch = -1;		/* l”schen */
+	static int last_del = -1;		/* l”schen */
 	static int last_search = -1;		/* suchen */
 	static int last_format = -1;
 	static int last_eject = -1;		/* Medium auswerfen */
@@ -370,17 +390,17 @@ void modify_menu( void )
 	static int last_isz = -1;
 	static int last_mytop = -1;
 	static int last_mytop0 = -1;
-	static int last_anw = -1;
+	static int last_asng_app = -1;
 	static int last_asgn_icon = -1;
 	int top;
-	int icn,info,loesch,eject,format,search,sicn,mytop,mytop0,
-		anw,typ,config,asgn_icon;
+	int icn,info,del,eject,format,search,sicn,mytop,mytop0,
+		asng_app,type,config,asgn_icon;
 	WINDOW *w,*topw;
 
 
 	if (dirty_win || dirty_pgm)
 	{
-		change_objs_menu( dirty_win, dirty_pgm );
+		change_objs_menu(dirty_win, dirty_pgm);
 		dirty_win = dirty_pgm = FALSE;
 	}
 
@@ -407,11 +427,11 @@ void modify_menu( void )
 	{
 		/* nix selektiert: suche im obersten Fenster */
 		search = ((!icn) && (top > 0));
-		format = anw = asgn_icon = FALSE;
+		format = asng_app = asgn_icon = FALSE;
 		if ((icn) && (!w->handle))	/* mehrere Objekte in Fenster 0 */
 		{
-			obj_typ(windows[0], sicn, NULL, NULL, &typ, &config, NULL);
-			if (icon[sicn-1].icontyp == ITYP_DISK)
+			get_obj_type(windows[0], sicn, NULL, NULL, &type, &config, NULL);
+			if (icon[sicn - 1].icon_type == ITYP_DISK)
 				search = TRUE;
 		}
 	}
@@ -421,24 +441,24 @@ void modify_menu( void )
 
 	else
 	{
-		search = (obj_typ(w, sicn, NULL, NULL, &typ, &config, NULL)) == 1;
+		search = (get_obj_type(w, sicn, NULL, NULL, &type, &config, NULL)) == 1;
 
 		/*
 		{
 			char s[100];
 		
 			strcpy(s, "\x1b" "Htyp = xx ");
-			s[8] = typ >> 8;
-			s[9] = typ;
+			s[8] = type >> 8;
+			s[9] = type;
 			Cconws(s);
 			Cnecin();
 		}
 		*/
 
-		format = (typ == 'DO');
+		format = (type == 'DO');
 		if (format)
 			eject = TRUE;
-		anw = (typ == '_X') || (typ == 'TX');
+		asng_app = (type == '_X') || (type == 'TX');
 		asgn_icon = TRUE;
 	}
 
@@ -454,11 +474,11 @@ void modify_menu( void )
 		last_mytop = mytop;
 	}
 
-	loesch = (mytop && icn != 0 && w == topw);
-	if (loesch != last_loesch)
+	del = (mytop && icn != 0 && w == topw);
+	if (del != last_del)
 	{
-		menu_ienable(tree_menu, M_LOESCH, loesch);
-		last_loesch = loesch;
+		menu_ienable(tree_menu, M_LOESCH, del);
+		last_del = del;
 	}
 
 	if (mytop0 != last_mytop0)
@@ -467,10 +487,10 @@ void modify_menu( void )
 		last_mytop0 = mytop0;
 	}
 
-	if (anw != last_anw)
+	if (asng_app != last_asng_app)
 	{
-		menu_ienable(tree_menu, M_ANWNDG, anw);
-		last_anw = anw;
+		menu_ienable(tree_menu, M_ANWNDG, asng_app);
+		last_asng_app = asng_app;
 	}
 
 	if (asgn_icon != last_asgn_icon)
@@ -528,31 +548,32 @@ void modify_menu( void )
 		last_isz = settings.is_zeit;
 	}
 
-	if (settings.sorttyp != last_sorttyp)
+	if (settings.sort_mode != last_sort_mode)
 	{
 		int t;
 
-		switch(settings.sorttyp)
+		switch (settings.sort_mode)
 		{
-			case M_SNAME:	t = STR_SRT_NAMES;	break;
-			case M_SDATUM: t = STR_SRT_DATE;	break;
-			case M_SGROES: t = STR_SRT_SIZE;	break;
-			case M_STYP:	t = STR_SRT_TYPE;	break;
-			case M_SNICHT: t = STR_SRT_UNSORTED;	break;
+			case M_SNAME:  t = STR_SRT_NAMES; break;
+			case M_SDATUM: t = STR_SRT_DATE; break;
+			case M_SGROES: t = STR_SRT_SIZE; break;
+			case M_STYP:   t = STR_SRT_TYPE; break;
+			case M_SNICHT: t = STR_SRT_UNSORTED; break;
 		}
+
 		subobj_draw(tree_menu, MM_SMODE, -1, Rgetstring(t));
-		if (last_sorttyp > 0)
-			menu_icheck(tree_menu, last_sorttyp, FALSE);
-		menu_icheck(tree_menu, settings.sorttyp, TRUE);
-		last_sorttyp = settings.sorttyp;
+		if (last_sort_mode > 0)
+			menu_icheck(tree_menu, last_sort_mode, FALSE);
+		menu_icheck(tree_menu, settings.sort_mode, TRUE);
+		last_sort_mode = settings.sort_mode;
 	}
 
-	if (settings.showtyp != last_showtyp)
+	if (settings.show_mode != last_show_mode)
 	{
-		if (last_showtyp > 0)
-			menu_icheck(tree_menu, last_showtyp, FALSE);
-		menu_icheck(tree_menu, settings.showtyp, TRUE);
-		last_showtyp = settings.showtyp;
+		if (last_show_mode > 0)
+			menu_icheck(tree_menu, last_show_mode, FALSE);
+		menu_icheck(tree_menu, settings.show_mode, TRUE);
+		last_show_mode = settings.show_mode;
 	}
 }
 

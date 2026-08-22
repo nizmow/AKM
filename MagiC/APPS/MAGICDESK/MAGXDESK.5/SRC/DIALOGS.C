@@ -125,8 +125,8 @@ int new_program(MENUPROGRAM *mp, char *type, int ispgm)
 {
 	char *s;
 	char c;
-	char	path[128];
-	char	fname[64+2];	/* ggf. lange Namen! */
+	char path[128];
+	char fname[64 + 2];	/* ggf. lange Namen! */
 	int ret;
 	char *title;
 
@@ -175,7 +175,7 @@ int new_program(MENUPROGRAM *mp, char *type, int ispgm)
 *
 ****************************************************************/
 
-void dial_arbsic(void)
+void dial_save_settings(void)
 {
 	if (1 == Rxform_alert(1, ALRT_SAVE_WORK, 0, inf_name))
 		save_status(TRUE);
@@ -203,12 +203,12 @@ void dial_about(void)
 *
 ****************************************************************/
 
-static int info_spec(int typ, int weiter)
+static int info_spec(int type, int further)
 {
 	int id;
 
 
-	switch(typ)
+	switch (type)
 	{
 		case 'P_':
 			id = ALRT_TRASH_INFO;
@@ -222,7 +222,7 @@ static int info_spec(int typ, int weiter)
 	}
 
 	if (2 == Rxform_alert(1, id, 0,
-				(weiter) ? Rgetstring(STR_STOP) : ""))
+				(further) ? Rgetstring(STR_STOP) : ""))
 		return -1;
 	return 0;
 }
@@ -230,43 +230,42 @@ static int info_spec(int typ, int weiter)
 
 /*
 *
-* is_weiter ist ein Zeiger auf int und zeigt auf
+* is_further ist ein Zeiger auf int und zeigt auf
 * die Anzahl der selektierten Objekte. dial_info()
 * dekrementiert diese Zahl bei jedem Aufruf und
 * weiû daher, wann das letzte Objekt kommt.
 *
 */
 
-int dial_info(WINDOW *w, int obj, void *is_weiter)
+int dial_info(WINDOW *w, int obj, void *is_further)
 {
-	int typ, ret, config, mal;
+	int type, ret, config, mal;
 	char path[256 + 2];
 	int drv;
 	long err;
 	MYDTA *file;
 	XATTR xa;
 	OBJECT *o;
-	int weiter, number;
+	int further, number;
 	static int hinum;	/* Gesamtanzahl Infos */
 	extern CICONBLK *std_dat_icon;
 	int isfolder, isdrive, isdeskalias;
 
 
-
 	mal = FALSE;
 
-	if ((*((int *) is_weiter)) > hinum)
+	if ((*((int *) is_further)) > hinum)
 	{
-		hinum = (*((int *) is_weiter));
+		hinum = (*((int *) is_further));
 	}
 
-	(*((int *) is_weiter))--;
-	weiter = *((int *) is_weiter);
-	number = hinum - weiter - 1;
-	if (!weiter)
+	(*((int *) is_further))--;
+	further = *((int *) is_further);
+	number = hinum - further - 1;
+	if (!further)
 		hinum = 0;
 
-	ret = obj_typ(w, obj, path, &file, &typ, &config, NULL);
+	ret = get_obj_type(w, obj, path, &file, &type, &config, NULL);
 
 	/* ret: 0 = Datei, 1 = Pfad, -1 = sonstiges */
 	/* tatsÑchliches Laufwerk bestimmen fÅr korrektes set_dirty */
@@ -277,13 +276,13 @@ int dial_info(WINDOW *w, int obj, void *is_weiter)
 
 	if (ret == -1)
 	{
-		return info_spec(typ, weiter);
+		return info_spec(type, further);
 	}
 
 	if (ret)
 	{
 		isfolder = TRUE;
-		if (typ == 'DO')
+		if (type == 'DO')
 			isdrive = TRUE;
 		else
 			isdrive = FALSE;
@@ -299,7 +298,7 @@ int dial_info(WINDOW *w, int obj, void *is_weiter)
 	/* --------------------------------- */
 
 	if ((file == NULL) && !isdrive &&
-				((typ & 0xff) == 'O' || (ret == 0)))
+				((type & 0xff) == 'O' || (ret == 0)))
 	{
 		file = Malloc(sizeof(MYDTA) + strlen(path) + 2);
 		if (!file)
@@ -355,7 +354,7 @@ int dial_info(WINDOW *w, int obj, void *is_weiter)
 	}
 
 	ret = info_file(path, drv, file, isfolder, isdrive,
-					isdeskalias, weiter, number);
+					isdeskalias, further, number);
 	if (mal)
 		Mfree(file);
 
@@ -369,11 +368,11 @@ int dial_info(WINDOW *w, int obj, void *is_weiter)
 *
 ****************************************************************/
 
-void dial_maske(void)
+void dial_file_pattern(void)
 {
-	OBJECT *adr_maske;
-	char	oldmask[20];
-	register char *quel,*ziel;
+	OBJECT *tree_file_pattern;
+	char oldmask[20];
+	register char *src_pat, *dst_pat;
 	int ret;
 	WINDOW *w;
 
@@ -381,21 +380,21 @@ void dial_maske(void)
 	w = top_window();
 	if (!w)
 		return;
-	rsrc_gaddr(0, T_MASKE, &adr_maske);
-	ziel = ((adr_maske+MASKE_TX)->ob_spec.tedinfo)->te_ptext;
-	quel = w->maske;
-	strcpy(ziel, quel);
-	ret = do_dialog(adr_maske);
+	rsrc_gaddr(0, T_MASKE, &tree_file_pattern);
+	dst_pat = tree_file_pattern[MASKE_TX].ob_spec.tedinfo->te_ptext;
+	src_pat = w->maske;
+	strcpy(dst_pat, src_pat);
+	ret = do_dialog(tree_file_pattern);
 	if (ret != MASKE_OK && ret != MASKE_AL)
 		return;
 
-	strcpy(oldmask, quel);
+	strcpy(oldmask, src_pat);
 	if (ret == MASKE_AL)
-		strcpy(quel, "*");
+		strcpy(src_pat, "*");
 	else
-		strcpy(quel, ziel);
+		strcpy(src_pat, dst_pat);
 
-	if (strcmp(oldmask, quel))
+	if (strcmp(oldmask, src_pat))
 		upd_mask(w);
 }
 
@@ -406,13 +405,13 @@ void dial_maske(void)
 *
 ****************************************************************/
 
-void dial_neuord(void)
+void dial_create_folder(void)
 {
 	char all[258];
 	char txt[65];
 	char *name;
 	XTED xted;
-	OBJECT *adr_neuord;
+	OBJECT *tree_create_folder;
 	WINDOW *w;
 	int   ret;
 	long  doserr;
@@ -424,12 +423,12 @@ void dial_neuord(void)
 		return;
 
 	strcpy(all, w->path);
-	rsrc_gaddr(0, T_NEUORD, &adr_neuord);
-	if (init_xted(adr_neuord+NEUORD_T, all, &xted, txt,
+	rsrc_gaddr(0, T_NEUORD, &tree_create_folder);
+	if (init_xted(tree_create_folder + NEUORD_T, all, &xted, txt,
 				"", &is_8_3, 25))
 		return;
 
-	ret = do_dialog(adr_neuord);
+	ret = do_dialog(tree_create_folder);
 	if (ret != NEORD_OK || !txt[0])
 		return;
 
@@ -467,7 +466,7 @@ void dial_deskfmt(int is_fmt)
 {
 	char *arg1,*arg2,*arg3;
 	char tail[128];
-	register char	*pgm;
+	register char *pgm;
 	int config;
 	WINDOW *w;
 
@@ -475,7 +474,7 @@ void dial_deskfmt(int is_fmt)
 	if (is_fmt)
 	{
 		char path2[128];
-		int ret,obj,typ;
+		int ret,obj,type;
 
 
 		/* Feststellen, welches Laufwerk formatiert werden soll */
@@ -484,8 +483,8 @@ void dial_deskfmt(int is_fmt)
 		if (1 != icsel(&w, &obj))
 			return;
 
-		ret = obj_typ(w, obj, path2, NULL, &typ, &config, NULL);
-		if ((ret != 1) || (typ != 'DO'))	/* nur, wenn Disk- Icon */
+		ret = get_obj_type(w, obj, path2, NULL, &type, &config, NULL);
+		if ((ret != 1) || (type != 'DO'))	/* nur, wenn Disk- Icon */
 			return;
 
 		if (path2[0] <= 'B')
@@ -521,7 +520,7 @@ void dial_deskfmt(int is_fmt)
 		start_path(pgm, tail+1, 0);
 	}
 	else
-		starte_dienstpgm("MGFORMAT.PRG", FALSE, FALSE,
+		start_util_program("MGFORMAT.PRG", FALSE, FALSE,
 				arg1, arg2, arg3);
 }
 
@@ -550,7 +549,7 @@ void dial_search(void)
 	register int i;
 	register OBJECT *tree;
 	char c;
-	int	icn,sicn;
+	int icn,sicn;
 	WINDOW *w;
 
 
@@ -574,13 +573,13 @@ void dial_search(void)
 		tree = windows[0]->pobj;
 		*s++ = 'D';
 		*s = EOS;
-		if ((i = (tree -> ob_head)) > 0)
+		if ((i = (tree->ob_head)) > 0)
 		{
-			for	(; i <= (tree -> ob_tail); i++)
+			for	(; i <= (tree->ob_tail); i++)
 			{
-				if (!((tree+i)->ob_flags & HIDETREE) && selected(tree, i))
+				if (!(tree[i].ob_flags & HIDETREE) && selected(tree, i))
 				{
-					c = icon[i-1].isdisk;
+					c = icon[i - 1].isdisk;
 					if (c)
 						*s++ = c;
 				}
@@ -595,7 +594,7 @@ void dial_search(void)
 			return;	/* kein Ordner */
 	}
 
-	starte_dienstpgm("MGSEARCH.APP", TRUE, FALSE,
+	start_util_program("MGSEARCH.APP", TRUE, FALSE,
 					arg, NULL, NULL);
 }
 
@@ -606,7 +605,7 @@ void dial_search(void)
 *
 ****************************************************************/
 
-void dial_laufwe(void)
+void dial_register_drv(void)
 {
 	register int i;
 	register ICON *ic;
@@ -629,13 +628,13 @@ void dial_laufwe(void)
 	is_trash = is_prnt = FALSE;
 	for	(ic = icon, i=0; i < n_deskicons; i++, ic++)
 	{
-		if (ic->icontyp == ITYP_DRUCKR)
+		if (ic->icon_type == ITYP_DRUCKR)
 			is_prnt = TRUE;
 		else
-		if (ic->icontyp == ITYP_PAPIER)
+		if (ic->icon_type == ITYP_PAPIER)
 			is_trash = TRUE;
 		else
-		if (ic->icontyp == ITYP_DISK)
+		if (ic->icon_type == ITYP_DISK)
 		{
 			dev = ic->isdisk - 'A';
 			drvs &= ~(1L << dev);	/* entspr. Bit lîschen */
@@ -683,24 +682,24 @@ void dial_laufwe(void)
 *
 ****************************************************************/
 
-void dial_anwndg(void)
+void dial_register_app(void)
 {
 	char *arg1,*arg2,*arg3;
 	char path[256+2];
-	int obj,typ,config;
+	int obj,type,config;
 	APPLICATION *a;
 	WINDOW *w;
 
 
 	if (1 != icsel(&w, &obj))
 		return;
-	if (obj_typ(w, obj, path, NULL, &typ, &config, &a))
+	if (get_obj_type(w, obj, path, NULL, &type, &config, &a))
 		return;	/* nur Datei zulassen */
 
 	arg1 = "-a?";
 	arg2 = arg3 = NULL;
 
-	switch(typ)
+	switch (type)
 	{
 		case '_X':
 			arg1[2] = 'a';
@@ -722,7 +721,7 @@ void dial_anwndg(void)
 		 	return;	/* ??? */	
 	}
 
-	starte_dienstpgm("APPLICAT.APP", FALSE, FALSE,
+	start_util_program("APPLICAT.APP", FALSE, FALSE,
 						arg1, arg2, arg3 );
 }
 
@@ -748,7 +747,7 @@ void dial_assign_icon(void)
 {
 	char *arg1,*arg2,*arg3;
 	char path[256+2];
-	int obj,typ,config;
+	int obj,type,config;
 	APPLICATION *a;
 	PATHNAME *p;
 	DATAFILE *d;
@@ -758,11 +757,11 @@ void dial_assign_icon(void)
 	arg2 = arg3 = NULL;
 	if (1 == icsel(&w, &obj))
 	{
-		obj_typ(w, obj, path, NULL, &typ, &config, &a);
+		get_obj_type(w, obj, path, NULL, &type, &config, &a);
 
 		arg1 = "-i?";
 
-		switch(typ)
+		switch (type)
 		{
 		 case 'DO':
 		 case '_O':	arg1[2] = 'o';
@@ -809,7 +808,7 @@ void dial_assign_icon(void)
 		}
 	}
 
-	starte_dienstpgm("APPLICAT.APP", FALSE, FALSE,
+	start_util_program("APPLICAT.APP", FALSE, FALSE,
 					arg1, arg2, arg3);
 }
 
@@ -820,14 +819,20 @@ void dial_assign_icon(void)
 *
 ****************************************************************/
 
-static int specpgms[] = {EIN_CMD, EIN_SHOW, EIN_PRNT, EIN_EDIT,
-					EIN_KACH};
-
-static MENUPROGRAM *newkach;
-
-static int chk_einste(OBJECT *tree, int exitbutton)
+static const int specpgms[] =
 {
-	int kats[] = {EIN_GRP1, EIN_GRP2, EIN_GRP3, EIN_GRP4, EIN_GRP5};
+	EIN_CMD, EIN_SHOW, EIN_PRNT, EIN_EDIT,
+	EIN_KACH
+};
+
+static MENUPROGRAM *new_bg_tile;
+
+static int chk_settings(OBJECT *tree, int exitbutton)
+{
+	static const int kats[] =
+	{
+		EIN_GRP1, EIN_GRP2, EIN_GRP3, EIN_GRP4, EIN_GRP5
+	};
 	TEDINFO *ted;
 	register int kat,off;
 	MENUPROGRAM *pgm;
@@ -845,7 +850,7 @@ static int chk_einste(OBJECT *tree, int exitbutton)
 			}
 			else
 			{
-				pgm = newkach;
+				pgm = new_bg_tile;
 				off = new_program(pgm, "*.img", FALSE);
 			}
 			if (!off)
@@ -958,7 +963,7 @@ static int chk_einste(OBJECT *tree, int exitbutton)
 }
 
 
-void dial_einste(void)
+void dial_settings(void)
 {
 	int ret;
 	int dummy;
@@ -967,21 +972,21 @@ void dial_einste(void)
 	char *p;
 	char newpat,newcol;
 	char new_hdst,new_vdst;
-	MENUPROGRAM _newkach;
-	int	upd_w = FALSE;
-	int	upd_0 = FALSE;
+	MENUPROGRAM _new_bg_tile;
+	int upd_w = FALSE;
+	int upd_0 = FALSE;
 	int oldex;
 
 
-	newkach = &_newkach;
-	if (!(*kachel_path))
+	new_bg_tile = &_new_bg_tile;
+	if (!(*bg_tile_path))
 	{
-		newkach->path[0] = EOS;
+		new_bg_tile->path[0] = EOS;
 		oldex = FALSE;
 	}
 	else
 	{
-		strcpy(newkach->path, (*kachel_path)->path);
+		strcpy(new_bg_tile->path, (*bg_tile_path)->path);
 		oldex = TRUE;
 	}
 
@@ -989,7 +994,7 @@ void dial_einste(void)
 	{
 		ted = tree_settings[specpgms[ret]].ob_spec.tedinfo;
 		ted->te_ptext = txt[ret];
-		p = (ret < 4) ? menuprograms[ret].path : newkach->path;
+		p = (ret < 4) ? menuprograms[ret].path : new_bg_tile->path;
 		abbrev_path(ted->te_ptext, p, ted->te_tmplen-1 );
 	}
 
@@ -1025,18 +1030,17 @@ void dial_einste(void)
 	tree_settings[EIN_COL].ob_spec.obspec.interiorcol = *desk_col;
 	tree_settings[EIN_PAT].ob_spec.obspec.fillpattern = *desk_patt;
 
-	ret = do_exdialog(tree_settings, chk_einste, NULL);
+	ret = do_exdialog(tree_settings, chk_settings, NULL);
 
 	if (ret == EINST_LD)
 	{
-		char	path[256+2];
-		char	fname[64+2];	/* ggf. lange Namen! */
+		char path[256 + 2];
+		char fname[64 + 2];	/* ggf. lange Namen! */
 		int ret;
 
-		strcpy(fname, inf_name+3);
+		strcpy(fname, inf_name + 3);
 		strcpy(path, inf_name);
-		if (!fsel_exinput(path, fname, &ret,
-						Rgetstring(STR_READ_INF)))
+		if (!fsel_exinput(path, fname, &ret, Rgetstring(STR_READ_INF)))
 		return;		/* Fehler */
 		if (!ret)
 			return;	/* Abbruch */
@@ -1054,11 +1058,11 @@ void dial_einste(void)
 		{
 			settings.h_icon_dist = new_hdst;
 			settings.v_icon_dist = new_vdst;
-			if (settings.showtyp == M_ABILDR)
+			if (settings.show_mode == M_ABILDR)
 				upd_w = TRUE;
 		}
 		if (settings.show_8p3 != selected(tree_settings, EIN_8PL3) &&
-			(settings.showtyp == M_ATEXT))
+			(settings.show_mode == M_ATEXT))
 			upd_w = TRUE;
 
 		settings.desk_raster = tree_settings[EIN_RAS].ob_spec.obspec.character - '0';
@@ -1066,18 +1070,18 @@ void dial_einste(void)
 		newpat = tree_settings[EIN_PAT].ob_spec.obspec.fillpattern;
 
 
-		if (oldex && strcmp(_newkach.path, (*kachel_path)->path) ||
-			 !oldex && _newkach.path[0])
+		if (oldex && strcmp(_new_bg_tile.path, (*bg_tile_path)->path) ||
+			 !oldex && _new_bg_tile.path[0])
 		{
 			if (oldex)				/* alte freigeben */
 			{
-				Mfree(*kachel_path);
-				*kachel_path = NULL;
+				Mfree(*bg_tile_path);
+				*bg_tile_path = NULL;
 			}
-			if (_newkach.path[0])		/* neue allozieren */
+			if (_new_bg_tile.path[0])		/* neue allozieren */
 			{
-				*kachel_path = Malloc(strlen(_newkach.path)+1);
-				strcpy((*kachel_path)->path, newkach->path);
+				*bg_tile_path = Malloc(strlen(_new_bg_tile.path) + 1);
+				strcpy((*bg_tile_path)->path, new_bg_tile->path);
 			}
 			set_desktop();
 			upd_0 = TRUE;
@@ -1141,29 +1145,29 @@ void dial_einste(void)
 
 int dial_ttppar(char *pgm, char *par)
 {
-	register char *ziel1,*ziel2;
+	register char *dest_1,*dest_2;
 
 
-	ziel1 = (tree_ttppar+TTPPAR_T)->ob_spec.free_string;
-	strcpy(ziel1, get_name(pgm));
+	dest_1 = (tree_ttppar+TTPPAR_T)->ob_spec.free_string;
+	strcpy(dest_1, get_name(pgm));
 
-	ziel1 = tree_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext;
-	ziel2 = tree_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext;
+	dest_1 = tree_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext;
+	dest_2 = tree_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext;
 	if (*par)
 	{
-		strncpy(ziel1, par, TTPLEN);
+		strncpy(dest_1, par, TTPLEN);
 		if (strlen(par) >= TTPLEN)
 		{
-			ziel1[TTPLEN] = EOS;
-			strcpy(ziel2, par + TTPLEN);
+			dest_1[TTPLEN] = EOS;
+			strcpy(dest_2, par + TTPLEN);
 		}
 	}
 
 	if 	(TTPPA_OK != do_dialog(tree_ttppar))
 		return 0;
 
-	strcpy(par, ziel1);
-	strcat(par, ziel2);
+	strcpy(par, dest_1);
+	strcat(par, dest_2);
 	return 1;
 }
 
@@ -1207,13 +1211,13 @@ int dial_ttppar(char *pgm, char *par)
 #define	FNTS_OPT    5		/* der applikationseigene Button wurde ausgewÑhlt */
 
 
-#define	FONT_FLAGS	( FNTS_BTMP + FNTS_OUTL + FNTS_MONO + FNTS_PROP )
-#define	BUTTON_FLAGS ( FNTS_SNAME + FNTS_SSTYLE + FNTS_SSIZE )
+#define	FONT_FLAGS	(FNTS_BTMP + FNTS_OUTL + FNTS_MONO + FNTS_PROP)
+#define	BUTTON_FLAGS (FNTS_SNAME + FNTS_SSTYLE + FNTS_SSIZE)
 
 void dial_fontsel(void)
 {
 	int work_out[57],work_in [12];	 /* VDI- Felder fÅr v_opnvwk() */
-	int	handle;
+	int handle;
 	register int i;
 	void	*fnt_dialog;
 	int button,check_boxes;
@@ -1262,7 +1266,7 @@ void dial_fontsel(void)
 		upd_is();
 	}
 
-	fnts_delete( fnt_dialog, handle );
+	fnts_delete(fnt_dialog, handle);
 	v_clsvwk(handle);
 }
 
@@ -1273,7 +1277,7 @@ void dial_fontsel(void)
 *
 ****************************************************************/
 
-void dial_chgres( void )
+void dial_chgres(void)
 {
 	shutdown(0,0);
 }

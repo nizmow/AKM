@@ -25,13 +25,13 @@ typedef struct _ifd
 	int isdrive;		/* Diese Instanz wird fÅr einen "Drive Info" verwendet. */
 	int isdeskalias;	/* Desktop-Icon (Datei oder Ordner) */
 	MYDTA f;			/* alle Infos Åber die Datei */
-	char altname[65];	/* alter Dateiname */
-	char neuname[65];	/* neuer Dateiname */
+	char old_name[65];	/* alter Dateiname */
+	char new_name[65];	/* neuer Dateiname */
 	XTED fname_xted;	/* FÅr den Dateinamen */
 	TEDINFO fname_ted;
 
-	char altalias[ALIAS_MAXLEN + 1];
-	char neualias[ALIAS_MAXLEN + 1];
+	char old_alias[ALIAS_MAXLEN + 1];
+	char new_alias[ALIAS_MAXLEN + 1];
 	XTED alias_xted;
 	TEDINFO alias_ted;
 
@@ -50,7 +50,7 @@ typedef struct _ifd
 static INFO_FILE_DATA *info_file_dialogs;
 static int n_info_file_dialogs;
 
-static int _info_file(INFO_FILE_DATA *ifd, int weiter);
+static int _info_file(INFO_FILE_DATA *ifd, int further);
 static WORD cdecl hdl_info_file(
 				DIALOG *d, EVNT *events,
 				WORD exitbutton, WORD clicks,
@@ -107,7 +107,7 @@ void do_info_file_dialogs(EVNT *w_ev)
 /****************************************************************
 *
 * Informationen zu einer Datei anzeigen.
-* <weiter> zeigt, ob danach noch weitere Dateien angezeigt
+* <further> zeigt, ob danach noch weitere Dateien angezeigt
 * werden. Genau: Die Anzahl der Dateien, die noch folgt.
 * <number> ist die Nummer (0, 1, ...).
 * <drv> ist das tatsÑchliche Laufwerk.
@@ -117,7 +117,7 @@ void do_info_file_dialogs(EVNT *w_ev)
 
 int info_file(char *path, int drv, MYDTA *f,
 			int isfolder, int isdrive, int isdeskalias,
-			int weiter, int number)
+			int further, int number)
 {
 	INFO_FILE_DATA *ifd;	/* das Objekt, das die gesamte Dialog-Instanz enthÑlt */
 	int ret;
@@ -189,11 +189,11 @@ int info_file(char *path, int drv, MYDTA *f,
 	if (f)
 	{
 		ifd->f = *f;
-		strcpy(ifd->altname, f->filename);
+		strcpy(ifd->old_name, f->filename);
 	}
 	else
 	{
-		ifd->altname[0] = EOS;
+		ifd->old_name[0] = EOS;
 	}
 
 	ifd->drv = drv;
@@ -219,7 +219,7 @@ if (n_info_file_dialogs > 4)
 	if (!ifd->dialog)
 	{
 		fixed_dialog:
-		ret = _info_file(ifd, weiter);
+		ret = _info_file(ifd, further);
 		Mfree(ifd);
 		return ret;
 	}
@@ -364,7 +364,7 @@ static void cati(char *s, int i)
 	ultoa(i, s, 10);
 }
 
-static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
+static int init_info_file_tree(INFO_FILE_DATA *ifd, int further)
 {
 	long err;
 	OBJECT *o;
@@ -398,7 +398,7 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 
 
 		ifd->cic = *diskname_to_iconblk(ifd->path[0], NULL);
-		err = Dreadlabel(ifd->path, ifd->altname, 65);
+		err = Dreadlabel(ifd->path, ifd->old_name, 65);
 		if ((err != E_OK) && (err != EFILNF) && (err != ENMFIL))
 		{
 			 fehler:
@@ -454,7 +454,7 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 				goto fehler;
 			}
 
-			flp_info = ifd->altalias;
+			flp_info = ifd->old_alias;
 			(tree+DI_FLOP)->ob_spec.free_string = flp_info;
 			flp_info[0] = EOS;
 			cati(flp_info, nsides);
@@ -494,8 +494,8 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 	}
 
 	if (init_xted(tree + FI_FILENAME, ifd->path, &ifd->fname_xted,
-				ifd->neuname,
-				ifd->altname,
+				ifd->new_name,
+				ifd->old_name,
 				&ifd->is_8_3, 22))
 	{
 		return -1;
@@ -516,7 +516,7 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 	o->ob_height = ifd->cic.monoblk.ib_hicon;
 	o->ob_x = tree->ob_width - o->ob_width - 2*gl_hwchar;
 
-	if (weiter)
+	if (further)
 		tree[FI_CONT].ob_flags &= ~HIDETREE;
 	else
 		tree[FI_CONT].ob_flags |= HIDETREE;
@@ -535,23 +535,23 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int weiter)
 		{
 			objs_uneditable(tree, FI_FILENAME, FI_ALIAS, 0);
 			objs_disable(tree, FI_FILENAME, FI_ALIAS, 0);
-			strcpy(ifd->altalias, ifd->path);
+			strcpy(ifd->old_alias, ifd->path);
 		}
 		else
 		{
-			err = Freadlink(256, ifd->altalias, ifd->path);
+			err = Freadlink(256, ifd->old_alias, ifd->path);
 			if (err)
-				*(ifd->altalias) = EOS;
+				*(ifd->old_alias) = EOS;
 		}
 
 /*		objs_editable(tree, FI_ALIAS, 0);			*/
 /*		objs_unhide(tree, FI_ISALI, FI_ALIAS, 0);	*/
 
-		strcpy(ifd->neualias, ifd->altalias);
+		strcpy(ifd->new_alias, ifd->old_alias);
 		t = (tree + FI_ALIAS)->ob_spec.tedinfo;
 		xted = &ifd->alias_xted;
 
-		t->te_ptext = ifd->neualias;
+		t->te_ptext = ifd->new_alias;
 		t->te_tmplen = t->te_txtlen = ALIAS_MAXLEN + 1;
 		xted->xte_pvalid = "m";
 		xted->xte_scroll = 0;
@@ -643,22 +643,22 @@ static long exit_info_file_tree(INFO_FILE_DATA *ifd)
 {
 	long err;
 	DOSTIME dostime;
-	unsigned char neuattr;
+	unsigned char new_attr;
 
 
 	if (ifd->is_8_3)
 	{
 		char s[20];
-		fname_ext(ifd->neuname, s);
-		strcpy(ifd->neuname,s);
+		fname_ext(ifd->new_name, s);
+		strcpy(ifd->new_name,s);
 	}
 
 	if (!ifd->isfolder)
 	{
-		neuattr  = selected(ifd->tree, FI_RDONL) * F_RDONLY;
-		neuattr += selected(ifd->tree, FI_SYSTE) * F_SYSTEM;
-		neuattr += selected(ifd->tree, FI_HIDDE) * F_HIDDEN;
-		neuattr += selected(ifd->tree, FI_ARCHI) * F_ARCHIVE;
+		new_attr  = selected(ifd->tree, FI_RDONL) * F_RDONLY;
+		new_attr += selected(ifd->tree, FI_SYSTE) * F_SYSTEM;
+		new_attr += selected(ifd->tree, FI_HIDDE) * F_HIDDEN;
+		new_attr += selected(ifd->tree, FI_ARCHI) * F_ARCHIVE;
 	}
 	
 	Mgraf_mouse(HOURGLASS);
@@ -686,9 +686,9 @@ static long exit_info_file_tree(INFO_FILE_DATA *ifd)
 	/* Attribute Ñndern */
 	/* ---------------- */
 
-	if ((!ifd->isfolder) && err >= E_OK && neuattr != ifd->f.attrib)
+	if ((!ifd->isfolder) && err >= E_OK && new_attr != ifd->f.attrib)
 	{
-		err = Fattrib(ifd->path, TRUE, (int) neuattr);
+		err = Fattrib(ifd->path, TRUE, (int) new_attr);
 		set_dirty(err, ifd->path, ifd->drv, 2);
 	}
 
@@ -696,11 +696,11 @@ static long exit_info_file_tree(INFO_FILE_DATA *ifd)
 	/* ------------ */
 
 	if (err >= E_OK && (ifd->f.is_alias) && !(ifd->isdeskalias) &&
-				strcmp(ifd->neualias, ifd->altalias))
+				strcmp(ifd->new_alias, ifd->old_alias))
 	{
 		err = Fdelete(ifd->path);
 		if (!err)
-			err = Fsymlink(ifd->neualias, ifd->path);
+			err = Fsymlink(ifd->new_alias, ifd->path);
 		set_dirty(err, ifd->path, ifd->drv, 2);
 	}
 
@@ -708,16 +708,16 @@ static long exit_info_file_tree(INFO_FILE_DATA *ifd)
 	/* -------------------- */
 
 	if ((err >= E_OK) && (ifd->isdrive) &&
-		 (strcmp(ifd->neuname, ifd->altname)))
+		 (strcmp(ifd->new_name, ifd->old_name)))
 	{
-		err = Dwritelabel(ifd->path, ifd->neuname);
+		err = Dwritelabel(ifd->path, ifd->new_name);
 		if (!err)
 		{
-			err = Dreadlabel(ifd->path, ifd->neuname, 65);
+			err = Dreadlabel(ifd->path, ifd->new_name, 65);
 			if (err == EFILNF)
 				err = E_OK;
 			if (!err)
-				set_dname(ifd->drv, ifd->neuname);
+				set_dname(ifd->drv, ifd->new_name);
 		}
 	}
 
@@ -725,12 +725,12 @@ static long exit_info_file_tree(INFO_FILE_DATA *ifd)
 	/* ----------------- */
 
 	if ((err >= E_OK) && !(ifd->isdrive) &&
-		 (strcmp(ifd->neuname, ifd->f.filename)))
+		 (strcmp(ifd->new_name, ifd->f.filename)))
 	{
 		char flag;
-		char	neupath[256+2];
+		char new_path[256 + 2];
 
-		flag = ((!ifd->isfolder) && (neuattr & F_RDONLY) &&
+		flag = ((!ifd->isfolder) && (new_attr & F_RDONLY) &&
 				!(ifd->f.attrib & F_RDONLY));
 		if (flag)
 		{
@@ -739,12 +739,12 @@ static long exit_info_file_tree(INFO_FILE_DATA *ifd)
 				goto atterr;
 		}
 
-		strcpy(neupath, ifd->path);
-		*(get_name(neupath)) = EOS;
-		strcat(neupath, ifd->neuname);
-		err = Frename(0, ifd->path, neupath);
+		strcpy(new_path, ifd->path);
+		*(get_name(new_path)) = EOS;
+		strcat(new_path, ifd->new_name);
+		err = Frename(0, ifd->path, new_path);
 		if (flag && !err)
-			err = Fattrib(neupath, TRUE, (int) neuattr);
+			err = Fattrib(new_path, TRUE, (int) new_attr);
 
 		atterr:
 		set_dirty(err, ifd->path, ifd->drv, 2);
@@ -768,17 +768,17 @@ static long exit_info_file_tree(INFO_FILE_DATA *ifd)
 /****************************************************************
 *
 * Informationen zu einer Datei anzeigen. Dialog.
-* <weiter> zeigt, ob danach noch weitere Dateien angezeigt
+* <further> zeigt, ob danach noch weitere Dateien angezeigt
 * werden.
 *
 ****************************************************************/
 
-static int _info_file(INFO_FILE_DATA *ifd, int weiter)
+static int _info_file(INFO_FILE_DATA *ifd, int further)
 {
 	int ret;
 
 
-	if (init_info_file_tree(ifd, weiter))
+	if (init_info_file_tree(ifd, further))
 		return 0;
 
 	objs_hide(ifd->tree, FI_SIZER, 0);
@@ -900,10 +900,10 @@ static WORD cdecl hdl_info_file(DIALOG *d, EVNT *events,
 			char *name;
 			char c;
 
-			name = get_name(ifd->altalias);
+			name = get_name(ifd->old_alias);
 			c = *name;
 			*name = EOS;
-			strcpy(path, ifd->altalias);
+			strcpy(path, ifd->old_alias);
 			*name = c;
 			open_window(path,					/* path */
 					  "*",					/* mask */

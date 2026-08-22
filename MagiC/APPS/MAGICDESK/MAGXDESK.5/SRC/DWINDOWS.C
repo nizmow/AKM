@@ -16,20 +16,20 @@
 static char *str_free;
 static char *str_full;
 
-static char dirty[NUM_WINDOWS+1];
+static char dirty[NUM_WINDOWS + 1];
 
-static void MY_keyed( WINDOW *w, int kstate, int key );
-static void MY_message( WINDOW *w, int kstate, int message[16]);
-static void MY_topped( WINDOW *w );
+static void MY_keyed(WINDOW *w, int kstate, int key);
+static void MY_message(WINDOW *w, int kstate, int message[16]);
+static void MY_topped(WINDOW *w);
 static void MY_closed(WINDOW *w, int kstate);
-static void MY_fulled( WINDOW *w );
+static void MY_fulled(WINDOW *w);
 static void MY_sized(WINDOW *w, GRECT *g);
 static void MY_moved(WINDOW *w, GRECT *g);
-static void MY_hslid( WINDOW *w, int newpos );
-static void MY_vslid( WINDOW *w, int newpos );
+static void MY_hslid(WINDOW *w, int newpos);
+static void MY_vslid(WINDOW *w, int newpos);
 static void MY_arrowed(WINDOW *w, int arrow);
-static void MY_iconified( WINDOW *w, GRECT *g, int mode);
-static void MY_uniconified( WINDOW *w, GRECT *g, int unhide );
+static void MY_iconified(WINDOW *w, GRECT *g, int mode);
+static void MY_uniconified(WINDOW *w, GRECT *g, int unhide);
 
 
 /****************************************************************
@@ -38,7 +38,7 @@ static void MY_uniconified( WINDOW *w, GRECT *g, int unhide );
 *
 ****************************************************************/
 
-void windows_init( void )
+void windows_init(void)
 {
 	str_free = Rgetstring(STR_FREE);
 	str_full = Rgetstring(STR_FULL);
@@ -51,7 +51,7 @@ void windows_init( void )
 *
 ****************************************************************/
 
-void make_g_fit_screen( GRECT *g )
+void make_g_fit_screen(GRECT *g)
 {
 	if (g->g_x < -30000)		/* totale Sicherheit */
 		g->g_x = 0;
@@ -81,15 +81,15 @@ void make_g_fit_screen( GRECT *g )
 *
 ****************************************************************/
 
-static void save_select_status( WINDOW *w )
+static void save_select_status(WINDOW *w)
 {
 	register int i,tail;
 	register OBJECT *tree = w->pobj;
 
 
-	if ((i = (tree -> ob_head)) <= 0)
+	if ((i = (tree->ob_head)) <= 0)
 		return;
-	tail = (tree++ -> ob_tail);
+	tail = (tree++->ob_tail);
 	for	(; i <= tail; i++,tree++)
 	{
 		if (!(SELECTED&(tree->ob_state)) || (HIDETREE&(tree->ob_flags)))
@@ -107,7 +107,7 @@ static void save_select_status( WINDOW *w )
 *
 ****************************************************************/
 
-WINDOW *top_window( void )
+WINDOW *top_window(void)
 {
 	int whdl;
 
@@ -175,7 +175,7 @@ static int cmp_mydtas(MYDTA **ff1, MYDTA **ff2)
 	if (((f1->flags)&1) != ((f2->flags)&1))		/* Match- Flag */
 		return (((f2->flags) & 1 - ((f1->flags) & 1)));
 
-	if (settings.sorttyp == M_SNICHT)
+	if (settings.sort_mode == M_SNICHT)
 		return (f1->number - f2->number);
 
 	if (f1->attrib & F_SUBDIR)
@@ -189,7 +189,7 @@ static int cmp_mydtas(MYDTA **ff1, MYDTA **ff2)
 	if (f2->attrib & F_SUBDIR)
 		return 1;
 
-	switch(settings.sorttyp)
+	switch (settings.sort_mode)
 	{
 		case M_SNAME:
 			name:
@@ -228,7 +228,7 @@ static int cmp_mydtas(MYDTA **ff1, MYDTA **ff2)
 }
 
 
-static void sort_mydtas( WINDOW *w )
+static void sort_mydtas(WINDOW *w)
 {
 	extern void 	shelsort(void *base, size_t count, size_t size, int (*compar)());
 	MYDTA **files = w->pmydta;
@@ -287,7 +287,7 @@ static void sort_mydtas( WINDOW *w )
 *
 ****************************************************************/
 
-static void set_title( WINDOW *mywindow )
+static void set_title(WINDOW *mywindow)
 {
 	register char *s,*p,*m;
 
@@ -315,16 +315,16 @@ static void set_title( WINDOW *mywindow )
 *
 ****************************************************************/
 
-static void set_info( WINDOW *mywindow )
+static void set_info(WINDOW *mywindow)
 {
 	register char *s;
-	register unsigned long size 	= 0L;
-		    unsigned long ssize	= 0L;
+	register unsigned long size = 0L;
+    unsigned long ssize	= 0L;
 	register int num;
-		    int snum			= 0;
+    int snum = 0;
 	register int i;
 	MYDTA **file;
-	MYDTA *sfile				= NULL;
+	MYDTA *sfile = NULL;
 	OBJECT *o;
 
 
@@ -336,11 +336,11 @@ static void set_info( WINDOW *mywindow )
 	file		= mywindow->pmydta;
 	for	(i = num; i > 0; i--,file++,o++)
 	{
-		size += ((*file) -> filesize);
-		if ((o -> ob_state) & SELECTED)
+		size += ((*file)->filesize);
+		if ((o->ob_state) & SELECTED)
 		{
 			snum++;
-			ssize += ((*file) -> filesize);
+			ssize += ((*file)->filesize);
 			sfile = *file;
 		}
 	}
@@ -443,7 +443,7 @@ static void set_info( WINDOW *mywindow )
 	}
 	else
 	{
-		if (0 == ((sfile -> attrib) & F_SUBDIR))
+		if (0 == ((sfile->attrib) & F_SUBDIR))
 		{
 			if (size < 100000L)
 				*s++ = ' ';
@@ -462,24 +462,24 @@ static void set_info( WINDOW *mywindow )
 			strcat(s, Rgetstring(STR_BYTES));
 			s += strlen(s);
 		}
-		date_to_str(s, sfile -> date);
+		date_to_str(s, sfile->date);
 		strcat(s, " | ");
 		s += strlen(s);
-		time_to_str(s, sfile -> time);
+		time_to_str(s, sfile->time);
 		i = suffixtyp(sfile->filename);
 		if (i == PGMT_NOEXE)
 			i = (NULL != dfile_to_app(sfile->filename));
 		else
 			i = TRUE;
-		if (i || ((sfile -> attrib) & (F_RDONLY+F_HIDDEN+F_SYSTEM+F_ARCHIVE)))
+		if (i || ((sfile->attrib) & (F_RDONLY+F_HIDDEN+F_SYSTEM+F_ARCHIVE)))
 			strcat(s, " | ");
-		if ((sfile -> attrib) & F_RDONLY)
+		if ((sfile->attrib) & F_RDONLY)
 			strcat(s, "R");
-		if ((sfile -> attrib) & F_SYSTEM)
+		if ((sfile->attrib) & F_SYSTEM)
 			strcat(s, "S");
-		if ((sfile -> attrib) & F_HIDDEN)
+		if ((sfile->attrib) & F_HIDDEN)
 			strcat(s, "H");
-		if ((sfile -> attrib) & F_ARCHIVE)
+		if ((sfile->attrib) & F_ARCHIVE)
 			strcat(s, "A");
 		if (i)
 			strcat(s, "E");		/* executable */
@@ -570,7 +570,7 @@ void set_dname(int lw, char *dname)
 			/* 2. Fall: Leerstring bergeben: Default einsetzen */
 			else
 			{
-				*p = ((tree_icons + icon[i].icontyp) -> ob_spec.iconblk) -> ib_ptext;
+				*p = ((tree_icons + icon[i].icon_type)->ob_spec.iconblk)->ib_ptext;
 			}
 			if (strcmp(old_text, *p))
 			{
@@ -616,13 +616,13 @@ void set_dname(int lw, char *dname)
 *
 ****************************************************************/
 
-static void set_wind_icons( WINDOW *mywindow )
+static void set_wind_icons(WINDOW *mywindow)
 {
 	char path[128];
 	char *epath;
-	MYDTA **z,*ziele;
+	MYDTA **z,*dests;
 	int anzahl;
-	int typ;
+	int type;
 
 
 	strcpy(path, mywindow->path);
@@ -634,58 +634,58 @@ static void set_wind_icons( WINDOW *mywindow )
 		 z++
 		)
 	{
-		ziele = *z;
-		ziele -> flags = 0;					/* Datei */
+		dests = *z;
+		dests->flags = 0;					/* Datei */
 
-		if ((ziele -> attrib) & F_SUBDIR)
+		if ((dests->attrib) & F_SUBDIR)
 		{
-			strcpy(epath, ziele->filename);
+			strcpy(epath, dests->filename);
 			strcat(epath, "\\");	/* Ordner -> abs. Pfad */
-			if (!strcmp(ziele->filename, ".."))
+			if (!strcmp(dests->filename, ".."))
 			{
-				ziele->icontyp = ITYP_PARENT;
-				ziele->ciconblk = *parentname_to_iconblk(path, epath);
+				dests->icon_type = ITYP_PARENT;
+				dests->ciconblk = *parentname_to_iconblk(path, epath);
 			}
 			else
 			{
-				ziele->icontyp = ITYP_ORDNER;
-				ziele->ciconblk = *foldername_to_iconblk(path, epath);
+				dests->icon_type = ITYP_ORDNER;
+				dests->ciconblk = *foldername_to_iconblk(path, epath);
 			}
 		}
 		else
 		{
-			typ = suffixtyp(ziele -> filename);
+			type = suffixtyp(dests->filename);
 
 			/* Sonstige Dateien bekommen das ihnen zugewiesene	*/
 			/* Icon 										*/
 			/* --------------------------------------------------- */
 
-			if (((ziele->mode) & S_IFMT) == S_IFCHR)
+			if (((dests->mode) & S_IFMT) == S_IFCHR)
 			{
-				ziele->icontyp = ITYP_DEVICE;
-				ziele->ciconblk = *devicename_to_iconblk(ziele -> filename);
+				dests->icon_type = ITYP_DEVICE;
+				dests->ciconblk = *devicename_to_iconblk(dests->filename);
 			}
 			else
-			if (ziele->is_alias == 2)
+			if (dests->is_alias == 2)
 			{
-				ziele->icontyp = ITYP_ALIAS;
-				ziele->ciconblk = *alias_to_iconblk(ziele -> filename);
+				dests->icon_type = ITYP_ALIAS;
+				dests->ciconblk = *alias_to_iconblk(dests->filename);
 			}
 			else
-			if (typ < 0)
+			if (type < 0)
 			{
-				ziele->icontyp = ITYP_DATEI;
-				ziele->ciconblk = *datname_to_iconblk(ziele -> filename);
+				dests->icon_type = ITYP_DATEI;
+				dests->ciconblk = *datname_to_iconblk(dests->filename);
 			}
 
 			/* Batchdateien bekommen das Icon I_BTCHDA */
 			/* --------------------------------------- */
 
 			else
-			if (typ & PGMT_BATCH)
+			if (type & PGMT_BATCH)
 			{
-				ziele->icontyp = ITYP_BTCHDA;
-				ziele->ciconblk = *batchname_to_iconblk(ziele -> filename);
+				dests->icon_type = ITYP_BTCHDA;
+				dests->ciconblk = *batchname_to_iconblk(dests->filename);
 			}
 
 			/* Programmdateien bekommen das ihnen	*/
@@ -694,15 +694,15 @@ static void set_wind_icons( WINDOW *mywindow )
 
 			else
 			{
-				ziele->flags = 4;				/* Programm */
-				ziele->icontyp = ITYP_PROGRA;
-				ziele->ciconblk = *pgmname_to_iconblk(ziele->filename);
+				dests->flags = 4;				/* Programm */
+				dests->icon_type = ITYP_PROGRA;
+				dests->ciconblk = *pgmname_to_iconblk(dests->filename);
 			}
 
 		}
 
-		if ((ziele->ciconblk).monoblk.ib_hicon > mywindow->max_hicon)
-			mywindow->max_hicon = (ziele->ciconblk).monoblk.ib_hicon;
+		if ((dests->ciconblk).monoblk.ib_hicon > mywindow->max_hicon)
+			mywindow->max_hicon = (dests->ciconblk).monoblk.ib_hicon;
 
 	}
 }
@@ -723,7 +723,7 @@ static void set_wind_icons( WINDOW *mywindow )
 *
 ****************************************************************/
 
-static long read_wind( WINDOW *w, int free_flag)
+static long read_wind(WINDOW *w, int free_flag)
 {
 	char path[128];
 	static char *rpath = "X:\\";
@@ -735,8 +735,8 @@ static long read_wind( WINDOW *w, int free_flag)
 	long err;
 	XATTR xa;
 	long err_xr;
-	long	dirhandle;
-	char *ziele,*limit;
+	long dirhandle;
+	char *dests,*limit;
 	MYDTA *mdta,**p_d;
 	int was_long_names = FALSE;
 
@@ -870,7 +870,7 @@ static long read_wind( WINDOW *w, int free_flag)
 		if (maxmem_per_name & 1)
 			maxmem_per_name++;		/* auf WORD runden */
 
-		err = Fxattr( 0, w->path, &xa );
+		err = Fxattr(0, w->path, &xa);
 		if (err)
 			continue;
 		w->mtime = xa.mtime;
@@ -880,8 +880,8 @@ static long read_wind( WINDOW *w, int free_flag)
 		/* -------------------- */
 
 		epath = path+strlen(path);	/* hier Dateiname ansetzen */
-		ziele = w->memblk;
-		limit = ziele + w->memblksize - sizeof(OBJECT)
+		dests = w->memblk;
+		limit = dests + w->memblksize - sizeof(OBJECT)
 			- maxmem_per_name;	/* Objekt #0 bercksichtigen! */
 
 		anzahl = 0;
@@ -893,7 +893,7 @@ static long read_wind( WINDOW *w, int free_flag)
 			/* Hier ggf. mehr Speicher allozieren */
 			/* ---------------------------------- */
 
-			if (ziele >= limit)
+			if (dests >= limit)
 			{
 				long newsize = w->memblksize+NEXTMEMBLK;
 
@@ -912,9 +912,9 @@ static long read_wind( WINDOW *w, int free_flag)
 					newblk = Malloc(newsize);
 					if (!newblk)
 						break;	/* Fehler */
-					memcpy(newblk, w->memblk, ziele - w->memblk);
+					memcpy(newblk, w->memblk, dests - w->memblk);
 					limit = newblk + (limit - w->memblk);
-					ziele = newblk + (ziele - w->memblk);
+					dests = newblk + (dests - w->memblk);
 					Mfree(w->memblk);
 					w->memblk = newblk;
 				}
@@ -925,7 +925,7 @@ static long read_wind( WINDOW *w, int free_flag)
 			/* Einen Eintrag einlesen */
 			/* ---------------------- */
 
-			mdta = (MYDTA *) ziele;
+			mdta = (MYDTA *) dests;
 			if ((!anzahl) && (path[3]) && (settings.use_pp))
 			{
 
@@ -1001,9 +1001,9 @@ static long read_wind( WINDOW *w, int free_flag)
 			mdta->attrib = xa.attr;
 			mdta->mode = xa.mode;
 			anzahl++;
-			ziele += sizeof(MYDTA)+strlen(mdta->filename)+1;
-			if (((long) ziele) & 1)
-				ziele++;		/* WORD align! */
+			dests += sizeof(MYDTA)+strlen(mdta->filename)+1;
+			if (((long) dests) & 1)
+				dests++;		/* WORD align! */
 			limit -= maxmem_per_name;
 		}
 
@@ -1030,19 +1030,19 @@ static long read_wind( WINDOW *w, int free_flag)
 	/* Zeiger aufbauen */
 	/* --------------- */
 
-	w->pmydta = (MYDTA **) ziele;
-	w->pobj = (OBJECT *) ( ziele + anzahl * sizeof(MYDTA *) );
+	w->pmydta = (MYDTA **) dests;
+	w->pobj = (OBJECT *) (dests + anzahl * sizeof(MYDTA *));
 	limit = (char *) (w->pobj + anzahl + 1);
 	w->memblksize = limit - w->memblk;
 	Mshrink(0, w->memblk, w->memblksize);
-	for	(p_d = w->pmydta,ziele = w->memblk;
+	for	(p_d = w->pmydta,dests = w->memblk;
 			anzahl > 0; anzahl--)
 	{
-		mdta = (MYDTA *) ziele;
+		mdta = (MYDTA *) dests;
 		*p_d++ = mdta;
-		ziele += sizeof(MYDTA)+strlen(mdta->filename)+1;
-		if (((long) ziele) & 1)
-			ziele++;		/* WORD align! */
+		dests += sizeof(MYDTA)+strlen(mdta->filename)+1;
+		if (((long) dests) & 1)
+			dests++;		/* WORD align! */
 	}
 
 	/* Icontypen und Exec- Flag festlegen */
@@ -1099,7 +1099,7 @@ static void calc_collin(WINDOW *w)
 
 	x = w->in.g_w - w->xoffs + w->xdist;
 	y = w->in.g_h - w->yoffs + w->ydist;
-	if (settings.is_1col && settings.showtyp == M_ATEXT)
+	if (settings.is_1col && settings.show_mode == M_ATEXT)
 		c = 1;
 	else
 	{
@@ -1136,7 +1136,7 @@ static void calc_obj_look(WINDOW *w, int dsel_flag)
 	OBJECT *o;
 	MYDTA **p_d,*d;
 	CICONBLK *c;
-	int	len,tlen;
+	int len,tlen;
 	register int i;
 	register char *s;
 
@@ -1146,7 +1146,7 @@ static void calc_obj_look(WINDOW *w, int dsel_flag)
 	o 		= w->pobj;
 	p_d 		= w->pmydta;
 
-	if (settings.showtyp == M_ATEXT)
+	if (settings.show_mode == M_ATEXT)
 	{
 		w->xoffs = 2*gl_hwchar - 1;
 		w->yoffs = 1;
@@ -1193,13 +1193,13 @@ static void calc_obj_look(WINDOW *w, int dsel_flag)
 			p_d = w->pmydta;
 			w->showw = folder_w + 12 + w->xtab_namelen;
 			if (w->dos_mode && settings.show_8p3)
-				w->showw += spaltenabstand + w->xtab_typelen;
+				w->showw += text_column_dist + w->xtab_typelen;
 			if (settings.is_groesse)
-				w->showw += spaltenabstand + w->xtab_sizelen;
+				w->showw += text_column_dist + w->xtab_sizelen;
 			if (settings.is_datum)
-				w->showw += spaltenabstand + w->xtab_datelen;
+				w->showw += text_column_dist + w->xtab_datelen;
 			if (settings.is_zeit)
-				w->showw += spaltenabstand + w->xtab_timelen;
+				w->showw += text_column_dist + w->xtab_timelen;
 		}
 		else
 		{
@@ -1229,20 +1229,20 @@ static void calc_obj_look(WINDOW *w, int dsel_flag)
 
 	/* Objekt der weižen Hintergrundbox */
 
-	o -> ob_next = -1;
-	o -> ob_type = G_BOX;
-	o -> ob_state = NORMAL;
-	o -> ob_spec.index = (long) (WHITE);
+	o->ob_next = -1;
+	o->ob_type = G_BOX;
+	o->ob_state = NORMAL;
+	o->ob_spec.index = (long) (WHITE);
 	if (anzahl > 0)
 	{
-		o -> ob_flags = NONE;
-		o -> ob_head = 1;
-		o -> ob_tail = anzahl;
+		o->ob_flags = NONE;
+		o->ob_head = 1;
+		o->ob_tail = anzahl;
 	}
 	else
 	{
-		o -> ob_flags = LASTOB;
-		o -> ob_head = o -> ob_tail = -1;
+		o->ob_flags = LASTOB;
+		o->ob_head = o->ob_tail = -1;
 	}
 
 	/* Objekte der Dateien */
@@ -1251,16 +1251,16 @@ static void calc_obj_look(WINDOW *w, int dsel_flag)
 	{
 		d = *p_d;
 		o++;
-		o -> ob_next = (i < anzahl) ? (i+1) : (0);
-		o -> ob_head = o -> ob_tail = -1;
-		o -> ob_flags = (i < anzahl) ? NONE : LASTOB;
+		o->ob_next = (i < anzahl) ? (i+1) : (0);
+		o->ob_head = o->ob_tail = -1;
+		o->ob_flags = (i < anzahl) ? NONE : LASTOB;
 
 		/* Spezialbehandlung fr parent */
 
-		if (d->icontyp == ITYP_PARENT)
+		if (d->icon_type == ITYP_PARENT)
 			o->ob_flags |= EXIT;
 
-		if (settings.showtyp == M_ABILDR)
+		if (settings.show_mode == M_ABILDR)
 		{
 			c = &(d->ciconblk);
 			c->monoblk.ib_ptext = d->filename;
@@ -1268,20 +1268,20 @@ static void calc_obj_look(WINDOW *w, int dsel_flag)
 			c->monoblk.ib_xicon = (w->showw-c->monoblk.ib_wicon)>>1;
 			o->ob_type   = G_CICON;
 			o->ob_spec.ciconblk = c;
-			o->ob_state = ((!dsel_flag) && (d -> flags & 2))
+			o->ob_state = ((!dsel_flag) && (d->flags & 2))
 					 	? SELECTED+WHITEBAK : NORMAL+WHITEBAK;
 			if (d->is_alias)
 				o->ob_state |= (SHADOWED+0x8000+0x400);	/* kursiv */
 		}
 		else
 		{
-			o -> ob_type = G_USERDEF;
-			o -> ob_spec.userblk = &userblk;
-			o -> ob_state = ((!dsel_flag) && (d -> flags & 2))
+			o->ob_type = G_USERDEF;
+			o->ob_spec.userblk = &userblk;
+			o->ob_state = ((!dsel_flag) && (d->flags & 2))
 					 	? SELECTED : NORMAL;
 		}
-		o -> ob_width = w->showw;
-		o -> ob_height = w->showh;
+		o->ob_width = w->showw;
+		o->ob_height = w->showh;
 	}
 	set_info(w);
 }
@@ -1380,8 +1380,8 @@ static int re_arrange(WINDOW *w)
 	/* Position und H”he ggf. korrigieren (von calc_in schon gesetzt) */
 	/* -------------------------------------------------------------- */
 
-	o -> ob_y 	= w->in.g_y - w->yscroll*(w->showh+w->ydist);
-	o -> ob_height = w->in.g_h + w->yscroll*(w->showh+w->ydist);
+	o->ob_y 	= w->in.g_y - w->yscroll*(w->showh+w->ydist);
+	o->ob_height = w->in.g_h + w->yscroll*(w->showh+w->ydist);
 	for	(i = 0, y = w->yoffs, x = w->xoffs, j = anzahl; j > 0; i++,j--)
 	{
 		o++;
@@ -1391,10 +1391,10 @@ static int re_arrange(WINDOW *w)
 			x = w->xoffs;
 			y += w->showh + w->ydist;
 		}
-		o -> ob_x = x - w->xscroll;
-		o -> ob_y = y;
-		if ((o -> ob_type == G_ICON) || (o -> ob_type == G_CICON))
-			o -> ob_y += w->max_hicon - o->ob_spec.iconblk->ib_hicon;
+		o->ob_x = x - w->xscroll;
+		o->ob_y = y;
+		if ((o->ob_type == G_ICON) || (o->ob_type == G_CICON))
+			o->ob_y += w->max_hicon - o->ob_spec.iconblk->ib_hicon;
 		x += w->showw + w->xdist;
 	}
 	if (anzahl < oldcols)
@@ -1412,7 +1412,7 @@ static int re_arrange(WINDOW *w)
 *
 ****************************************************************/
 
-WINDOW *create_wnd( int wnr, char *path, char *mask,
+WINDOW *create_wnd(int wnr, char *path, char *mask,
 			int yscroll, int flags, LONG *errcode)
 {
 	WINDOW *w;
@@ -1422,7 +1422,7 @@ WINDOW *create_wnd( int wnr, char *path, char *mask,
 	w = Malloc(sizeof(WINDOW));
 	if (w)
 	{
-		w->kind = (settings.showtyp == M_ATEXT) ? FENSTERTYP_T : FENSTERTYP_B;
+		w->kind = (settings.show_mode == M_ATEXT) ? WINDOW_ATTRIBS_TXT_MODE : WINDOW_ATTRIBS_ICN_MODE;
 		iconify_flags = flags & (WFLAG_ICONIFIED+WFLAG_ALLICONIFIED);
 
 		if (iconify_flags == WFLAG_ALLICONIFIED)
@@ -1480,7 +1480,7 @@ WINDOW *create_wnd( int wnr, char *path, char *mask,
 *
 ****************************************************************/
 
-void delete_wnd( WINDOW *w )
+void delete_wnd(WINDOW *w)
 {
 	if (w->memblk)
 		Mfree(w->memblk);
@@ -1521,7 +1521,7 @@ long opn_wnd(WINDOW *w, int fast)
 		GRECT oldg;
 
 		oldg = w->out;
-		MY_iconified( w, NULL,
+		MY_iconified(w, NULL,
 				(w->flags & WFLAG_ALLICONIFIED) ? ICONIFIED_MODE_ALL : ICONIFIED_MODE_NORMAL);
 		wind_set_grect(w->handle, WF_UNICONIFYXYWH, &oldg);
 	}
@@ -1561,7 +1561,7 @@ long opn_wnd(WINDOW *w, int fast)
 *
 ****************************************************************/
 
-static void MY_topped( WINDOW *w )
+static void MY_topped(WINDOW *w)
 {
 	if (w->handle > 0)
 	{
@@ -1683,7 +1683,7 @@ static void MY_closed(WINDOW *w, int kstate)
 *
 ****************************************************************/
 
-static void MY_iconified( WINDOW *w, GRECT *g, int mode)
+static void MY_iconified(WINDOW *w, GRECT *g, int mode)
 {
 	register OBJECT *o;
 	char *text;
@@ -1725,7 +1725,7 @@ static void MY_iconified( WINDOW *w, GRECT *g, int mode)
 		Mfree(w->memblk);
 		w->memblksize = sizeof(MYDTA) + 128 +
 						sizeof(MYDTA *) + 2 * sizeof(OBJECT);
-		w->memblk = Malloc( w->memblksize );
+		w->memblk = Malloc(w->memblksize);
 		if (!w->memblk)
 		{
 			err_alert(ENSMEM);
@@ -1748,7 +1748,7 @@ static void MY_iconified( WINDOW *w, GRECT *g, int mode)
 		strcpy(mdta->filename, ".");
 		mdta->number = 0;
 		mdta->flags = 0;
-		mdta->icontyp = ITYP_ORDNER;
+		mdta->icon_type = ITYP_ORDNER;
 		mdta->filesize = 0;
 
 
@@ -1773,13 +1773,13 @@ static void MY_iconified( WINDOW *w, GRECT *g, int mode)
 
 		/* Objekt der weižen Hintergrundbox */
 
-		o -> ob_next = -1;
-		o -> ob_type = G_BOX;
-		o -> ob_state = NORMAL;
-		o -> ob_spec.index = (long) (WHITE);
-		o -> ob_flags = NONE;
-		o -> ob_head = 1;
-		o -> ob_tail = 1;
+		o->ob_next = -1;
+		o->ob_type = G_BOX;
+		o->ob_state = NORMAL;
+		o->ob_spec.index = (long) (WHITE);
+		o->ob_flags = NONE;
+		o->ob_head = 1;
+		o->ob_tail = 1;
 		o->ob_x = w->in.g_x;
 		o->ob_y = w->in.g_y;
 		o->ob_width  = w->in.g_w;
@@ -1806,16 +1806,16 @@ static void MY_iconified( WINDOW *w, GRECT *g, int mode)
 		}
 
 		o++;
-		o -> ob_next = 0;
-		o -> ob_head = o -> ob_tail = -1;
-		o -> ob_type  = G_CICON;
-		o -> ob_flags = LASTOB;
-		o -> ob_state = NORMAL+WHITEBAK;
-		o -> ob_spec.ciconblk = cic;
-		o -> ob_width  = 72;
-		o -> ob_height = (o -> ob_spec.iconblk->ib_hicon) + 8;
-		o -> ob_x = (w->in.g_w - o->ob_width) >> 1;
-		o -> ob_y = (w->in.g_h - o->ob_height) >> 1;
+		o->ob_next = 0;
+		o->ob_head = o->ob_tail = -1;
+		o->ob_type  = G_CICON;
+		o->ob_flags = LASTOB;
+		o->ob_state = NORMAL+WHITEBAK;
+		o->ob_spec.ciconblk = cic;
+		o->ob_width  = 72;
+		o->ob_height = (o->ob_spec.iconblk->ib_hicon) + 8;
+		o->ob_x = (w->in.g_w - o->ob_width) >> 1;
+		o->ob_y = (w->in.g_h - o->ob_height) >> 1;
 	}
 }
 
@@ -1835,7 +1835,7 @@ static void MY_iconified( WINDOW *w, GRECT *g, int mode)
 *
 ****************************************************************/
 
-static void MY_uniconified( WINDOW *w, GRECT *g, int unhide)
+static void MY_uniconified(WINDOW *w, GRECT *g, int unhide)
 {
 	if (unhide)
 	{
@@ -1877,7 +1877,7 @@ static void MY_uniconified( WINDOW *w, GRECT *g, int unhide)
 *
 ****************************************************************/
 /*
-void close_immed( WINDOW *w)
+void close_immed(WINDOW *w)
 {
 	if (w->path[0])
 	{
@@ -2070,14 +2070,14 @@ static void vshift(WINDOW *w, int newshift)
 
 static void MY_arrowed(WINDOW *w, int arrow)
 {
-	int	newwshift,newhshift;
+	int newwshift,newhshift;
 
 
 	if (w->flags & WFLAG_ICONIFIED)
 		return;
 	newhshift = w->yscroll;
 	newwshift = w->xscroll;
-	switch(arrow)
+	switch (arrow)
 	{
 		case -1:			newhshift  = 0;
 						break;
@@ -2118,7 +2118,7 @@ static void MY_arrowed(WINDOW *w, int arrow)
 *
 ****************************************************************/
 
-static void MY_hslid( WINDOW *w, int newpos )
+static void MY_hslid(WINDOW *w, int newpos)
 {
 	long newshift;
 
@@ -2137,7 +2137,7 @@ static void MY_hslid( WINDOW *w, int newpos )
 *
 ****************************************************************/
 
-static void MY_vslid( WINDOW *w, int newpos)
+static void MY_vslid(WINDOW *w, int newpos)
 {
 	long newshift;
 
@@ -2174,7 +2174,7 @@ static void MY_sized(WINDOW *w, GRECT *g)
 *
 ****************************************************************/
 
-static void MY_moved( WINDOW *w, GRECT *g)
+static void MY_moved(WINDOW *w, GRECT *g)
 {
 /*	g->g_x &= ~7;	*/
 	if (wind_set_grect(w->handle, WF_CURRXYWH, g))
@@ -2234,7 +2234,7 @@ static void upd_disk(int lw, int free_flag)
 *
 ****************************************************************/
 
-static int find_filename( WINDOW *w, char *fname )
+static int find_filename(WINDOW *w, char *fname)
 {
 	register MYDTA **p;
 	register int i;
@@ -2290,11 +2290,8 @@ void dirwindow_autoupdate(void)
 		if ((!is_MgMc) && (w->real_drive < 2))
 			continue;		/* Auf Atari und PC nicht fr A: B: */
 
-		err = Fxattr( 0, w->path, &xa );
-		if ((!err) && (
-				(xa.mtime != w->mtime) || (xa.mdate != w->mdate)
-					)
-			)
+		err = Fxattr(0, w->path, &xa );
+		if ((!err) && ((xa.mtime != w->mtime) || (xa.mdate != w->mdate)))
 		{
 
 			/* Alten Fensterinhalt retten */
@@ -2422,7 +2419,7 @@ void dirwindow_autoupdate(void)
 *
 ****************************************************************/
 
-void auto_close_windows( void )
+void auto_close_windows(void)
 {
 	register int i;
 	register WINDOW **pw,*w;
@@ -2460,7 +2457,7 @@ void auto_close_windows( void )
 *
 ****************************************************************/
 
-void upd_icons( void )
+void upd_icons(void)
 {
 	register int i;
 	register WINDOW **pw,*w;
@@ -2475,7 +2472,7 @@ void upd_icons( void )
 		if (w->flags & WFLAG_ICONIFIED)
 			continue;
 		sort_mydtas(w);
-		save_select_status( w );
+		save_select_status(w);
 		calc_obj_look(w, FALSE);
 		re_arrange(w);
 		upd_wind(w);
@@ -2491,7 +2488,7 @@ void upd_icons( void )
 *
 ****************************************************************/
 
-void upd_drives( void )
+void upd_drives(void)
 {
 	register int i;
 
@@ -2535,14 +2532,14 @@ void upd_path(WINDOW *w, int free_flag)
 *
 ****************************************************************/
 
-void upd_show( void )
+void upd_show(void)
 {
 	register int i;
 	register WINDOW **pw,*w;
 	int kind;
 
 
-	kind = (settings.showtyp == M_ATEXT) ? FENSTERTYP_T : FENSTERTYP_B;
+	kind = (settings.show_mode == M_ATEXT) ? WINDOW_ATTRIBS_TXT_MODE : WINDOW_ATTRIBS_ICN_MODE;
 	for	(i = 1,pw = windows+1; i <= NUM_WINDOWS; i++,pw++)
 	{
 		w = *pw;
@@ -2569,12 +2566,12 @@ void upd_show( void )
 *
 ****************************************************************/
 
-void upd_is( void )
+void upd_is(void)
 {
 	register int i;
 	register WINDOW **pw,*w;
 
-	if (settings.showtyp == M_ABILDR)
+	if (settings.show_mode == M_ABILDR)
 		return;
 	for	(i = 1,pw = windows+1; i <= NUM_WINDOWS; i++,pw++)
 	{
@@ -2597,12 +2594,12 @@ void upd_is( void )
 *
 ****************************************************************/
 
-void upd_sort( void )
+void upd_sort(void)
 {
 	register int i;
 	register WINDOW **pw,*w;
 
-	for	(i = 1,pw=windows+1; i <= NUM_WINDOWS; i++,pw++)
+	for	(i = 1,pw = windows + 1; i <= NUM_WINDOWS; i++,pw++)
 	{
 		w = *pw;
 		if ((w) && !(w->flags & WFLAG_ICONIFIED))
@@ -2623,7 +2620,7 @@ void upd_sort( void )
 *
 ****************************************************************/
 
-void upd_mask( WINDOW *w )
+void upd_mask(WINDOW *w)
 {
 	WINDOW *ow;
 	int ob;
@@ -2660,14 +2657,14 @@ void upd_mask( WINDOW *w )
 *
 ****************************************************************/
 
-static void dirty_info( WINDOW *w )
+static void dirty_info(WINDOW *w)
 {
 	if (w->handle > 0 && w->path[0] && !(w->flags & WFLAG_ICONIFIED))
 		dirty[w->wnr] = TRUE;
 }
 
 
-void dirty_info_selmask( WINDOW *w )
+void dirty_info_selmask(WINDOW *w)
 {
 	if (w->handle > 0 && w->path[0] && !(w->flags & WFLAG_ICONIFIED))
 	{
@@ -2684,13 +2681,13 @@ void dirty_info_selmask( WINDOW *w )
 *
 ****************************************************************/
 
-void upd_selmask( WINDOW *w )
+void upd_selmask(WINDOW *w)
 {
 	GRECT g = {32767,32767,-32767,-32767};	/* Update-Rechteck ORECT */
 	register int i,fit,ofit;
-	int		num		= w->shownum;
-	MYDTA	**pfile	= w->pmydta;
-	OBJECT	*o		= w->pobj + 1;
+	int num = w->shownum;
+	MYDTA **pfile = w->pmydta;
+	OBJECT *o = w->pobj + 1;
 	int first_sel_line = -1;		/* erstes sel. Objekt */
 	MYDTA *file;
 
@@ -2701,11 +2698,11 @@ void upd_selmask( WINDOW *w )
 
 		/* pažt die Maske ? */
 
-		ofit = (((o -> ob_state) & SELECTED) != 0);
+		ofit = (((o->ob_state) & SELECTED) != 0);
 		fit  = pattern_match(w->sel_maske, file->filename);
 		if (ofit != fit)
 		{		/* Žnderung */
-			(o -> ob_state) ^= SELECTED;	/* toggeln */
+			(o->ob_state) ^= SELECTED;	/* toggeln */
 			if (o->ob_x < g.g_x)
 				g.g_x = o->ob_x;
 			if (o->ob_y < g.g_y)
@@ -2752,7 +2749,7 @@ void upd_selmask( WINDOW *w )
 *
 ****************************************************************/
 
-void upd_infos( void )
+void upd_infos(void)
 {
 	register int i;
 	register WINDOW **pw,*w;
@@ -2778,13 +2775,13 @@ void upd_infos( void )
 *
 ****************************************************************/
 
-void upd_col( void )
+void upd_col(void)
 {
 	register int i,oldcol;
 	register WINDOW **pw,*w;
 
 
-	if (settings.showtyp == M_ABILDR)
+	if (settings.show_mode == M_ABILDR)
 		return;
 	for	(i = 1,pw = windows+1; i <= NUM_WINDOWS; i++,pw++)
 	{
@@ -2822,7 +2819,7 @@ void upd_col( void )
 *
 ****************************************************************/
 
-static void optimalsize_wnd( WINDOW *w )
+static void optimalsize_wnd(WINDOW *w)
 {
 	GRECT g,og;
 	int cols = w->cols;
@@ -2857,7 +2854,7 @@ static void optimalsize_wnd( WINDOW *w )
 	/* Im einspaltigen Textmodus: H”he unver„ndert */
 	/* ------------------------------------------- */
 
-	if (settings.is_1col && settings.showtyp == M_ATEXT)
+	if (settings.is_1col && settings.show_mode == M_ATEXT)
 		goto ok_optw;	/* nix zu machen */
 
 	/* 2. Versuch: Spaltenanzahl erh”hen */
@@ -2920,7 +2917,7 @@ ok:
 *
 ****************************************************************/
 
-static void MY_fulled( WINDOW *w )
+static void MY_fulled(WINDOW *w)
 {
 	optimalsize_wnd(w);
 #if 0
@@ -2969,7 +2966,7 @@ static void MY_fulled( WINDOW *w )
 *
 ****************************************************************/
 
-static void MY_keyed( WINDOW *w, int kstate, int key )
+static void MY_keyed(WINDOW *w, int kstate, int key)
 {
 	char *root = "X:";
 	int drv,n,len;
@@ -2984,7 +2981,7 @@ static void MY_keyed( WINDOW *w, int kstate, int key )
 	/* --------------------------------------- */
 
 	shift = (kstate & (K_RSHIFT + K_LSHIFT));
-	if ( !(kstate & K_ALT) &&
+	if (!(kstate & K_ALT) &&
 		  shift &&
 		  (kstate & (K_CTRL)))
 	{
@@ -2998,7 +2995,7 @@ static void MY_keyed( WINDOW *w, int kstate, int key )
 		return;
 	}
 
-	switch(key)
+	switch (key)
 	{
 /* Einfg */
 		case 0x5200:
@@ -3135,7 +3132,7 @@ static void MY_keyed( WINDOW *w, int kstate, int key )
 ****************************************************************/
 
 #pragma warn -par
-static void MY_message( WINDOW *w, int kstate, int message[16])
+static void MY_message(WINDOW *w, int kstate, int message[16])
 {
 }
 #pragma warn +par

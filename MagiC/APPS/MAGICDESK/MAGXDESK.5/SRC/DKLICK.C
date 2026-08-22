@@ -22,7 +22,7 @@
 *
 * Es gibt zwei Typen von Dateinamen:
 *
-* - "*.typ" gibt eine Extension an, Groû/Kleinschrift egal
+* - "*.type" gibt eine Extension an, Groû/Kleinschrift egal
 * - "name" ist ein exakter Name, Groû/Kleinschrift wichtig.
 *
 ****************************************************************/
@@ -55,11 +55,11 @@ APPLICATION *path_to_app(char *pgmpath)
 
 /*********************************************************************
 *
-* Wie obj_typ(), aber es wird ein Pfad vorgegeben
+* Wie get_obj_type(), aber es wird ein Pfad vorgegeben
 *
 *********************************************************************/
 
-static void path_typ(char *path, int *typ, int *config,
+static void get_path_type(char *path, int *type, int *config,
 		APPLICATION **a)
 {
 	*config = suffixtyp(path);
@@ -67,20 +67,20 @@ static void path_typ(char *path, int *typ, int *config,
 	{
 		*a = dfile_to_app(path);
 		if (*a)
-			*typ = 'TX';
+			*type = 'TX';
 		else
-			*typ = '_T';
+			*type = '_T';
 	}
 	else
 	{
 		if (*config & PGMT_BATCH)	/* Batch */
-			*typ = 'BX';
+			*type = 'BX';
 		else
 		if (*config & PGMT_ACC)
-			*typ = '_X';
+			*type = '_X';
 		else
 		{
-			*typ = '_X';
+			*type = '_X';
 			(*a) = path_to_app(path);
 		}
 	}
@@ -127,16 +127,16 @@ static void path_typ(char *path, int *typ, int *config,
 *
 *********************************************************************/
 
-int obj_typ(WINDOW *w, int obj, char *path, MYDTA **f,
-		int *typ, int *config, APPLICATION **a)
+int get_obj_type(WINDOW *w, int obj, char *path, MYDTA **f,
+		int *type, int *config, APPLICATION **a)
 {
 	int ret;
-	char	mpath[200];
+	char mpath[200];
 	APPLICATION *ma;
 	MYDTA *_f;
 
 
-	*typ = '__';
+	*type = '__';
 	if (path == NULL)
 		path = mpath;
 	if (!a)
@@ -153,29 +153,30 @@ int obj_typ(WINDOW *w, int obj, char *path, MYDTA **f,
 		if ((*f) && ((*f)->is_alias == 2))	/* unaufgelîster Alias */
 		{
 			*config = PGMT_NOEXE;
-			*typ = 'AT';
+			*type = 'AT';
 		}
 		else
-			path_typ(path, typ, config, a);
+			get_path_type(path, type, config, a);
 		return ret;
 	}
 	if (obj == 0)
 	{
-		*typ = '_F';
+		*type = '_F';
 		return ret;
 	}
 	if (!w->handle)	/* Desktop */
 	{
-		switch(icon[obj-1].icontyp)
+		switch (icon[obj - 1].icon_type)
 		{
-			case ITYP_ORDNER:	*typ = '_O';break;
-			case ITYP_DISK:	*typ = 'DO';break;
-			case ITYP_PAPIER:	*typ = 'P_';break;
-			case ITYP_DRUCKR:	*typ = 'D_';break;
+			case ITYP_ORDNER: *type = '_O';break;
+			case ITYP_DISK:   *type = 'DO';break;
+			case ITYP_PAPIER: *type = 'P_';break;
+			case ITYP_DRUCKR: *type = 'D_';break;
 		}
 		return ret;
 	}
-	*typ = '_O';
+
+	*type = '_O';
 	return ret;
 }
 
@@ -227,7 +228,8 @@ Cconws("\"\r\n");
 		/* ----------------------------- */
 
 		s = arg;
-		do{
+		do
+		{
 			s = strchr(s, '\'');
 			if (s)
 			{
@@ -235,7 +237,7 @@ Cconws("\"\r\n");
 				s++;
 			}
 		}
-		while(s);
+		while (s);
 	}
 	else
 		extra_len = 1;		/* fÅr EOS */
@@ -252,7 +254,7 @@ Cconws("\"\r\n");
 		*s++ = '\'';
 		if (extra_len > 3)			/* Hochkommata */
 		{
-			while(*arg)
+			while (*arg)
 			{
 				if (*arg == '\'')
 					*s++ = '\'';
@@ -297,7 +299,7 @@ static void fix_xarg(char *xarg, char *nxt_xarg)
 		return;				/* ja, alles OK */
 	s = xarg+7;				/* "\xfe" "ARGV= " Åberspr. */
 
-	while(*s)
+	while (*s)
 	{
 		len = strlen(s);	/* LÑnge eines Arguments */
 		if ((s[0] == '\'') && (s[len-1] == '\''))
@@ -308,7 +310,7 @@ static void fix_xarg(char *xarg, char *nxt_xarg)
 			{
 				t = s;
 				u = s+1;
-				while(*u)
+				while (*u)
 				{
 					if (*u == '\'')
 					{
@@ -373,8 +375,8 @@ static int xarg2arg(char *xarg, char *nxt_xarg, int fail)
 	/* die 0.												*/
 	/* ------------------------------------------------------------- */
 
-	t = xarg+1;
-	while(*s)
+	t = xarg + 1;
+	while (*s)
 	{
 		do
 		{
@@ -425,6 +427,7 @@ static int get_param(char *pgm, WINDOW *w, int obj,
 		rettc = *endppath;
 		*endppath = EOS;
 	}
+
 	nargs = 0;
 	for	(iwnr = 0; iwnr <= NUM_WINDOWS; iwnr++)
 	{
@@ -432,9 +435,9 @@ static int get_param(char *pgm, WINDOW *w, int obj,
 		if (!iw)
 			continue;				/* Fenster unbenutzt */
 		tree = iw->pobj;
-		if ((i = (tree -> ob_head)) > 0)
+		if ((i = (tree->ob_head)) > 0)
 		{
-			for	(; i <= (tree -> ob_tail); i++)
+			for	(; i <= (tree->ob_tail); i++)
 			{
 				if (w == iw && i == obj)
 					continue;		/* Das Programm selbst */
@@ -518,7 +521,8 @@ static int ddcreate(int apid, int winid, int msx, int msy, int kstate, char exts
 	pipename[17] = 'A';
 	pipename[18] = 'A' - 1;
 	fd = -1;
-	do{
+	do
+	{
 		pipename[18]++;
 		if (pipename[18] > 'Z')
 		{
@@ -708,14 +712,14 @@ int drag_and_drop(int whdl, int kbsh, int mx, int my)
 
 int tst_exepath(char *path)
 {
-	int typ;
+	int type;
 
-	typ = suffixtyp(path);
-	if (typ == PGMT_NOEXE)
+	type = suffixtyp(path);
+	if (type == PGMT_NOEXE)
 	{
 		Rform_alert(1, ALRT_NO_PGM_ASNG);
 	}
-	return typ;
+	return type;
 }
 
 
@@ -735,14 +739,14 @@ int tst_exepath(char *path)
 int dclick(WINDOW *w, int obj, int kbsh)
 {
 	APPLICATION *ap;
-	int		ret,typ;
-	int		pgm_config;
-	char		path[200];
-	MYDTA	*file;
+	int ret,type;
+	int pgm_config;
+	char path[200];
+	MYDTA *file;
 
 
 	path[0] = EOS;
-	ret = obj_typ(w, obj, path, &file, &typ, &pgm_config, &ap);
+	ret = get_obj_type(w, obj, path, &file, &type, &pgm_config, &ap);
 
 /*
 if (ret < 0)
@@ -752,8 +756,8 @@ if (ret == 0)
 	Cconws("ret == 0 ");
 else
 	Cconws("ret > 0 ");
-Cconws("typ = ");
-Cconout((char) (typ >> 8)); Cconout((char) typ);
+Cconws("type = ");
+Cconout((char) (type >> 8)); Cconout((char) type);
 Cconout(' ');
 Cconws(path);
 */
@@ -765,7 +769,7 @@ Cconws(path);
 	}
 	if (ret < 0)			/* weder Datei noch Pfad */
 	{
-		switch(typ)
+		switch (type)
 		{
 			case 'D_':
 			case 'P_': Rform_alert(1, ALRT_CANT_OPEN);
@@ -794,7 +798,7 @@ Cconws(path);
 		/* Doppelklick auf Ordner in Fenster		 */
 		/* ------------------------------------------ */
 
-		if (typ == '_O')
+		if (type == '_O')
 		{
 			if (kbsh & K_ALT)
 			{
@@ -821,7 +825,7 @@ Cconws(path);
 		}
 	}
 
-	/* Doppelklick auf Datei (Programm oder Textdatei oder ... ) 	*/
+	/* Doppelklick auf Datei (Programm oder Textdatei oder ...) 	*/
 	/*  1) Datei ist kein Programm, CTRL gedrÅckt:				*/
 	/*		Datei(en) mit Standard- Editor aufrufen				*/
 	/*  2) Datei ist nicht ausfÅhrbar oder ALT gedrÅckt:			*/
@@ -832,7 +836,7 @@ Cconws(path);
 
 	else
 	{
-		if ((typ != '_X') && (kbsh & K_CTRL))
+		if ((type != '_X') && (kbsh & K_CTRL))
 		{
 
 			/* CTRL+ALT mit Textdatei: Anzeigen		*/
@@ -847,23 +851,23 @@ Cconws(path);
 			else
 			{
 				strcpy(path, menuprograms[3].path);
-				typ = tst_exepath(path);
-				if (typ != PGMT_NOEXE)
+				type = tst_exepath(path);
+				if (type != PGMT_NOEXE)
 				{
 					ap = path_to_app(path);
-					starten(path, NULL, typ, ap, w, 0, kbsh & ~K_CTRL);
+					start_program(path, NULL, type, ap, w, 0, kbsh & ~K_CTRL);
 				}
 			}
 			return 0;
 		}
-		if (typ == '_T')
+		if (type == '_T')
 		{
 			prt_icns(w, FALSE);
 			return 0;
 		}
-	 	if ((typ & 0xff) == 'X')
+	 	if ((type & 0xff) == 'X')
 	 	{
-			starten(path, NULL, pgm_config, ap, w, obj, kbsh);
+			start_program(path, NULL, pgm_config, ap, w, obj, kbsh);
 			return (kbsh & K_ALT);
 		}
 	}
@@ -886,7 +890,6 @@ Cconws(path);
 
 static void set_selmask(WINDOW *w, char *sel_mask)
 {
-	extern void upperstring( char *s );	/* pattern.c */
 	size_t olen,len;
 	char *wmask;
 
@@ -951,7 +954,7 @@ void open_window(char *path, char *mask, char *sel_mask,
 		ret = ENOWND;
 	else
 	{
-		new_w = create_wnd( free, path, mask, 0, 0, &ret);
+		new_w = create_wnd(free, path, mask, 0, 0, &ret);
 		if (new_w)
 		{
 			ret = opn_wnd(new_w, FALSE);
@@ -998,7 +1001,7 @@ void opn_newwnd(char *path)
 static long setpath(char *program, int stdpath)
 {
 	long doserr;
-	char	rett,*endp;
+	char rett, *endp;
 	char *path;
 	register int i;
 	WINDOW **pw,*w,*tw;
@@ -1060,8 +1063,8 @@ static int do_va_start(char *program, COMMAND *param,
 				int app_knows_vastart, int prompt)
 {
 	char apname[9];
-	int	msg[8];
-	int  dst_apid,ret;
+	int msg[8];
+	int dst_apid,ret;
 
 
 	/* Wenn mîglich, VA_START aufrufen */
@@ -1144,13 +1147,13 @@ static int do_va_start(char *program, COMMAND *param,
 int start_path(char *path, char *tail, int kbsh)
 {
 	APPLICATION *a;
-	int typ, config;
+	int type, config;
 	char *pgm;
 	char cmd[128];
 
 
-	path_typ(path, &typ, &config,	&a);
-	if ((typ == '_T') && (!a) && (!tail))
+	get_path_type(path, &type, &config,	&a);
+	if ((type == '_T') && (!a) && (!tail))
 	{
 /*
 Cconws("#");
@@ -1158,12 +1161,12 @@ Cconws(path);
 Cconws("#\r\n");
 */
 		pgm = menuprograms[1].path;	/* Anzeigeprogramm */
-		typ = tst_exepath(pgm);
-		if (typ != PGMT_NOEXE)
+		type = tst_exepath(pgm);
+		if (type != PGMT_NOEXE)
 		{
-			typ &= ~PGMT_TP;	/* .TTP -> .TOS */
+			type &= ~PGMT_TP;	/* .TTP -> .TOS */
 			tail = path;
-			config = typ;
+			config = type;
 			path = pgm;
 			if (pgm[0] && (pgm[1] != ':'))
 			{
@@ -1173,7 +1176,7 @@ Cconws("#\r\n");
 			}
 		}
 	}
-	return starten(path, tail, config, a, NULL, -1, kbsh);
+	return start_program(path, tail, config, a, NULL, -1, kbsh);
 }
 
 
@@ -1188,7 +1191,7 @@ Cconws("#\r\n");
 *
 ****************************************************************/
 
-void starte_dienstpgm(char *name, int is_multi, int isargv,
+void start_util_program(char *name, int is_multi, int isargv,
 					char *arg1, char *arg2, char *arg3)
 {
 	char cmd[128];
@@ -1252,7 +1255,7 @@ void starte_dienstpgm(char *name, int is_multi, int isargv,
 *
 ****************************************************************/
 
-int starten(char *path, char *tail, int config, APPLICATION *ap,
+int start_program(char *path, char *tail, int config, APPLICATION *ap,
 			WINDOW *w, int obj, int kbsh)
 {
 	char *program;					/* argv[0] */
@@ -1282,7 +1285,7 @@ int starten(char *path, char *tail, int config, APPLICATION *ap,
 	}
 
 	xarg_free = MAX_PARAMLEN;
-	xarg = nxt_xarg = Malloc(xarg_free+3);	/* Platz fÅr Kommandozeile */
+	xarg = nxt_xarg = Malloc(xarg_free + 3);	/* Platz fÅr Kommandozeile */
 	if (!xarg)
 	{
 		err_alert(ENSMEM);
@@ -1297,7 +1300,7 @@ int starten(char *path, char *tail, int config, APPLICATION *ap,
 		if (!ap)
 		{
 			Rform_alert(1, ALRT_NO_PGM_ASNG);
-			goto ende;
+			goto end_ret;
 		}
 		config = ap->config;
 		program = ap->path;
@@ -1341,7 +1344,7 @@ int starten(char *path, char *tail, int config, APPLICATION *ap,
 	/* -------------------------------------------------------- */
 
 	if (add_param(program, &nxt_xarg, &xarg_free, TRUE))
-		goto ende;
+		goto end_ret;
 
 	/* alle aktivierten Icons auûer dem doppelgeklickten werden als	*/
 	/* Parameter Åbernommen (nicht bei Batchprozessor Åber ^B).		*/
@@ -1351,13 +1354,13 @@ int starten(char *path, char *tail, int config, APPLICATION *ap,
 	if (arg1)
 	{
 		if (add_param(arg1, &nxt_xarg, &xarg_free, TRUE))
-			goto ende;
+			goto end_ret;
 	}
 
 	if (tail)	/* Hier Leerzeichen belassen */
 	{
 		if (add_param(tail, &nxt_xarg, &xarg_free, FALSE))
-			goto ende;
+			goto end_ret;
 	}
 
 	if (w)
@@ -1366,7 +1369,7 @@ int starten(char *path, char *tail, int config, APPLICATION *ap,
 		add_args = 0;
 
 	if (add_args < 0)
-		goto ende;
+		goto end_ret;
 
 	/* Wenn mîglich, wird die Liste der Parameter in eine normale	*/
 	/* Kommandozeile gewandelt.								*/
@@ -1383,7 +1386,7 @@ int starten(char *path, char *tail, int config, APPLICATION *ap,
 		((kbsh & K_CTRL) || ((config & PGMT_TP) && !add_args)))
 	{
 		if (!dial_ttppar(program, xarg+1))
-			goto ende;
+			goto end_ret;
 		xarg[0] = (char) strlen(xarg+1);
 	}
 
@@ -1399,7 +1402,7 @@ int starten(char *path, char *tail, int config, APPLICATION *ap,
 
 	err_file = program;
 	if (setpath(execpath, stdpath))
-		goto ende;
+		goto end_ret;
 
 	/* Nachsehen, ob die Datei Åberhaupt existiert	*/
 	/* ---------------------------------------------- */
@@ -1409,7 +1412,7 @@ int starten(char *path, char *tail, int config, APPLICATION *ap,
 	if (doserr < E_OK)
 	{
 		err_alert(doserr);
-		goto ende;
+		goto end_ret;
 	}
 
 	/* ACC starten */
@@ -1425,7 +1428,7 @@ int starten(char *path, char *tail, int config, APPLICATION *ap,
 			err_alert(ENSMEM);
 		else
 			success = TRUE;
-		goto ende;
+		goto end_ret;
 	}
 
 	/* Parameter fÅr "MAGXDESK resident" oder "nichtresident"	*/
@@ -1484,7 +1487,7 @@ int starten(char *path, char *tail, int config, APPLICATION *ap,
 			err_alert(ENSMEM);
 		else
 			success = TRUE;
-		goto ende;
+		goto end_ret;
 	}
 
 	/* Andernfalls werden alle Fenster geschlossen und gelîscht,	*/
@@ -1506,7 +1509,7 @@ int starten(char *path, char *tail, int config, APPLICATION *ap,
 	}
 	fix_xarg(xarg, nxt_xarg);
 	if (!shel_write(doex, isgr, isover, shw_cmd, xarg))
-		goto ende;
+		goto end_ret;
 
 	Mfree(xarg);
 	xarg = NULL;
@@ -1518,7 +1521,7 @@ int starten(char *path, char *tail, int config, APPLICATION *ap,
 		res_exec();
 	return -1;
 
-  ende:
+  end_ret:
 	if (xarg)
 		Mfree(xarg);
 
