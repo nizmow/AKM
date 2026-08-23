@@ -259,9 +259,10 @@ extern char *icf_pgms;		/* Programmnamen	*/
 extern char *icf_fils;		/* Dateitypen		*/
 #if MAGIXDESK == 0
 extern int ismagix;		/* Multitasking - GEM */
-extern void _ende(int code);
+extern void _leave(int code);
 extern int isgem2;
 extern int iskgem;		/* KAOS 1.4 */
+extern int ismagic622;
 #endif
 extern int hdl_to_fnr(int whdl);
 extern void get_char_dim(void);

@@ -5,7 +5,7 @@
 *
 *********************************************************************/
 
-/* #include <stdio.h> */	/* for printf debugging */
+#include <stdio.h>		/* for printf debugging */
 #include <string.h>
 #include <mgx_dos.h>	/* include before tos.h */
 #include <tos.h>
@@ -440,7 +440,6 @@ static void move_icons(int x_koor, int y_koor, int wnr, OBJECT *tree, int kbsh)
 static int detect_mouse_drag(void)
 {
 	EVNT w_ev;
-
 
 #if 0
 	long last_clicktime = getHz200();

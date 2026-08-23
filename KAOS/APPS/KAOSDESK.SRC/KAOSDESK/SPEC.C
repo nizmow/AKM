@@ -231,6 +231,11 @@ void get_syshdr(void)
 	sysver  = syshdr->os_version;
 	aesvars = (AESVARS_LIGHT *) syshdr->os_magic;
 	ismagix	= iskgem && aesvars->magic2 == 'MAGX';
+	if (ismagix)
+	{
+		/* benîtigt fÅr eigene Doppelklick-Behandlung */
+		ismagic622 = (aesvars->version >= 0x0622);
+	}
 
 	/* p_cookies und kaos_date holen */
 
@@ -270,7 +275,10 @@ void get_syshdr(void)
 		if (memcmp(apname, "KAOSDESK", 8L))
 			apname = NULL;
 	}
-	else	apname = NULL;
+	else
+	{
+		apname = NULL;
+	}
 #endif
 
 #if	HICOL
@@ -1507,13 +1515,25 @@ static void set_apname(char *path)
 
 /****************************************************************
 *
+* Hilfsfunktion fÅr getHz200
+*
+****************************************************************/
+
+static long _getHz200(void)
+{
+	return *_HZ_200;
+}
+
+
+/****************************************************************
+*
 * Systemzeit fÅr Intervall-Berechnungen
 *
 ****************************************************************/
 
 long getHz200(void)
 {
-	return *_HZ_200;
+	return Supexec(_getHz200);
 }
 
 

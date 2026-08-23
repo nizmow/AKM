@@ -1620,7 +1620,7 @@ void dial_settings(void)
 		change_res(ndrvr, txtheight);
 #else
 		if (change_res(ndrvr, txtheight))
-			_ende(2);
+			_leave(2);
 #endif
 	}
 }

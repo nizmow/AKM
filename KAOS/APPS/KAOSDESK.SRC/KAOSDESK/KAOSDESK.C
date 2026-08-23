@@ -52,6 +52,7 @@ int isgem2;				/* GEM 2.2 */
 int iskgem;				/* KAOS - GEM */
 int ismagix;			/* Multitasking - GEM */
 						/* MAGIXDesk l„uft immer unter MAGIX! */
+int ismagic622 = 0;		/* moderne Doppelklick-Behandlung */
 #endif
 int isfirst;			/* KAOSDESK vom Desktop gestartet */
 
@@ -401,7 +402,7 @@ void get_char_dim(void)
 *
 ****************************************************************/
 
-void _ende(int code)
+void _leave(int code)
 {
 	close_all_wind();
 	wind_update(FALSE);
@@ -462,7 +463,7 @@ void ende(void)
 		shel_wdef("", "");
 	}
 
-	_ende(ret);
+	_leave(ret);
 }
 #endif
 
@@ -1792,20 +1793,26 @@ void main()
 	int message[16];
 	int waitfor;
 	int ltime;
+	int wait_nclicks;
 	long last_clicktime = 0;
-	unsigned dclick_interval_hz200;		/* in 5-ms-Einheiten */
 
 
 	anfang();
+	wait_nclicks = ismagic622 ? 1 : 2;
 	Mgraf_mouse(ARROW);
 	for (;;)
 	{
+		unsigned dclick_interval_hz200;		/* in 5-ms-Einheiten */
+
 		upd_drives();
 		upd_infos();
 		modify_menu();
-		
-		/* Das eingestellte Doppelklick-Intervall k”nnte ge„ndert worden sein. */
-		dclick_interval_hz200 = get_dclick_interval_ms() / 5;
+
+		if (ismagic622)
+		{
+			/* Das eingestellte Doppelklick-Intervall k”nnte ge„ndert worden sein. */
+			dclick_interval_hz200 = get_dclick_interval_ms() / 5;
+		}
 
 		/* Wenn ein Laufwerk mit Tastatur selektiert wurde, wird 200ms */
 		/* lang auf den zweiten Klick gewartet.                        */
@@ -1835,7 +1842,7 @@ void main()
 		}
 
 		w_ev.mwhich = evnt_multi(waitfor,
-						  1,			/* Doppelklicks selbermachen */
+						  wait_nclicks,	/* ggf. Doppelklicks selbermachen */
 						  1,			/* nur linke Maustaste		*/
 						  1,			/* linke Maustaste gedrckt	*/
 						  0,NULL,		/* kein 1. Rechteck			*/
@@ -1903,20 +1910,23 @@ void main()
 
 		if (w_ev.mwhich & MU_BUTTON)
 		{
-			/* Doppelklick feststellen */
-
-			long clicktime = getHz200();
-#if 0
-			printf("\x1b" "H %lu->%lu (%lu ms # %u ms)   \n",
-					last_clicktime, clicktime,
-					(clicktime - last_clicktime) * 5,
-					dclick_interval_hz200 * 5);
-#endif
-			if (clicktime - last_clicktime < dclick_interval_hz200)
+			if (ismagic622)
 			{
-				w_ev.mclicks = 2;
+				/* Doppelklick feststellen */
+
+				long clicktime = getHz200();
+#if 0
+				printf("\x1b" "H %lu->%lu (%lu ms # %u ms)   \n",
+						last_clicktime, clicktime,
+						(clicktime - last_clicktime) * 5,
+						dclick_interval_hz200 * 5);
+#endif
+				if (clicktime - last_clicktime < dclick_interval_hz200)
+				{
+					w_ev.mclicks = 2;
+				}
+				last_clicktime = clicktime;
 			}
-			last_clicktime = clicktime;
 			
 			handle_mouse_button(w_ev.mclicks, (EVNTDATA *) &(w_ev.mx));
 
