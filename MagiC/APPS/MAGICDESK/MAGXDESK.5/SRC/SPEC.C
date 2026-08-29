@@ -53,31 +53,9 @@ void get_syshdr(void)
 	os_ver_s[25] = (((aesvars->date) >>  8) & 0xf) + '0';
 	os_ver_s[26] = (((aesvars->date) >>  4) & 0xf) + '0';
 	os_ver_s[27] = (((aesvars->date)      ) & 0xf) + '0';
+
+	ismagic622 = (aesvars->version >= 0x0622);
 }
-
-
-/****************************************************************
-*
-* Žndert die Aufl”sung
-*
-****************************************************************/
-
-/*
-int change_res(int dev, int txt)
-{
-	if (!aesvars)
-		return 0;
-#if		COUNTRY==FRG
-	if (1 != form_alert(1, "[2][Aufl”sungswechsel ?][ OK | Abbruch ]"))
-		return 0;
-#elif	COUNTRY==USA
-	if (1 != form_alert(1, "[2][Change resolution ?][ OK | Cancel ]"))
-		return 0;
-#endif
-	aesvars->chgres(dev, txt);
-	return 1;
-}
-*/
 
 
 /*********************************************************************

@@ -32,6 +32,7 @@ int *aes_global;
 int work_out[57], work_in [12];	 /* VDI- Felder fÅr v_opnvwk() */
 int isfirst;					/* MAGXDESK gebootet */
 int is_primary_shell;			/* Haupt-Shell */
+int ismagic622 = 0;		/* moderne Doppelklick-Behandlung */
 
 int aes_handle;
 int vdi_handle;
@@ -962,21 +963,6 @@ void shutdown(int dev, int txt)
 		strcpy(shutdown_prg, desk_path);
 		if (dev >= 0)
 			strcat(shutdown_prg, "chgres.prg");
-/*
-		{
-#if			COUNTRY==FRG
-			if (1 != form_alert(1, "[2][Auflîsungswechsel ?][ OK | Abbruch ]"))
-				return;
-#elif		COUNTRY==USA
-			if (1 != form_alert(1, "[2][Change resolution ?][ OK | Cancel ]"))
-				return;
-#endif
-		}
-		itoa(dev, tail+1, 10);
-		strcat(tail+1, " ");
-		itoa(txt, tail+1+strlen(tail+1), 10);
-		tail[0] = (char) strlen(tail+1);
-*/
 		else
 			strcat(shutdown_prg, "shutdown.prg");
 
@@ -1750,6 +1736,7 @@ static void handle_message(EVNT *w_ev)
 void main()
 {
 	EVNT w_ev;
+	int wait_nclicks;
 	int button_waitclicks;
 	int mbuttons;
 	int waitfor, mbmask;
@@ -1758,6 +1745,7 @@ void main()
 
 
 	pgm_init();
+	wait_nclicks = ismagic622 ? 1 : 2;
 	Mgraf_mouse(ARROW);
 
 	for (;;)
@@ -1783,7 +1771,7 @@ void main()
 		}
 		else
 		{
-			button_waitclicks = 1; /* Doppelklicks manuell erkennen, nicht vom System */
+			button_waitclicks = wait_nclicks; /* Doppelklicks, wenn mîglich, manuell erkennen, nicht vom System */
 			mbuttons = 1;		/* linke Maustaste gedrÅckt	*/
 			mbmask = 1;		/* nur linke Maustaste */
 		}
@@ -1841,16 +1829,19 @@ void main()
 
 		if (w_ev.mwhich & MU_BUTTON)
 		{
-			/* linken Doppelklick feststellen */
-
-			if (w_ev.mbutton & 1)
+			if (ismagic622)
 			{
-				long clicktime = getHz200();
-				if (clicktime - last_clicktime < dclick_interval_hz200)
+				/* linken Doppelklick feststellen */
+	
+				if (w_ev.mbutton & 1)
 				{
-					w_ev.mclicks = 2;
+					long clicktime = getHz200();
+					if (clicktime - last_clicktime < dclick_interval_hz200)
+					{
+						w_ev.mclicks = 2;
+					}
+					last_clicktime = clicktime;
 				}
-				last_clicktime = clicktime;
 			}
 
 			/* Doppelklick mit rechter Maustaste simulieren */
