@@ -230,7 +230,7 @@ void get_syshdr(void)
 	syshdr  = (SYSHDR *)  (* _SYSBASE);
 	sysver  = syshdr->os_version;
 	aesvars = (AESVARS_LIGHT *) syshdr->os_magic;
-	ismagix	= iskgem && aesvars->magic2 == 'MAGX';
+	ismagix	= aesvars->magic2 == 'MAGX';
 	if (ismagix)
 	{
 		/* ben”tigt fr eigene Doppelklick-Behandlung */
