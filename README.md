@@ -24,7 +24,7 @@ Applications:
 * MGCOPY
 * MGNOTICE
 * MGVIEW
-* SHUDOWN
+* SHUTDOWN
 * VT52
 
 Tools:
@@ -37,6 +37,9 @@ and various libraries, development demo code and test code
 # Complete, including MVDI Sources
 
 Upload complete as of 2018-11-20
+
+# Screenshots
+<img alt="No" src="assets/magxdesk - 256 colours.png" width="1024">
 
 # License
 
