@@ -42,7 +42,11 @@ Important notes:
 	The driver "MFM4IP.SYS" had an annoying bug. I resolved it via source code.
 	The symptom was a yellow colour instead of black, but only with NVDI.
 
-	MXVDIKNP.O seems to be a patched version from MXVDIKNL.O. Its timestamp (2001-09-03)
-	 is newer than those of the other files (1996-05-17 and 1998-02-06). Is is referred to
-	 by the latest linker input files (.INP) and is most probably needed for MagicMacX/AtariX.
-	 A binary diff reveals that I replaced two 68k instructions by NOPs.
+	MXVDIKNP.O is a patched version from MXVDIKNL.O, needed by MagicMacX, AtariX
+	and MagicOnLinux. This code in LINEA.S has been replaced by NOPs:
+
+		mouse_int_lower:
+			move sr,-(sp)
+			movem.l d0-d3/a0-a1,-(sp)
+			ori #$0700,sr
+			andi #$fdff,sr		;auf IPL 5 herunterschalten  <===== REMOVED

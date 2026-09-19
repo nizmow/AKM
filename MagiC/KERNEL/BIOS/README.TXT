@@ -19,7 +19,7 @@ XFS95/
 	Code for MagicPC, provided by Franz Schmerbeck
 
 
-Dependencies:
+Direct source code dependencies:
 
 	ATARI/MAGIBIOS.S
 
@@ -109,3 +109,5 @@ Some of the files have not or not entirely been written by me. These code parts 
 i.e. with tab size 3 or 8 and different comments.
 
 The file "DSP.S" seems to be based on a Facon TOS disassembly.
+
+ATARI/MODULES/IDE, needed for the Falcon computer, was provided by Julian Reschke.
