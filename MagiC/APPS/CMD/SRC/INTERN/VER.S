@@ -1,5 +1,6 @@
 ver_com:
- lea      kaos_s(pc),a0
+	; MagiC-, KAOS- oder TOS-Version
+ lea      kaos_s(pc),a0            * 'MagiC v' oder 'KAOS v'
  move.b   is_kaos(pc),d0
  bne.b    ver_1
  lea      tos_s(pc),a0
@@ -8,7 +9,7 @@ ver_1:
  move.l   d+c_sysbase(pc),a0
  move.w   os_version(a0),d0
  move.w   os_gendatg(a0),-(sp)
- bsr.b    print_ver
+ bsr.b    print_ver                * BS-Versionsnummer, z.B. "3.0"
  moveq    #' ',d0
  bsr      putchar
  move.w   (sp)+,d0
@@ -16,15 +17,17 @@ ver_1:
  lea      (sp),a0
  bsr      _date_to_str
  lea      (sp),a0
- bsr      strstdout
+ bsr      strstdout                * BS-Erstelldatum, "z.B. 26/03/26"
  adda.w   #10,sp
- lea      gemdos_s(pc),a0
+	; GEMDOS-Version
+ lea      gemdos_s(pc),a0          * "GEMDOS v"
  bsr      strstdout
  gemdos   Sversion
  addq.l   #2,sp
  ror.w    #8,d0                    * Low/High - Byte vertauschen
- bsr.b    print_ver
+ bsr.b    print_ver                * GEMDOS-Versionsnummer z.B. "0.32"
  bsr      crlf_stdout
+	; MCMD- oder CMD-Version
 	IFF ACC
  lea      titels(pc),a0
 	IFNE MAGIX

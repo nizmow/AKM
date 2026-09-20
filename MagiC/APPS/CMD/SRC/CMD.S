@@ -38,7 +38,7 @@ ANZ_SUFFIX     EQU  6	; siehe unten!
 
 **********************************************************************
 *
-* CMD, letzte Žnderung 28.5.92, dann 8.2.2026
+* CMD, letzte Žnderung 28.5.92, dann 20.9.2026
 *
 * Switches:                   CMD.PRG
 *           KAOS              KCMD.PRG
@@ -2179,11 +2179,12 @@ cat_strings:
 	ENDIF
 
 
-* int read_str(d0 = int handle, a0 = char *string)
+* int read_str(d0 = int handle, a0 = char *dst_string)
 *
-*  liest einen mit LF abgeschlossen String ( <= 79 Z.) ein und berliest CR.
+*  Liest eine mit LF abgeschlosse Zeichenkette ein und berliest CR.
+*  Die maximale L„nge sind 127 Zeichen plus end-of-string.
 *  Fr handle = 0 wird von CON: gelesen.
-*  Der eingelesene String wird immer mit '\0' abgeschlossen
+*  Die eingelesene Zeichenkette wird immer mit '\0' abgeschlossen
 *  Rckgabe = -1, wenn Fehler, sonst 0
 
 read_str:
@@ -3414,7 +3415,7 @@ titels:       DC.B  'GEMDOS¿ SHELL v2.62 ½ ''90 Andreas Kromke',CR,LF,LF,0
 	ENDIF
 	IF KAOS
 	IFNE MAGIX
-titels:       DC.B  'MagiC SHELL v2.68 ½ ''93/''26 Andreas Kromke',CR,LF,LF,0
+titels:       DC.B  'MagiC SHELL v2.69 ½ ''93/''26 Andreas Kromke',CR,LF,LF,0
 	ELSE
 titels:       DC.B  'KAOS¿   SHELL v2.62 ½ ''90 Andreas Kromke',CR,LF,LF,0
 	ENDIF
