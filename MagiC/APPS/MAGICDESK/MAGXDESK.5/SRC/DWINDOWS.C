@@ -148,16 +148,7 @@ void upd_wind(WINDOW *w)
 
 /****************************************************************
 *
-* Sortiert die Dateien fÅr Fenster <wnr>.
-* Auûerdem werden die "nicht zur Maske passenden" Dateien nach
-* hinten sortiert und
-*
-*	<w->shownum>
-*	<w->max_fname>
-*	<w->max_wicnobj>
-*	<w->max_is_alias>
-*
-* initialisiert.
+* Hilfsfunktion fÅr sort_mydtas()
 *
 ****************************************************************/
 
@@ -228,19 +219,34 @@ static int cmp_mydtas(MYDTA **ff1, MYDTA **ff2)
 }
 
 
+/****************************************************************
+*
+* Sortiert die Dateien fÅr Fenster <w>.
+* Auûerdem werden die "nicht zur Maske passenden" Dateien nach
+* hinten sortiert und
+*
+*	<w->shownum>
+*	<w->max_fname>
+*	<w->max_wicnobj>
+*	<w->max_is_alias>
+*
+* initialisiert.
+*
+****************************************************************/
+
 static void sort_mydtas(WINDOW *w)
 {
 	extern void 	shelsort(void *base, size_t count, size_t size, int (*compar)());
 	MYDTA **files = w->pmydta;
-	int   anzahl  = w->realnum;
 	register int i,match,len,olen;
 	register MYDTA **dtas,*mdta;
+	int num_files_real = w->realnum;	/* tatsÑchliche Anzahl Dateien */
 
 
 	w->shownum = 0;
 	w->max_wicnobj = 0;
 	w->max_fname = MIN_FNAMLEN;
-	for	(dtas = files, i = 0; i < anzahl; i++)
+	for	(dtas = files, i = 0; i < num_files_real; i++)
 	{
 		mdta = *dtas++;
 		match = ((mdta->attrib & F_SUBDIR) ||
@@ -621,18 +627,16 @@ static void set_wind_icons(WINDOW *mywindow)
 	char path[128];
 	char *epath;
 	MYDTA **z,*dests;
-	int anzahl;
+	int num_files_real;
 	int type;
 
 
 	strcpy(path, mywindow->path);
 	epath = path+strlen(path);	/* hier Dateiname ansetzen */
 	mywindow->max_hicon = 0;
-	anzahl = mywindow->realnum;
-	for	(z = mywindow->pmydta;
-		 z < mywindow->pmydta + anzahl;
-		 z++
-		)
+	num_files_real = mywindow->realnum;
+
+	for	(z = mywindow->pmydta; z < mywindow->pmydta + num_files_real; z++)
 	{
 		dests = *z;
 		dests->flags = 0;					/* Datei */
@@ -712,13 +716,13 @@ static void set_wind_icons(WINDOW *mywindow)
 *
 * Liest das Verzeichnis fÅr Fenster <wnr> ein und gibt ggf. einen
 *  DOS- Fehlercode zurÅck.
-* Das Vezeichnis wird in die MYDTAs des Fensters eingelesen, dabei
+* Das Verzeichnis wird in die MYDTAs des Fensters eingelesen, dabei
 *  werden in <icontyp> bereits die Icontypen festgelegt.
 * Es werden alle Dateien eingelesen, ohne Maske zu berÅcksichtigen.
 * Tritt irgendwo ein Fehler EPTHNF auf, wird das Verzeichnis auf
 *  "Root" gesetzt und der Vorgang wiederholt. Trat ein anderer Fehler
-*  auf oder war die Root schon eingeschaltet, wird der Fehlercode
-*  zurÅckgegeben.
+*  auf oder war das Wurzelverzeichnis ("root") schon erreicht,
+*  wird der Fehlercode zurÅckgegeben.
 * Wenn <free_flag> != 0 ist, wird der freie Speicher berechnet.
 *
 ****************************************************************/
@@ -729,7 +733,7 @@ static long read_wind(WINDOW *w, int free_flag)
 	static char *rpath = "X:\\";
 	char dname[65];
 	char *epath;
-	register int anzahl,drv,real_drv;
+	register int num_files_real,drv,real_drv;
 	int maxnamelen;
 	int maxmem_per_name;
 	long err;
@@ -884,7 +888,7 @@ static long read_wind(WINDOW *w, int free_flag)
 		limit = dests + w->memblksize - sizeof(OBJECT)
 			- maxmem_per_name;	/* Objekt #0 berÅcksichtigen! */
 
-		anzahl = 0;
+		num_files_real = 0;
 
 		err = err_xr = E_OK;
 		while ((err == E_OK) && (err_xr == E_OK))
@@ -926,7 +930,7 @@ static long read_wind(WINDOW *w, int free_flag)
 			/* ---------------------- */
 
 			mdta = (MYDTA *) dests;
-			if ((!anzahl) && (path[3]) && (settings.use_pp))
+			if ((!num_files_real) && (path[3]) && (settings.use_pp))
 			{
 
 				/* ".." simulieren */
@@ -994,13 +998,13 @@ static long read_wind(WINDOW *w, int free_flag)
 
 			/* alles klar, abspeichern... */
 
-			mdta->number = anzahl;
+			mdta->number = num_files_real;
 			mdta->time = xa.mtime;	/* Modif.zeit */
 			mdta->date = xa.mdate;
 			mdta->filesize = xa.size;
 			mdta->attrib = xa.attr;
 			mdta->mode = xa.mode;
-			anzahl++;
+			num_files_real++;
 			dests += sizeof(MYDTA)+strlen(mdta->filename)+1;
 			if (((long) dests) & 1)
 				dests++;		/* WORD align! */
@@ -1025,18 +1029,17 @@ static long read_wind(WINDOW *w, int free_flag)
 	}
 	while (err != E_OK);
 
-	w->realnum = anzahl;
+	w->realnum = num_files_real;
 
 	/* Zeiger aufbauen */
 	/* --------------- */
 
 	w->pmydta = (MYDTA **) dests;
-	w->pobj = (OBJECT *) (dests + anzahl * sizeof(MYDTA *));
-	limit = (char *) (w->pobj + anzahl + 1);
+	w->pobj = (OBJECT *) (dests + num_files_real * sizeof(MYDTA *));
+	limit = (char *) (w->pobj + num_files_real + 1);
 	w->memblksize = limit - w->memblk;
 	Mshrink(0, w->memblk, w->memblksize);
-	for	(p_d = w->pmydta,dests = w->memblk;
-			anzahl > 0; anzahl--)
+	for	(p_d = w->pmydta,dests = w->memblk; num_files_real > 0; num_files_real--)
 	{
 		mdta = (MYDTA *) dests;
 		*p_d++ = mdta;
@@ -1099,7 +1102,7 @@ static void calc_collin(WINDOW *w)
 
 	x = w->in.g_w - w->xoffs + w->xdist;
 	y = w->in.g_h - w->yoffs + w->ydist;
-	if (settings.is_1col && settings.show_mode == M_ATEXT)
+	if (settings.show_single_col && settings.show_mode == M_ATEXT)
 		c = 1;
 	else
 	{
@@ -1123,8 +1126,8 @@ static void calc_collin(WINDOW *w)
 * Ist dsel_flg FALSE, werden die "ob_flags" aus den MYDTAs geholt
 *  (Bit 2), um den Selectstatus zu erhalten, der vorher mittels
 *  "save_select_status" gesichert wurde.
-* Eingabe: (global) showtyp,is_groesse,
-*				is_datum,is_zeit
+* Eingabe: (global) showtyp,show_file_size,
+*				show_file_date,show_file_time
 * Ausgabe: (global) showw,showh
 *
 ****************************************************************/
@@ -1132,7 +1135,7 @@ static void calc_collin(WINDOW *w)
 static void calc_obj_look(WINDOW *w, int dsel_flag)
 {
 	int out[8];
-	int anzahl;
+	int num_files_shown;
 	OBJECT *o;
 	MYDTA **p_d,*d;
 	CICONBLK *c;
@@ -1142,9 +1145,9 @@ static void calc_obj_look(WINDOW *w, int dsel_flag)
 
 
 
-	anzahl	= w->shownum;
-	o 		= w->pobj;
-	p_d 		= w->pmydta;
+	num_files_shown = w->shownum;
+	o = w->pobj;
+	p_d = w->pmydta;
 
 	if (settings.show_mode == M_ATEXT)
 	{
@@ -1164,7 +1167,7 @@ static void calc_obj_look(WINDOW *w, int dsel_flag)
 			/* Breite der Spalte "Dateiname" fÅr Vektorfonts */
 			w->xtab_namelen = 20;
 			w->xtab_typelen = 8;
-			for	(i = 1; i <= anzahl; i++,p_d++)
+			for	(i = 1; i <= num_files_shown; i++,p_d++)
 			{
 				d = *p_d;
 	#pragma warn -pia
@@ -1194,21 +1197,20 @@ static void calc_obj_look(WINDOW *w, int dsel_flag)
 			w->showw = folder_w + 12 + w->xtab_namelen;
 			if (w->dos_mode && settings.show_8p3)
 				w->showw += text_column_dist + w->xtab_typelen;
-			if (settings.is_groesse)
+			if (settings.show_file_size)
 				w->showw += text_column_dist + w->xtab_sizelen;
-			if (settings.is_datum)
+			if (settings.show_file_date)
 				w->showw += text_column_dist + w->xtab_datelen;
-			if (settings.is_zeit)
+			if (settings.show_file_time)
 				w->showw += text_column_dist + w->xtab_timelen;
 		}
 		else
 		{
 			len = (w->dos_mode && settings.show_8p3)
 					? 12 : w->max_fname;
-			w->showw = char_w * (4 + len + 8*settings.is_groesse +
-							 10*settings.is_datum +
-							 7*settings.is_zeit
-							);
+			w->showw = char_w * (4 + len + 8 * settings.show_file_size +
+							 10 * settings.show_file_date +
+							 7 * settings.show_file_time);
 		}
 	}
 	else
@@ -1233,11 +1235,11 @@ static void calc_obj_look(WINDOW *w, int dsel_flag)
 	o->ob_type = G_BOX;
 	o->ob_state = NORMAL;
 	o->ob_spec.index = (long) (WHITE);
-	if (anzahl > 0)
+	if (num_files_shown > 0)
 	{
 		o->ob_flags = NONE;
 		o->ob_head = 1;
-		o->ob_tail = anzahl;
+		o->ob_tail = num_files_shown;
 	}
 	else
 	{
@@ -1247,13 +1249,13 @@ static void calc_obj_look(WINDOW *w, int dsel_flag)
 
 	/* Objekte der Dateien */
 
-	for	(i = 1; i <= anzahl; i++,c++,p_d++)
+	for	(i = 1; i <= num_files_shown; i++,c++,p_d++)
 	{
 		d = *p_d;
 		o++;
-		o->ob_next = (i < anzahl) ? (i+1) : (0);
+		o->ob_next = (i < num_files_shown) ? (i+1) : (0);
 		o->ob_head = o->ob_tail = -1;
-		o->ob_flags = (i < anzahl) ? NONE : LASTOB;
+		o->ob_flags = (i < num_files_shown) ? NONE : LASTOB;
 
 		/* Spezialbehandlung fÅr parent */
 
@@ -1302,16 +1304,16 @@ static int re_arrange(WINDOW *w)
 	int oldcols;
 	int oldshift;
 	int old_xscroll;
-	int anzahl;
+	int num_files_shown;
 	OBJECT *o;
 	long vsize,vpos;
 
 
-	oldcols 		= w->cols;
-	oldshift 		= w->yscroll;
+	oldcols = w->cols;
+	oldshift = w->yscroll;
 	old_xscroll	= w->xscroll;
-	anzahl 		= w->shownum;
-	o 			= w->pobj;
+	num_files_shown = w->shownum;
+	o = w->pobj;
 
 	calc_in(w);			/* Innenmaûe berechnen */
 	calc_collin(w);		/* Zeilen/Spalten berechnen */
@@ -1363,26 +1365,31 @@ static int re_arrange(WINDOW *w)
 		vsize = (1000L * w->in.g_w) / (w->showw + w->xoffs);
 	else
 		vsize = 1000L;
+
 	if (vsize > 1000L)
 		vsize = 1000L;
+
 	wind_set_int(w->handle, WF_HSLSIZE, (int) vsize);
 
 	if (w->max_xscroll)
 		vpos = (1000L * w->xscroll) / w->max_xscroll;
 	else
 		vpos = 1L;
+
 	if (vpos > 1000L)
 		vpos = 1000L;
 	if (vpos < 1)
 		vpos = 1;
+
 	wind_set_int(w->handle, WF_HSLIDE, (int) vpos);
 
 	/* Position und Hîhe ggf. korrigieren (von calc_in schon gesetzt) */
 	/* -------------------------------------------------------------- */
 
-	o->ob_y 	= w->in.g_y - w->yscroll*(w->showh+w->ydist);
-	o->ob_height = w->in.g_h + w->yscroll*(w->showh+w->ydist);
-	for	(i = 0, y = w->yoffs, x = w->xoffs, j = anzahl; j > 0; i++,j--)
+	o->ob_y      = w->in.g_y - w->yscroll * (w->showh + w->ydist);
+	o->ob_height = w->in.g_h + w->yscroll * (w->showh + w->ydist);
+
+	for	(i = 0, y = w->yoffs, x = w->xoffs, j = num_files_shown; j > 0; i++,j--)
 	{
 		o++;
 		if (i >= cols)
@@ -1391,16 +1398,19 @@ static int re_arrange(WINDOW *w)
 			x = w->xoffs;
 			y += w->showh + w->ydist;
 		}
+
 		o->ob_x = x - w->xscroll;
 		o->ob_y = y;
 		if ((o->ob_type == G_ICON) || (o->ob_type == G_CICON))
 			o->ob_y += w->max_hicon - o->ob_spec.iconblk->ib_hicon;
 		x += w->showw + w->xdist;
 	}
-	if (anzahl < oldcols)
-		oldcols = anzahl;
-	if (anzahl < cols)
-		cols = anzahl;
+
+	if (num_files_shown < oldcols)
+		oldcols = num_files_shown;
+	if (num_files_shown < cols)
+		cols = num_files_shown;
+
 	return (oldcols != cols || oldshift != w->yscroll ||
 			old_xscroll != w->xscroll);
 }
@@ -1667,7 +1677,7 @@ static void MY_closed(WINDOW *w, int kstate)
 	dirty_win = TRUE;		/* Fensterliste geÑndert */
 
 	if (i < n_deskicons)
-		graf_shrinkbox ((GRECT *) (&(windows[0]->pobj+i+1)->ob_x),
+		graf_shrinkbox ((GRECT *) (&(windows[0]->pobj + i + 1)->ob_x),
 				 	 &w->out);
 }
 
@@ -1760,6 +1770,7 @@ static void MY_iconified(WINDOW *w, GRECT *g, int mode)
 			path[strlen(path)-1] = EOS;	/* letzten '\' lîschen */
 			text = strrchr(path, '\\') +1;
 		}
+
 		strcpy(w->info, text);
 
 		w->out = *g;
@@ -2790,7 +2801,7 @@ void upd_col(void)
 			 (w->shownum > 1) &&
 			 !(w->flags & WFLAG_ICONIFIED))
 		{
-			if (settings.is_1col)
+			if (settings.show_single_col)
 			{
 				if (w->cols > 1)
 					goto doit;
@@ -2854,7 +2865,7 @@ static void optimalsize_wnd(WINDOW *w)
 	/* Im einspaltigen Textmodus: Hîhe unverÑndert */
 	/* ------------------------------------------- */
 
-	if (settings.is_1col && settings.show_mode == M_ATEXT)
+	if (settings.show_single_col && settings.show_mode == M_ATEXT)
 		goto ok_optw;	/* nix zu machen */
 
 	/* 2. Versuch: Spaltenanzahl erhîhen */

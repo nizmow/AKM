@@ -862,7 +862,7 @@ static int detect_mouse_drag(EVNT *w_ev)
 /****************************************************************
 *
 * Der Benutzer hat an der Bildschirmposition (x_koor,y_koor) mit
-* dem <knopf> einen <anzahl>- fachen Mausklick ausgefhrt.
+* dem <knopf> einen <nclicks>- fachen Mausklick ausgefhrt.
 * Es ist kein BEG_UPDATE ausgefhrt worden.
 *
 ****************************************************************/

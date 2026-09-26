@@ -90,14 +90,14 @@ static void get_path_type(char *path, int *type, int *config,
 /*********************************************************************
 *
 * Untersuchung des Objekts <obj> in <wnr.
-* typ =     '_X'	Programm oder ACC, <config> ist gltig
+* typ =   '_X'	Programm oder ACC, <config> ist gltig
 *		  'BX'	Batch, <config> ist gltig
 *		  'TX'	angemeldete Datei, <config> ist gltig
 *		  '_T'	Text- Datei
-*		  'AT'	unaufgel”ster Alias
+*		  'AT'	unaufgel”ster Alias (symbolischer Link)
 *		  'DO'	Disk
-*		  '_O'    Ordner
-*		  '_F'    Fenster
+*		  '_O'	Ordner
+*		  '_F'	Fenster
 *		  'P_'	Papierkorb
 *		  'D_'	Drucker
 *		  '__'	undefiniert

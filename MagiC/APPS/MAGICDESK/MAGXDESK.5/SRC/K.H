@@ -15,7 +15,7 @@
 #define FALSE  0
 #define EOS    '\0'
 #ifndef NULL
-#define NULL        ((void *) 0L)
+#define NULL   ((void *) 0L)
 #endif
 #define MIN(a,b) ((a < b) ? a : b)
 #define MAX(a,b) ((a > b) ? a : b)
@@ -215,16 +215,16 @@ typedef struct _window
 	int    max_wicnobj;		/* gr”te Iconbreite inkl. Text */
 	int    max_fname;		/* L„nge des l„ngsten Dateinamens */
 	int    max_is_alias;	/* L„ngster Dateiname ist Alias */
-	int    xtab_namelen;	/* Breite der Namensspalte bei Vektorfonts */
-	int    xtab_typelen;	/* Breite der Typspalte bei Vektorfonts und 8+3 Modus */
-	int    xtab_sizelen;	/* Breite der Gr”enspalte bei Vektorfonts */
-	int    xtab_datelen;	/* Breite der Datumsspalte bei Vektorfonts */
-	int    xtab_timelen;	/* Breite der Zeitspalte bei Vektorfonts */
+	int    xtab_namelen;	/* Breite der Namensspalte bei Vektorzeichens„tzen */
+	int    xtab_typelen;	/* Breite der Typspalte bei Vektorzeichens„tzen und 8+3-Modus */
+	int    xtab_sizelen;	/* Breite der Gr”enspalte bei Vektorzeichens„tzen */
+	int    xtab_datelen;	/* Breite der Datumsspalte bei Vektorzeichens„tzen */
+	int    xtab_timelen;	/* Breite der Zeitspalte bei Vektorzeichens„tzen */
 	int    xdist;			/* x-Abstand der Objekte */
 	int    ydist;			/* y-Abstand der Objekte */
 	int    xoffs;			/* x-Rand des ersten Objekts */
 	int    yoffs;			/* y-Rand des ersten Objekts */
-	int    realnum;			/* wahre Anzahl Dateien */
+	int    realnum;			/* tats„chliche Anzahl Dateien */
 	int    shownum;			/* mit Maske angezeigte Anzahl */
 	int    too_much;		/* Flag fr "zuviele Dateien" */
 	int    cols;			/* Objekte/Zeile */
@@ -256,10 +256,10 @@ typedef struct
 	char sort_mode;		/* sortiere nach Namen, Datum, Gr”e, Typ oder gar nicht */ 
 	char show_mode;		/* Flag: Icons oder Text */
 
-	char is_1col;
-	char is_groesse;
-	char is_datum;
-	char is_zeit;
+	char show_single_col;	/* Flag: einspaltige Text-Ansicht */
+	char show_file_size;	/* Flag: Zeige Dateigr”e in der Text-Ansicht */
+	char show_file_date;	/* Flag: Zeige Datei„nderungsdatum in der Text-Ansicht */
+	char show_file_time;	/* Flag: Zeige Datei„nderungszeitpunkt in der Text-Ansicht */
 
 	char cnfm_del;			/* Flag: L”schen best„tigen */
 	char cnfm_copy;			/* Flag: Kop./Versch. best„tigen */

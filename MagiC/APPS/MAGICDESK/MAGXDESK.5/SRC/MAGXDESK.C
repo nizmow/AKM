@@ -20,7 +20,7 @@
 * global variables
 */
 
-const char *pgm_ver = "5.10";	/* may not exceed four characters, due to .RSC file */
+const char *pgm_ver = "5.11";	/* may not exceed four characters, due to .RSC file */
 
 char *gmemptr = NULL;
 WINDOW *windows[NUM_WINDOWS + 1];
@@ -721,7 +721,7 @@ int cdecl draw_userdef(PARMBLK *p)
 		if (isparentdir)
 			goto end_ret;		/* keine weitere Ausgabe */
 
-		if (settings.is_groesse)
+		if (settings.show_file_size)
 		{
 			pos += w->xtab_sizelen;
 			if (!isdir)
@@ -741,14 +741,14 @@ int cdecl draw_userdef(PARMBLK *p)
 			pos += text_column_dist;
 		}
 
-		if (settings.is_datum)
+		if (settings.show_file_date)
 		{
 			date_to_str(buf, m->date);
 			v_gtext(vdi_handle, pos, p->pb_y, buf);
 			pos += text_column_dist + w->xtab_datelen;
 		}
 
-		if (settings.is_zeit)
+		if (settings.show_file_time)
 		{
 			time_to_str(buf, m->time);
 			buf[5] = EOS;
@@ -803,7 +803,7 @@ int cdecl draw_userdef(PARMBLK *p)
 		while (s < t)
 			*s++ = ' ';
 
-		if (settings.is_groesse)
+		if (settings.show_file_size)
 		{
 			char gr[10],*g;
 
@@ -825,14 +825,14 @@ int cdecl draw_userdef(PARMBLK *p)
 			while (*g)
 				*s++ = *g++;
 		}
-		if (settings.is_datum)
+		if (settings.show_file_date)
 		{
 			*s++ = ' ';
 			*s++ = ' ';
 			date_to_str(s, m->date);
 			s += 8;
 		}
-		if (settings.is_zeit)
+		if (settings.show_file_time)
 		{
 			*s++ = ' ';
 			*s++ = ' ';
@@ -1829,6 +1829,7 @@ void main()
 
 		if (w_ev.mwhich & MU_BUTTON)
 		{
+			/* Cconws("MBUTTON "); */
 			if (ismagic622)
 			{
 				/* linken Doppelklick feststellen */

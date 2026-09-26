@@ -49,7 +49,6 @@ CICONBLK *std_tra_icon;	/* fÅr Papierkorb */
 CICONBLK *std_dev_icon;	/* fÅr Devices */
 CICONBLK *std_par_icon;	/* fÅr Elter-Verzeichnis ".." */
 
-static void set_deskt_icons(int initial);
 
 
 /****************************************************************
@@ -94,6 +93,12 @@ static void init_app_icons(void)
 	std_par_icon = &_stpa;
 }
 
+
+/****************************************************************
+*
+* Hilfsfunktion fÅr load_app_icons()
+*
+****************************************************************/
 
 static int _load_app_icons(char *buf)
 {
@@ -243,6 +248,13 @@ static int _load_app_icons(char *buf)
 }
 
 
+/****************************************************************
+*
+* LÑdt alle Icons aus der von APPLICAT erstellten Datenbank
+* "applicat.dat"
+*
+****************************************************************/
+
 void load_app_icons(void)
 {
 	XATTR xa;
@@ -252,13 +264,13 @@ void load_app_icons(void)
 	register char *buf;
 
 
-
 	init_app_icons();		/* Standard-Icons */
 	strcpy(path, desk_path);
 	strcat(path, "applicat.dat");
 	fd = (int) Fopen(path, RMODE_RD);
 	if (fd < 0)
-		return;			/* Datei nicht gefunden */
+		return;			/* Datenbank-Datei nicht gefunden */
+
 	retcode = Fcntl(fd, (long) &xa, FSTAT);
 	if (!retcode)
 		flen = xa.size;
@@ -282,327 +294,6 @@ void load_app_icons(void)
 	}
 
 	_load_app_icons(buf);
-}
-
-
-/****************************************************************
-*
-* Wertet die Message aus, die von APPLICAT verschickt wird.
-*
-****************************************************************/
-
-void	re_read_icons(void *data)
-{
-	if (_load_app_icons(data))
-		return;		/* Fehler */
-	set_deskt_icons(FALSE);
-	upd_icons();
-	upd_wind(windows[0]);
-}
-
-
-/****************************************************************
-*
-* Sucht in der Icondatei nach einer Applikation.
-* fname ist der Programmname ohne Pfad. Die Programmnamen
-* in der Icondatei liegen ohne Extension vor, es sind keine
-* Wildcards zulÑssig.
-* Groû-/Kleinschreibung wird ignoriert.
-*
-****************************************************************/
-
-APPLICATION * find_application(char *fname)
-{
-	register char *f;
-	register APPLICATION *a;
-	register int i;
-
-	if (n_apps)
-	{
-		f = strrchr(fname, '.');
-		if (f)
-		{
-			*f = EOS;				/* Extension entfernen */
-			for	(a = apps,i = 0; i < n_apps; i++,a++)
-			{
-				if (!stricmp(fname, a->apname))
-				{
-					*f = '.';
-					return a;
-				}
-			}
-			*f = '.';
-		}
-	}
-	return NULL;
-}
-
-
-/****************************************************************
-*
-* Sucht in der Icondatei nach einer nicht ausfÅhrbaren Datei.
-* fname ist der Dateiname ohne Pfad. Die Dateinamen
-* in der Icondatei liegen in folgenden Formen vor:
-*
-*	exakter Name
-*	*.ext
-*
-* ZunÑchst werden die exakten Namen ÅberprÅft, sie liegen in
-* der Tabelle vorn.
-* Groû-/Kleinschreibung wird ignoriert.
-*
-****************************************************************/
-
-DATAFILE * find_datafile(char *fname)
-{
-	register DATAFILE *da;
-	register char *extension,*d;
-
-
-	extension = strrchr(fname, '.');
-	for	(da = dfiles; da < dfiles + n_dfiles; da++)
-	{
-		d = da->daname;
-		if ((d[0] == '*') && (extension))
-		{
-			if (!stricmp(extension, d+1))
-				return da;
-		}
-		else
-		{
-			if (!stricmp(fname, d))
-				return da;
-		}
-	}
-	return NULL;
-}
-
-PATHNAME * find_path(char *path, char *just_name)
-{
-	register PATHNAME *pa;
-	register int i;
-
-
-	if (just_name)
-	{
-		just_name = path + strlen(path) - 2;
-		while ((just_name > path) && (*just_name != '\\'))
-			just_name--;
-		just_name++;
-	}
-
-	for	(i = 0,pa = paths; i < n_paths; i++,pa++)
-	{
-		if (pa->path[1] == ':')	/* abs. Pfad */
-		{
-			if (!stricmp(path, pa->path))
-				return pa;
-		}
-		else
-		{
-			if (!stricmp(just_name, pa->path))
-				return pa;
-		}
-	}
-	return NULL;
-}
-
-
-/****************************************************************
-*
-* Sucht <fname> in der Icondatei.
-* <fname> ist der Programmname ohne Pfad
-*
-* RÅckgabe:	Zeiger auf Iconblk.
-*
-****************************************************************/
-
-CICONBLK * pgmname_to_iconblk(char *fname)
-{
-	register APPLICATION *a;
-	register char *extension;
-
-
-	a = find_application(fname);
-	if (a)
-		return a->icon;
-
-	extension = strrchr(fname, '.');
-	if ((extension) &&
-		(!stricmp(extension, ".ACC") ||
-		!stricmp(extension, ".ACX")))
-		return datname_to_iconblk(fname);
-
-	return std_app_icon;
-}
-
-
-/****************************************************************
-*
-* Sucht <fname> in der Icondatei.
-* <fname> ist der Dateiname ohne Pfad
-*
-* RÅckgabe:	Zeiger auf Iconblk.
-*
-****************************************************************/
-
-CICONBLK * datname_to_iconblk(char *fname)
-{
-	register DATAFILE *da;
-
-	da = find_datafile(fname);
-	if (da)
-		return da->icon;
-	return std_dat_icon;
-}
-
-
-/****************************************************************
-*
-* Sucht <path> in der Icondatei.
-* <path> ist der volle Pfad mit abschlieûendem '\'
-* <just_name> ist ggf. der Ordnername mit abschlieûendem '\'
-*	oder NULL, dann wird er berechnet.
-*
-* RÅckgabe:	Zeiger auf Iconblk.
-*
-****************************************************************/
-
-CICONBLK * diskname_to_iconblk(int diskname, char **name)
-{
-	char pth[4];
-
-	pth[0] = diskname;
-	pth[1] = ':';
-	pth[2] = '\\';
-	pth[3] = EOS;
-	if (name)
-		*name = std_dsk_icon->monoblk.ib_ptext;
-
-	return foldername_to_iconblk(pth, pth + 1);
-}
-
-
-CICONBLK * foldername_to_iconblk(char *path, char *just_name)
-{
-	register PATHNAME *p;
-
-	p = find_path(path, just_name);
-	if (p)
-		return p->icon;
-	if (path[3])
-		return std_fld_icon;		/* "Ordner" */
-	return std_dsk_icon;			/* "Disk" */
-}
-
-
-#pragma warn -par
-CICONBLK * parentname_to_iconblk(char *path, char *just_name)
-{
-	return std_par_icon;
-}
-#pragma warn +par
-
-
-#pragma warn -par
-CICONBLK * batchname_to_iconblk(char *fname)
-{
-	return std_bat_icon;
-}
-#pragma warn +par
-
-
-#pragma warn -par
-CICONBLK * devicename_to_iconblk(char *fname)
-{
-	return std_dev_icon;
-}
-#pragma warn +par
-
-#pragma warn -par
-CICONBLK * alias_to_iconblk(char *fname)
-{
-	CICONBLK *c;
-
-	c = specialkey_to_iconblk('ALIS');
-	if (!c)
-		c = std_dev_icon;
-	return c;
-}
-#pragma warn +par
-
-
-CICONBLK * specialkey_to_iconblk(long key)
-{
-	register SPECIALOBJECT *sp;
-	register int i;
-
-	for	(i = 0, sp = specs; i < n_specs; i++, sp++)
-	{
-		if (key == sp->key)
-			return sp->icon;
-	}
-	return NULL;
-}
-
-
-/****************************************************************
-*
-* Rechnet Koordinaten linear um. Der Wert <wert> wurde bei
-* Bildschirmgrîûe <old> abgespeichert, jetzt ist die
-* Bildschirmgrîûe <new>.
-*
-****************************************************************/
-
-void recalc(int *wert, int old, int new)
-{
-	unsigned long tmp;
-
-	tmp    = (unsigned long) *wert;
-	tmp   *= new;
-	tmp   /= old;
-	*wert  = (int) tmp;
-}
-
-
-/****************************************************************
-*
-* Legt den Desktop-Hintergrund fest
-*
-****************************************************************/
-
-void set_desktop(void)
-{
-	register OBJECT *o;
-	static USERBLK desktop;
-	extern int work_out[];
-
-
-	tile_exit();		/* falls noch alte Kachel da */
-	o = windows[0]->pobj;
-	if (*bg_tile_path)
-	{
-		if ((*bg_tile_path)->path[0])
-		{
-			if (!tile_init((*bg_tile_path)->path, work_out[13] - 1))
-			{
-				o->ob_type = G_USERDEF;
-				desktop.ub_code = drawdesk;
-				o->ob_spec.userblk = &desktop;
-				return;
-			}
-		}
-		else
-		{
-			Mfree(*bg_tile_path);
-			*bg_tile_path = NULL;
-		}
-	}
-
-	o->ob_type = G_BOX;
-	(o->ob_spec).index = 0;	/* alle Felder auf 0 */
-	(o->ob_spec).obspec.interiorcol = *desk_col;
-	(o->ob_spec).obspec.fillpattern = *desk_patt;
 }
 
 
@@ -694,11 +385,373 @@ static void set_deskt_icons(int initial)
 
 /****************************************************************
 *
-* LÑdt bzw. setzt alle Defaults.
-* pass == 0: gmemptr initialisieren, d.h. n_icons,
-*            bestimmen und Speicher fÅr icon
-*		   allozieren
-* pass == 1: Status  laden
+* Wertet die "message" aus, die von APPLICAT verschickt wird
+*
+****************************************************************/
+
+void re_read_icons(void *data)
+{
+	if (_load_app_icons(data))
+		return;		/* Fehler */
+	set_deskt_icons(FALSE);
+	upd_icons();
+	upd_wind(windows[0]);
+}
+
+
+/****************************************************************
+*
+* Sucht in der Icon-Datenbank nach einer Applikation.
+* fname ist der Programmname ohne Pfad. Die Programmnamen
+* in der Icondatei liegen ohne Dateinamenerweiterung (extension) vor,
+* es sind keine Wildcards zulÑssig.
+* Groû-/Kleinschreibung wird ignoriert.
+*
+****************************************************************/
+
+APPLICATION * find_application(char *fname)
+{
+	register char *f;
+	register APPLICATION *a;
+	register int i;
+
+	if (n_apps)
+	{
+		f = strrchr(fname, '.');
+		if (f)
+		{
+			*f = EOS;				/* Extension entfernen */
+			for	(a = apps,i = 0; i < n_apps; i++,a++)
+			{
+				if (!stricmp(fname, a->apname))
+				{
+					*f = '.';
+					return a;
+				}
+			}
+			*f = '.';
+		}
+	}
+	return NULL;
+}
+
+
+/****************************************************************
+*
+* Sucht in der Icon-Datenbank nach einer nicht ausfÅhrbaren Datei.
+* fname ist der Dateiname ohne Pfad. Die Dateinamen
+* in der Icondatei liegen in folgenden Formen vor:
+*
+*	exakter Name
+*	*.ext
+*
+* ZunÑchst werden die exakten Namen ÅberprÅft, sie liegen in
+* der Tabelle vorn.
+* Groû-/Kleinschreibung wird ignoriert.
+*
+****************************************************************/
+
+DATAFILE * find_datafile(char *fname)
+{
+	register DATAFILE *da;
+	register char *extension,*d;
+
+
+	extension = strrchr(fname, '.');
+	for	(da = dfiles; da < dfiles + n_dfiles; da++)
+	{
+		d = da->daname;
+		if ((d[0] == '*') && (extension))
+		{
+			if (!stricmp(extension, d+1))
+				return da;
+		}
+		else
+		{
+			if (!stricmp(fname, d))
+				return da;
+		}
+	}
+	return NULL;
+}
+
+
+/***************************************************************
+*
+* Sucht in der Icon-Datenbank nach einem Ordner.
+* Groû-/Kleinschreibung wird ignoriert.
+*
+****************************************************************/
+
+PATHNAME * find_path(char *path, char *just_name)
+{
+	register PATHNAME *pa;
+	register int i;
+
+
+	if (!just_name)
+	{
+		just_name = path + strlen(path) - 2;
+		while ((just_name > path) && (*just_name != '\\'))
+			just_name--;
+		just_name++;
+	}
+
+	for	(i = 0,pa = paths; i < n_paths; i++,pa++)
+	{
+		if (pa->path[1] == ':')	/* abs. Pfad */
+		{
+			if (!stricmp(path, pa->path))
+				return pa;
+		}
+		else
+		{
+			if (!stricmp(just_name, pa->path))
+				return pa;
+		}
+	}
+	return NULL;
+}
+
+
+/****************************************************************
+*
+* Sucht den Programmnamen <fname> in der Icon-Datenbank
+* <fname> ist der Programmname ohne Pfad
+*
+* RÅckgabe:	Zeiger auf Iconblk
+*
+****************************************************************/
+
+CICONBLK * pgmname_to_iconblk(char *fname)
+{
+	register APPLICATION *a;
+	register char *extension;
+
+
+	a = find_application(fname);
+	if (a)
+		return a->icon;
+
+	extension = strrchr(fname, '.');
+	if ((extension) &&
+		(!stricmp(extension, ".ACC") ||
+		!stricmp(extension, ".ACX")))
+		return datname_to_iconblk(fname);
+
+	return std_app_icon;
+}
+
+
+/****************************************************************
+*
+* Sucht den Dateinamen <fname> in der Icon-Datenbank
+* <fname> ist der Dateiname ohne Pfad
+*
+* RÅckgabe:	Zeiger auf Iconblk
+*
+****************************************************************/
+
+CICONBLK * datname_to_iconblk(char *fname)
+{
+	register DATAFILE *da;
+
+	da = find_datafile(fname);
+	if (da)
+		return da->icon;
+	return std_dat_icon;
+}
+
+
+/****************************************************************
+*
+* Sucht ein Laufwerk in der Icon-Datenbank
+* <diskname> ist 'A' oder 'C' usw.
+* Optional wird die Icon-Beschriftung zurÅckgegeben.
+*
+* RÅckgabe:	Zeiger auf Iconblk
+*
+****************************************************************/
+
+CICONBLK * diskname_to_iconblk(int diskname, char **name)
+{
+	char pth[4];
+
+	pth[0] = diskname;
+	pth[1] = ':';
+	pth[2] = '\\';
+	pth[3] = EOS;
+	if (name)
+		*name = std_dsk_icon->monoblk.ib_ptext;
+
+	return foldername_to_iconblk(pth, pth + 1);
+}
+
+
+/****************************************************************
+*
+* Sucht <path> in der Icon-Datenbank
+* <path> ist der volle Pfad mit abschlieûendem '\'.
+* <nurname> ist ggf. der Ordnername mit abschlieûendem '\'
+*	oder NULL, dann wird er berechnet.
+*
+* RÅckgabe:	Zeiger auf Iconblk.
+*
+****************************************************************/
+
+CICONBLK * foldername_to_iconblk(char *path, char *just_name)
+{
+	register PATHNAME *p;
+
+	p = find_path(path, just_name);
+	if (p)
+		return p->icon;
+	if (path[3])
+		return std_fld_icon;		/* "Ordner" */
+	return std_dsk_icon;			/* "Disk" */
+}
+
+
+/****************************************************************
+*
+* Gib Zeiger auf Iconblk fÅr des Elter-Verzeichnis ..
+*           (ein RÅckwÑrtspfeil)
+*
+****************************************************************/
+#pragma warn -par
+CICONBLK * parentname_to_iconblk(char *path, char *just_name)
+{
+	return std_par_icon;
+}
+#pragma warn +par
+
+
+/****************************************************************
+*
+* Gib Zeiger auf Iconblk fÅr eine Batch-Datei
+*
+****************************************************************/
+#pragma warn -par
+CICONBLK * batchname_to_iconblk(char *fname)
+{
+	return std_bat_icon;
+}
+#pragma warn +par
+
+
+/****************************************************************
+*
+* Gib Zeiger auf Iconblk fÅr eine GerÑte-Datei ("device")
+*
+****************************************************************/
+#pragma warn -par
+CICONBLK * devicename_to_iconblk(char *fname)
+{
+	return std_dev_icon;
+}
+#pragma warn +par
+
+
+/****************************************************************
+*
+* Gib Zeiger auf Iconblk fÅr einen Alias (symbolic link)
+*
+****************************************************************/
+#pragma warn -par
+CICONBLK * alias_to_iconblk(char *fname)
+{
+	CICONBLK *c;
+
+	c = specialkey_to_iconblk('ALIS');
+	if (!c)
+		c = std_dev_icon;
+	return c;
+}
+#pragma warn +par
+
+
+/****************************************************************
+*
+* Gib Zeiger auf Iconblk fÅr weitere Objekte (Drucker, Papierkorb, ...)
+*
+****************************************************************/
+CICONBLK * specialkey_to_iconblk(long key)
+{
+	register SPECIALOBJECT *sp;
+	register int i;
+
+	for	(i = 0, sp = specs; i < n_specs; i++, sp++)
+	{
+		if (key == sp->key)
+			return sp->icon;
+	}
+	return NULL;
+}
+
+
+/****************************************************************
+*
+* Rechnet Koordinaten linear um. Der Wert <value> wurde bei
+* Bildschirmgrîûe <old> abgespeichert, jetzt ist die
+* Bildschirmgrîûe <new>.
+*
+****************************************************************/
+
+static void recalc(int *value, int old, int new)
+{
+	unsigned long tmp;
+
+	tmp    = (unsigned long) *value;
+	tmp   *= new;
+	tmp   /= old;
+	*value = (int) tmp;
+}
+
+
+/****************************************************************
+*
+* Legt den Desktop-Hintergrund fest
+*
+****************************************************************/
+
+void set_desktop(void)
+{
+	register OBJECT *o;
+	static USERBLK desktop;
+	extern int work_out[];
+
+
+	tile_exit();		/* falls noch alte Kachel da */
+	o = windows[0]->pobj;
+	if (*bg_tile_path)
+	{
+		if ((*bg_tile_path)->path[0])
+		{
+			if (!tile_init((*bg_tile_path)->path, work_out[13] - 1))
+			{
+				o->ob_type = G_USERDEF;
+				desktop.ub_code = drawdesk;
+				o->ob_spec.userblk = &desktop;
+				return;
+			}
+		}
+		else
+		{
+			Mfree(*bg_tile_path);
+			*bg_tile_path = NULL;
+		}
+	}
+
+	o->ob_type = G_BOX;
+	(o->ob_spec).index = 0;	/* alle Felder auf 0 */
+	(o->ob_spec).obspec.interiorcol = *desk_col;
+	(o->ob_spec).obspec.fillpattern = *desk_patt;
+}
+
+
+/****************************************************************
+*
+* Hilfsfunktionen fÅr load_status()
 *
 ****************************************************************/
 
@@ -777,6 +830,17 @@ static char scnflg(void)
 	return 0;
 }
 
+
+/****************************************************************
+*
+* LÑdt bzw. setzt alle Defaults.
+* pass == 0: gmemptr initialisieren, d.h. n_icons,
+*            bestimmen und Speicher fÅr icon
+*		   allozieren
+* pass == 1: Status  laden
+*
+****************************************************************/
+
 void load_status(int pass)
 {
 	register int i,dx,dy,icw,ich;
@@ -817,37 +881,37 @@ void load_status(int pass)
 		(tree_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext)[0] = EOS;
 
 /* Fenster: */
-		settings.use_pp			= TRUE;		/* ".." zeigen */
-		settings.show_prticon		= TRUE;
-		settings.show_8p3			= TRUE;
-		settings.auto_reload_off 	= FALSE;
-		settings.h_icon_dist		= 3;
-		settings.v_icon_dist		= 1;
-		settings.sort_mode 			= M_SNAME;
-		settings.show_mode 			= M_ABILDR;
-		settings.is_1col			= FALSE;
-		settings.is_groesse		= TRUE;
-		settings.is_datum			= TRUE;
-		settings.is_zeit			= TRUE;
-		settings.font_is_prop		= FALSE;
-		settings.fontID			= 1;
-		settings.fontH			= 10;
+		settings.use_pp          = TRUE;		/* ".." zeigen */
+		settings.show_prticon    = TRUE;
+		settings.show_8p3        = TRUE;
+		settings.auto_reload_off = FALSE;
+		settings.h_icon_dist     = 3;
+		settings.v_icon_dist     = 1;
+		settings.sort_mode       = M_SNAME;
+		settings.show_mode       = M_ABILDR;
+		settings.show_single_col = FALSE;
+		settings.show_file_size  = TRUE;
+		settings.show_file_date  = TRUE;
+		settings.show_file_time  = TRUE;
+		settings.font_is_prop    = FALSE;
+		settings.fontID          = 1;
+		settings.fontH           = 10;
 /* Kopieren: */
-		settings.cnfm_del			= TRUE;
-		settings.cnfm_copy		= TRUE;
-		settings.mode_ovwr		= CONFIRM;
-		settings.check_free		= TRUE;
-		settings.resident			= TRUE;
-		settings.show_all			= FALSE;
-		settings.dnam_init		= TRUE;
-		settings.copy_resident	= TRUE;
-		settings.copy_use_kobold	= FALSE;
+		settings.cnfm_del        = TRUE;
+		settings.cnfm_copy       = TRUE;
+		settings.mode_ovwr       = CONFIRM;
+		settings.check_free      = TRUE;
+		settings.resident        = TRUE;
+		settings.show_all        = FALSE;
+		settings.dnam_init       = TRUE;
+		settings.copy_resident   = TRUE;
+		settings.copy_use_kobold = FALSE;
 /* Desktop: */
-		settings.desk_col_1		= BLACK;
-		settings.desk_patt_1		= 3;
-		settings.desk_col_4		= GREEN;
-		settings.desk_patt_4		= 7;
-		settings.desk_raster		= 1;
+		settings.desk_col_1  = BLACK;
+		settings.desk_patt_1 = 3;
+		settings.desk_col_4  = GREEN;
+		settings.desk_patt_4 = 7;
+		settings.desk_raster = 1;
 		if (bg_tile_1)
 			Mfree(bg_tile_1);
 		if (bg_tile_4)
@@ -862,15 +926,15 @@ void load_status(int pass)
 		strcpy(ext_btp, "BTP");
 
 /* versch.: */
-		settings.save_on_exit		= FALSE;
-		settings.rtbutt_dclick	= FALSE;
-		settings.disk_extinfo		= FALSE;
+		settings.save_on_exit  = FALSE;
+		settings.rtbutt_dclick = FALSE;
+		settings.disk_extinfo  = FALSE;
 
 		for	(ln_wind = 1, g = windows_g + 1; ln_wind <= NUM_WINDOWS;
 				ln_wind++,g++)
 		{
-			g->g_x = 140+20*ln_wind;
-			g->g_y = desk_g.g_y+10*ln_wind;
+			g->g_x = 140 + 20 * ln_wind;
+			g->g_y = desk_g.g_y + 10 * ln_wind;
 			g->g_w = 300;
 			g->g_h = 10*gl_hhchar;
 		}
@@ -893,7 +957,7 @@ void load_status(int pass)
 	}
 	inf[len] = EOS;
 	shel_get(inf, len);
-	s = inf+128;			/* Beginn der Desktop- Daten */
+	s = inf + 128;			/* Beginn der Desktop- Daten */
 
 	ln_wind = 1;					/* erstes Fenster */
 	ln_pgms = 0;
@@ -953,44 +1017,44 @@ void load_status(int pass)
 
 				scndez();		/* points */
 
-				settings.is_1col			= scnflg();
-				settings.is_groesse		= scnflg();
-				settings.is_datum			= scnflg();
-				settings.is_zeit			= scnflg();
+				settings.show_single_col = scnflg();
+				settings.show_file_size  = scnflg();
+				settings.show_file_date  = scnflg();
+				settings.show_file_time  = scnflg();
 
-				settings.rtbutt_dclick	= scnflg(); /* Alt: blitstate */
-				settings.cnfm_del			= scnflg();
-				settings.cnfm_copy		= scnflg();
-				settings.mode_ovwr		= scnflg();
-				settings.check_free		= scnflg();
-				settings.use_pp			= scnflg();
-				settings.resident			= scnflg();
-				settings.show_all			= scnflg();
-				settings.show_prticon		= scnflg(); /* V2: clock */
-				settings.disk_extinfo		= scnflg(); /* Alt: resvd0 */
-				settings.dnam_init		= scnflg();
-				settings.auto_reload_off	= scnflg();		/* v5.05, previously reserved */
+				settings.rtbutt_dclick   = scnflg(); /* Alt: blitstate */
+				settings.cnfm_del        = scnflg();
+				settings.cnfm_copy       = scnflg();
+				settings.mode_ovwr       = scnflg();
+				settings.check_free      = scnflg();
+				settings.use_pp          = scnflg();
+				settings.resident        = scnflg();
+				settings.show_all        = scnflg();
+				settings.show_prticon    = scnflg(); /* V2: clock */
+				settings.disk_extinfo    = scnflg(); /* Alt: resvd0 */
+				settings.dnam_init       = scnflg();
+				settings.auto_reload_off = scnflg();		/* v5.05, previously reserved */
 				scnflg();		/* resvd2 */
 				break;
 
 			case 'S2':
 				if (!pass)
 					break;
-				settings.copy_resident = scnflg();
+				settings.copy_resident   = scnflg();
 				settings.copy_use_kobold = scnflg();
-				settings.save_on_exit	= scnflg();
-				settings.show_8p3	= scnflg();
+				settings.save_on_exit    = scnflg();
+				settings.show_8p3        = scnflg();
 
-				settings.h_icon_dist	= scndez();
-				settings.v_icon_dist	= scndez();
-				settings.desk_raster	= scndez();
-				settings.desk_col_1	= scndez();
-				settings.desk_patt_1	= scndez();
-				settings.desk_col_4	= scndez();
-				settings.desk_patt_4	= scndez();
-				settings.font_is_prop = scndez();
-				settings.fontID		= scndez();
-				settings.fontH		= scndez();
+				settings.h_icon_dist     = scndez();
+				settings.v_icon_dist     = scndez();
+				settings.desk_raster     = scndez();
+				settings.desk_col_1      = scndez();
+				settings.desk_patt_1     = scndez();
+				settings.desk_col_4      = scndez();
+				settings.desk_patt_4     = scndez();
+				settings.font_is_prop    = scndez();
+				settings.fontID          = scndez();
+				settings.fontH           = scndez();
 
 				break;
 
@@ -1122,7 +1186,7 @@ void load_status(int pass)
 				scnbstr(dummy_s);
 				if ((i = (int) strlen(dummy_s)) > 0)
 				{
-					*p = Malloc(i+1);
+					*p = Malloc(i + 1);
 					if (*p)
 						strcpy(*p, dummy_s);
 				}
@@ -1192,9 +1256,9 @@ void load_status(int pass)
 			err_alert(ENSMEM);
 			return;
 		}
-		windows[0]->shownum  = windows[0]->realnum = n_deskicons;
+		windows[0]->shownum = windows[0]->realnum = n_deskicons;
 		windows[0]->pobj = (OBJECT *)      gmemptr;
-		icon		  	 = (ICON   *)      (windows[0]->pobj + n_deskicons + 1);
+		icon  = (ICON   *)      (windows[0]->pobj + n_deskicons + 1);
 
 		/* Desktop- Hintergrund zusammenfummeln */
 		/* ------------------------------------ */
@@ -1260,11 +1324,9 @@ void load_status(int pass)
 
 /****************************************************************
 *
-* Speichert alle Defaults.
-* Die TMP- Datei wird IMMER aufs Bootlaufwerk geschrieben.
+* Hilfsfunktion fÅr status_to_ascii()
 *
 ****************************************************************/
-
 static void prtdez(int i)
 {
 	*s++ = ' ';
@@ -1273,16 +1335,37 @@ static void prtdez(int i)
 		;
 	s--;
 }
+
+
+/****************************************************************
+*
+* Hilfsfunktion fÅr status_to_ascii()
+*
+****************************************************************/
 static void prtflg(int i)
 {
 	*s++ = (i) ? '1' : '0';
 }
+
+
+/****************************************************************
+*
+* Hilfsfunktion fÅr status_to_ascii()
+*
+****************************************************************/
 static void prtstr(const char *str)
 {
 	while ((*s++ = *str++) != '\0')
 		;
 	s--;
 }
+
+
+/****************************************************************
+*
+* Hilfsfunktion fÅr save_status()
+*
+****************************************************************/
 
 static void status_to_ascii(char *inf)
 {
@@ -1310,19 +1393,19 @@ static void status_to_ascii(char *inf)
 	/* a  '0'/'1' = Anzeigen als Bilder/als Text 		*/
 	/* b  '08'/'09'/'10' = Punktgrîûe fÅr Text			*/
 	/* c  1col/isgr/isdat/iszeit						*/
-	/* d  settings.blitstate								*/
+	/* d  settings.blitstate							*/
 	/*	 settings.cnfm_del								*/
 	/*	 settings.cnfm_copy								*/
 	/*	 settings.mode_ovwr								*/
-	/*	 settings.check_free								*/
+	/*	 settings.check_free							*/
 	/*	 settings.use_fldl								*/
 	/*	 settings.resident								*/
 	/*	 settings.show_all								*/
 	/*	 settings.show_prticon	V2: clock				*/
 	/*	 settings.use_cache								*/
 	/*	 settings.dnam_init								*/
-	/*	 settings.auto_reload								*/
-	/*	 settings.resvd2									*/
+	/*	 settings.auto_reload							*/
+	/*	 settings.resvd2								*/
 	/* ------------------------------------------------ */
 
 	prtdez(desk_g.g_w);
@@ -1341,10 +1424,10 @@ static void status_to_ascii(char *inf)
 
 	prtdez(i);
 	*s++ = ' ';
-	prtflg(settings.is_1col);
-	prtflg(settings.is_groesse);
-	prtflg(settings.is_datum);
-	prtflg(settings.is_zeit);
+	prtflg(settings.show_single_col);
+	prtflg(settings.show_file_size);
+	prtflg(settings.show_file_date);
+	prtflg(settings.show_file_time);
 	*s++ = ' ';
 	prtflg(settings.rtbutt_dclick);	/* Alt: blitstate */
 	prtflg(settings.cnfm_del);
@@ -1539,6 +1622,13 @@ static void status_to_ascii(char *inf)
 	*s = '\0';
 }
 
+
+/****************************************************************
+*
+* Speichert alle Einstellungen.
+* Die TMP- Datei wird IMMER aufs Bootlaufwerk geschrieben.
+*
+****************************************************************/
 
 void save_status(int is_inf)
 {

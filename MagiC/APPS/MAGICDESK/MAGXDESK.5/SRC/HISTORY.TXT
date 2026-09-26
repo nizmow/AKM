@@ -1,0 +1,14 @@
+MAGXDESK HISTORY
+================
+
+2026-08-29 (v5.10)
+
+- Support Fast Click with MagiC v6.22 and newer: Handle double click
+  programmatically, for more responsive user experience.
+- General source code overhaul, for better maintainability.
+
+2026-09-26 (v5.11)
+
+- Crash resolved when user tried to a assign an icon to a folder.
+- That bug had been newly introduced by a typo.
+

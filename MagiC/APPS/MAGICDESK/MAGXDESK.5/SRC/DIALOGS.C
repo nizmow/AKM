@@ -196,10 +196,7 @@ void dial_about(void)
 
 /****************************************************************
 *
-* Der Eintrag "Informationen..." ist angewÑhlt worden,
-* und zwar fÅr Papierkorb oder Drucker
-*
-* RÅckgabe:	< 0		abbrechen
+* Hilfsfunktion fÅr dial_info()
 *
 ****************************************************************/
 
@@ -228,14 +225,19 @@ static int info_spec(int type, int further)
 }
 
 
-/*
+/****************************************************************
+*
+* Der Eintrag "Informationen..." ist angewÑhlt worden,
+* und zwar fÅr Papierkorb oder Drucker
 *
 * is_further ist ein Zeiger auf int und zeigt auf
 * die Anzahl der selektierten Objekte. dial_info()
 * dekrementiert diese Zahl bei jedem Aufruf und
 * weiû daher, wann das letzte Objekt kommt.
 *
-*/
+* RÅckgabe:	< 0		abbrechen
+*
+****************************************************************/
 
 int dial_info(WINDOW *w, int obj, void *is_further)
 {
@@ -755,7 +757,7 @@ void dial_assign_icon(void)
 
 
 	arg2 = arg3 = NULL;
-	if (1 == icsel(&w, &obj))
+	if (icsel(&w, &obj) == 1)
 	{
 		get_obj_type(w, obj, path, NULL, &type, &config, &a);
 
@@ -763,48 +765,65 @@ void dial_assign_icon(void)
 
 		switch (type)
 		{
-		 case 'DO':
-		 case '_O':	arg1[2] = 'o';
-		 			p = find_path(path, NULL);
-		 			if (p)
-		 				arg2 = p->path;
-		 			else
-		 				arg2 = path;
-		 			break;
-		 case '_X':	arg1[2] = 'a';
-					if (a)			/* angemeldete APP */
-		 				arg2 = a->apname;
-		 			else
-		 				arg2 = path;	/* neue APP */
-		 			break;
-		 case '_T':
-		 case 'TX':	arg1[2] = 'd';
-					if (a)			/* angemeldete Datei */
-		 				arg2 = a->apname;
-		 			else
-		 				arg2 = "<>";	/* keine APP */
-		 			d = find_datafile(path);
-		 			if (d)
-		 				arg3 = d->daname;
-		  			else
-		  				arg3 = get_name(path);
-		  			break;
-		 
-		 case 'AT':	arg2 = "ALIS";
-		  			goto spec;
+			/* Disk oder Ordner */
+			case 'DO':
+			case '_O':
+				arg1[2] = 'o';
+				p = find_path(path, NULL);
+				if (p)
+					arg2 = p->path;
+				else
+					arg2 = path;
+				break;
 
-		 case 'BX':	arg2 = "BTCH";
-		  			goto spec;
+			/* Programm oder Accessory */
+			case '_X':
+				arg1[2] = 'a';
+				if (a)			/* angemeldete APP */
+					arg2 = a->apname;
+				else
+					arg2 = path;	/* neue APP */
+				break;
 
-		 case 'D_':	arg2 = "PRNT";
-		 			goto spec;
+			/* Textdatei  oder angemeldete Datei */
+			case '_T':
+			case 'TX':
+				arg1[2] = 'd';
+				if (a)			/* angemeldete Datei */
+					arg2 = a->apname;
+				else
+					arg2 = "<>";	/* keine APP */
+				d = find_datafile(path);
+				if (d)
+					arg3 = d->daname;
+				else
+					arg3 = get_name(path);
+				break;
 
-		 case 'P_':	arg2 = "TRSH";
-		 			spec:
-		 			arg1[2] = 's';
-		 			break;
+			/* unaufgelîster Alias (symbolischer Link) */
+			case 'AT':
+				arg2 = "ALIS";
+				goto spec;
+			
+			/* Batch-Datei */
+			case 'BX':
+				arg2 = "BTCH";
+				goto spec;
 
-		 default:	return;	/* ??? */
+			/* Drucker */
+			case 'D_':
+				arg2 = "PRNT";
+				goto spec;
+
+			/* Papierkorb */
+			case 'P_':
+				arg2 = "TRSH";
+				spec:
+				arg1[2] = 's';
+				break;
+			
+			default:
+				return;	/* ??? */
 		}
 	}
 
@@ -1219,13 +1238,13 @@ void dial_fontsel(void)
 	int work_out[57],work_in [12];	 /* VDI- Felder fÅr v_opnvwk() */
 	int handle;
 	register int i;
-	void	*fnt_dialog;
+	void *fnt_dialog;
 	int button,check_boxes;
 	long id,pt,ratio;
 	int mono,dummy;
 			
 
-	for (i = 1; i < 10 ; i++)											/* work_in initialisieren */
+	for (i = 1; i < 10; i++)											/* work_in initialisieren */
 		work_in[i] = 1;
 	work_in[10] = 2;		/* Rasterkoordinaten benutzen */
 	handle = aes_handle;

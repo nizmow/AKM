@@ -302,22 +302,22 @@ void do_menu(int title, int entry, int kbsh)
 			break;
 
 		case M_SPALTN:
-			settings.is_1col = !settings.is_1col;
+			settings.show_single_col = !settings.show_single_col;
 			upd_col();
 			break;
 
 		case M_ZGROES:
-			settings.is_groesse = !settings.is_groesse;
+			settings.show_file_size = !settings.show_file_size;
 			upd_is();
 			break;
 
 		case M_ZDATUM:
-			settings.is_datum = !settings.is_datum;
+			settings.show_file_date = !settings.show_file_date;
 			upd_is();
 			break;
 
 		case M_ZZEIT:
-			settings.is_zeit = !settings.is_zeit;
+			settings.show_file_time = !settings.show_file_time;
 			upd_is();
 			break;
 
@@ -524,28 +524,28 @@ void modify_menu(void)
 		last_search = search;
 	}
 
-	if (settings.is_1col != last_1col)
+	if (settings.show_single_col != last_1col)
 	{
-		menu_icheck(tree_menu, M_SPALTN, settings.is_1col);
-		last_1col = settings.is_1col;
+		menu_icheck(tree_menu, M_SPALTN, settings.show_single_col);
+		last_1col = settings.show_single_col;
 	}
 
-	if (settings.is_groesse != last_isg)
+	if (settings.show_file_size != last_isg)
 	{
-		menu_icheck(tree_menu, M_ZGROES, settings.is_groesse);
-		last_isg = settings.is_groesse;
+		menu_icheck(tree_menu, M_ZGROES, settings.show_file_size);
+		last_isg = settings.show_file_size;
 	}
 
-	if (settings.is_datum != last_isd)
+	if (settings.show_file_date != last_isd)
 	{
-		menu_icheck(tree_menu, M_ZDATUM, settings.is_datum);
-		last_isd = settings.is_datum;
+		menu_icheck(tree_menu, M_ZDATUM, settings.show_file_date);
+		last_isd = settings.show_file_date;
 	}
 
-	if (settings.is_zeit != last_isz)
+	if (settings.show_file_time != last_isz)
 	{
-		menu_icheck(tree_menu, M_ZZEIT,  settings.is_zeit);
-		last_isz = settings.is_zeit;
+		menu_icheck(tree_menu, M_ZZEIT, settings.show_file_time);
+		last_isz = settings.show_file_time;
 	}
 
 	if (settings.sort_mode != last_sort_mode)
