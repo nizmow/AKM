@@ -6,7 +6,7 @@
 #include <portab.h>
 #endif
 
-#define PROGRAM_VERSION_STR "v1.02"
+#define PROGRAM_VERSION_STR "v1.03"
 
 #define MAX_NAMELEN 34
 #define MAX_PATHLEN 128
@@ -48,7 +48,12 @@ typedef struct
 struct dialog_userdata
 {
 	char *ident;
-	int mode;					/* merken, ob Aktion bei HNDL_OPEN */
+	int mode;					/* 1: normal, 2: bei HNDL_OPEN weiteren Dialog îffnen */
+	/* nur verwendet fÅr den Dialog "Registrierte Programme: */
+	int cmd_pgm;
+	int cmd_dat;
+	char *cmd_pgm_path;
+	char *cmd_dat_path;
 };
 
 struct iconfile
@@ -117,10 +122,13 @@ struct icon
 /*	int sel_dat;	*/			/* als Datei-Icon selektiert */
 };
 
+/* Diese Struktur ist kompatibel zu LBOX_ITEM */
 struct item_line
 {
+	/* îffentlicher Teil, von LBOX_ITEM */
 	struct item_line *next;		/* Verkettung fÅr scrollbox */
-	WORD sel;					/* selektiert */
+	WORD selected;				/* selektiert */
+	/* privater Teil */
 	int pgmnr;					/* Nummer des Programmnamens */
 	int reldatnr;				/* angemeldete Datei 0..ntypes-1 */
 								/*  nix angemeldet: -1 */

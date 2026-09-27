@@ -51,7 +51,8 @@ struct spd_file {
 		enthÑlt die zugeordneten Dateitypen
 */
 
-static void *sbox1,*sbox2;
+/* Diese Variablen sollten eigentlich alle nach struct <dialog_userdata> */
+static LIST_BOX *sbox1,*sbox2;
 static struct item_line *selected_pgmline = NULL;
 static struct item_line *selected_datline = NULL;
 static struct spd_file *selected_spdfile = NULL;
@@ -62,6 +63,9 @@ static int selected_datnr = -1;
 static struct spd_file *sel_dfiles = NULL;
 static int visible_pgmlen = -1;
 static int visible_datlen = -1;
+
+/* globale Variable! */
+char *def_txt;		/* ->hdl_typ */
 
 
 /*********************************************************************
@@ -134,7 +138,7 @@ static int datobj_to_showindex(int objnr)
 
 /*********************************************************************
 *
-* Gibt den <n>-ten angemeldeten Dateityp fÅr Programm <pgm>
+* Gibt den <n>-ten angemeldeten Dateityp fÅr Programm <pgm>.
 * Dreht die Richtung um, weil die zuletzt angemeldeten Typen
 * vorn in der Liste stehen.
 *
@@ -160,7 +164,7 @@ static int pgm_filetype(int pgm, int n)
 
 /*********************************************************************
 *
-* Macht alle Scrollobjekte eines Fensters (un)gÅltig
+* Macht alle Scrollobjekte eines Fensters auswÑhlbar
 *
 *********************************************************************/
 
@@ -176,6 +180,14 @@ static void enable_scroll(DIALOG *d, int *objs)
 			subobj_wdraw(d, objs[i], 0, MAX_DEPTH);
 	}
 }
+
+
+/*********************************************************************
+*
+* Macht alle Scrollobjekte eines Fensters nicht auswÑhlbar
+*
+*********************************************************************/
+
 static void disable_scroll(DIALOG *d, int *objs)
 {
 	register int i;
@@ -253,6 +265,7 @@ static int scroll_win_dat(DIALOG *d, char *datname)
 			goto found;
 	}
 	return -1;
+
 	found:
 	if (dat->pgm == selected_pgmnr)
 	{
@@ -289,18 +302,22 @@ static int scroll_win_dat(DIALOG *d, char *datname)
 
 /*********************************************************************
 *
-* Auswahl- und Setzroutinen fÅr die Scrollbox
+* "select callback" fÅr Programme-Scrollbox
+*
+* item->selected enthÑlt bereits den neuen Selektions-Status,
+* der vorherige wird in <last_state> Åbergeben.
 *
 *********************************************************************/
 
 #pragma warn -par
-static void cdecl select_item1(LIST_BOX *box, OBJECT *tree,
-			LBOX_ITEM *item, void *user_data,
-			WORD obj_index, WORD last_state)
+static void cdecl scrollbox_pgm_select_cb(
+	LIST_BOX *box, OBJECT *tree,
+	LBOX_ITEM *item, void *user_data,
+	WORD obj_index, WORD last_state)
 {
 	struct item_line *line = (struct item_line *) item;
 
-	if (line->sel)
+	if (line->selected)
 	{
 		selected_pgmline = line;
 	}
@@ -310,9 +327,20 @@ static void cdecl select_item1(LIST_BOX *box, OBJECT *tree,
 	}
 }
 
-static void cdecl select_item2(LIST_BOX *box, OBJECT *tree,
-			LBOX_ITEM *item, void *user_data,
-			WORD obj_index, WORD last_state)
+
+/*********************************************************************
+*
+* "select callback" fÅr Dateitypen-Scrollbox
+*
+* item->selected enthÑlt bereits den neuen Selektions-Status,
+* der vorherige wird in <last_state> Åbergeben.
+*
+*********************************************************************/
+
+static void cdecl scrollbox_dat_select_cb(
+	LIST_BOX *box, OBJECT *tree,
+	LBOX_ITEM *item, void *user_data,
+	WORD obj_index, WORD last_state)
 {
 	struct spd_file *spd = (struct spd_file *) item;
 	struct item_line *line = (struct item_line *) item;
@@ -341,7 +369,14 @@ static void cdecl select_item2(LIST_BOX *box, OBJECT *tree,
 	}
 }
 
-static WORD cdecl set_item1(LIST_BOX *box, OBJECT *tree,
+
+/*********************************************************************
+*
+* "set callback" fÅr Programme-Scrollbox
+*
+*********************************************************************/
+
+static WORD cdecl scrollbox_pgm_set_cb(LIST_BOX *box, OBJECT *tree,
 			LBOX_ITEM *item, WORD index,
 			void *user_data, GRECT *rect, WORD offset)
 {
@@ -452,7 +487,15 @@ static WORD cdecl set_item1(LIST_BOX *box, OBJECT *tree,
 */
 	return index;
 }
-static WORD cdecl set_item2(LIST_BOX *box, OBJECT *tree,
+
+
+/*********************************************************************
+*
+* "set callback" fÅr Dateitypen-Scrollbox
+*
+*********************************************************************/
+
+static WORD cdecl scrollbox_dat_set_cb(LIST_BOX *box, OBJECT *tree,
 			LBOX_ITEM *item, WORD index,
 			void *user_data, GRECT *rect, WORD offset)
 {
@@ -540,7 +583,7 @@ static WORD cdecl set_item2(LIST_BOX *box, OBJECT *tree,
 
 /*********************************************************************
 *
-* Verkette die Objekte
+* Verkette sÑmtliche LBOX_ITEM-Objekte
 *
 *********************************************************************/
 
@@ -608,9 +651,10 @@ void ica_dial_init_rsc(void)
 	visible_pgmlen = (int) strlen(adr_ica_dialog[PRG1].ob_spec.tedinfo->te_ptext + 1);
 	visible_datlen = (int) strlen(adr_ica_dialog[DAT1].ob_spec.tedinfo->te_ptext + 1);
 
+	/* Scrollbox fÅr Programme */
 	sbox1 = lbox_create(adr_ica_dialog,
-					select_item1,
-					set_item1,
+					scrollbox_pgm_select_cb,
+					scrollbox_pgm_set_cb,
 					sc,	/* Items */
 					5,		/* Anzahl sichtbarer EintrÑge */
 					0,		/* erster sichtbarer Eintrag */
@@ -625,9 +669,10 @@ void ica_dial_init_rsc(void)
 	if (!sbox1)
 		Pterm((int) ENSMEM);
 
+	/* Scrollbox fÅr Dateitypen */
 	sbox2 = lbox_create(adr_ica_dialog,
-					select_item2,
-					set_item2,
+					scrollbox_dat_select_cb,
+					scrollbox_dat_set_cb,
 					sc,		/* Items */
 					5,		/* Anzahl sichtbarer EintrÑge */
 					0,		/* erster sichtbarer Eintrag */
@@ -660,13 +705,13 @@ static void sync_sel(void)
 	selected_pgmline = selected_datline = NULL;
 	for	(i = 0, z = linx; i < linn; i++, z++)
 	{
-		z->sel = FALSE;
+		z->selected = FALSE;
 		if (!z->reldatnr || z->reldatnr == -1)
 		{
 			if (pgmx[z->pgmnr].sel)
 			{
 				selected_pgmline = z;
-				z->sel = TRUE;
+				z->selected = TRUE;
 			}
 		}
 		if (z->datnr != -1)
@@ -674,7 +719,7 @@ static void sync_sel(void)
 			if (datx[z->datnr].sel)
 			{
 				selected_datline = z;
-				z->sel = TRUE;
+				z->selected = TRUE;
 			}
 		}
 	}
@@ -915,7 +960,7 @@ int insert_dat(struct pgm_file *pgm, struct dat_file *dat)
 		for	(l = linn; l > j; l--)
 			linx[l] = linx[l - 1];
 		linn++;
-		z->sel = FALSE;
+		z->selected = FALSE;
 		break;
 	}
 
@@ -1170,7 +1215,7 @@ int insert_pgm(struct pgm_file *pgm)
 	linn++;
 	linx[j].pgmnr = i;
 	linx[j].reldatnr = linx[j].datnr = -1;
-	linx[j].sel = FALSE;
+	linx[j].selected = FALSE;
 
 	redraw:
 	cat_lines();
@@ -1299,27 +1344,43 @@ static void chg_icon(int win, int meinding, int iconnr)
 *
 * Alle selektierten Icons als <iconnr> setzen.
 *
+* Wird aufgerufen beim Doppelklick auf ein Icon im Fenster "Icons"
+*
+* Achtung: Wenn sowohl Datei-Icons als auch ein Programm-Icon
+*          selektiert sind, mÅssen wir verhindern, daû das Programm
+*          das gleiche Icon wie die Datei(en) bekommt. Deshalb
+*          prÑferieren wir hier die Datei(en).
+*
 *********************************************************************/
 
 void ica_dial_set_icon(int iconnr)
 {
 	register int i;
+	int set = FALSE;
 
-
-	for	(i = 0; i < pgmn; i++)
-	{
-		if (pgmx[i].sel)
-		{
-			pgmx[i].iconnr = iconnr;
-			chg_icon(PGMS, i, iconnr);
-		}
-	}
+	/* Dateitypen */
 	for	(i = 0; i < datn; i++)
 	{
 		if (datx[i].sel)
 		{
 			datx[i].iconnr = iconnr;
 			chg_icon((selected_program) ? DFLS : PDFLS, i, iconnr);
+			set = TRUE;
+		}
+	}
+
+	if (set)
+	{
+		return;		/* Datei zugewiesen, Programm ignorieren */
+	}
+
+	/* Programme */
+	for	(i = 0; i < pgmn; i++)
+	{
+		if (pgmx[i].sel)
+		{
+			pgmx[i].iconnr = iconnr;
+			chg_icon(PGMS, i, iconnr);
 		}
 	}
 }
@@ -1455,7 +1516,7 @@ static void deselect_program(DIALOG *d)
 		deselect_dfile(d);
 		if (selected_datline)
 		{
-			selected_datline->sel = FALSE;
+			selected_datline->selected = FALSE;
 			selected_datline = NULL;
 		}
 		if (selected_spdfile)
@@ -1495,7 +1556,7 @@ static void pgm_was_selected(DIALOG *d, int pgm, int do_sync)
 		deselect_dfile(d);
 		if (selected_datline)
 		{
-			selected_datline->sel = FALSE;
+			selected_datline->selected = FALSE;
 			selected_datline = NULL;
 		}
 		if (selected_spdfile)
@@ -1559,6 +1620,136 @@ static void dat_was_selected(DIALOG *d, int dat)
 
 /*********************************************************************
 *
+* ica_wdlg_cb: HNDL_INIT
+*
+*********************************************************************/
+
+static int ica_wdlg_init(WORD nclicks, void *data, struct dialog_userdata *p_userdata)
+{
+	int retcode;
+
+
+	if (d_ica)			/* Dialog ist schon geîffnet ! */
+		return 0;		/* create verweigern */
+
+	retcode = 1;			/* keine Aktion notwendig */
+
+	if ((data) && (*((char **) data)))
+	{
+		p_userdata->cmd_pgm_path = ((char **) data)[0];
+		p_userdata->cmd_dat_path = ((char **) data)[1];
+		if (nclicks == 1)	/* Icon fÅr Datei */
+		{
+			if (p_userdata->cmd_pgm_path[0] == '<')	/* nicht angem. */
+				p_userdata->cmd_pgm_path = APP_NAME_FREE;
+		}
+
+		p_userdata->cmd_pgm = scroll_win_app(NULL, p_userdata->cmd_pgm_path);
+		if (p_userdata->cmd_pgm >= 0)
+		{
+			pgm_was_selected(NULL, p_userdata->cmd_pgm, TRUE);
+			if (p_userdata->cmd_dat_path)
+				p_userdata->cmd_dat = scroll_win_dat(NULL, p_userdata->cmd_dat_path);
+			else
+				p_userdata->cmd_dat = -1;
+			if (p_userdata->cmd_dat >= 0)
+			{
+				dat_was_selected(NULL, p_userdata->cmd_dat);
+				sync_sel();
+				lbox_update(sbox2, NULL);
+			}
+			sync_sel();
+		}
+
+		if (nclicks == 0)	/* Icon fÅr Programm */
+		{
+			if (p_userdata->cmd_pgm == -1)	/* neues Programm */
+				retcode = 2;		/* ... erst anmelden */
+		}
+		else
+		if (nclicks == 1)	/* Icon fÅr Datei */
+		{
+			if (p_userdata->cmd_dat == -1)	/* neue Datei */
+				retcode = 2;		/* ... erst anmelden */
+		}
+		else
+		if (nclicks == 2)			/* Anw. anmelden */
+		{
+			if (p_userdata->cmd_pgm != -2)
+				retcode = 2;	/* Aktion notwendig ! */
+		}
+	}
+
+	p_userdata->mode = retcode;
+	return 1;
+}
+
+
+/*********************************************************************
+*
+* ica_wdlg_cb: HNDL_OPEN
+*
+*********************************************************************/
+
+static int ica_wdlg_open(struct dialog_userdata *p_userdata)
+{
+	if (p_userdata->mode == 2)
+	{
+		p_userdata->mode = 1;
+		if (p_userdata->cmd_dat_path)
+		{
+			def_txt = p_userdata->cmd_dat_path;
+			if ((p_userdata->cmd_dat < 0) && (p_userdata->cmd_pgm >= 0))
+			{
+		 		d_typ = xy_wdlg_init(
+		 				hdl_ftypes,
+		 				adr_ftypes,
+		 				IDENT_EDIT_FILE_TYPE,
+		 				2,
+		 				pgmx + p_userdata->cmd_pgm,
+		 				STR_WINTITLE_MTY);
+				if (!d_typ)
+				{
+					fehler:
+					Rform_alert(1, ALRT_ERRWINDOPEN, NULL);
+				}
+			}
+		}
+		else
+		{
+			if (p_userdata->cmd_pgm >= 0)
+			{
+		 		d_anw = xy_wdlg_init(
+		 				hdl_anwndg,
+		 				adr_anwndg,
+		 				IDENT_REGISTER_APP,
+		 				0,
+		 				pgmx + p_userdata->cmd_pgm,
+		 				STR_WINTITLE_1AP);
+				if (!d_anw)
+					goto fehler;
+			}
+			else
+			{
+		 		d_anw = xy_wdlg_init(
+		 				hdl_anwndg,
+		 				adr_anwndg,
+		 				IDENT_REGISTER_APP,
+		 				1,
+		 				p_userdata->cmd_pgm_path,
+		 				STR_WINTITLE_1AP);
+				if (!d_anw)
+					goto fehler;
+			}
+		}
+	}
+
+	return 1;
+}
+
+
+/*********************************************************************
+*
 * Behandelt die Exit-Objekte des Icondialogs
 * Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angewÑhlt.
 *
@@ -1579,145 +1770,37 @@ static void dat_was_selected(DIALOG *d, int dat)
 *
 *********************************************************************/
 
-char *def_txt;		/* ->hdl_typ */
-
 #pragma warn -par
 
-WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
-		WORD clicks, void *data)
+WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
+		WORD nclicks, void *data)
 {
 	struct item_line *oldsel;
 	struct spd_file *oldsel2;
 	int pgm, dat;
-	static int cmd_pgm;
-	static int cmd_dat;
-	static char *cmd_pgm_path;
-	static char *cmd_dat_path;
 	OBJECT *tree;
 	struct pgm_file *mypgm;
-	register int retcode;
-	struct dialog_userdata *du;
+	struct dialog_userdata *p_userdata;
 
 
 	/* 1. Fall: Dialog soll geîffnet werden */
 	/* ------------------------------------ */
 
 	tree = adr_ica_dialog;
-	du = wdlg_get_udata(d);
+	p_userdata = wdlg_get_udata(d);
 
 	if (exitbutton == HNDL_INIT)
 	{
-		if (d_ica)			/* Dialog ist schon geîffnet ! */
-			return 0;		/* create verweigern */
-
-		retcode = 1;			/* keine Aktion notwendig */
-
-		if ((data) && (*((char **) data)))
-		{
-			cmd_pgm_path = ((char **) data)[0];
-			cmd_dat_path = ((char **) data)[1];
-			if (clicks == 1)	/* Icon fÅr Datei */
-			{
-				if (cmd_pgm_path[0] == '<')	/* nicht angem. */
-					cmd_pgm_path = APP_NAME_FREE;
-			}
-
-			cmd_pgm = scroll_win_app(NULL, cmd_pgm_path);
-			if (cmd_pgm >= 0)
-			{
-				pgm_was_selected(NULL, cmd_pgm, TRUE);
-				if (cmd_dat_path)
-					cmd_dat = scroll_win_dat(NULL, cmd_dat_path);
-				else
-					cmd_dat = -1;
-				if (cmd_dat >= 0)
-				{
-					dat_was_selected(NULL, cmd_dat);
-					sync_sel();
-					lbox_update(sbox2, NULL);
-				}
-				sync_sel();
-			}
-
-			if (clicks == 0)	/* Icon fÅr Programm */
-			{
-				if (cmd_pgm == -1)	/* neues Programm */
-					retcode = 2;		/* ... erst anmelden */
-			}
-			else
-			if (clicks == 1)	/* Icon fÅr Datei */
-			{
-				if (cmd_dat == -1)	/* neue Datei */
-					retcode = 2;		/* ... erst anmelden */
-			}
-			else
-			if (clicks == 2)			/* Anw. anmelden */
-			{
-				if (cmd_pgm != -2)
-					retcode = 2;	/* Aktion notwendig ! */
-			}
-		}
-
-		du->mode = retcode;
-		return 1;
-	} /* (exitbutton == HNDL_INIT) */
+		return(ica_wdlg_init(nclicks, data, p_userdata));
+	}
 
 	/* 1a. Fall: Dialog ist geîffnet worden */
 	/* ------------------------------------ */
 
-	if ((exitbutton == HNDL_OPEN) && (du->mode == 2))
+	if (exitbutton == HNDL_OPEN)
 	{
-		du->mode = 1;
-		if (cmd_dat_path)
-		{
-			def_txt = cmd_dat_path;
-			if ((cmd_dat < 0) && (cmd_pgm >= 0))
-			{
-		 		d_typ = xy_wdlg_init(
-		 				hdl_ftypes,
-		 				adr_ftypes,
-		 				IDENT_EDIT_FILE_TYPE,
-		 				2,
-		 				pgmx+cmd_pgm,
-		 				STR_WINTITLE_MTY);
-				if (!d_typ)
-				{
-					fehler:
-					Rform_alert(1, ALRT_ERRWINDOPEN, NULL);
-				}
-			}
-		}
-		else
-		{
-			if (cmd_pgm >= 0)
-			{
-		 		d_anw = xy_wdlg_init(
-		 				hdl_anwndg,
-		 				adr_anwndg,
-		 				IDENT_REGISTER_APP,
-		 				0,
-		 				pgmx+cmd_pgm,
-		 				STR_WINTITLE_1AP);
-				if (!d_anw)
-					goto fehler;
-			}
-			else
-			{
-		 		d_anw = xy_wdlg_init(
-		 				hdl_anwndg,
-		 				adr_anwndg,
-		 				IDENT_REGISTER_APP,
-		 				1,
-		 				cmd_pgm_path,
-		 				STR_WINTITLE_1AP);
-				if (!d_anw)
-					goto fehler;
-			}
-		}
-
-		return 1;
-	} /* ((exitbutton == HNDL_OPEN) && (du->mode == 2)) */
-
+		return(ica_wdlg_open(p_userdata));
+	}
 
 	/* 3. Fall: Dialog soll geschlossen werden */
 	/* --------------------------------------- */
@@ -1740,7 +1823,7 @@ WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
 		/* ----------------------------- */
 
 	pgm = pgmobj_to_showindex(exitbutton);
-	if ((clicks == 2) && (pgm >= 0))
+	if ((nclicks == 2) && (pgm >= 0))
 	{
 		pgm += lbox_get_first(sbox1);
 		pgm = linx[pgm].pgmnr;
@@ -1766,7 +1849,7 @@ WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
 		/* -------------------------- */
 
 	dat = datobj_to_showindex(exitbutton);
-	if ((clicks == 2) && (dat >= 0))
+	if ((nclicks == 2) && (dat >= 0))
 	{
 		dat += lbox_get_first(sbox2);
 		if (selected_program)
@@ -1791,7 +1874,7 @@ WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
 		/* Doppelklick auf Programm-Icon */
 		/* ----------------------------- */
 
-	if ((clicks == 2) && (pgmicnobj_to_showindex(exitbutton) >= 0))
+	if ((nclicks == 2) && (pgmicnobj_to_showindex(exitbutton) >= 0))
 	{
 		open_iconsel();
 		return 1;
@@ -1801,19 +1884,28 @@ WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
 		/* Doppelklick auf Datei-Icon */
 		/* -------------------------- */
 
-	if ((clicks == 2) && (daticnobj_to_showindex(exitbutton) >= 0))
+	if ((nclicks == 2) && (daticnobj_to_showindex(exitbutton) >= 0))
 	{
 		open_iconsel();
 		return 1;
 	}
 
 
-	if (clicks != 1)
+	if (nclicks != 1)
 		goto ende;
 
 
-	/* Scrollbox #1 angewÑhlt */
-	/* ---------------------- */
+	/*
+	 TODO:
+	 Fehlfunktion bei:
+	 	1. Dateityp auswÑhlen, z.B. *.RSC
+	 	2. Dann zugehîriges Programm auswÑhlen, hier INTRFACE
+	 	-> Klick wird ignoriert, zweiter Klick geht aber.
+	*/
+
+
+	/* Scrollbox #1 angewÑhlt (Programme) */
+	/* ---------------------------------- */
 
 	if (exitbutton == PICON1)
 		exitbutton = PRG1;
@@ -1836,6 +1928,7 @@ WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
 		 (exitbutton == PRG4) ||
 		 (exitbutton == PRG5))
 	{
+		handle_prg:
 		oldsel = selected_pgmline;
 
 		lbox_do(sbox1, exitbutton);
@@ -1855,8 +1948,8 @@ WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
 	}
 
 
-	/* Scrollbox #2 angewÑhlt */
-	/* ---------------------- */
+	/* Scrollbox #2 angewÑhlt (Dateitypen) */
+	/* ----------------------------------- */
 
 	if (exitbutton == DICON1)
 		exitbutton = DAT1;
@@ -1882,12 +1975,19 @@ WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
 		oldsel = selected_datline;
 		oldsel2 = selected_spdfile;
 
-		lbox_do(sbox2, exitbutton);
+		/* Es sieht so aus, als seinen die Listboxen von Dateien und Programm durcheinandergeraten,
+		 denn *.RSC und INTRFACE kriegen dasselbe ITEM beim set-Callback */
+		lbox_do(sbox2, exitbutton);		/* es sieht so aus, als wÅrde hier das SELECTED des Programms auf 1 ?!?*/
 
 		/* select-Status geÑndert ? */
 
 		if (selected_program)
 		{
+			/*
+			* In der linken Liste ist schon ein Programm selektiert.
+			* Wir arbeiten ganz normal mit der rechten Liste.0
+			*/
+
 			if (!selected_spdfile && oldsel2)
 			{
 				deselect_dfile(d);
@@ -1900,6 +2000,35 @@ WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
 		}
 		else
 		{
+			/*
+			* In der linken Liste ist kein Programm selektiert.
+			* Linke und rechte Liste teilen sich die LBOX_ITEMs, wodurch auch links
+			* eine Zeile als "selected" markiert wurde, aber nicht schwarz eingefÑrbt wurde.
+			* Wenn man jetzt links auf das Programm klickt, ist der Status der Zeile
+			* inkonsistent.
+			* Deshalb lîschen wir das "selected" und tun so, als ob das zugehîrige
+			* Programm in der linken Liste stattdessen angeklickt wurde.
+			*/
+
+			/* Der selektierte Index in linx[] */
+			int sel_idx = lbox_get_slct_idx(sbox2);
+			if (sel_idx >= 0)
+			{
+				/* Das zugehîrige Programm */
+				int sel_pgm = linx[sel_idx].pgmnr;
+				/* selected-Status lîschen, damit der nicht fÅr die linke Liste gilt. */
+				linx[sel_idx].selected = 0;
+				/* Die erste Zeile mit demselben Programm suchen. Das ist die Zeile in der
+				   linken Liste, in der das Programm steht */
+				while ((sel_idx > 0) && (linx[sel_idx - 1].pgmnr == sel_pgm))
+					sel_idx--;
+				/* Linke Liste so scrollen, daû das selektierte Programm der oberste Eintrag ist */
+				lbox_scroll_to(sbox1, sel_idx, NULL, NULL);
+				/* wir tun so, also ob der oberste Eintrag links gewÑhlt wurde. */
+				exitbutton = PRG1;
+				goto handle_prg;
+			}
+			/*
 			if (!selected_datline && oldsel)
 			{
 				deselect_dfile(d);
@@ -1909,6 +2038,7 @@ WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
 			{
 				dat_was_selected(d, selected_datline->datnr);
 			}
+			*/
 		}
 		return 1;
 	}
@@ -1945,7 +2075,7 @@ WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
 		deselect_program(d);
 		if (selected_pgmline)
 		{
-			selected_pgmline->sel = FALSE;
+			selected_pgmline->selected = FALSE;
 			selected_pgmline = NULL;
 		}
 		delete_pgm(sel);
@@ -1991,7 +2121,7 @@ WORD cdecl hdl_ica(DIALOG *d, EVNT *ev, WORD exitbutton,
 		deselect_dfile(d);
 		if (selected_datline)
 		{
-			selected_datline->sel = FALSE;
+			selected_datline->selected = FALSE;
 			selected_datline = NULL;
 		}
 		if (selected_spdfile)

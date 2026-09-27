@@ -66,20 +66,20 @@ static void restore_rscdata(int *save)
 
 /****************************************************************
 *
-* Rechnet Koordinaten linear um. Der Wert <wert> wurde bei
+* Rechnet Koordinaten linear um. Der Wert <value> wurde bei
 * Bildschirmgr”že <old> abgespeichert, jetzt ist die
 * Bildschirmgr”že <new>.
 *
 ****************************************************************/
 
-static void recalc(int *wert, int old, int new)
+static void recalc(int *value, int old, int new)
 {
 	unsigned long tmp;
 
-	tmp    = (unsigned long) *wert;
+	tmp    = (unsigned long) *value;
 	tmp   *= new;
 	tmp   /= old;
-	*wert  = (int) tmp;
+	*value  = (int) tmp;
 }
 
 
@@ -911,7 +911,7 @@ static long _read_inf(int *rsc_id_err)
 			linx[linn].pgmnr = pgmn;
 			linx[linn].reldatnr = pgmx[pgmn].ntypes;
 			linx[linn].datnr = datn;
-			linx[linn].sel = FALSE;
+			linx[linn].selected = FALSE;
 			datn++;
 			linn++;
 

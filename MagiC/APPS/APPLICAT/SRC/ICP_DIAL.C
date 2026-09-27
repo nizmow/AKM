@@ -515,6 +515,8 @@ static void chg_icon(int mypth, int iconnr)
 *
 * Alle selektierten Icons als <iconnr> setzen.
 *
+* Wird aufgerufen beim Doppelklick auf ein Icon im Fenster "Icons"
+*
 *********************************************************************/
 
 void icp_dial_set_icon(int iconnr)
@@ -606,7 +608,7 @@ int icp_get_target_obj(int x, int y, int whdl, OBJECT **tree,
 
 #pragma warn -par
 
-WORD cdecl hdl_icp(DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data)
+WORD cdecl icp_wdlg_cb(DIALOG *d, EVNT *ev, int exitbutton, int nclicks, void *data)
 {
 	int pth;
 	static char *path;
@@ -680,7 +682,7 @@ WORD cdecl hdl_icp(DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data)
 		/* ------------------------- */
 
 	pth = pthobj_to_showindex(exitbutton);
-	if ((clicks == 2) && (pth >= 0))
+	if ((nclicks == 2) && (pth >= 0))
 	{
 		pth += lbox_get_first(sbox);
  		d_pth = xy_wdlg_init(
@@ -698,14 +700,14 @@ WORD cdecl hdl_icp(DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data)
 		/* Doppelklick auf Icon */
 		/* -------------------- */
 
-	if ((clicks == 2) && (icnobj_to_showindex(exitbutton) >= 0))
+	if ((nclicks == 2) && (icnobj_to_showindex(exitbutton) >= 0))
 	{
 		open_iconsel();
 		return 1;
 	}
 
 
-	if (clicks != 1)
+	if (nclicks != 1)
 		goto ende;
 
 	/* Scrollbox angew„hlt */

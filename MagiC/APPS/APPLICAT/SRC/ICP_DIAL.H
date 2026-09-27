@@ -5,5 +5,5 @@ extern int icp_get_target_obj(int x, int y, int whdl, OBJECT **tree,
 			void (**drawfn)(int objnr));
 extern DIALOG *d_icp;
 extern OBJECT *adr_icp_dialog;
-extern WORD cdecl hdl_icp(DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data);
+extern WORD cdecl icp_wdlg_cb(DIALOG *d, EVNT *ev, int exitbutton, int nclicks, void *data);
 extern int insert_pth(struct pth_file *new, struct pth_file *old);

@@ -76,7 +76,7 @@ typedef struct
 
 /* Low Level Interface */
 
-extern void _mt_aes( PARMDATA *d, WORD *ctrldata,	WORD *global );
+extern void _mt_aes(PARMDATA *d, WORD *ctrldata, WORD *global);
 
 /* MultiTOS Drag&Drop definitions */
 
@@ -93,13 +93,13 @@ extern void _mt_aes( PARMDATA *d, WORD *ctrldata,	WORD *global );
 #define DD_FNAME	"U:\\PIPE\\DRAGDROP.AA"
 #define DD_NAMEMAX	128		/* maximale LÑnge eines Formatnamens */
 #define DD_HDRMIN	9		/* minimale LÑnge des Drag&Drop-Headers */
-#define DD_HDRMAX	( 8 + DD_NAMEMAX )	/* maximale LÑnge */
+#define DD_HDRMAX	(8 + DD_NAMEMAX)	/* maximale LÑnge */
 
 
 
 extern WORD	_app;
-extern void	_crystal( AESPB *aespb );
-extern GEMPARBLK	_GemParBlk;
+extern void	_crystal(AESPB *aespb);
+extern GEMPARBLK _GemParBlk;
 
 /****** Application definitions *****************************************/
 
@@ -146,9 +146,9 @@ extern WORD MT_appl_getinfo( WORD ap_gtype, WORD *ap_gout1, WORD *ap_gout2, WORD
 #define	appl_yield() \
 			MT_appl_yield( 0L )
 
-#define	appl_bvset( disks, harddisks ) /* Funktion ignorieren (GEM fÅr Dose): void appl_bvset( int disks, int harddisks ); */
+#define	appl_bvset(disks, harddisks) /* Funktion ignorieren (GEM fÅr Dose): void appl_bvset( int disks, int harddisks ); */
 
-#define	vq_aes()	( appl_init() >= 0 )	/* WORD	vq_aes( void ); */
+#define	vq_aes() (appl_init() >= 0)	/* WORD	vq_aes(void); */
 
 
 /****** Event definitions ***********************************************/
@@ -272,8 +272,7 @@ extern WORD MT_evnt_multi(
 extern void MT_EVNT_multi( WORD evtypes, WORD nclicks, WORD bmask, WORD bstate,
 					MOBLK *m1, MOBLK *m2, ULONG ms, EVNT *event, WORD *global );
 
-/* There is a typo in the .C file, the function should be evnt_dclick() */
-extern WORD	MT_evnt_dclicks( int ev_dnew, int ev_dgetset, WORD *global );
+extern WORD	MT_evnt_dclick( int ev_dnew, int ev_dgetset, WORD *global );
 
 #define	evnt_keybd() \
 			MT_evnt_keybd( 0L )
@@ -290,7 +289,7 @@ extern WORD	MT_evnt_dclicks( int ev_dnew, int ev_dgetset, WORD *global );
 #define	EVNT_multi( a, b, c, d, e, f, g, h ) \
 			MT_EVNT_multi( a, b, c, d, e, f, g, h, 0L )
 #define	evnt_dclick( a, b ) \
-			MT_evnt_dclicks( a, b, 0L )
+			MT_evnt_dclick( a, b, 0L )
 
 /****** Object definitions **********************************************/
 
@@ -369,19 +368,19 @@ typedef struct	/* form_xdo definitions */
 
 typedef struct
 {
-	SCANX	*unsh;
-	SCANX	*shift;
-	SCANX	*ctrl;
- 	SCANX	*alt;
-	void	*resvd;
+	SCANX *unsh;
+	SCANX *shift;
+	SCANX *ctrl;
+ 	SCANX *alt;
+	void  *resvd;
 } XDO_INF;
 
 typedef struct _xted /* scrollable textedit objects */
 {
-	char	*xte_ptmplt;
-	char	*xte_pvalid;
-	WORD	xte_vislen;
-	WORD	xte_scroll;
+	char *xte_ptmplt;
+	char *xte_pvalid;
+	WORD xte_vislen;
+	WORD xte_scroll;
 } XTED;
 
 
@@ -1148,8 +1147,8 @@ typedef struct
 #define SHW_XMDFLAGS	4096
 
 typedef struct {
-	char	*command;
-	long	limit;
+	char *command;
+	long limit;
 	long nice;
 	char *defdir;
 	char *env;
@@ -1686,7 +1685,7 @@ WORD	MT_pdlg_do( PRN_DIALOG *prn_dialog, PRN_SETTINGS *settings, BYTE *document_
 #define	PDLG_OK		2					/* "OK" wurde gedrÅckt */
 
 
-#endif	/*WDLG_DIRECT_CALL*/
+#endif	/* WDLG_DIRECT_CALL */
 
 /************************************************************************/
 

@@ -211,11 +211,11 @@ int main(int argc, char *argv[])
 	load_int_icons();
 
 	if ((action[0] == 'c') && (!action[1]))
-		{
+	{
 		/* nur compilieren */
 		put_inf();
 		goto fehler;
-		}
+	}
 
 	/* Dialog "Registrierte Programme" */
 	rsrc_gtree(T_APPS, &adr_ica_dialog);
@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
 		{
 		 case 'a':
 		 		d_ica = xy_wdlg_init(
-		 				hdl_ica,
+		 				ica_wdlg_cb,
 		 				adr_ica_dialog,
 		 				IDENT_APPLICATIONS,
 		 				0,
@@ -264,7 +264,7 @@ int main(int argc, char *argv[])
 				break;
 		 case 'd':
 		 		d_ica = xy_wdlg_init(
-		 				hdl_ica,
+		 				ica_wdlg_cb,
 		 				adr_ica_dialog,
 		 				IDENT_APPLICATIONS,
 		 				1,
@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
 				break;
 		 case 'o':
 		 		d_icp = xy_wdlg_init(
-		 				hdl_icp,
+		 				icp_wdlg_cb,
 		 				adr_icp_dialog,
 		 				IDENT_PATHS,
 		 				0,
@@ -286,7 +286,7 @@ int main(int argc, char *argv[])
 				break;
 		 case 's':
 		 		d_spc = xy_wdlg_init(
-		 				hdl_spc,
+		 				spc_wdlg_cb,
 		 				adr_spc_dialog,
 		 				IDENT_SPECIAL,
 		 				0,
@@ -301,7 +301,7 @@ int main(int argc, char *argv[])
 	if (action[0] == 'a')
 	{
  		d_ica = xy_wdlg_init(
- 				hdl_ica,
+ 				ica_wdlg_cb,
  				adr_ica_dialog,
  				IDENT_APPLICATIONS,
  				2,
@@ -316,7 +316,7 @@ int main(int argc, char *argv[])
 		is_multiwindow = TRUE;
 
  		d_ica = xy_wdlg_init(
- 				hdl_ica,
+ 				ica_wdlg_cb,
  				adr_ica_dialog,
  				IDENT_APPLICATIONS,
  				0,
@@ -326,7 +326,7 @@ int main(int argc, char *argv[])
 			goto fehler;
 
  		d_icp = xy_wdlg_init(
- 				hdl_icp,
+ 				icp_wdlg_cb,
  				adr_icp_dialog,
  				IDENT_PATHS,
  				0,
@@ -336,7 +336,7 @@ int main(int argc, char *argv[])
 			goto fehler;
 
  		d_spc = xy_wdlg_init(
- 				hdl_spc,
+ 				spc_wdlg_cb,
  				adr_spc_dialog,
  				IDENT_SPECIAL,
  				0,
@@ -507,7 +507,7 @@ long err_alert(long e)
 
 /*************************************************************
 *
-* Fensterdialog ”ffnen.
+* Einen Fensterdialog ”ffnen
 *
 *************************************************************/
 
@@ -554,7 +554,7 @@ DIALOG *xy_wdlg_init(
 		whdl = wdlg_open(
 			d,
 			Rgetstring(title_code, NULL),
-			NAME+CLOSER+MOVER,
+			NAME + CLOSER + MOVER,
 			x,y,
 			0,			/* code */
 			NULL);		/* data */

@@ -296,8 +296,8 @@ static void arrange_window_horizontal(WINDOW *w)
 	window_calc_hslider(w);
 
 	/* Position und Breite ggf. korrigieren (von calc_in schon gesetzt) */
-	o -> ob_x 	= w->in.g_x - w->hshift * w->step_hshift;
-	o -> ob_width  = w->in.g_w + w->hshift * w->step_hshift;
+	o->ob_x = w->in.g_x - w->hshift * w->step_hshift;
+	o->ob_width  = w->in.g_w + w->hshift * w->step_hshift;
 }
 
 
@@ -355,16 +355,16 @@ static int arrange_window(WINDOW *w)
 	int x,y,cols;
 	int oldcols;
 	int old_hshift,old_vshift;
-	int anzahl;
+	int num_shown;
 	OBJECT *o;
 	ICONBLK *icb;
 
 
-	oldcols 	= w->cols;
-	old_hshift 	= w->hshift;
-	old_vshift 	= w->vshift;
-	anzahl 		= w->shownum;
-	o 			= w->tree;
+	oldcols    = w->cols;
+	old_hshift = w->hshift;
+	old_vshift = w->vshift;
+	num_shown  = w->shownum;
+	o          = w->tree;
 
 	calc_in(w);			/* Innenmaûe berechnen */
 	calc_collin(w);		/* Zeilen/Spalten berechnen */
@@ -374,24 +374,24 @@ static int arrange_window(WINDOW *w)
 	if (w->step_hshift)
 	{
 		window_calc_hslider(w);
-		o -> ob_x 	= w->in.g_x - w->hshift * w->step_hshift;
-		o -> ob_width  = w->in.g_w + w->hshift * w->step_hshift;
+		o->ob_x = w->in.g_x - w->hshift * w->step_hshift;
+		o->ob_width = w->in.g_w + w->hshift * w->step_hshift;
 	}
 
 	/* Position und Hîhe ggf. korrigieren (von calc_in schon gesetzt) */
-	o -> ob_y 	= w->in.g_y - w->vshift*(w->showh + w->ydist);
-	o -> ob_height = w->in.g_h + w->vshift*(w->showh + w->ydist);
+	o->ob_y = w->in.g_y - w->vshift*(w->showh + w->ydist);
+	o->ob_height = w->in.g_h + w->vshift*(w->showh + w->ydist);
 
-	for	(i = 0, y = w->yoffs, x = w->xoffs, j = anzahl;
+	for	(i = 0, y = w->yoffs, x = w->xoffs, j = num_shown;
 			j > 0; i++,j--)
 	{
 		o++;
 
-		if (o -> ob_type == G_USERDEF)
+		if (o->ob_type == G_USERDEF)
 			icb = (ICONBLK *) o->ob_spec.userblk->ub_parm;
 		else
-		if ((o -> ob_type == G_ICON) ||
-			 (o -> ob_type == G_CICON))
+		if ((o->ob_type == G_ICON) ||
+			 (o->ob_type == G_CICON))
 			icb = o->ob_spec.iconblk;
 		else
 			icb = NULL;
@@ -402,17 +402,18 @@ static int arrange_window(WINDOW *w)
 			x = w->xoffs;
 			y += w->showh + w->ydist;
 		}
-		o -> ob_x = x;
-		o -> ob_y = y;
+		o->ob_x = x;
+		o->ob_y = y;
 		if (icb)
-			o -> ob_y += w->max_hicon - icb->ib_hicon;
+			o->ob_y += w->max_hicon - icb->ib_hicon;
 		x += w->showw + w->xdist;
 	}
 
-	if (anzahl < oldcols)
-		oldcols = anzahl;
-	if (anzahl < cols)
-		cols = anzahl;
+	if (num_shown < oldcols)
+		oldcols = num_shown;
+	if (num_shown < cols)
+		cols = num_shown;
+
 	return((oldcols != cols) || (old_vshift != w->vshift) ||
 		  (old_hshift != w->hshift));
 }
@@ -537,8 +538,8 @@ void hshift(WINDOW *w, int newshift)
 				src_mfdb.fd_addr = dest_mfdb.fd_addr = NULL;
 				clip_rect[0] = scrg.g_x;
 				clip_rect[1] = scrg.g_y;
-				clip_rect[2] = scrg.g_x+scrg.g_w-1;
-				clip_rect[3] = scrg.g_y+scrg.g_h-1;
+				clip_rect[2] = scrg.g_x + scrg.g_w - 1;
+				clip_rect[3] = scrg.g_y + scrg.g_h - 1;
 				vs_clip	(vdi_handle, TRUE, clip_rect);
 				vro_cpyfm(vdi_handle, S_ONLY, pxy, &src_mfdb, &dest_mfdb);
 				/* alles neu zeichnen, was nicht vom Zielraster Åberdeckt wurde */
@@ -629,8 +630,8 @@ static void vshift(WINDOW *w, int newshift)
 				src_mfdb.fd_addr = dest_mfdb.fd_addr = NULL;
 				clip_rect[0] = scrg.g_x;
 				clip_rect[1] = scrg.g_y;
-				clip_rect[2] = scrg.g_x+scrg.g_w-1;
-				clip_rect[3] = scrg.g_y+scrg.g_h-1;
+				clip_rect[2] = scrg.g_x + scrg.g_w - 1;
+				clip_rect[3] = scrg.g_y + scrg.g_h - 1;
 				vs_clip	(vdi_handle, TRUE, clip_rect);
 				vro_cpyfm(vdi_handle, S_ONLY, pxy, &src_mfdb, &dest_mfdb);
 				/* alles neu zeichnen, was nicht vom Zielraster Åberdeckt wurde */
@@ -749,11 +750,11 @@ static void alliconified(WINDOW *w, GRECT *g, int hide)
 static void closed(WINDOW *w, int kstate)
 {
 }
-static void buttoned( WINDOW *w, int kstate,
-				int x, int y, int button, int nclicks )
+static void buttoned(WINDOW *w, int kstate,
+				int x, int y, int button, int nclicks)
 {
 }
-static void keyed( WINDOW *w, int kstate, int key )
+static void keyed(WINDOW *w, int kstate, int key)
 {
 }
 #pragma warn +par

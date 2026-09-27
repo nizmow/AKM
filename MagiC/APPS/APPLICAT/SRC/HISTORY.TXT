@@ -1,0 +1,9 @@
+APPLICAT HISTORY
+================
+
+2026-09-27 (v1.03)
+
+- Double click on icon does not change application icon if data file is selected.
+- Double click on icon shows user feedback: Icon is selected for 200 ms.
+- Click on item in item type list now selects the respective application instead.
+  This avoids malfunctions due to the lists that share their listbox items.
