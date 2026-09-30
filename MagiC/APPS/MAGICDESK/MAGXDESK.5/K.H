@@ -95,7 +95,7 @@ extern CICONBLK **icons;
 #define TTPLEN 63
 #define AUTOUPDATE_MS 2000L		/* fÅr Fenster-Auto-Update */
 
-#define MOUSE_DRAG_DETECT_MS 100	/* gib dem Anwender 100 ms zum Loslassen der Maustaste */
+#define MOUSE_DRAG_DETECT_MS 200	/* gib dem Anwender 200 ms zum Loslassen der Maustaste */
 
 #define FIRSTMAXMEMBLK 0x40000L		/* fÅr Fenster: Beginne mit 256k */
 #define NEXTMEMBLK     0x40000L		/* fÅr Fenster: Steigere 256k */
