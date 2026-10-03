@@ -1,6 +1,5 @@
 Andreas Kromke
-2018-03-07
+2026-10-03
 
 
-Show internal system memory.
-Not localised, i.e. messages in German
+Permanently showing internal system memory status.

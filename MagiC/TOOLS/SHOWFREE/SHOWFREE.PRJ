@@ -1,0 +1,10 @@
+showfree.tos
+.C[-C]			; allow nested comments
+.C[-Iimport]	; .h search path
+.C[-W-sig]
+.L[-S=$400]   ; Stackgr”že auf 1 KByte setzen
+=              ; list of modules follows...
+MINSTART.S							; minimaler Startup-Code
+showfree
+import\pcstdlib.lib   ; standard lib
+import\pctoslib.lib   ; TOS lib
