@@ -1,5 +1,5 @@
 Andreas Kromke
-2018-03-07
+2026-10-03
 
 
 Register file types and icons to APPLICAT.INF, which is used by MagiCDesk.

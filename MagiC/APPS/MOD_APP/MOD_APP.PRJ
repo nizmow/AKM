@@ -1,0 +1,9 @@
+mod_app.ttp
+.C[-C]				; allow nested comments
+.C[-Iimport]		; .h search path
+.L[-S=$400]			; Stack size 1 kByte
+=					; list of modules follows...
+import\pcmxstrt.o	; startup code with ARGV and quoting
+mod_app
+import\pcstdlib.lib   ; standard lib
+import\pctoslib.lib
