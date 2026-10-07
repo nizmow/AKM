@@ -876,7 +876,7 @@ static void _message_obj_window(WINDOW *w, int kstate, int message[16])
 			redraw_window(w, (GRECT *) (message + 4));
 			break;
 		case WM_TOPPED:
-			wind_set(w->handle, WF_TOP, 0,0,0,0);
+			wind_set_int(w->handle, WF_TOP, 0);
 			break;
 		case WM_CLOSED:
 			w->close(w, kstate);

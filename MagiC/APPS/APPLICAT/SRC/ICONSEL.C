@@ -226,7 +226,10 @@ static void button_iconsel(WINDOW *w, int kstate,
 
 	objnr = find_obj(w->tree, x, y);
 	if (objnr <= 0)
+	{
+		wind_set_int(w->handle, WF_TOP, 0);
 		return;		/* kein Objekt unter dem Mausklick */
+	}
 
 	if (nclicks == 2)
 	{
@@ -344,7 +347,8 @@ int open_iconsel(void)
 	if (iconwindow.handle < 0)
 	{
 		Mfree(iconwindow.tree);
-		return -2;		/* kein AES-Fenster */
+		Rform_alert(1, ALRT_ERRWINDOPEN, NULL);
+		return -2;		/* kein AES-Fenster mehr brig */
 	}
 
 	/* Baum aufbauen */
