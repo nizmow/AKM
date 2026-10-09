@@ -10,7 +10,7 @@ echo ""
 echo Internal commands:
 echo attrib,break,cd,cls,ck,copy,date,del,dir,echo,end,exit
 echo find,for,free,goto,if,md,more,mv,path,pause,prompt
-echo rd,ren,shift,set,sort,time,touch,tree,type,ver,verify
+echo rd,rem,ren,shift,set,sort,time,touch,tree,type,ver,verify
 echo ""
 echo External commands:
 echo (currently none)

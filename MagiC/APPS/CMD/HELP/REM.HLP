@@ -1,0 +1,5 @@
+Syntax: REM text
+Zweck:  Bemerkungen und Kommentare
+
+Der Befehl REM entspricht v”llig seinem Pendent in MS-DOS. Alle
+Parameter werden ignoriert.
