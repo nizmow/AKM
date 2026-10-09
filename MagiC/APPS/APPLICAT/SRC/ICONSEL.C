@@ -10,6 +10,7 @@
 #include <vdi.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "gemut_mt.h"
 #include "applicat.h"
 #include "windows.h"
@@ -207,6 +208,63 @@ void move_icons(int x_koor, int y_koor, OBJECT *tree, int objnr)
 	graf_mouse(ARROW, NULL);
 	graf_mouse(M_ON, NULL);
 	wind_update(END_UPDATE);
+}
+
+
+/*******************************************************************
+*
+* Taste
+*	Cursor up        : 0x4800
+*	Shift Cursor up  : 0x4838
+*	Cursor down      : 0x5000
+*	Shift Cursor down: 0x5032
+*	Page up          : 0x4900
+*	Page up          : 0x5100
+*
+*******************************************************************/
+
+#pragma warn -par
+static void hdl_key_iconsel(WINDOW *w, int kstate, int key)
+{
+	int message[8];
+	int msg4 = -1;
+	/*
+	printf("0x%04x ", key);
+	*/
+
+	switch(key)
+	{
+		case 0x4800:
+			msg4 = WA_UPLINE;
+			break;
+
+		case 0x5000:
+			msg4 = WA_DNLINE;
+			break;
+
+		case 0x4900:
+		case 0x4838:
+			msg4 = WA_UPPAGE;
+			break;
+
+		case 0x5100:
+		case 0x5032:
+			msg4 = WA_DNPAGE;
+			break;
+	}
+
+	/* schicke mir selbst eine Nachricht */
+	if (msg4 >= 0)
+	{
+		message[0] = WM_ARROWED;
+		message[1] = ap_id;
+		message[2] = 0;
+		message[3] = w->handle;
+		message[4] = msg4;
+		message[5] =
+		message[6] = message[7] = 0;
+		appl_write(ap_id, 16, message);
+	}
 }
 
 
@@ -410,6 +468,7 @@ int open_iconsel(void)
 	iconwindow.yoffs = WYOFFS;
 	iconwindow.xdist = WXDIST;
 	iconwindow.ydist = WYDIST;
+	iconwindow.hdl_key = hdl_key_iconsel;
 	iconwindow.button = button_iconsel;
 	iconwindow.close = close_iconsel;
 	*w = mywindow = &iconwindow;

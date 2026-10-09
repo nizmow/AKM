@@ -71,13 +71,13 @@ static long iwrite(int hdl, char *wbuf, long *wlen, const char *s)
 		ret = Fwrite(hdl, *wlen, wbuf);
 		if (ret < 0)
 		{
-			error(STR_ERR_WR_INF);
+			inf_alert_error_text(STR_ERR_WR_INF);
 			return ret;
 		}
 
 		if (ret != *wlen)
 		{
-			error(STR_ERR_FULL_INF);
+			inf_alert_error_text(STR_ERR_FULL_INF);
 			return ERROR;
 		}
 
@@ -597,7 +597,7 @@ static long put_icons(void)
 	for (i = 0,z = linx; i < linn;)
 	{
 		n = z->pgmnr;
-		pgm_file = pgmx+n;
+		pgm_file = pgmx + n;
 
 		if (pgm_file->name[0] != '<')
 		{
@@ -783,7 +783,7 @@ static long put_icons(void)
 	if (ret != all_len)
 	{
 		Fdelete("applicat.dat");
-		error(STR_ERR_FULL_INF);
+		inf_alert_error_text(STR_ERR_FULL_INF);
 	}
 
 	return E_OK;
@@ -793,6 +793,12 @@ static long put_icons(void)
 /****************************************************************
 *
 * global: Schreibt die Textdatei "applicat.inf".
+*
+* Achtung: <applicat_inf_filename> k”nnte auf ein anderes
+*          "Volume" verweisen, was aber nur beim Debugging
+*          passieren kann. Dann geht das Frename() von
+*          "applicat.$$$" schief.
+*          Das k”nnte man vermeiden, lohnt aber den Aufwand nicht.
 *
 ****************************************************************/
 
@@ -810,7 +816,7 @@ long put_inf(void)
 	char *rnam,*inam;
 	int o;
 	int hdl;
-	char *fname = "applicat.$$$";
+	const char *tempname = "applicat.$$$";
 
 
 	/* x,y-Positionen aller offenen Dialoge sichern */
@@ -850,11 +856,11 @@ long put_inf(void)
 		return ENSMEM;
 	wlen = 0L;		/* Schreibpuffer ist leer */
 	*wbuf = EOS;
-	ret = Fcreate(fname, 0);
+	ret = Fcreate(tempname, 0);
 	if (ret < E_OK)
 	{
 		Mfree(wbuf);
-		form_xerr(ret, fname);
+		form_xerr(ret, tempname);
 		return ret;
 	}
 	hdl = (int) ret;
@@ -1021,11 +1027,20 @@ long put_inf(void)
 		goto err;
 	Mfree(wbuf);
 
+	/* Schlieže die tempor„re Datei. Wenn alles gut, die INF-Datei l”schen
+	   und die tempor„re Datei zur INF-Datei machen */
+
 	ret = Fclose(hdl);
 	if (!ret)
-		ret = Fdelete("applicat.inf");
+	{
+		ret = Fdelete(applicat_inf_filename);
+	}
+
 	if (!ret)
-		ret = Frename(0, "applicat.$$$", "applicat.inf");
+	{
+		ret = Frename(0, tempname, applicat_inf_filename);
+	}
+
 	if (ret)
 	{
 		form_xerr(EWRITF, NULL);

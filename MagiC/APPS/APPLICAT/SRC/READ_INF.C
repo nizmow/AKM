@@ -395,7 +395,7 @@ static void alert_error_in_inf(char *s)
 *
 ****************************************************************/
 
-void error(int id)
+void inf_alert_error_text(int id)
 {
 	alert_error_in_inf(Rgetstring(id, NULL));
 }
@@ -589,7 +589,7 @@ static void readline(void)
 		{
 			if (!*cpos)
 			{
-				error(STR_ERR_EOF_INF);		/* show alert from resource file */
+				inf_alert_error_text(STR_ERR_EOF_INF);		/* show alert from resource file */
 				exit(1);		/* Dateiende */
 			}
 	
@@ -601,7 +601,7 @@ static void readline(void)
 	
 			if ((s - line) > (LBUFLEN - 2))
 			{
-				error(STR_ERR_LEN_INF);
+				inf_alert_error_text(STR_ERR_LEN_INF);
 				exit(-1);			/* ZeilenÅberlauf */
 			}
 		}
@@ -946,15 +946,14 @@ long get_inf(void)
 	long ret;
 	int hdl;
 	XATTR xa;
-	const char *fname = "applicat.inf";
 	int rsc_id_err;
 
 
 	/* check, if file exists, and get file size */
-	ret = Fxattr(0, fname, &xa);
+	ret = Fxattr(0, applicat_inf_filename, &xa);
 	if (ret < E_OK)
 	{
-		form_xerr(ret, fname);
+		form_xerr(ret, applicat_inf_filename);
 		return ret;
 	}
 
@@ -966,7 +965,7 @@ long get_inf(void)
 	}
 
 	/* open and read entire file */
-	ret = Fopen(fname, RMODE_RD);
+	ret = Fopen(applicat_inf_filename, RMODE_RD);
 	if (ret >= E_OK)
 	{
 		hdl = (int) ret;
@@ -979,7 +978,7 @@ long get_inf(void)
 	{
 		Mfree(inf_buf);
 		inf_buf = NULL;
-		form_xerr(ret, fname);
+		form_xerr(ret, applicat_inf_filename);
 		return ret;
 	}
 
@@ -991,7 +990,7 @@ long get_inf(void)
 	if (ret)
 	{
 		char s[148];
-		error(rsc_id_err);
+		inf_alert_error_text(rsc_id_err);
 		/* "Zeile: |" */
 		strcpy(s, Rgetstring(STR_LINE, NULL));
 		strcat(s, line);

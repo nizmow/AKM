@@ -729,8 +729,8 @@ static void arrowed(WINDOW *w, int arrow)
 
 /****************************************************************
 *
-* Im Fenster mit Handle <whdl> ist der horizontale Scrollbalken
-* bewegt worden.
+* Dummy-Routinen fr den Fall, daž das Fenster sich nicht dafr
+* interessiert
 *
 ****************************************************************/
 
@@ -754,7 +754,7 @@ static void buttoned(WINDOW *w, int kstate,
 				int x, int y, int button, int nclicks)
 {
 }
-static void keyed(WINDOW *w, int kstate, int key)
+static void hdl_key_dummy(WINDOW *w, int kstate, int key)
 {
 }
 #pragma warn +par
@@ -946,7 +946,7 @@ void init_window(WINDOW *w)
 	w->iconified = iconified;
 	w->uniconified = uniconified;
 	w->alliconified = alliconified;
-	w->key = keyed;
+	w->hdl_key = hdl_key_dummy;
 	w->button = buttoned;
 	w->usertype = 0L;
 	w->userdata = NULL;

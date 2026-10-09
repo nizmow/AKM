@@ -6,7 +6,7 @@
 #include <portab.h>
 #endif
 
-#define PROGRAM_VERSION_STR "v1.03"
+#define PROGRAM_VERSION_STR "v1.04"
 
 #define MAX_NAMELEN 34
 #define MAX_PATHLEN 128
@@ -34,7 +34,7 @@
 #define SECTION_PATHS        "<Paths>"				/*"[<Pfade>]"*/
 #define SECTION_SPECIAL      "<Special>"			/*"[<Spezial>]"*/
 
-/* other */
+/* other categories */
 
 #define RSC_FNAME_INTERN     "<internal>"			/*"<intern>"*/
 #define APP_NAME_FREE        "<free>"				/*"<frei>"*/
@@ -168,10 +168,11 @@ extern struct dat_file	datx[MAX_DATN];
 extern struct pth_file	pthx[MAX_PTHN];
 extern struct spc_file	spcx[MAX_SPCN];
 extern struct icon		icnx[MAX_ICNN];
-extern struct item_line	linx[MAX_LINN];
+extern struct item_line	linx[MAX_LINN];	/* LBOX_ITEMs fÅr alle Dialoge */
 extern struct iconfile	rscx[MAX_RSCN];
 
 extern int is_3d;
 
-extern void error(int id);		/* show alert from resource string */
+extern const char *applicat_inf_filename;
+extern void inf_alert_error_text(int id);
 extern char buf512[512];

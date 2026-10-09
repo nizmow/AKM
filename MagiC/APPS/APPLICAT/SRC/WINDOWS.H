@@ -5,7 +5,7 @@ typedef struct _window
 {
 	int		handle;			/* Handle oder 0 				*/
 	int		flags;			/* Bit 0: Ikonifiziert			*/
-	void	(*key)		(struct _window *w, int kstate, int key);
+	void	(*hdl_key)		(struct _window *w, int kstate, int key);
 	void	(*button)		(struct _window *w, int kstate, int x, int y,
 						int button, int nclicks);
 	void	(*message)	(struct _window *w, int kstate, int message[16]);
@@ -72,12 +72,12 @@ typedef union _wmesag
 /* FÅr Fenster */
 extern int top_whdl(void);
 extern WINDOW *windows[NWINDOWS];
-extern WINDOW **new_window( void );
-extern WINDOW **find_slot_window( WINDOW *myw );
+extern WINDOW **new_window(void);
+extern WINDOW **find_slot_window(WINDOW *myw);
 extern WINDOW *whdl2window(int whdl);
 extern int find_obj(OBJECT *tree, int x, int y);
 extern void window_draw_obj(int whdl, OBJECT *tree, int index);
-extern void init_window( WINDOW *w);
+extern void init_window(WINDOW *w);
 extern void window_calc_hslider(WINDOW *w);
 extern void window_calc_vslider(WINDOW *w);
 extern void calc_collin(WINDOW *w);

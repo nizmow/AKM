@@ -7,3 +7,11 @@ APPLICAT HISTORY
 - Double click on icon shows user feedback: Icon is selected for 200 ms.
 - Click on item in item type list now selects the respective application instead.
   This avoids malfunctions due to the lists that share their listbox items.
+
+2026-10-09 (v1.04)
+
+- Removing a data type like *.BLA should no longer corrupt the SELECTED states of the application list.
+- Keyboard support for icon selection window: (shift) cursor up/down and page up/down. This also
+  enables Hatari's scroll wheel.
+- For debugging purposes, an APPLICAT.INF file can be passed as first parameter. For example you
+  might just drag any file on the APPLICAT programm, and it will try to read it.

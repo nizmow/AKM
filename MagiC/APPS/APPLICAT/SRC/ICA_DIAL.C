@@ -184,7 +184,7 @@ static void enable_scroll(DIALOG *d, int *objs)
 
 /*********************************************************************
 *
-* Macht alle Scrollobjekte eines Fensters nicht auswÑhlbar
+* Macht alle Scrollobjekte eines Fensters nicht-auswÑhlbar
 *
 *********************************************************************/
 
@@ -307,6 +307,9 @@ static int scroll_win_dat(DIALOG *d, char *datname)
 * item->selected enthÑlt bereits den neuen Selektions-Status,
 * der vorherige wird in <last_state> Åbergeben.
 *
+* Man beachte, daû linke und rechte Scrollbox dieselben
+* LBOX_ITEMs verwenden, also auch denselben <selected>-Status.
+*
 *********************************************************************/
 
 #pragma warn -par
@@ -334,6 +337,9 @@ static void cdecl scrollbox_pgm_select_cb(
 *
 * item->selected enthÑlt bereits den neuen Selektions-Status,
 * der vorherige wird in <last_state> Åbergeben.
+*
+* Man beachte, daû linke und rechte Scrollbox dieselben
+* LBOX_ITEMs verwenden, also auch denselben <selected>-Status.
 *
 *********************************************************************/
 
@@ -584,6 +590,12 @@ static WORD cdecl scrollbox_dat_set_cb(LIST_BOX *box, OBJECT *tree,
 /*********************************************************************
 *
 * Verkette sÑmtliche LBOX_ITEM-Objekte
+*
+* Man beachte, daû die beiden parallelen Scrollboxen, fÅr Programme
+* und Dateitypen, dieselben LBOX_ITEMs verwenden. Sie teilen sich
+* also auch das <selected>-Attribut. Es muû sichergestellt werden,
+* daû die Boxen immer parallel laufen und daû die linke Box
+* verriegelt wird, wÑhrend die rechte bearbeitet wird.
 *
 *********************************************************************/
 
@@ -1612,7 +1624,7 @@ static void dat_was_selected(DIALOG *d, int dat)
 	adr_ica_dialog[DEL_DAT].ob_state &= ~DISABLED;
 	if (d)
 		subobj_wdraw(d, DEL_DAT, DEL_DAT, 1);
-	selected_datfile = datx+dat;
+	selected_datfile = datx + dat;
 	selected_datnr = dat;
 	selected_datfile->sel = TRUE;
 }
@@ -1775,8 +1787,6 @@ static int ica_wdlg_open(struct dialog_userdata *p_userdata)
 WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 		WORD nclicks, void *data)
 {
-	struct item_line *oldsel;
-	struct spd_file *oldsel2;
 	int pgm, dat;
 	OBJECT *tree;
 	struct pgm_file *mypgm;
@@ -1928,9 +1938,15 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 		 (exitbutton == PRG4) ||
 		 (exitbutton == PRG5))
 	{
+		struct item_line *oldsel;
+
 		handle_prg:
 		oldsel = selected_pgmline;
 
+		/*
+		   Man beachte, daû die Listboxen von Dateien und Programmen dieselbe
+		   LBOX_ITEM-Tabelle verwenden, also auch dieselben <selected>-ZustÑnde.
+		*/
 		lbox_do(sbox1, exitbutton);
 
 		/* select-Status geÑndert ? */
@@ -1972,12 +1988,11 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 		 (exitbutton == DAT4) ||
 		 (exitbutton == DAT5))
 	{
-		oldsel = selected_datline;
-		oldsel2 = selected_spdfile;
+		struct spd_file *oldsel = selected_spdfile;
 
-		/* Es sieht so aus, als seinen die Listboxen von Dateien und Programm durcheinandergeraten,
-		 denn *.RSC und INTRFACE kriegen dasselbe ITEM beim set-Callback */
-		lbox_do(sbox2, exitbutton);		/* es sieht so aus, als wÅrde hier das SELECTED des Programms auf 1 ?!?*/
+		/* Man beachte, daû die Listboxen von Dateien und Programmen dieselbe
+		   LBOX_ITEM-Tabelle verwenden, also auch dieselben <selected>-ZustÑnde. */
+		lbox_do(sbox2, exitbutton);
 
 		/* select-Status geÑndert ? */
 
@@ -1985,15 +2000,15 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 		{
 			/*
 			* In der linken Liste ist schon ein Programm selektiert.
-			* Wir arbeiten ganz normal mit der rechten Liste.0
+			* Wir arbeiten ganz normal mit der rechten Liste.
 			*/
 
-			if (!selected_spdfile && oldsel2)
+			if (!selected_spdfile && oldsel)
 			{
 				deselect_dfile(d);
 			}
 			else
-			if (selected_spdfile != oldsel2)
+			if (selected_spdfile != oldsel)
 			{
 				dat_was_selected(d, selected_spdfile->datnr);
 			}
@@ -2024,7 +2039,7 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 					sel_idx--;
 				/* Linke Liste so scrollen, daû das selektierte Programm der oberste Eintrag ist */
 				lbox_scroll_to(sbox1, sel_idx, NULL, NULL);
-				/* wir tun so, also ob der oberste Eintrag links gewÑhlt wurde. */
+				/* Wir tun so, also ob der oberste Eintrag links gewÑhlt wurde. */
 				exitbutton = PRG1;
 				goto handle_prg;
 			}
@@ -2130,6 +2145,7 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 			selected_spdfile = NULL;
 		}
 		delete_dat(sel);
+		sync_sel();
 		goto ende;
 	}
 

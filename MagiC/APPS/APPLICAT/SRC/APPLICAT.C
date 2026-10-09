@@ -127,6 +127,8 @@ struct iconfile rscx[MAX_RSCN];
 void open_work(void);
 void close_work(void);
 
+const char *applicat_inf_filename = "applicat.inf";
+
 static void _rsrc_load(char *fname);
 void Mgraf_mouse(int type);
 
@@ -177,14 +179,17 @@ int main(int argc, char *argv[])
 	wind_get_grect(SCREEN, WF_WORKXYWH, &scrg);
 	vdi_handle = graf_handle(&gl_hwchar, &gl_hhchar, &gl_hwbox, &gl_hhbox);
 
-	/* INF- Datei einlesen */
-	/* ------------------- */
-
-	if (get_inf())
-		return -1;
-
 	/* Kommandozeile auswerten */
 	/* ----------------------- */
+
+	if ((argc > 1) && (argv[1][0] != '-'))
+	{
+		/* optional first parameter for debugging purposes:
+		   name and path of INF file */
+		applicat_inf_filename = argv[1];
+		argv++;
+		argc--;
+	}
 
 	if (argc > 1)
 	{
@@ -205,6 +210,11 @@ int main(int argc, char *argv[])
 			args[1] = argv[3];
 	}
 
+	/* INF- Datei einlesen */
+	/* ------------------- */
+
+	if (get_inf())
+		return -1;
 
 	open_work();
 	load_icons();
@@ -393,8 +403,7 @@ int main(int argc, char *argv[])
 			{
 				/* unser unterstes Fenster <whdl> ermitteln */
 				intin2 = ap_id;		/* Eingabewert! */
-				wind_get(-1, WF_BOTTOM, &intin2, &whdl,
-						&dummy, &dummy);
+				wind_get(-1, WF_BOTTOM, &intin2, &whdl,	&dummy, &dummy);
 				/* schicke mir selbst eine Nachricht */
 				if (whdl > 0)
 				{
@@ -412,7 +421,7 @@ int main(int argc, char *argv[])
 			w = whdl2window(top_whdl());
 			if (w)
 			{
-				w->key(w, w_ev.kstate, w_ev.key);
+				w->hdl_key(w, w_ev.kstate, w_ev.key);
 			key_done:
 				w_ev.mwhich &= ~MU_KEYBD;	/* bearbeitet */
 			}
