@@ -1919,6 +1919,8 @@ pa_4:
  rts
 
 
+	INCLUDE "INTERN\REM.S"
+
 	INCLUDE "INTERN\ATTRIB.S"
 
 	INCLUDE "INTERN\CD.S"
@@ -2272,6 +2274,7 @@ intern_com_tab:
  DC.W     path_s-intern_com_tab,path_com-_base
  DC.W     pause_s-intern_com_tab,pause_com-_base
  DC.W     prompt_s-intern_com_tab,prompt_com-_base
+ DC.W     rem_s-intern_com_tab,rem_com-_base
  DC.W     ren_s-intern_com_tab,ren_com-_base
  DC.W     rd_s-intern_com_tab,rd_com-_base
  DC.W     set_s-intern_com_tab,set_com-_base
@@ -3415,7 +3418,7 @@ titels:       DC.B  'GEMDOS¿ SHELL v2.62 ½ ''90 Andreas Kromke',CR,LF,LF,0
 	ENDIF
 	IF KAOS
 	IFNE MAGIX
-titels:       DC.B  'MagiC SHELL v2.69 ½ ''93/''26 Andreas Kromke',CR,LF,LF,0
+titels:       DC.B  'MagiC SHELL v2.70 ½ ''93/''26 Andreas Kromke',CR,LF,LF,0
 	ELSE
 titels:       DC.B  'KAOS¿   SHELL v2.62 ½ ''90 Andreas Kromke',CR,LF,LF,0
 	ENDIF
@@ -3547,6 +3550,7 @@ mv_s:     DC.B  'mv',0
 path_s:   DC.B  'path',0
 pause_s:  DC.B  'pause',0
 prompt_s: DC.B  'prompt',0
+rem_s:    DC.B  'rem',0
 ren_s:    DC.B  'ren',0
 rd_s:     DC.B  'rd',0
 set_s:    DC.B  'set',0
