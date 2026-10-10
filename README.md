@@ -38,6 +38,10 @@ and various libraries, development demo code and test code
 
 Upload complete as of 2018-11-20
 
+# MagiC for Atari Releases
+
+See MagiC/Releases/. Installation instructions included. Should mainly be in sync with MagicOnLinux.
+
 # Screenshots
 <img alt="No" src="assets/magxdesk - 256 colours.png" width="1024">
 
