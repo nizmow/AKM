@@ -1,0 +1,13 @@
+MGCLOCK ia a minimalistic clock application.
+
+MGXCLOCK additionally includes the writeback daemon WBDAEMON,
+which is usually located in "C:\GEMSYS\MAGIC\START".
+If you plan to use the clock, you should disable WBDAEMON
+and run MGXCLOCK instead.
+
+Note that WBDAEMON and MGXCLOCK significantly accelerate write
+operations on physical (V)FAT drives, especially floppy disks, while
+the risk of data loss is relatively low.
+In an emulated system, like MagicOnLinux, this feature is only
+of limited use. Here you should better use MGCLOCK and ignore
+both WBDAEMON and MGXCLOCK.

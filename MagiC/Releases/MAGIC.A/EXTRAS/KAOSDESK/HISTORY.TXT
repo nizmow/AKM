@@ -1,0 +1,13 @@
+KAOSDESK Changes Since v2.36
+============================
+
+2026-08-23 (v2.42)
+
+- Support GEMDOS drives, without BIOS support (GetBpb).
+- During tree scan, only show the first error as alert.
+- Avoid 32-bit overflow in "disk info" dialogue.
+- Avoid 32-bit overflow when calculating the horizontal scroll bar
+- Avoid 32-bit overflow when showing the free volume size with click on 
+horizontal scroll bar.
+- Handle double click programmatically, for more responsive user experience.
+- General source code overhaul, for better maintainability.

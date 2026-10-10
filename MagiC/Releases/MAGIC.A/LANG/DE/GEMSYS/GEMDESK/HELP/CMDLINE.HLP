@@ -1,0 +1,46 @@
+Parameter und Variablen
+
+CMD verwendet, wie bei MS-DOS, das Prozentzeichen fr Parameter und Variablen.
+So ist %3 beispielsweise der dritte Parameter, der an eine Batch-Datei
+bergeben wurde, und %PATH% ist die Environment-Variable PATH:
+
+%var%          Wert von var (mit SET gesetzt), falls vorhanden.
+%%             Das '%'-Zeichen selbst
+%\n%           Zeilenvorschub (Line Feed)
+%\r%           Wagenrcklauf  (Carriage Return)
+%\b%           Rckschritt    (Backspace)
+%\t%           Tabulator
+
+Beispiel: SET "f1=dir -q%\n%" belegt eine Funktionstaste. Beim Bet„tigen
+          wird der Befehl automatisch ausgefhrt.
+
+(Unix/Linux verwenden statt des Prozentzeichen das Dollar-Zeichen.)
+
+Vor Ausfhrung jeder Kommandozeile (ob von Tastatur oder Batch-Datei)
+werden Parameter voneinander getrennt, evtl. Datei-Umlenkungen
+durchgefhrt und Environment-Variable ausgewertet. Das Trennzeichen zwischen
+Parametern ist die Leerstelle, w„hrend unter MS-DOS auch das Komma zugelassen
+ist. Soll ein Leerzeichen NICHT als Trenner dienen, weil es z.B. in einem
+Dateinamen vorkommt, kann man einen Teil, der das Leerzeichen enth„lt,
+in Anfhrungszeichen setzen. Beispiel:
+
+  TYPE "my file.txt"
+
+M”chte man das Prozentzeichen nicht als Variablennamen, kann man es doppelt
+schreiben (s.o.). Setzt man einen Text in Apostrophe, werden darin weder
+Leerzeichen als Trenner noch Prozentzeichen als Steuerzeichen interpretiert;
+auerdem kann man so Anfhrungszeichen ausgeben:
+
+	ECHO '"'Hallo'"'
+
+fhrt zu
+
+	"Hallo"
+
+Bemerkung: MS-DOS kennt weder die einfachen Anfhrungszeichen ', um die
+           doppelten Anfhrungszeichen " innerhalb eines Parameters einge-
+           ben zu k”nnen, noch die M”glichkeit, Environment-Variablen mit
+           Hilfe des %-Zeichens innerhalb der Eingabezeile einzusetzen.
+Bemerkung: Bis CMD v2.67 wurden Sequenzen in Anfhrungszeichen oder Apostrophen
+           immer als EIN Parameter behandelt, d.h. man konnte keine
+           Parameter aus mehreren Teilen zusammensetzen.

@@ -1,0 +1,141 @@
+Foreword
+
+AES_LUPE was written in 1992 by Laurenz PrÅûner. Both program and manual are available in German only. This is an English translation of the manual, done by DeepL, with some human assistance by Andreas Kromke. Feel free to provide a French version!
+
+Date format is ISO.
+
+Note that "PrÅûner" is transcribed as "Pruessner" in ANSI.
+
+===========================================================================================
+
+                                   Berlin, 1992-04-07
+Laurenz PrÅûner
+Rathenower Straûe 24
+D - 1000 Berlin 21
+030 394 68 96
+
+Foreign countries:
+++49 30 394 68 96
+
+
+
+
+                    /----------\
+                    AES-Lupe 2.4
+                    ------------
+          A Program Written by Laurenz PrÅûner
+          --------------------------------
+         /           \        /           \
+                   Ω Cynics 1992
+                  ---------------
+                 /               \
+   /-------------------------------------------\
+   |  "We're supporting Cyberpunk Actionware"  |
+   \-------------------------------------------/
+
+"Something like this is un-programmable."
+                             Arnd Rosemeier, 1991-03
+
+
+
+
+...and Another Magnifier
+------------------------
+
+The AES magnifier is a further development of the VDI magnifier presented in "ST- Magazin". The VDI magnifier already had significant advantages over all other magnifier programs: clean GEM output, flicker-free scrolling and high working speed are just some of its features.  Like the VDI magnifier, the AES magnifier also works at all graphics resolutions and displays its data and dialogue boxes correctly even in the distorted ST colour resolutions (ST Low and ST Mid).
+
+In contrast to the AES magnifier, however, the VDI magnifier was very limited in its application:
+
+It could only be activated in the GEM menu bar and then froze the image. In addition, it had a fixed size that could only be changed by the programmer or by a patch program.
+
+The AES magnifier does away with this.
+
+
+How Does the Magnifier Work?
+----------------------------
+The magnifier only works in a GEM window, the position and size of which can be freely selected. The area around the mouse pointer is always enlarged. Other programs are not paused during this process.   The size of the zoomed area depends on the size of the window.
+
+Magnification occurs with every movement and every mouse click. Since the wind_update() function is also used correctly, magnification of a modal dialogue box or similar is not possible.
+
+The program requires four buffers of different sizes for enlargement, which are redefined each time the window is enlarged or reduced. Therefore, when enlarging the window, the system may not provide enough memory for the buffers.  In this case, the window simply remains white until you reduce it to a suitable size.
+
+Feedback effects are only partially intercepted; on the one hand, because this is quite difficult to achieve with a computer, and on the other hand, because then the fun screenshows for bored programmers would be lost.
+
+
+Operation
+---------
+The magnifier can be started both as a standalone program and as an accessory, whereby the latter is of course considerably more useful.
+
+After starting, a window opens and the magnifying glass immediately begins its work.
+
+The magnifying glass can be controlled in various ways:
+
+Firstly, the <Alternate> key is assigned a special function. While this key is held down, no magnification takes place.  This is extremely practical for multiple magnifications: the output is paused, you move the mouse into the magnification window, release the <Alternate> key and obtain a magnification of the magnification.
+
+All other settings are made via a separate menu, which you can display in the magnification window with a mouse click if the magnification window is the topmost window. If this is not the case, the window will be topped after the mouse click.  If you want to prevent this, hold down the right mouse button while clicking _ the selection menu will appear even though the magnifying window is not the topmost window. This is very useful if, for example, you want to zoom in on a smaller window that is in front of a larger magnifying window. 
+
+
+The Menu
+----------
+The menu is movable. Click on the dog-ear in the top right corner and the mouse pointer will turn into a flat hand. You can now move the dialogue box by holding down the mouse button.
+
+Unfortunately, on very small screens, this effect does not work as intended: due to the size of the dialogue box, it is not possible to look _behind_ the dialogue. Therefore, the dialogue can also be moved as a ghost frame:   Click  the dog-ear  with both mouse buttons  simultaneously  and the box will disappear, leaving behind  an empty ghost frame that can also be moved.    The dialogue box will reappear  as soon as  you release both mouse buttons. The same effect can also be achieved on systems with only one  mouse button:  Hold down one of the two Shift keys while clicking on the dog-ear.
+
+In the selection menu, you will find three presets that can be freely combined with each other. A ticked box means _this feature is enabled_.
+
+
+SÑndig vergrîûern (Continuous zooming):
+
+Zooming occurs not only when the mouse is moved or clicked, but continuously. In some cases, this prevents data inconsistency between the zoom cache and the screen.  As this feature consumes processing time, it is disabled by default. However, it is recommended wherever little mouse and much keyboard work is done, for example for word processing, spreadsheets, etc.
+
+
+Mauszeiger mitvergrîûern (Enlarge mouse pointer):
+
+The mouse pointer is normally disabled during every Blit operation, which prevents some of the feedback effects.  However, it can remain switched on during one of the blits, which leads to all kinds of varied effects. This feature was introduced for the annoyed programmer of the AI research named after him.
+
+
+Fenster runden (Rounding windows):
+
+Normally, the magnification window always stays exactly where you placed it.  However, since the TOS routine vro_cpyfm() can be significantly accelerated, especially on _old_ STs, if each bit block starts horizontally at 32-bit boundaries, the window position can be rounded exactly to 16 bits. This setting is particularly recommended for slower devices.
+
+Below this, the magnification factor must be set separately for the horizontal and vertical directions. A blackened, round button indicates your selection.
+
+
+Window Error!
+-------------
+
+Since version 2.2, AES_LUPE supports the AV protocol for communication with main programs.  There has been much debate about the merits and drawbacks of this protocol; personally, I consider it useless from the perspective of a multitasking operating system for Atari computers.
+
+Nevertheless, it has been implemented to the delight of many beta testers _ and already there are problems. Some AV programs have a habit of closing accessory windows on their own. Older versions of _Interface_ in particular behave in this way.
+
+Closing external windows can lead to serious system crashes.  For this reason, the magnifier has been enhanced with a plausibility check that attempts to detect errors of this kind. In the event of an error, a warning box will alert you to this fact. Please contact us immediately if you receive such a warning box.
+
+
+Known Issues:
+-------------
+
+Issue:
+After clicking on the menu bar, the magnifier window appears, but it remains white and nothing is enlarged.
+
+Solution:
+The magnifier cannot request its memory. This may be because you do not have enough memory (520 STs are quickly out of memory). In this case, you should obtain a memory expansion.
+
+Alternatively, you may be using a main program that blocks all memory (e.g. 1ST Word or Cypress).  In this case, you should obtain the program >>Mxalloc/2<<, which restricts memory hogs from accessing the coveted RAM and is included with the magnifier floppy disk as a _bonus_.
+
+Issue:
+Above a certain window size, only gibberish appears in the magnifying glass window.
+
+Solution:
+You are using a faulty operating system. Get a TOS update as soon as possible. The error has been resolved in TOS 2.06. You can obtain TOS 2.06 for any ST from:
+
+Artifex Computer GmbH
+Anton-Burger-Weg 147
+6000 Frankfurt / Main 70
+Tel.: 069 646 885 18 (Ausland: ++49 69 646 885 18)
+Fax:  069 646 886 18 (Ausland: ++49 69 646 886 18)
+
+The new versions of NVDI also eliminate the error.
+
+
+Laurenz PrÅûner
+
