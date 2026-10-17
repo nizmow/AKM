@@ -1,0 +1,12 @@
+2026-10-10
+
+- initial release
+
+2026-10-17
+
+- KAOSDESK preregistered with icon and in "single" mode.
+- KAOSDESK shortcut placed to desktop, suitable for testing with Hatari.
+- Wrong graphics driver MFM2.SYS removed.
+- INSTALL.TXT formatted to 80 columns, suitable for reading in TOS and
+  Hatari trouble shooting hints added.
+

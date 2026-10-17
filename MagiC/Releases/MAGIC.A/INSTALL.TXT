@@ -1,30 +1,37 @@
 MagiC for Atari: Installation instructions
-Andreas Kromke, 2026-10-10
+Andreas Kromke, 2026-10-12
 
 A) Using a host computer
 
 - Unpack the "Atari-MagiC-rootfs.zip" file on your host computer.
-- Localise the installation, by running LANG/<LANG>.BAT (Windows) or LOCALISE.SH (Linux or Unix).
+- Localise the installation, by running LANG/<LANG>.BAT (Windows) or
+  LOCALISE.SH (Linux or Unix).
 - Transfer the extracted, localised content to your Atari C: drive.
-  If you are running an emulator, boot EmuTOS, TOS or KAOS, mount your disk image as C: drive and your
-  host directory as D: drive, for example. Alternatively and if technically possible, you might mount the
-  disk image in your host computer and copy the data directly.
-  If you do not want to switch localisation later, you might omit the LANG directory. As the initial
-  localisation has already been done on your host computer, these files are no longer necessary for
-  Atari operation.
-- Test the MagiC installation by running AUTO\MAGXBOOT.TOS in your (emulated) Atari.
-- If everything works fine, you might rename MAGXBOOT.TOS to MAGXBOOT.PRG for auto booting MagiC.
+  If you are running an emulator, boot EmuTOS, TOS or KAOS, mount your disk
+  image as C: drive and your host directory as D: drive, for example.
+  Alternatively and if technically possible, you might mount the disk image in
+  your host computer and copy the data directly.
+  If you do not want to switch localisation later, you might omit the LANG
+  directory. As the initial localisation has already been done on your host
+  computer, these files are no longer necessary for Atari operation.
+- Test the MagiC installation by running AUTO\MAGXBOOT.TOS in your (emulated)
+  Atari.
+- If everything works fine, you might rename MAGXBOOT.TOS to MAGXBOOT.PRG for
+  auto booting MagiC.
 
 B) Install directly on your Atari
 
 - Rename "Atari-MagiC-rootfs.zip" to MAGIC.ZIP, due to 8+3 name scheme.
-- Unzip the package and copy or move its contents to your boot drive. We assume C:.
+- Unzip the package and copy or move its contents to your boot drive.
+  We assume C:.
 - For initial localisation open C:\LANG and double click CMD.TTP.
 - Enter your preferred language code (DE, EN or FR).
 - When done, press a key and then type exit and press ENTER.
-- If you do not want to switch localisation later, you might now remove the LANG directory.
+- If you do not want to switch localisation later, you might now remove the
+  LANG directory.
 - Test the MagiC installation by running AUTO\MAGXBOOT.TOS.
-- If everything works fine, you might rename MAGXBOOT.TOS to MAGXBOOT.PRG for auto booting MagiC.
+- If everything works fine, you might rename MAGXBOOT.TOS to MAGXBOOT.PRG for
+  auto booting MagiC.
 
 The roofts is mainly from  here:
 https://gitlab.com/AndreasK/magiclinux/-/tree/main/rootfs?ref_type=heads
@@ -39,18 +46,34 @@ https://gitlab.com/AndreasK/Atari-Mac-MagiC-Sources
 (MAGXBOOT, CHGRES-for-Atari and CHGRES-for-ET4000)
 
 
-Trouble Shooting
-----------------
+General Trouble Shooting
+------------------------
 
-If MagiC's startup ends with an error message "Cannot find magxdesk.rsc", the initial localisation
-was not done, see above.
+If MAGXBOOT just leaves without starting MagiC, it could not find the MAGIC.RAM
+kernel file. Probably the initial localisation (see above) had been missed.
 
-If running under Hatari, Magxdesk cannot access Hatari's emulated Gemdos drive because of
-its incomplete API. You can access the drive using MCMD (Press Ctrl-B in Magxdesk), or
-you find a recent KAOSDesk in EXTRAS. If you prefer English, copy the content of
-EXTRAS\KAOSDESK\EN TO EXTRAS\KAOSDESK, overwriting the German localisation.
-You should run KAOSDesk with Alt-Double-Click (leaving MagxDesk) and return to MagxDesk
+If MagiC's startup ends with an error message "Cannot find magxdesk.rsc", the
+initial localisation was either not done or was incomplete, see above.
+
+Hatari Trouble Shooting
+-----------------------
+
+Make sure to at least reserve 2 MB for Atari RAM. With only 1 MB, MagiC will
+not be usable.
+
+If CLOCK.CPX is asking for current date and time on each reboot, this behaviour
+results from a design flaw in the emulator. Unfortunately Hatari copies the
+host's date and time only to the emulated RTC chip, not to the keyboard
+controller. You might switch Hatari to a newer Atari model that contains
+the RTC, e.g. the TT.
+
+If running under Hatari, Magxdesk cannot access Hatari's emulated Gemdos drive
+because of its incomplete API. You can access the drive using MCMD (Press
+Ctrl-B in Magxdesk), or you find a recent KAOSDesk in EXTRAS (note that this
+one has also been adapted to the Fast Click feature). If you prefer English,
+copy the content of EXTRAS\KAOSDESK\EN TO EXTRAS\KAOSDESK, overwriting
+the German localisation. Note that by default KAOSDesk has already been
+configured as running in "single mode" (via APPLICAT.INF). Return to MagxDesk
 via Ctrl-Q and then leave to "DESKTOP".
-Technically, KAOSDesk uses the old GEMDOS file API that is limited to 8+3 file names, but
-is compatible with Hatari's drive emulation.
-
+Technically, KAOSDesk uses the old GEMDOS file API that is limited to 8+3 file
+names, but is compatible with Hatari's drive emulation.
