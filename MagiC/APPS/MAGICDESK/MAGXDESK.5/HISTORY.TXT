@@ -12,3 +12,6 @@ MAGXDESK HISTORY
 - Crash resolved when user tried to a assign an icon to a folder.
 - That bug had been newly introduced by a typo.
 
+2026-10-24 (v5.12)
+
+- Volume free percentage overflow avoided.

@@ -336,10 +336,12 @@ static void set_info(WINDOW *mywindow)
 
 	if (mywindow->flags & WFLAG_ICONIFIED)
 		return;
-	s		= mywindow->info;
-	num		= mywindow->shownum;
-	o		= mywindow->pobj + 1;
-	file		= mywindow->pmydta;
+
+	s    = mywindow->info;
+	num  = mywindow->shownum;
+	o    = mywindow->pobj + 1;
+	file = mywindow->pmydta;
+
 	for	(i = num; i > 0; i--,file++,o++)
 	{
 		size += ((*file)->filesize);
@@ -398,7 +400,6 @@ static void set_info(WINDOW *mywindow)
 			/* unsigned long bytes; */
 			DISKINFO di;
 			DISKINFO *d;
-
 
 			lwc = mywindow->real_drive;
 			if (lwc == 'U' - 'A')
@@ -510,6 +511,8 @@ void show_free(WINDOW *mywindow)
 	long percent;
 	char *t;
 	ULONG bytes[2];	/* 64 Bit */
+	unsigned long dividend;
+	unsigned long divisor;
 
 
 	if (mywindow->flags & WFLAG_ICONIFIED)
@@ -517,28 +520,43 @@ void show_free(WINDOW *mywindow)
 
 	lwc = mywindow->real_drive;
 	if (lwc == 'U' - 'A')
-{
+	{
 		d = &di;
 		d->b_free = 0L;
 		Dsetdrv(lwc);
 		Dsetpath(mywindow->path);
 		Dfree(d, 0);
-}
+	}
 	else
-{
+	{
 		d = dinfo + lwc;
-}
+	}
 
 	/* freie Bytes auf Laufwerk: */
 	ullmul(d->b_free, d->b_secsiz * d->b_clsiz, bytes);
 	print_ull(bytes, s);
-
 	strcat(s, Rgetstring(STR_BYTES));
-	strcat(s, "       ( ");
-	t = s+strlen(s);
-	percent = ((d->b_free) * 100L)/d->b_total;
-	print_ul(percent, t);
-	strcat(t, "% )");
+
+	/* prevent 32-bit overflow for percentage */
+
+	dividend = d->b_free;
+	divisor = d->b_total;
+	if (dividend > 0x01fffffful)
+	{
+		/* divide by 128, so that we can later multiply with 100 */
+		dividend >>= 7;
+		divisor >>= 7;
+	}
+	if (divisor > 0)
+	{
+		strcat(s, "       (");
+		t = s + strlen(s);
+
+		percent = (100 * dividend) / divisor;
+		print_ul(percent, t);
+		strcat(t, "%)");
+	}
+
 	Rxform_alert(1, ALRT_FREE_AT_DRV, lwc + 'A', s);
 }
 
@@ -580,11 +598,12 @@ void set_dname(int lw, char *dname)
 			}
 			if (strcmp(old_text, *p))
 			{
-				index = i+1;
+				index = i + 1;
 				o = windows[0]->pobj+index;
 				g = *((GRECT *) &(o->ob_x));
 				g.g_x += windows[0]->pobj->ob_x;
 				g.g_y += windows[0]->pobj->ob_y;
+
 				if (o->ob_type == G_CICON)
 				{
 					w = (int) strlen(*p);
@@ -598,7 +617,7 @@ void set_dname(int lw, char *dname)
 						g.g_w = w;	/* max bilden */
 					c->monoblk.ib_wtext = o->ob_width = w;
 					xoffs = c->monoblk.ib_xicon;	/* alte Pos. */
-					c->monoblk.ib_xicon = (w-c->monoblk.ib_wicon)>>1;
+					c->monoblk.ib_xicon = (w - c->monoblk.ib_wicon) >> 1;
 					xoffs -= c->monoblk.ib_xicon;	/* alt-neu */
 					o->ob_x += xoffs;
 					if (xoffs < 0)
@@ -607,6 +626,7 @@ void set_dname(int lw, char *dname)
 						g.g_w -= xoffs;
 					}
 				}
+
 				wind_update(BEG_UPDATE);
 				objc_wdraw(windows[0]->pobj, index, 1, &g, 0 );
 				wind_update(END_UPDATE);
@@ -1449,8 +1469,9 @@ WINDOW *create_wnd(int wnr, char *path, char *mask,
 		else
 		{
 			if (w->handle >= 0)
-				wind_set_int(w->handle, WF_BEVENT,
-						BEVENT_WORK+BEVENT_INFO );
+			{
+				wind_set_int(w->handle, WF_BEVENT, BEVENT_WORK + BEVENT_INFO);
+			}
 			w->yscroll = yscroll;
 			w->xscroll = 0;
 			w->flags = flags;

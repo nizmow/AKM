@@ -20,7 +20,7 @@
 * global variables
 */
 
-const char *pgm_ver = "5.11";	/* may not exceed four characters, due to .RSC file */
+const char *pgm_ver = "5.12";	/* may not exceed four characters, due to .RSC file */
 
 char *gmemptr = NULL;
 WINDOW *windows[NUM_WINDOWS + 1];

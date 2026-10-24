@@ -10,3 +10,6 @@
 - INSTALL.TXT formatted to 80 columns, suitable for reading in TOS and
   Hatari trouble shooting hints added.
 
+2026-10-24
+
+- MagiCDesk v5.12: Volume free percentage overflow avoided.
