@@ -14,3 +14,6 @@
 
 - MagiCDesk v5.12: Volume free percentage overflow avoided.
 - LOCALISE.SH repaired.
+- magrom6.lzh added.
+- COPS v1.08 (DE) added as alternative to v1.09 (multilingual)
+- INSTALL.TXT extended.

@@ -5,7 +5,8 @@ A) Using a host computer
 
 - Unpack the "Atari-MagiC-rootfs.zip" file on your host computer.
 - Localise the installation, by running LANG/<LANG>.BAT (Windows) or
-  LOCALISE.SH (Linux or Unix).
+  LOCALISE.SH (Linux or Unix). Pass the language code, e.g. "DE" as
+  parameter.
 - Transfer the extracted, localised content to your Atari C: drive.
   If you are running an emulator, boot EmuTOS, TOS or KAOS, mount your disk
   image as C: drive and your host directory as D: drive, for example.
@@ -14,6 +15,8 @@ A) Using a host computer
   If you do not want to switch localisation later, you might omit the LANG
   directory. As the initial localisation has already been done on your host
   computer, these files are no longer necessary for Atari operation.
+  If your MagiC boot volume is not C:, see instructions below.
+  If you want to used a non-default keyboard layout, see instructions below.
 - Test the MagiC installation by running AUTO\MAGXBOOT.TOS in your (emulated)
   Atari.
 - If everything works fine, you might rename MAGXBOOT.TOS to MAGXBOOT.PRG for
@@ -24,6 +27,8 @@ B) Install directly on your Atari
 - Rename "Atari-MagiC-rootfs.zip" to MAGIC.ZIP, due to 8+3 name scheme.
 - Unzip the package and copy or move its contents to your boot drive.
   We assume C:.
+  If your MagiC boot volume is not C:, see instructions below.
+  If you want to used a non-default keyboard layout, see instructions below.
 - For initial localisation open C:\LANG and double click CMD.TTP.
 - Enter your preferred language code (DE, EN or FR).
 - When done, press a key and then type exit and press ENTER.
@@ -32,6 +37,17 @@ B) Install directly on your Atari
 - Test the MagiC installation by running AUTO\MAGXBOOT.TOS.
 - If everything works fine, you might rename MAGXBOOT.TOS to MAGXBOOT.PRG for
   auto booting MagiC.
+
+C) Write MagiC kernel to ROM
+
+- Method 1 (untested by me):
+  Unpack and apply magrom6.lzh. This is an Atari application that expects
+  "C:\MAGIC.RAM". Pass parameter "-r2", and you will get MAGIXROM.IMG,
+  a 256k ROM image.
+- Method 2 (also untested by me):
+  Use Diego Parrilla's beautiful online tool
+  [https://magic.sidecartridge.com/].
+  Make sure selecting the latest MagiC release in step 1/4!
 
 The roofts is mainly from  here:
 https://gitlab.com/AndreasK/magiclinux/-/tree/main/rootfs?ref_type=heads
@@ -46,6 +62,49 @@ https://gitlab.com/AndreasK/Atari-Mac-MagiC-Sources
 (MAGXBOOT, CHGRES-for-Atari and CHGRES-for-ET4000)
 
 
+Hints
+-----
+
+If your MagiC boot drive is not C:, you must edit MAGX.INF manually. You might
+search and replace all "C:\" accordingly. Unfortunately, COPS's configuration
+file in GEMSYS\MAGIC\HOME is binary and cannot be edit manually. Thus COPS
+will start with an empty window. Press ^E and change the CPX path accordingly.
+
+If you want to use a non-default keyboard layout, you should install it
+before initial localisation. See EXTRAS\KEYTABS for additional layouts. You
+might find more in the internet, or create your own by using the provided
+source code. Example: You live in the U.S. and want to install the EN
+localisation (which is UK). Your US keyboard table file is
+"EXTRAS\KEYTABS\US\KEYTABLS.SYS". Copy that to "LANG/EN/GEMSYS/MAGIC/XTENSION",
+then start localisation. Same for Switzerland, install SWG then.
+
+Note that there is also an alternative DE keyboard with ISO layout, which
+should be used if you have a DE-ISO keyboard connected to your Atari (like in
+MagicOnLinux).
+
+
+APPLICAT hints
+--------------
+
+There is often some uncertainty about how to assign an icon to a program.
+Let’s take COPS.ACC as an example. Select the program file, choose the
+‘Assign icon’ menu item, and APPLICAT will then open with the relevant path
+(if COPS has not yet been registered). As we do not want to assign any file
+types for this application, we should shorten ‘C:\AUTO\ACCS\COPS.ACC’ to
+‘COPS’. Click “Install” to register the program. You can then drag an icon from
+the icon window onto the program icon, or select the program and assign the
+icon by double-clicking it in the icon window. Finally, you must exit APPLICAT
+by clicking “OK”.
+
+If you have installed PureC and want to automatically start the IDE when double
+clicking a .PRJ file, this might be somewhat tricky, because there is already
+an icon assigned to "PC" (matching PC.PRG, PC.APP etc.), but no path. You
+might edit the respective entry and exchange "PC" with the respective full
+path (e.g. "C:\PC\PC.PRG") and then assign data types and icons, or you first
+remove the existing entry, leave APPLICAT and then register PC.PRG in the
+regular way.
+
+
 General Trouble Shooting
 ------------------------
 
@@ -54,6 +113,17 @@ kernel file. Probably the initial localisation (see above) had been missed.
 
 If MagiC's startup ends with an error message "Cannot find magxdesk.rsc", the
 initial localisation was either not done or was incomplete, see above.
+
+COPS 1.09 seems to be somewhat unstable. Feel free to replace COPS.ACC with
+COPS108.ACX in AUTO\ACCS, but note that the latter unfortunately is only
+available in German. Known bugs of 1.09:
+- The official snapshot suppresses alert boxes for some CPXs.
+- Does not work at all with TOS 1.04, but (!) with KAOS 1.4.2B.
+- Sometimes crashes in "About" dialogue.
+- The icon in "About" dialogue is shifted.
+On the other hand, v1.08 needs WDIALOG when running in TOS, and is not
+multilingual. Note that you alternatively may install EXTRAS\XCONTROL instead.
+
 
 Hatari Trouble Shooting
 -----------------------
