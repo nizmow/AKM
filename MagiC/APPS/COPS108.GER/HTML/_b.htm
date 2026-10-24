@@ -1,0 +1,65 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 2.0//EN">
+<!-- last modified on 28.08.1998 -->
+<html>
+<head>
+<title>
+Die Onlinehilfe zu COPS: Programmierdoku
+</title>
+<meta http-equiv="Content-Type" content="text/html;charset=iso-8859-1">
+<meta name="Generator" content="UDO6 PL11 for TOS">
+<meta name="Author" content="Thomas Much, Sven &amp; Wilfried Behne">
+<link rel=home href="COPS.htm" title="Homepage">
+<link rel=toc href="COPS.htm" title="Inhaltsverzeichnis">
+</head>
+<body bgcolor="#FFFFFF">
+
+<a href="COPS.htm"><img src="udo_hm.gif" alt="Home" border=0 width="24" height="24"></a>
+<a href="COPS.htm#UDOTOC"><img src="udo_up.gif" alt="Inhaltsverzeichnis" border=0 width="24" height="24"></a>
+<a href="_a.htm"><img src="udo_lf.gif" alt="Allgemeine Fragen" border=0 width="24" height="24"></a>
+<a href="aboutudo.htm"><img src="udo_rg.gif" alt="UDO6" border=0 width="24" height="24"></a>
+<hr>
+<h1><a name="Programmierdoku">Programmierdoku</a></h1>
+<dl>
+<a name="COPS%20erkennen"></a>
+<dt><b>Wie erkenne ich COPS?</b></dt><dd>
+<br>&nbsp;
+<br>Wer <tt>cpx_init()</tt> als
+<br>&nbsp;
+<pre>CPX_INFO * cdecl cpx_init( XCPB *xcpb, LONG magic, LONG version);
+</pre>
+<br>definiert, kann anhand der Parameter <tt>&lt;magic&gt;</tt> und
+<tt>&lt;version&gt;</tt> feststellen, ob das CPX unter COPS oder
+XCONTROL l&auml;uft:
+<br>&nbsp;
+<pre>WORD is_COPS( LONG magic, LONG version )
+{
+   if ((magic == 'COPS') &amp;&amp; (version &gt;= 0x10000L)) /* COPS? */
+      return( 1 );
+
+   return( 0 );                                 /* XCONTROL */
+}
+</pre>
+<br>Wenn COPS erkannt wurde, kann das CPX einen bis zu 512 * 384 Pixel
+gro&szlig;en Objektbaum zeichnen und bei <tt>Xform_do()</tt>
+&uuml;bergeben.
+<br>&nbsp;
+<br>Wenn COPS vorhanden ist, gilt au&szlig;erdem folgende Erweiterung
+f&uuml;r <tt>cpx_call()</tt>:
+<br>&nbsp;
+<pre>WORD cdecl cpx_call( GRECT *work, DIALOG *dialog );
+</pre>
+<br>Dabei enth&auml;lt <tt>&lt;dialog&gt;</tt> den Zeiger auf die
+Fensterdialogstruktur. Der Fensterdialog wird von COPS nach
+<tt>cpx_init()</tt> mit <tt>wdlg_create()</tt> und <tt>wdlg_open()</tt>
+ge&ouml;ffnet. Das GRECT <tt>&lt;work&gt;</tt> und der Objektbaum
+liegen bis zum ersten Aufruf von <tt>Xform_do()</tt> bzw. bis zur
+R&uuml;ckkehr aus <tt>cpx_call()</tt> au&szlig;erhalb des sichtbaren
+Bildschirms.
+<br>&nbsp;
+</dl>
+<hr>
+<a href="COPS.htm"><img src="udo_hm.gif" alt="Home" border=0 width="24" height="24"></a>
+<a href="COPS.htm#UDOTOC"><img src="udo_up.gif" alt="Inhaltsverzeichnis" border=0 width="24" height="24"></a>
+<a href="_a.htm"><img src="udo_lf.gif" alt="Allgemeine Fragen" border=0 width="24" height="24"></a>
+<a href="aboutudo.htm"><img src="udo_rg.gif" alt="UDO6" border=0 width="24" height="24"></a>
+</body></html>
