@@ -1,18 +1,18 @@
 /*
 *
-* Dieses Programm erzeugt eine Tastaturtabelle "KEYTABLS.SYS".
-* Die Datei muû in gemsys/magic/xtension liegen.
+* Creates a keyboard table file "KEYTABLS.SYS"
+* to be installed in GEMSYS\MAGIC\XTENSION
 *
-* FÅr die US-Tastatur
+* For US (ANSI) keyboard
 *
-* Neue Version mit "dead keys"
+* Version with "dead keys"
 *
 */
 
 #include <tos.h>
 
 char tab_unshift[128] = {
- 0,		/*   0: nicht belegt */
+ 0,		/*   0: unused */
  0x1b,	/*   1: Esc */
  '1',	/*   2: '1' */
  '2',	/*   3: '2' */
@@ -54,7 +54,7 @@ char tab_unshift[128] = {
  ';',	/*  39: 'ô' */
  0x27,	/*  40: 'é' */
  '`',	/*  41: '#' */
- 0,		/*  42: ShiftLinks */
+ 0,		/*  42: ShiftLeft */
  '\\',	/*  43: '~' 			MF-2: '^' */
  'z',	/*  44: 'Y' */
  'x',	/*  45: 'X' */
@@ -66,8 +66,8 @@ char tab_unshift[128] = {
  ',',	/*  51: ',' */
  '.',	/*  52: '.' */
  '/',	/*  53: '-' */
- 0,		/*  54: ShiftRechts */
- 0,		/*  55: <unbelegt> */
+ 0,		/*  54: ShiftRight */
+ 0,		/*  55: <unused> */
  0,		/*  56: Alternate */
  ' ',	/*  57: SPACE */
  0,		/*  58: CapsLock */
@@ -84,18 +84,18 @@ char tab_unshift[128] = {
  0,		/*  69: 				MF-2: F11 */
  0,		/*  70:				MF-2: F12 */
  0,		/*  71: Home */
- 0,		/*  72: CursorHoch */
- 0,		/*  73:				MF-2: BildHoch */
+ 0,		/*  72: CursorUp */
+ 0,		/*  73:				MF-2: PageUp */
  '-',	/*  74: Num-'-' */
- 0,		/*  75: CursorLinks */
+ 0,		/*  75: CursorLeft */
  0,		/*  76:				MF-2: AltGr */
- 0,		/*  77: CursorRechts */
+ 0,		/*  77: CursorRight */
  '+',	/*  78: Num-'+' */
- 0,		/*  79:				MF-2: Ende */
- 0,		/*  80: CursorRunter */
- 0,		/*  81:				MF-2: BildRunter */
- 0,		/*  82: Insert			MF-2: Einfg */
- 0x7f,	/*  83: Delete			MF-2: Entf */
+ 0,		/*  79:				MF-2: End */
+ 0,		/*  80: CursorDown */
+ 0,		/*  81:				MF-2: PageDown */
+ 0,		/*  82: Insert			MF-2: Ins */
+ 0x7f,	/*  83: Delete			MF-2: Del */
  0,		/*  84: Shift-F1 */
  0,
  0,
@@ -127,10 +127,10 @@ char tab_unshift[128] = {
  '0',	/* 112: Num-'0' */
  '.',	/* 113: Num-'.'		MF-2: Num-',' */
  0x0d,	/* 114: Num-Enter */
- 0,		/* 115: Ctrl-CursorLinks */
- 0,		/* 116: Ctrl-CursorRechts */
- 0,		/* 117: <unbelegt> */
- 0,		/* 118: <unbelegt> */
+ 0,		/* 115: Ctrl-CursorLeft */
+ 0,		/* 116: Ctrl-CursorRight */
+ 0,		/* 117: <unused> */
+ 0,		/* 118: <unused> */
  0,		/* 119: Ctrl-Home */
  0,		/* 120: Alt-1 */
  0,		/* 121: Alt-2 */
@@ -170,8 +170,8 @@ char tab_caps[128] = {
  '0','.',0x0d,0,0,0,0,0,0,0,0,0,0,0,0,0
 };
 
-#define	XXX	0x20		/* darf nicht belegt werden */
-#define	YYY	XXX		/* ist nicht belegt */
+#define	XXX	0x20		/* shall not be used */
+#define	YYY	XXX		/* unused */
 
 char tab_altgr[128] = {
   0,YYY,0xfc,0xfd,0xfe,0xfb,0xae,0xee,0x7b,'[',']',0x7d,'\\',0xf4,YYY,YYY,
@@ -219,7 +219,7 @@ char tab_shalt[128] = {
 
 #if 1
 
-/* mit dead keys: */
+/* with "dead keys": */
 static const char tab_dead[] = {
  '∫','`','^',0,
  'a','†','e','Ç','E','ê','i','°','o','¢','u','£',0,
@@ -229,7 +229,7 @@ static const char tab_dead[] = {
 
 #else
 
-/* ohne dead keys: */
+/* without "dead keys": */
 static const char tab_dead[] = {
   0,0
 };
@@ -237,7 +237,7 @@ static const char tab_dead[] = {
 #endif
 
 
-int main( void )
+int main(void)
 {
 	long ret;
 	int hdl;
@@ -245,16 +245,18 @@ int main( void )
 	ret = Fcreate("KEYTABLS.SYS", 0);
 	hdl = (int) ret;
 	if	(ret < 0)
-		return(hdl);
+	{
+		return hdl;
+	}
 
 	ret = Fwrite(hdl, 128L, tab_unshift);
 	if	(ret != 128L)
-		{
+	{
 		 wr_err:
 		Fclose(hdl);
 		Fdelete("KEYTABLS.SYS");
-		return(-1);
-		}
+		return -1;
+	}
 	ret = Fwrite(hdl, 128L, tab_shift);
 	if	(ret != 128L)
 		goto wr_err;
@@ -284,5 +286,5 @@ int main( void )
 		goto wr_err;
 
 	Fclose(hdl);
-	return(0);
+	return 0;
 }
