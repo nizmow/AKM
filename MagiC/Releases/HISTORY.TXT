@@ -13,3 +13,4 @@
 2026-10-24
 
 - MagiCDesk v5.12: Volume free percentage overflow avoided.
+- LOCALISE.SH repaired.

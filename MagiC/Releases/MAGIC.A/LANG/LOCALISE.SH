@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Localise MagiC root fs
+# Localise Atari MagiC root fs
 # Note that this script can be run from anywhere.
 # TODO: should run recursively
 
@@ -18,27 +18,30 @@ fi
 
 #VERBOSE=$OPT_VERBOSE
 VERBOSE=""
+KERNEL="MAGIC.RAM"
 
 if [ "$#" -eq 1 ]; then
     # go to directory where the script resides
     cd "$(dirname "$0")"
     # convert language code to uppercase
     CODE=`echo $1 | tr a-z A-Z`
-    # might not be necessary, just to be sure
-    if ! [ -f ../MAGICLIN.OS ]; then
-        echo "ERROR: No MAGICLIN.OS in root."
-        exit 1
+
+    if ! [ -f "../$KERNEL" ]; then
+        echo "INFO: No $KERNEL in root, yet."
+        STATUS=1
+    else
+        # check if kernel file already matches
+        cmp --quiet $CODE/$KERNEL ../$KERNEL
+        STATUS=$?
+        if [ $STATUS -eq 2 ]; then
+            echo "LOCALISE.SH: Valid country codes are: "; ls -d ??
+            exit 1
+        fi
     fi
-    # check if kernel file already matches
-    cmp --quiet $CODE/MAGICLIN.OS ../MAGICLIN.OS
-    STATUS=$?
-    if [ $STATUS -eq 2 ]; then
-        echo "LOCALISE.SH: Valid country codes are: "; ls -d ??
-        exit 1
-    fi
+
     if [ $STATUS -eq 1 ]; then
         # overwrite all programs, documents and kernel
-        cp $VERBOSE -pf $CODE/MAGICLIN.OS ../
+        cp $VERBOSE -pf $CODE/$KERNEL ../
         cp $VERBOSE -pf $CODE/EXTRAS/*.INF ../EXTRAS/
         cp $VERBOSE -pf $CODE/EXTRAS/AES_LUPE/*.TXT ../EXTRAS/AES_LUPE/
         cp $VERBOSE -pf $CODE/GEMSYS/GEMDESK/*.RSC ../GEMSYS/GEMDESK/
@@ -50,6 +53,6 @@ if [ "$#" -eq 1 ]; then
     fi
 else
     echo "usage: LOCALISE.SH DE|EN|FR"
-    #echo $#
     exit 1
 fi
+
