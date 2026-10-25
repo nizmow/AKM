@@ -83,7 +83,7 @@ should be used if you have a DE-ISO keyboard connected to your Atari (like in
 MagicOnLinux).
 
 
-APPLICAT hints
+APPLICAT Hints
 --------------
 
 There is often some uncertainty about how to assign an icon to a program.
@@ -103,6 +103,13 @@ might edit the respective entry and exchange "PC" with the respective full
 path (e.g. "C:\PC\PC.PRG") and then assign data types and icons, or you first
 remove the existing entry, leave APPLICAT and then register PC.PRG in the
 regular way.
+
+
+MAGXDESK Hints
+--------------
+
+Alt-Shift-X: Open volume X: in a new window
+Ctrl-Shift-X: Switch topmost window to X:\
 
 
 General Trouble Shooting
