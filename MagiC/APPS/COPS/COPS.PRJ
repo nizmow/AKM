@@ -1,0 +1,31 @@
+cops.app
+;c:\cops.acc
+;.C[-Iinclude]	; does not work, PC cannot open files
+.C[-ID:\DEV_ROOT\APPS\COPS\INCLUDE]	; .h search path
+.C[-K-]
+.C[-A-]
+.C[-G]
+.C[-P]
+.L[-S=16384]
+=
+lib\PCMXSTRT.O
+
+rc_inter.c
+
+adaptrsc.c
+callback.c
+cops.c
+cops_rsc.c
+cpx_bind.c [-W-stv]
+fix_rsc.c
+list.c
+phstuff.c
+popup.c
+wlib.c
+
+clearcpu.s
+
+lib\PCTOSLIB.LIB
+lib\PCSTDLIB.LIB
+lib\MT_AES.LIB
+lib\PCGEMLIB.LIB		;fÅr VDI-Funktionen
