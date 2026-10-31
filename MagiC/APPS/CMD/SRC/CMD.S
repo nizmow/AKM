@@ -1,11 +1,8 @@
-* Wenn MAGIX auf 1 gesetzt ist, muû KAOS auch auf 1 sein!
 
-KAOS           EQU  1
-BOOT           EQU  1
-MAGIX          EQU  1
-ACC            EQU  0
+* Definiere KAOS, BOOT, MAGIX und ACC
 
- 
+     INCLUDE "CONFIG.INC"
+
      SUPER
      INCLUDE "OSBIND.INC"
 
@@ -38,7 +35,7 @@ ANZ_SUFFIX     EQU  6	; siehe unten!
 
 **********************************************************************
 *
-* CMD, letzte énderung 28.5.92, dann 20.9.2026
+* CMD, letzte énderung 28.5.92, dann 31.10.2026
 *
 * Switches:                   CMD.PRG
 *           KAOS              KCMD.PRG
@@ -240,6 +237,9 @@ ini_mainloop:
  clr.w    (a0)
  move.l   a5,(sp)
  bsr      cmd_exec                 * Eingabezeile ausfÅhren, falls != NULL
+
+; TODO: Anscheinend kommen wir nie wieder hier hin. Warum nicht?
+
  suba.l   a5,a5                    * ab jetzt alle Eingaben von Tastatur holen
  bra.b    ini_mainloop
 
@@ -1242,8 +1242,8 @@ splp_8:
  bra.b    splp_20
 splp_9:
  move.w   #$16,-(sp)       * string1 enthÑlt keine Joker '*' oder '?'
- clr.w    -(sp)
- move.l   a3,-(sp)
+ clr.w    -(sp)		* Attribute lesen
+ move.l   a3,-(sp)		* Pfad
  gemdos   Fattrib                  * Dateiattribute fÅr Datei <string1> holen
  adda.w   #$a,sp
  cmpi.w   #-34,d0
@@ -3414,13 +3414,13 @@ bootbats:     DC.B  '\BOOT.BAT',0
 
 	IFF KAOS
 func_s:       DC.B  'F0=',0
-titels:       DC.B  'GEMDOSø SHELL v2.62 Ω ''90 Andreas Kromke',CR,LF,LF,0
+titels:       DC.B  'GEMDOSø SHELL v2.71 Ω ''90/''26 Andreas Kromke',CR,LF,LF,0
 	ENDIF
 	IF KAOS
 	IFNE MAGIX
-titels:       DC.B  'MagiC SHELL v2.70 Ω ''93/''26 Andreas Kromke',CR,LF,LF,0
+titels:       DC.B  'MagiC SHELL v2.71 Ω ''93/''26 Andreas Kromke',CR,LF,LF,0
 	ELSE
-titels:       DC.B  'KAOSø   SHELL v2.62 Ω ''90 Andreas Kromke',CR,LF,LF,0
+titels:       DC.B  'KAOSø   SHELL v2.71 Ω ''90/''26 Andreas Kromke',CR,LF,LF,0
 	ENDIF
 	ENDIF ; IF KAOS
 	IF ACC

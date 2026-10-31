@@ -43,7 +43,7 @@ der Umlenkung von STDAUX (mit "2>datei") wird sowohl die Ein- als auch die
 Ausgabe auf die serielle Schnittstelle unter DOS umgelenkt. Es sind also
 sowohl die Befehle Cauxout(), Cauxos() als auch Cauxin() und Cauxis()
 betroffen. Es ist im brigen nicht zu empfehlen, STDIN auf den Drucker zu
-lenken, da man von dort meist nicht kann.
+lenken, da man von dort meist nicht lesen kann.
 
 Auch eine Pipe kann umgelenkt werden, z.B. "DIR | SORT >dirlist".
 
@@ -79,8 +79,8 @@ lassen sich gut eigene oder fremde Programme testen, die eine Ausgabe auf
 den Drucker machen. Das Resultat l„t sich hinterher exakt mit DUMP
 analysieren.
 
-Ich empfehle, eigene Programme so zu schreiben, da der Standardkanal 4
-fr die Fehlerausgabe (STDERR) verwendet wird.
+Man k”nnte eigene Programme so zu schreiben, da der Standardkanal 4 fr
+die Fehlerausgabe (STDERR) verwendet wird.
 Mit:
 
 "PGM 4>prn"
@@ -89,3 +89,8 @@ k”nnte man dann z.B. alle Fehlermeldungen auf den Drucker lenken. Man mu
 allerdings vorher prfen, ob der Standardkanal 4 gltig ist (etwa mit
 Fdup()), dies ist fr TOS-Versionen vor 1.04 notwendig, KAOS bereitet auch
 in der Version 1.2.3 keine Probleme.
+
+Fehler- und Statusmeldungen von CMD werden derzeit stets direkt auf das
+BIOS-Ger„t 2 geschrieben und k”nnen deshalb leider nicht umgelenkt werden.
+Das hat historische Grnde und sollte ge„ndert werden, damit man diese
+Meldungen mit "thecommand 4>nul:" beispielsweise auch unterdrcken kann.

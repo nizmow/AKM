@@ -16,7 +16,7 @@ echo External commands:
 echo (currently none)
 echo ""
 echo Other topics:
-echo acc,batch,cmdline,devices,edit,extcmd,redirect
+echo acc,batch,cmdline,devices,extcmd,lineedit,redirect
 echo ""
 echo Current help text path is %HLP_PATH%.
 end

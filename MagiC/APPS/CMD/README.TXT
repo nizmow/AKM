@@ -32,9 +32,23 @@ Regarding EN version:
 Due to conflicts, the DIR sort modes remain 'A' for type and 'G' for size.
 In other cases you can either press "J"/"O"/"Y" for Ja/Oui/Yes resp. "W"/"R" for RETRY etc..
 
-
 2026-09-20
 ==========
 
 v2.69:
 Crash in GOTO avoided when batch file has lines with more than 89 characters.
+
+2026-10-10
+==========
+
+v2.70:
+REM internal command added, for compatibility
+
+2026-10-31
+==========
+
+v2.71:
+- "IF EXIST bla" finds files and folders, "IF EXIST bla\" only finds folders, like in MS-DOS.
+- "IF" also works in interactive mode, like in MS-DOS.
+- Some help texts improved.
+

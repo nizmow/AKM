@@ -3,27 +3,27 @@ for_com:
  movem.l  a5/a4/a3/d6/d7,-(sp)
  lea      for_flag(pc),a3
  bsr      sav_errlv
- move.w   BATCH(a6),d6        * checken, ob im Batch- Modus
- beq      for_end
- clr.w    d7
+ move.w   BATCH(a6),d6        * prÅfen, ob im Batch- Modus, d6 = batch file handle
+ beq      for_end			* nein, beenden
+ sf.b     d7				* d7.b = 0x00 (kein NOT)
  lea      -$80(a6),a4
  move.l   ARGV(a6),a5
-for_11:
+for_nxtparm:
  addq.l   #4,a5
- subq.w   #1,ARGC(a6)         * Auf ersten Parameter
+ subq.w   #1,ARGC(a6)         * auf ersten Parameter
  beq      for_50
- lea      not_s(pc),a1
+ lea      not_s(pc),a1		* "NOT"
  move.l   (a5),a0
  bsr      upper_strcmp
- bne.b    for_10
- moveq    #1,d7
- bra.b    for_11
-for_10:
+ bne.b    for_4
+ st.b     d7				* d7.b = 0xff (NOT)
+ bra.b    for_nxtparm
+for_4:
 * Handle und Position der FOR- Anweisung feststellen
  move.w   #1,-(sp)
  move.w   d6,-(sp)
  clr.l    -(sp)
- gemdos   Fseek               * Ftell(d7)
+ gemdos   Fseek               * Ftell(d6)
  adda.w   #10,sp
  tst.w    (a3)                * for_flag
  beq.b    for_1                  * erstes Erreichen einer FOR- Schleife
@@ -61,11 +61,11 @@ for_1:
  bne.b    for_2
 * ')' erreicht, nÑchster Befehl wird nicht ausgefÅhrt (wenn nicht NOT)
  clr.w    (a3)                * for_flag
- clr.w    d6
+ sf.b     d6
  bra.b    for_3
 * Variablen- Zuweisung
 for_2:
- moveq    #1,d6
+ st.b     d6
  move.l   a0,a1
  move.l   a4,a0
  bsr      strcat
@@ -76,14 +76,14 @@ for_2:
 for_3:
  move.l   (a5)+,a0
  subq.w   #1,ARGC(a6)
- bls.b    for_50                 * Zuwenig Argumente ( ')' fehlt)
+ bls.b    for_50                 * Zuwenige Argumente ( ')' fehlt)
  cmpi.b   #')',(a0)
  bne.b    for_3
  tst.b    1(a0)
  bne.b    for_3
  subq.l   #4,a5
  addq.w   #1,ARGC(a6)
- bra      exe_restzeile       * Wie bei IF
+ bra      exe_restzeile       * Wie bei IF, zusÑtzliche Parameter d6.b und d7.b
 for_50:
  lea      for_error_s(pc),a0
  bsr      strcon
