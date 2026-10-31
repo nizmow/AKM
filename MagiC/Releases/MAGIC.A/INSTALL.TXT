@@ -30,15 +30,15 @@ B) Install directly on your Atari
   If your MagiC boot volume is not C:, see instructions below.
   If you want to used a non-default keyboard layout, see instructions below.
 - For initial localisation open C:\LANG and double click CMD.TTP.
-- Enter your preferred language code (DE, EN or FR).
-- When done, press a key and then type exit and press ENTER.
+- Enter your preferred language code (DE, EN or FR) and run the process.
+- When done, press a key to return to DESKTOP.
 - If you do not want to switch localisation later, you might now remove the
   LANG directory.
 - Test the MagiC installation by running AUTO\MAGXBOOT.TOS.
 - If everything works fine, you might rename MAGXBOOT.TOS to MAGXBOOT.PRG for
   auto booting MagiC.
 
-C) Write MagiC kernel to ROM
+A2/B2) Write MagiC kernel to ROM
 
 - Method 1 (untested by me):
   Unpack and apply magrom6.lzh. This is an Atari application that expects
@@ -65,10 +65,11 @@ https://gitlab.com/AndreasK/Atari-Mac-MagiC-Sources
 Hints
 -----
 
-If your MagiC boot drive is not C:, you must edit MAGX.INF manually. You might
-search and replace all "C:\" accordingly. Unfortunately, COPS's configuration
-file in GEMSYS\MAGIC\HOME is binary and cannot be edit manually. Thus COPS
-will start with an empty window. Press ^E and change the CPX path accordingly.
+If your MagiC boot drive is not C:, you must edit MAGX.INF and BIN/HELP.BAT
+manually. You might search and replace all "C:\" accordingly. Unfortunately,
+COPS's configuration file in GEMSYS\MAGIC\HOME is binary and cannot be edited
+manually. Thus COPS will start with an empty window. Press ^E and change the
+CPX path accordingly.
 
 If you want to use a non-default keyboard layout, you should install it
 before initial localisation. See EXTRAS\KEYTABS for additional layouts. You
@@ -152,5 +153,12 @@ copy the content of EXTRAS\KAOSDESK\EN TO EXTRAS\KAOSDESK, overwriting
 the German localisation. Note that by default KAOSDesk has already been
 configured as running in "single mode" (via APPLICAT.INF). Return to MagxDesk
 via Ctrl-Q and then leave to "DESKTOP".
+
 Technically, KAOSDesk uses the old GEMDOS file API that is limited to 8+3 file
 names, but is compatible with Hatari's drive emulation.
+
+In TOS/KAOS 1.04 you also can run KAOSDesk automatically on boot, via
+"Install Application" and "Boot State: Auto". Do not forget to write your
+DESKTOP.INF. This does not work flawlessliy in EmuTOS, maybe KAOSDesk gets
+confused with NEWDESK.INF.
+

@@ -17,3 +17,15 @@
 - magrom6.lzh added.
 - COPS v1.08 (DE) added as alternative to v1.09 (multilingual)
 - INSTALL.TXT extended.
+
+2026-10-31
+
+- Install batch files should no longer end in prompt.
+- Install batch files should no longer complain "access denied".
+- Default COPS.INF repaired.
+- HELP improved.
+- MCMD v2.71
+- CMD_EN v2.71
+- Kernel should no longer send NUL byte to printer on boot.
+- INSTALL.TXT extended.
+

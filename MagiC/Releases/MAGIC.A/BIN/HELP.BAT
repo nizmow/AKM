@@ -1,5 +1,5 @@
 :: MCMD HELP SYSTEM
-SET HLP_PATH=C:\LANG\DE\GEMSYS\GEMDESK\HELP\
+SET HLP_PATH=C:\GEMSYS\GEMDESK\HELP\
 SET HELPFILE=%HLP_PATH%%1.hlp
 IF NOT %HELPFILE% == %HLP_PATH%.hlp GOTO _help
 
@@ -16,7 +16,7 @@ echo External commands:
 echo (currently none)
 echo ""
 echo Other topics:
-echo acc,batch,cmdline,devices,edit,extcmd,redirect
+echo acc,batch,cmdline,devices,extcmd,lineedit,redirect
 echo ""
 echo Current help text path is %HLP_PATH%.
 end
