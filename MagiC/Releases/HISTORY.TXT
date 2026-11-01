@@ -29,3 +29,7 @@
 - Kernel should no longer send NUL byte to printer on boot.
 - INSTALL.TXT extended.
 
+pending:
+
+- APPLICAT v1.10: Fast Click handling
+

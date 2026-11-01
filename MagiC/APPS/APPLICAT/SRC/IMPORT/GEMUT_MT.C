@@ -590,7 +590,7 @@ WORD Rform_alert(WORD defbutton, WORD alert_id, WORD *global)
 /*********************************************************************
 *
 * FÅhrt einen Alert aus der RSC-Datei durch.
-* Der Alertstring enthÑlt einen Dateinamen.
+* Der Alert-Text enthÑlt einen Dateinamen.
 *
 *********************************************************************/
 

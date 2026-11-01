@@ -101,6 +101,8 @@
 #include "appldata.h"
 #include "iconsel.h"
 
+#define _HZ_200     ((long *)          0x4ba)
+
 int gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
 int ap_id;
 int is_3d;
@@ -153,6 +155,260 @@ DIALOG *d_typ = NULL;			/* Dateityp anmelden */
 OBJECT *adr_ftypes;
 
 
+/****************************************************************
+*
+* Hilfsfunktion fÅr getHz200
+*
+****************************************************************/
+
+static long _getHz200(void)
+{
+	return *_HZ_200;
+}
+
+
+/****************************************************************
+*
+* Systemzeit fÅr Intervall-Berechnungen
+*
+****************************************************************/
+
+long getHz200(void)
+{
+	return Supexec(_getHz200);
+}
+
+
+/****************************************************************
+*
+* Doppelklick-Zeit in Millisekunden,
+* muû mit 5 multipliziert werden fÅr 5-ms-Einheiten fÅr den 200-Hz-Timer
+*
+****************************************************************/
+
+unsigned get_dclick_interval_ms(void)
+{
+	/* Tabelle aus dem MagiC-Kernel */
+	static const unsigned dclick_tab[] =
+	{
+		450,	/* in ms */
+		330,
+		275,
+		220,
+		165
+	};
+
+	unsigned v = (unsigned) evnt_dclick(0, 0);
+	if (v > 4)
+	{
+		v = 4;
+	}
+	
+	return dclick_tab[v];
+}
+
+
+/*********************************************************************
+*
+* Aktionen von der Kommandozeile auswerten
+*
+*********************************************************************/
+
+static int process_action(const char action[2], const char *args[2])
+{
+	if (action[0] == 'i')
+	{
+		open_iconsel();
+		switch(action[1])
+		{
+			case 'a':
+		 		d_ica = xy_wdlg_init(
+		 				ica_wdlg_cb,
+		 				adr_ica_dialog,
+		 				IDENT_APPLICATIONS,
+		 				0,
+		 				args,
+		 				STR_WINTITLE_APP);
+				if (!d_ica)
+				{
+					return 1;	/* Fehler */
+				}
+				break;
+
+			case 'd':
+		 		d_ica = xy_wdlg_init(
+		 				ica_wdlg_cb,
+		 				adr_ica_dialog,
+		 				IDENT_APPLICATIONS,
+		 				1,
+		 				args,
+		 				STR_WINTITLE_APP);
+				if (!d_ica)
+				{
+					return 1;	/* Fehler */
+				}
+				break;
+
+			case 'o':
+		 		d_icp = xy_wdlg_init(
+		 				icp_wdlg_cb,
+		 				adr_icp_dialog,
+		 				IDENT_PATHS,
+		 				0,
+		 				args,
+		 				STR_WINTITLE_PTH);
+				if (!d_icp)
+				{
+					return 1;	/* Fehler */
+				}
+				break;
+
+			case 's':
+		 		d_spc = xy_wdlg_init(
+		 				spc_wdlg_cb,
+		 				adr_spc_dialog,
+		 				IDENT_SPECIAL,
+		 				0,
+		 				args,
+		 				STR_WINTITLE_SPC);
+				if (!d_spc)
+				{
+					return 1;	/* Fehler */
+				}
+				break;
+		}
+	}
+	else
+	if (action[0] == 'a')
+	{
+ 		d_ica = xy_wdlg_init(
+ 				ica_wdlg_cb,
+ 				adr_ica_dialog,
+ 				IDENT_APPLICATIONS,
+ 				2,
+ 				args,
+ 				STR_WINTITLE_APP);
+		if (!d_ica)
+		{
+			return 1;	/* Fehler */
+		}
+	}
+	else
+	{
+		is_multiwindow = TRUE;
+
+ 		d_ica = xy_wdlg_init(
+ 				ica_wdlg_cb,
+ 				adr_ica_dialog,
+ 				IDENT_APPLICATIONS,
+ 				0,
+ 				args,
+ 				STR_WINTITLE_APP);
+		if (!d_ica)
+		{
+			return 1;	/* Fehler */
+		}
+
+ 		d_icp = xy_wdlg_init(
+ 				icp_wdlg_cb,
+ 				adr_icp_dialog,
+ 				IDENT_PATHS,
+ 				0,
+ 				args,
+ 				STR_WINTITLE_PTH);
+		if (!d_icp)
+		{
+			return 1;	/* Fehler */
+		}
+
+ 		d_spc = xy_wdlg_init(
+ 				spc_wdlg_cb,
+ 				adr_spc_dialog,
+ 				IDENT_SPECIAL,
+ 				0,
+ 				args,
+ 				STR_WINTITLE_SPC);
+		if (!d_spc)
+		{
+			return 1;	/* Fehler */
+		}
+	}
+	
+	return 0;	/* kein Fehler */
+}
+
+
+/*********************************************************************
+*
+* Tastatureingaben behandeln
+*
+*********************************************************************/
+
+static int handle_key(EVNT *w_ev)
+{
+	int whdl;
+	WORD intin2;
+	int message[8];
+	int dummy;
+	WINDOW *w;
+
+	if (w_ev->key == 0x1011)	/* Ctrl-Q */
+	{
+		return 1;		/* Beenden */
+	}
+
+	if (w_ev->key == 0x1615)	/* Ctrl-U */
+	{
+		/* unser oberstes Fenster <whdl> ermitteln */
+		intin2 = ap_id;		/* Eingabewert! */
+		wind_get(0, WF_BOTTOM, &intin2, &whdl, &dummy, &dummy);
+		/* schicke mir selbst eine Nachricht */
+		if (whdl > 0)
+		{
+			message[0] = WM_CLOSED;
+			message[1] = ap_id;
+			message[2] = 0;
+			message[3] = whdl;
+			message[4] = message[5] =
+			message[6] = message[7] = 0;
+			appl_write(ap_id, 16, message);
+		}
+	}
+	else
+	if (w_ev->key == 0x1117)	/* Ctrl-W */
+	{
+		/* unser unterstes Fenster <whdl> ermitteln */
+		intin2 = ap_id;		/* Eingabewert! */
+		wind_get(-1, WF_BOTTOM, &intin2, &whdl,	&dummy, &dummy);
+		/* schicke mir selbst eine Nachricht */
+		if (whdl > 0)
+		{
+			message[0] = WM_TOPPED;
+			message[1] = ap_id;
+			message[2] = 0;
+			message[3] = whdl;
+			message[4] = message[5] =
+			message[6] = message[7] = 0;
+			appl_write(ap_id, 16, message);
+		}
+	}
+	else
+	{
+		w = whdl2window(top_whdl());
+		if (!w)
+		{
+			/* Taste nicht bearbeitet! */
+			return 0;	/* Programm nicht beenden */
+		}
+
+		w->hdl_key(w, w_ev->kstate, w_ev->key);
+	}
+
+	w_ev->mwhich &= ~MU_KEYBD;	/* bearbeitet */
+	return 0;	/* Programm nicht beenden */
+}
+
+
 /********************************************
 * Hauptprogramm
 ********************************************/
@@ -160,12 +416,13 @@ OBJECT *adr_ftypes;
 int main(int argc, char *argv[])
 {
 	EVNT w_ev;
-	int whdl;
 	char action[2] = {0,0};
 	char *args[2] = { NULL, NULL };
 	WINDOW *w;
 	int dummy;
-	WORD intin2;
+	const int wait_nclicks = 1;		/* Fast Click */
+	long last_clicktime = 0;
+	unsigned dclick_interval_hz200;		/* in 5-ms-Einheiten */
 
 
 	Pdomain(PDOM_MINT);
@@ -222,7 +479,7 @@ int main(int argc, char *argv[])
 
 	if ((action[0] == 'c') && (!action[1]))
 	{
-		/* nur compilieren */
+		/* nicht interaktiv, nur compilieren */
 		put_inf();
 		goto fehler;
 	}
@@ -253,113 +510,21 @@ int main(int argc, char *argv[])
 
 	Mgraf_mouse(ARROW);
 
-
 	is_multiwindow = FALSE;
 
-	if (action[0] == 'i')
+	if (process_action(action, args))
 	{
-		open_iconsel();
-		switch(action[1])
-		{
-		 case 'a':
-		 		d_ica = xy_wdlg_init(
-		 				ica_wdlg_cb,
-		 				adr_ica_dialog,
-		 				IDENT_APPLICATIONS,
-		 				0,
-		 				args,
-		 				STR_WINTITLE_APP);
-				if (!d_ica)
-					goto fehler;
-				break;
-		 case 'd':
-		 		d_ica = xy_wdlg_init(
-		 				ica_wdlg_cb,
-		 				adr_ica_dialog,
-		 				IDENT_APPLICATIONS,
-		 				1,
-		 				args,
-		 				STR_WINTITLE_APP);
-				if (!d_ica)
-					goto fehler;
-				break;
-		 case 'o':
-		 		d_icp = xy_wdlg_init(
-		 				icp_wdlg_cb,
-		 				adr_icp_dialog,
-		 				IDENT_PATHS,
-		 				0,
-		 				args,
-		 				STR_WINTITLE_PTH);
-				if (!d_icp)
-					goto fehler;
-				break;
-		 case 's':
-		 		d_spc = xy_wdlg_init(
-		 				spc_wdlg_cb,
-		 				adr_spc_dialog,
-		 				IDENT_SPECIAL,
-		 				0,
-		 				args,
-		 				STR_WINTITLE_SPC);
-				if (!d_spc)
-					goto fehler;
-				break;
-		}
-	}
-	else
-	if (action[0] == 'a')
-	{
- 		d_ica = xy_wdlg_init(
- 				ica_wdlg_cb,
- 				adr_ica_dialog,
- 				IDENT_APPLICATIONS,
- 				2,
- 				args,
- 				STR_WINTITLE_APP);
-		if (!d_ica)
-			goto fehler;
-	}
-
-	else
-	{
-		is_multiwindow = TRUE;
-
- 		d_ica = xy_wdlg_init(
- 				ica_wdlg_cb,
- 				adr_ica_dialog,
- 				IDENT_APPLICATIONS,
- 				0,
- 				args,
- 				STR_WINTITLE_APP);
-		if (!d_ica)
-			goto fehler;
-
- 		d_icp = xy_wdlg_init(
- 				icp_wdlg_cb,
- 				adr_icp_dialog,
- 				IDENT_PATHS,
- 				0,
- 				args,
- 				STR_WINTITLE_PTH);
-		if (!d_icp)
-			goto fehler;
-
- 		d_spc = xy_wdlg_init(
- 				spc_wdlg_cb,
- 				adr_spc_dialog,
- 				IDENT_SPECIAL,
- 				0,
- 				args,
- 				STR_WINTITLE_SPC);
-		if (!d_spc)
-			goto fehler;
+		goto fehler;
 	}
 
 	for (;;)
 	{
-		w_ev.mwhich = evnt_multi(MU_KEYBD+MU_BUTTON+MU_MESAG,
-					  2,			/* Doppelklicks erkennen 	*/
+		/* Das eingestellte Doppelklick-Intervall kînnte geÑndert worden sein. */
+		dclick_interval_hz200 = get_dclick_interval_ms() / 5;
+
+		w_ev.mwhich = evnt_multi(
+					  MU_KEYBD + MU_BUTTON + MU_MESAG,
+					  wait_nclicks,	/* 1: Doppelklicks selber auswerten */
 					  1,			/* nur linke Maustaste		*/
 					  1,			/* linke Maustaste gedrÅckt	*/
 					  0,NULL,		/* kein 1. Rechteck			*/
@@ -370,62 +535,29 @@ int main(int argc, char *argv[])
 					  &w_ev.key,
 					  &w_ev.mclicks);
 
+		/* Doppelklick der linken Maustaste erkennen */
+
+		if (w_ev.mbutton & 1)
+		{
+			long clicktime = getHz200();
+			if (clicktime - last_clicktime < dclick_interval_hz200)
+			{
+				w_ev.mclicks = 2;
+			}
+			last_clicktime = clicktime;
+		}
+
+		/* Tastatur */
+
 		if (w_ev.mwhich & MU_KEYBD)
 		{
-			int message[8];
+			if (handle_key(&w_ev))
+			{
+				break;	/* Programm beenden */
+			}
+		}
 
-			if (w_ev.key == 0x1011)	/* Ctrl-Q */
-			{
-				break;		/* Beenden */
-			}
-			else
-			if (w_ev.key == 0x1615)	/* Ctrl-U */
-			{
-				/* unser oberstes Fenster <whdl> ermitteln */
-				intin2 = ap_id;		/* Eingabewert! */
-				wind_get(0, WF_BOTTOM, &intin2, &whdl,
-						&dummy, &dummy);
-				/* schicke mir selbst eine Nachricht */
-				if (whdl > 0)
-				{
-					message[0] = WM_CLOSED;
-					message[1] = ap_id;
-					message[2] = 0;
-					message[3] = whdl;
-					message[4] = message[5] =
-					message[6] = message[7] = 0;
-					appl_write(ap_id, 16, message);
-				}
-				goto key_done;
-			}
-
-			if (w_ev.key == 0x1117)	/* Ctrl-W */
-			{
-				/* unser unterstes Fenster <whdl> ermitteln */
-				intin2 = ap_id;		/* Eingabewert! */
-				wind_get(-1, WF_BOTTOM, &intin2, &whdl,	&dummy, &dummy);
-				/* schicke mir selbst eine Nachricht */
-				if (whdl > 0)
-				{
-					message[0] = WM_TOPPED;
-					message[1] = ap_id;
-					message[2] = 0;
-					message[3] = whdl;
-					message[4] = message[5] =
-					message[6] = message[7] = 0;
-					appl_write(ap_id, 16, message);
-				}
-				goto key_done;
-			}
-
-			w = whdl2window(top_whdl());
-			if (w)
-			{
-				w->hdl_key(w, w_ev.kstate, w_ev.key);
-			key_done:
-				w_ev.mwhich &= ~MU_KEYBD;	/* bearbeitet */
-			}
-		} /* (w_ev.mwhich & MU_KEYBD) */
+		/* Maus-Button */
 
 		if (w_ev.mwhich & MU_BUTTON)
 		{

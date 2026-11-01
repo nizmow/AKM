@@ -6,7 +6,9 @@
 #include <portab.h>
 #endif
 
-#define PROGRAM_VERSION_STR "v1.04"
+#define PROGRAM_VERSION_STR "v1.10"
+
+#define MOUSE_DRAG_DETECT_MS 200	/* gib dem Anwender 200 ms zum Loslassen der Maustaste */
 
 #define MAX_NAMELEN 34
 #define MAX_PATHLEN 128

@@ -15,3 +15,10 @@ APPLICAT HISTORY
   enables Hatari's scroll wheel.
 - For debugging purposes, an APPLICAT.INF file can be passed as first parameter. For example you
   might just drag any file on the APPLICAT programm, and it will try to read it.
+
+Attention: Some alert box texts are too wide for INTRFACE. Better use ORCS,
+           otherwise the alerts will be cut off by INTRFACE.
+
+2026-11-01 (v1.10)
+
+- Fast Click support added.

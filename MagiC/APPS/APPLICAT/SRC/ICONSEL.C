@@ -35,6 +35,38 @@ WINDOW *mywindow = NULL;
 
 /****************************************************************
 *
+* Nach der Bearbeitung eines Einfach-Mausklicks m《sen wir
+* pr’en, ob die Maustaste noch gedr…kt ist. Insbesondere auf
+* schnellen Systemen m《sen wir dem Anwender etwas Zeit lassen,
+* die linke Maustaste wieder loszulassen, ansonsten wird immer
+* ein "Drag" erkannt.
+*
+* R…kgabe TRUE bei "timeout", d.h. Maustaste noch gedr…kt.
+*
+****************************************************************/
+
+static int detect_mouse_drag(EVNT *w_ev)
+{
+	w_ev->mwhich = evnt_multi(
+                      MU_BUTTON + MU_TIMER,
+					  1,			/* keine Doppelklicks */
+					  1,			/* nur linke Maustaste */
+					  0,			/* linke Maustaste losgelassen */
+					  0,NULL,		/* kein 1. Rechteck */
+					  0,NULL,		/* kein 2. Rechteck */
+					  NULL,			/* keine "message" */
+					  MOUSE_DRAG_DETECT_MS,		/* ms */
+					  (EVNTDATA *) &(w_ev->mx),
+					  &w_ev->key,
+					  &w_ev->mclicks
+					  );
+
+	return (w_ev->mwhich & MU_TIMER) != 0;
+}
+
+
+/****************************************************************
+*
 * F〉 Drag & Drop von Objekten
 *
 * Malt alle Objekte in der Liste <mov_boxes[num_boxes]>.
@@ -79,7 +111,7 @@ static void draw_boxes
 	xrel = xoff;
 	yrel = yoff;
 
-	for	(; num_boxes > 0; num_boxes--, mov_boxes++)
+	for (; num_boxes > 0; num_boxes--, mov_boxes++)
 	{
 		pxy[0] = (*mov_boxes)->ob_x + px;
 		pxy[1] = (*mov_boxes)->ob_y + py;
@@ -279,7 +311,8 @@ static void button_iconsel(WINDOW *w, int kstate,
 				int x, int y, int button, int nclicks)
 {
 	int objnr;
-	EVNTDATA ev;
+	EVNT ev_drag;
+	int mouse_drag;
 
 
 	objnr = find_obj(w->tree, x, y);
@@ -307,8 +340,8 @@ static void button_iconsel(WINDOW *w, int kstate,
 		return;
 	}
 
-	graf_mkstate(&ev);
-	if (ev.bstate & 1)
+	mouse_drag = detect_mouse_drag(&ev_drag);
+	if (mouse_drag)
 	{
 		move_icons(x, y, w->tree, objnr);
 		return;
@@ -430,7 +463,7 @@ int open_iconsel(void)
 	}
 
 	iconwindow.max_hicon = 0;
-	for	(i = 1; i <= icnn; i++)
+	for (i = 1; i <= icnn; i++)
 	{
 		o++;
 		o->ob_next = (i < icnn) ? (i + 1) : (0);

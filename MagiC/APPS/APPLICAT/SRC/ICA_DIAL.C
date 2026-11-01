@@ -36,8 +36,13 @@ static int ctrl_objs2[NLINES] =
 static int objs2[NLINES] =
 	{DAT1,DAT2,DAT3,DAT4,DAT5};
 
-struct spd_file {
-	struct spd_file *next;
+/*
+ Wenn links ein Programm ausgewÑhlt wurde, enthÑlt die
+ rechte Listbox die zugehîrigen Dateitypen.
+*/
+struct curr_pgm_file_type
+{
+	struct curr_pgm_file_type *next;
 	WORD selected;
 	int datnr;
 };
@@ -55,12 +60,12 @@ struct spd_file {
 static LIST_BOX *sbox1,*sbox2;
 static struct item_line *selected_pgmline = NULL;
 static struct item_line *selected_datline = NULL;
-static struct spd_file *selected_spdfile = NULL;
+static struct curr_pgm_file_type *selected_curr_pgm_file_type = NULL;
 static struct dat_file  *selected_datfile = NULL;
 static struct pgm_file  *selected_program = NULL;
 static int selected_pgmnr = -1;
 static int selected_datnr = -1;
-static struct spd_file *sel_dfiles = NULL;
+static struct curr_pgm_file_type *sel_dfiles = NULL;
 static int visible_pgmlen = -1;
 static int visible_datlen = -1;
 
@@ -172,7 +177,7 @@ static void enable_scroll(DIALOG *d, int *objs)
 {
 	register int i;
 
-	for	(i = 1; i <= 4; i++)
+	for (i = 1; i <= 4; i++)
 	{
 		adr_ica_dialog[objs[i]].ob_state &= ~DISABLED;
 		adr_ica_dialog[objs[i]].ob_flags |= TOUCHEXIT;
@@ -192,7 +197,7 @@ static void disable_scroll(DIALOG *d, int *objs)
 {
 	register int i;
 
-	for	(i = 1; i <= 4; i++)
+	for (i = 1; i <= 4; i++)
 	{
 		adr_ica_dialog[objs[i]].ob_state |= DISABLED;
 		adr_ica_dialog[objs[i]].ob_flags &= ~TOUCHEXIT;
@@ -224,13 +229,13 @@ static int scroll_win_app(DIALOG *d, char *ap_path)
 	n = extract_apname(ap_path, fname);
 	if (n < 0)
 		return -2;
-	for	(n = 0,pgm = pgmx; n < pgmn; n++,pgm++)
+	for (n = 0,pgm = pgmx; n < pgmn; n++,pgm++)
 		if (!stricmp(pgm->name, fname))
 			goto found;
 	return -1;
 	found:
 	i = n;
-	for	(n = 0,line = linx; n < linn; n++,line++)
+	for (n = 0,line = linx; n < linn; n++,line++)
 		if (line->pgmnr == i)
 			break;
 	if ((n > 0) && (n > linn - NLINES))
@@ -259,7 +264,7 @@ static int scroll_win_dat(DIALOG *d, char *datname)
 	register int j,k;
 	register struct dat_file *dat;
 
-	for	(j = 0,dat = datx; j < datn; j++,dat++)
+	for (j = 0,dat = datx; j < datn; j++,dat++)
 	{
 		if (!stricmp(dat->name, datname))
 			goto found;
@@ -269,7 +274,7 @@ static int scroll_win_dat(DIALOG *d, char *datname)
 	found:
 	if (dat->pgm == selected_pgmnr)
 	{
-		for	(k = 0; k < selected_program->ntypes; k++)
+		for (k = 0; k < selected_program->ntypes; k++)
 		{
 			if (j == sel_dfiles[k].datnr)
 			{
@@ -284,7 +289,7 @@ static int scroll_win_dat(DIALOG *d, char *datname)
 	{
 		if (!selected_program)
 		{
-			for	(k = 0; k < linn; k++)
+			for (k = 0; k < linn; k++)
 			{
 				if (linx[k].datnr == j)
 				{
@@ -338,9 +343,6 @@ static void cdecl scrollbox_pgm_select_cb(
 * item->selected enthÑlt bereits den neuen Selektions-Status,
 * der vorherige wird in <last_state> Åbergeben.
 *
-* Man beachte, daû linke und rechte Scrollbox dieselben
-* LBOX_ITEMs verwenden, also auch denselben <selected>-Status.
-*
 *********************************************************************/
 
 static void cdecl scrollbox_dat_select_cb(
@@ -348,22 +350,29 @@ static void cdecl scrollbox_dat_select_cb(
 	LBOX_ITEM *item, void *user_data,
 	WORD obj_index, WORD last_state)
 {
-	struct spd_file *spd = (struct spd_file *) item;
-	struct item_line *line = (struct item_line *) item;
-
 	if (selected_program)
 	{
+		struct curr_pgm_file_type *spd = (struct curr_pgm_file_type *) item;
+
 		if (item->selected)
 		{
-			selected_spdfile = spd;
+			selected_curr_pgm_file_type = spd;
 		}
 		else
 		{
-			selected_spdfile = NULL;
+			selected_curr_pgm_file_type = NULL;
 		}
 	}
 	else
 	{
+		struct item_line *line = (struct item_line *) item;
+
+		/*
+		* Man beachte, daû linke und rechte Scrollbox dieselben
+		* LBOX_ITEMs verwenden, also auch denselben <selected>-Status,
+		* aber nur, wenn links kein Programm ausgewÑhlt ist.
+		*/
+
 		if (item->selected)
 		{
 			selected_datline = line;
@@ -465,7 +474,7 @@ static WORD cdecl scrollbox_pgm_set_cb(LIST_BOX *box, OBJECT *tree,
 
 	if ((!mypgm->sel) && (selected_program))
 		dob->ob_flags &= ~TOUCHEXIT;
-		
+
 	if (mypgm->sel)
 		dob->ob_state &= ~WHITEBAK;
 	else
@@ -506,7 +515,7 @@ static WORD cdecl scrollbox_dat_set_cb(LIST_BOX *box, OBJECT *tree,
 			void *user_data, GRECT *rect, WORD offset)
 {
 	struct item_line *line = (struct item_line *) item;
-	struct spd_file *sd = (struct spd_file *) item;
+	struct curr_pgm_file_type *sd = (struct curr_pgm_file_type *) item;
 	struct dat_file *mydat;
 	OBJECT *dob;
 	OBJECT *sob;
@@ -606,7 +615,7 @@ static LBOX_ITEM *cat_lines(void)
 	LBOX_ITEM *sc;
 
 	/* Verkette die "item_line"-Strukturen */
-	for	(i = 0,line = linx; i < linn - 1; i++,line++)
+	for (i = 0,line = linx; i < linn - 1; i++,line++)
 	{
 		line->next = line + 1;
 	}
@@ -641,7 +650,7 @@ void ica_dial_init_rsc(void)
 
 	if (!is_3d)
 	{
-		for	(i = 1; i < 5; i++)
+		for (i = 1; i < 5; i++)
 		{
 			adr_ica_dialog[ctrl_objs1[i]].ob_spec.obspec.framesize =
 			adr_ica_dialog[ctrl_objs2[i]].ob_spec.obspec.framesize = 1;
@@ -654,7 +663,7 @@ void ica_dial_init_rsc(void)
 	adr_ica_dialog[DEL_PGM].ob_state |= DISABLED;
 	adr_ica_dialog[NEU_DAT].ob_state |= DISABLED;
 	adr_ica_dialog[DEL_DAT].ob_state |= DISABLED;
-	
+
 	adr_ica_dialog[BUT_VERSION].ob_spec.free_string = PROGRAM_VERSION_STR;
 
 	enable_scroll(NULL, ctrl_objs1);
@@ -703,7 +712,10 @@ void ica_dial_init_rsc(void)
 
 /*********************************************************************
 *
-* Setzt das Attribut item_line->sel korrekt
+* Setzt fÅr alle Zeilen der Scrollboxen das Attribut
+* item_line->sel korrekt.
+* Auûerdem werden <selected_pgmline> und <selected_datline>
+* neu bestimmt.
 *
 *********************************************************************/
 
@@ -711,11 +723,11 @@ static void sync_sel(void)
 {
 	register int i, n;
 	register struct item_line *z;
-	register struct spd_file *sd;
+	register struct curr_pgm_file_type *sd;
 
 
 	selected_pgmline = selected_datline = NULL;
-	for	(i = 0, z = linx; i < linn; i++, z++)
+	for (i = 0, z = linx; i < linn; i++, z++)
 	{
 		z->selected = FALSE;
 		if (!z->reldatnr || z->reldatnr == -1)
@@ -736,17 +748,17 @@ static void sync_sel(void)
 		}
 	}
 
-	selected_spdfile = NULL;
+	selected_curr_pgm_file_type = NULL;
 	if (sel_dfiles && selected_program)
 	{
 		n = selected_program->ntypes;
-		for	(i = 0, sd = sel_dfiles; i < n; i++, sd++)
+		for (i = 0, sd = sel_dfiles; i < n; i++, sd++)
 		{
 			sd->selected = FALSE;
 			if (datx[sd->datnr].sel)
 			{
 				sd->selected = TRUE;
-				selected_spdfile = sd;
+				selected_curr_pgm_file_type = sd;
 			}
 		}
 	}
@@ -755,14 +767,19 @@ static void sync_sel(void)
 
 /*********************************************************************
 *
-* TrÑgt die Programmliste neu in die erste Scrollbox ein.
+* Initialisiert die linke Scrollbox, die mit den Programmen,
+* und setzt, wenn <line> nicht -1 ist, den Scrollbalken so, daû
+* Zeile <line> die erste sichtbare ist.
 *
 *********************************************************************/
 
-static void setup_programs(int line)
+static void setup_lbox_programs(int line)
 {
 	if (line < 0)
+	{
 		line = lbox_get_first(sbox1);
+	}
+
 	lbox_set_items(sbox1, (pgmn) ? (LBOX_ITEM *) linx : NULL);
 	lbox_set_slider(sbox1, line, NULL);
 	lbox_update(sbox1, NULL);
@@ -776,11 +793,13 @@ static void setup_programs(int line)
 
 /*********************************************************************
 *
-* TrÑgt die Dateiliste neu in die zweite Scrollbox ein.
+* Initialisiert die rechte Scrollbox, die mit den Dateitypen,
+* und setzt, wenn <line> nicht -1 ist, den Scrollbalken so, daû
+* Zeile <line> die erste sichtbare ist.
 *
 *********************************************************************/
 
-static void setup_datafiles(int line)
+static void setup_lbox_datafiles(int line)
 {
 	if (line < 0)
 		line = lbox_get_first(sbox1);
@@ -805,19 +824,20 @@ static void setup_datafiles(int line)
 static void setup_spdfiles(int line)
 {
 	register int i, n;
-	register struct spd_file *sd;
+	register struct curr_pgm_file_type *sd;
 
 
-	selected_spdfile = NULL;
+	selected_curr_pgm_file_type = NULL;
 	if (sel_dfiles)
 		free(sel_dfiles);
+
 	n = selected_program->ntypes;
 	if (n)
 	{
-		sel_dfiles = malloc(n * sizeof(struct spd_file));
+		sel_dfiles = malloc(n * sizeof(struct curr_pgm_file_type));
 		if (sel_dfiles)
 		{
-			for	(i = 0, sd = sel_dfiles; i < n; i++,sd++)
+			for (i = 0, sd = sel_dfiles; i < n; i++,sd++)
 			{
 				sd->selected = FALSE;
 				if (i < n - 1)
@@ -828,7 +848,7 @@ static void setup_spdfiles(int line)
 				if (datx[sd->datnr].sel)
 				{
 					sd->selected = TRUE;
-					selected_spdfile = sd;
+					selected_curr_pgm_file_type = sd;
 				}
 			}
 		}
@@ -884,7 +904,7 @@ int insert_dat(struct pgm_file *pgm, struct dat_file *dat)
 	/* Suche <pgm> in pgmx[] */
 	/* --------------------- */
 
-	for	(pgmnr = 0,mypgm = pgmx; pgmnr < pgmn; pgmnr++,mypgm++)
+	for (pgmnr = 0,mypgm = pgmx; pgmnr < pgmn; pgmnr++,mypgm++)
 	{
 		if (!stricmp(mypgm->name, pgm->name))
 			goto found;
@@ -896,7 +916,7 @@ int insert_dat(struct pgm_file *pgm, struct dat_file *dat)
 	/* Suche <dat.name> in datx[] */
 	/* -------------------------- */
 
-	for	(j = 0,mydat = datx; j < datn; j++,mydat++)
+	for (j = 0,mydat = datx; j < datn; j++,mydat++)
 	{
 		if (!stricmp(mydat->name, dat->name))
 		{
@@ -913,7 +933,7 @@ int insert_dat(struct pgm_file *pgm, struct dat_file *dat)
 	/* dat neu eintragen */
 	/* ----------------- */
 
-	for	(j = 0,mydat = datx; j < datn; j++,mydat++)
+	for (j = 0,mydat = datx; j < datn; j++,mydat++)
 	{
 		if (!mydat->name[0])
 		{
@@ -961,7 +981,7 @@ int insert_dat(struct pgm_file *pgm, struct dat_file *dat)
 	/* ggf. einsortieren in linx[] */
 	/* --------------------------- */
 
-	for	(j = 0, z = linx; j < linn; j++,z++)
+	for (j = 0, z = linx; j < linn; j++,z++)
 	{
 		if (z->pgmnr != pgmnr)
 			continue;
@@ -969,7 +989,7 @@ int insert_dat(struct pgm_file *pgm, struct dat_file *dat)
 			break;
 		j += k;		/* rel. Pos der neuen Datei */
 		z += k;
-		for	(l = linn; l > j; l--)
+		for (l = linn; l > j; l--)
 			linx[l] = linx[l - 1];
 		linn++;
 		z->selected = FALSE;
@@ -990,14 +1010,16 @@ int insert_dat(struct pgm_file *pgm, struct dat_file *dat)
 	if (selected_program)
 		newline = -1;
 	cat_lines();
-	setup_programs(newline);
+	setup_lbox_programs(newline);
 	if (!selected_program)
-		setup_datafiles(-1);
+	{
+		setup_lbox_datafiles(-1);
+	}
 	else
 	{
 		if (selected_pgmnr == pgmnr)
 		{
-			for	(j = 0; j < mypgm->ntypes; j++)
+			for (j = 0; j < mypgm->ntypes; j++)
 			{
 				if (newdat == pgm_filetype(pgmnr, j))
 				{
@@ -1031,7 +1053,7 @@ int delete_dat(int dat)
 	/* aussortieren aus linx[] */
 	/* ----------------------- */
 
-	for	(i = 0; i < linn; i++)
+	for (i = 0; i < linn; i++)
 	{
 		if (linx[i].datnr == dat)
 		{
@@ -1041,9 +1063,9 @@ int delete_dat(int dat)
 				linx[i].datnr = linx[i].reldatnr = -1;
 				goto no_del;
 			}
-			for	(k = i; k < linn - 1; k++)
+			for (k = i; k < linn - 1; k++)
 				linx[k] = linx[k + 1];
-			for	(k = i; (k < linn) && (linx[k].pgmnr == pgm); k++)
+			for (k = i; (k < linn) && (linx[k].pgmnr == pgm); k++)
 				linx[k].reldatnr--;
 			goto ok2;
 		}
@@ -1056,12 +1078,12 @@ int delete_dat(int dat)
 
 	no_del:
 	cat_lines();
-	setup_programs(-1);
+	setup_lbox_programs(-1);
 
 	/* Dateityp aus Liste fÅr pgm entfernen */
 	/* ------------------------------------ */
 
-	for	(prev = &(pgmx[pgm].types); *prev >= 0;
+	for (prev = &(pgmx[pgm].types); *prev >= 0;
 			prev = &datx[*prev].next)
 	{
 		if (*prev == dat)
@@ -1088,7 +1110,7 @@ int delete_dat(int dat)
 	{
 		if (selected_program)
 			return 0;		/* ?!? */
-		setup_datafiles(-1);
+		setup_lbox_datafiles(-1);
 	}
 
 	return 0;
@@ -1112,7 +1134,7 @@ int change_dat(struct pgm_file *pgm, struct dat_file *dat,
 	/* Suche <pgm> in pgmx[] */
 	/* --------------------- */
 
-	for	(i = 0; i < pgmn; i++)
+	for (i = 0; i < pgmn; i++)
 	{
 		if (!stricmp(pgmx[i].name, pgm->name))
 			goto found;
@@ -1124,7 +1146,7 @@ int change_dat(struct pgm_file *pgm, struct dat_file *dat,
 	/* Suche <dat.name> in datx[] */
 	/* -------------------------- */
 
-	for	(j = 0; j < datn; j++)
+	for (j = 0; j < datn; j++)
 	{
 		if (!stricmp(datx[j].name, dat->name))
 			goto found2;
@@ -1150,13 +1172,16 @@ int change_dat(struct pgm_file *pgm, struct dat_file *dat,
 
 /*********************************************************************
 *
-* TrÑgt ein neues Programm ein
+* Registriert ein neues Programm oder Ñndert ein registriertes
 *
 *********************************************************************/
 
 int insert_pgm(struct pgm_file *pgm)
 {
-	register int i,j,k;
+	register int k;
+	register int pgmx_pos;
+	int pgmx_free_pos;
+	register int linx_pos;
 
 
 	/* Sicherheitstests */
@@ -1170,40 +1195,77 @@ int insert_pgm(struct pgm_file *pgm)
 	/* Einsortieren in pgmx[] */
 	/* ---------------------- */
 
-	j = -1;					/* noch kein freier Eintrag */
-	for	(i = 0; i < pgmn; i++)
+	pgmx_free_pos = -1;					/* noch kein freier Eintrag in pgmx[] */
+	for (pgmx_pos = 0; pgmx_pos < pgmn; pgmx_pos++)
 	{
-		if (!stricmp(pgmx[i].name, pgm->name))
+		if (!stricmp(pgmx[pgmx_pos].name, pgm->name))
 		{
-			strcpy(pgmx[i].path, pgm->path);
-			pgmx[i].config = pgm->config;
-			pgmx[i].memlimit = pgm->memlimit;
-			for	(j = 0; j < linn; j++)
+			/* Das Programm ist bereits in der Liste. Wir Ñndern es. */
+
+			/* erst in pgmx[] Ñndern... */
+			strcpy(pgmx[pgmx_pos].path, pgm->path);
+			pgmx[pgmx_pos].config = pgm->config;
+			pgmx[pgmx_pos].memlimit = pgm->memlimit;
+
+			/* ... , dann in linx[] suchen und Ñndern */
+			for (linx_pos = 0; linx_pos < linn; linx_pos++)
 			{
-				if (linx[j].pgmnr == i)
+				if (linx[linx_pos].pgmnr == pgmx_pos)
+				{
+					/*
+					 * Das Programm liegt bei pgmx[pgmx_pos] und linx[linx_pos].
+					 * Wir scrollen die Liste so, daû die Programmzeile oben sichtbar ist.
+					 */
 					goto redraw;
+				}
 			}
+
+			/*
+			 * TODO: Unter welchen UmstÑnden kînnen wir hier hin gelangen?
+			 *       Wenn das Programm in pgmx[] ist, mÅûte es auch in linx[] sein.
+			 * <linx_pos> ist jetzt <linn>
+			 */
+
+			Cconws("APPLICAT: INTERNAL ERROR #1");
+			linx_pos = -1;
 			goto redraw;			/* Name gefunden */
 		}
-		if (!pgmx[i].name[0])		/* freier Eintrag */
-			j = i;
+
+		/* Wir haben das Programm noch nicht gefunden, aber suchen nebenbei nach freien EintrÑgen */
+
+		if (!pgmx[pgmx_pos].name[0])		/* freier Eintrag */
+		{
+			pgmx_free_pos = pgmx_pos;	/* wir merken uns den letzten freien Eintrag */
+		}
 	}
 
-	if (j >= 0)
+	/*
+	 * Wir haben das Programm in der Liste pgmx[]
+	 * der registrierten Programme nicht gefunden.
+	 * Wenn <pgmx_free_pos> >= 0, dann ist hier ein freier Eintrag.
+	 */
+
+	if (pgmx_free_pos >= 0)
 	{
-		i = j;					/* freier Eintrag */
+		pgmx_pos = pgmx_free_pos;					/* freier Eintrag */
 	}
 	else
 	{
-		if (i >= MAX_PGMN)
+		if (pgmx_pos >= MAX_PGMN)
 			return -2;			/* öberlauf */
-		pgmn++;
+		pgmn++;		/* Tabelle verlÑngern */
 	}
+
+	/*
+	 * Bei pgmx[pgmx_pos] ist ein freier Eintrag, wo wir das neue
+	 * Programm reinschreiben. Wenn die Liste verlÑngert werden muûte,
+	 * ist das bereits oben passiert.
+	 */
 
 	pgm->ntypes = 0;
 	pgm->types = -1;
 	pgm->sel = /* pgm->sel_icon = */ FALSE;
-	pgmx[i] = *pgm;
+	pgmx[pgmx_pos] = *pgm;
 
 	/* ggf. einsortieren in linx[] */
 	/* --------------------------- */
@@ -1211,35 +1273,41 @@ int insert_pgm(struct pgm_file *pgm)
 	if (linn >= MAX_LINN)
 		return -3;				/* öberlauf */
 
-	for	(j = 0; j < linn; j++)
+	for (linx_pos = 0; linx_pos < linn; linx_pos++)
 	{
-		if ((pgmx[linx[j].pgmnr].name[0] == '<') ||
-			 (stricmp(pgmx[linx[j].pgmnr].name, pgm->name) > 0))
+		if ((pgmx[linx[linx_pos].pgmnr].name[0] == '<') ||
+			 (stricmp(pgmx[linx[linx_pos].pgmnr].name, pgm->name) > 0))
 		{
-			for	(k = linn; k > j; k--)
+			/* TabelleneintrÑge j..linn-1 verschieben nach j+1..linn */
+			for (k = linn; k > linx_pos; k--)
+			{
 				linx[k] = linx[k - 1];
+			}
 			goto ok2;
 		}
 	}
 
 	ok2:
 
+	/* linx[] ist um einen Eintrag, bei <linx_pos>, verlÑngert worden */
+
 	linn++;
-	linx[j].pgmnr = i;
-	linx[j].reldatnr = linx[j].datnr = -1;
-	linx[j].selected = FALSE;
+	linx[linx_pos].pgmnr = pgmx_pos;
+	linx[linx_pos].reldatnr = linx[linx_pos].datnr = -1;
+	linx[linx_pos].selected = FALSE;
 
 	redraw:
 	cat_lines();
-	if (selected_program)	/* Zeile selektiert, dann... */
+	if (selected_program)	/* Programm selektiert, dann... */
 	{
-		sync_sel();		/* Selektionsstatus korrigieren */
-		j = (int) (selected_pgmline - linx);			/* ...nicht scrollen! */
+		sync_sel();		/* Selektionsstatus korrigieren, selected_pgmline/datline setzen */
+		linx_pos = (int) (selected_pgmline - linx);			/* ...nicht scrollen! */
 	}
-	setup_programs(j);
+
+	setup_lbox_programs(linx_pos);
 	if (!selected_program)
 	{
-		setup_datafiles(-1);
+		setup_lbox_datafiles(-1);
 	}
 	return 0;
 }
@@ -1259,13 +1327,13 @@ int delete_pgm(int pgm)
 	/* aussortieren aus linx[] */
 	/* ----------------------- */
 
-	for	(i = 0; i < linn; i++)
+	for (i = 0; i < linn; i++)
 	{
 		if (linx[i].pgmnr == pgm)
 		{
-			for	(j = i + 1; (linx[j].pgmnr == pgm) && (j < linn); j++)
+			for (j = i + 1; (linx[j].pgmnr == pgm) && (j < linn); j++)
 				;
-			for	(k = j; k < linn; k++)
+			for (k = j; k < linn; k++)
 				linx[k + i - j] = linx[k];
 			goto ok2;
 		}
@@ -1283,7 +1351,7 @@ int delete_pgm(int pgm)
 	/* Dateitypen entfernen */
 	/* -------------------- */
 
-	for	(i = pgmx[pgm].types; i >= 0;)
+	for (i = pgmx[pgm].types; i >= 0;)
 	{
 		datx[i].name[0] = EOS;	/* als unbenutzt markieren */
 		i = datx[i].next;
@@ -1299,8 +1367,8 @@ int delete_pgm(int pgm)
 	/* ------ */
 
 	cat_lines();
-	setup_programs(-1);
-	setup_datafiles(-1);
+	setup_lbox_programs(-1);
+	setup_lbox_datafiles(-1);
 
 	return 0;
 }
@@ -1325,7 +1393,7 @@ static void chg_icon(int win, int meinding, int iconnr)
 	ic = icnx + iconnr;
 	sob = rscx[ic->rscfile].adr_icons + ic->objnr;
 	n = lbox_get_first((win == PGMS) ? sbox1 : sbox2);
-	for	(i = 0; i < NLINES; i++)
+	for (i = 0; i < NLINES; i++)
 	{
 		if (win == PGMS)
 			ding = (i + n < linn) ? linx[i + n].pgmnr : -1;
@@ -1371,7 +1439,7 @@ void ica_dial_set_icon(int iconnr)
 	int set = FALSE;
 
 	/* Dateitypen */
-	for	(i = 0; i < datn; i++)
+	for (i = 0; i < datn; i++)
 	{
 		if (datx[i].sel)
 		{
@@ -1387,7 +1455,7 @@ void ica_dial_set_icon(int iconnr)
 	}
 
 	/* Programme */
-	for	(i = 0; i < pgmn; i++)
+	for (i = 0; i < pgmn; i++)
 	{
 		if (pgmx[i].sel)
 		{
@@ -1531,10 +1599,10 @@ static void deselect_program(DIALOG *d)
 			selected_datline->selected = FALSE;
 			selected_datline = NULL;
 		}
-		if (selected_spdfile)
+		if (selected_curr_pgm_file_type)
 		{
-			selected_spdfile->selected = FALSE;
-			selected_spdfile = NULL;
+			selected_curr_pgm_file_type->selected = FALSE;
+			selected_curr_pgm_file_type = NULL;
 		}
 	}
 	if (d)
@@ -1548,7 +1616,7 @@ static void deselect_program(DIALOG *d)
 */
 		lbox_update(sbox1, &g);
 	}
-	setup_datafiles(-1);
+	setup_lbox_datafiles(-1);
 }
 
 
@@ -1571,10 +1639,10 @@ static void pgm_was_selected(DIALOG *d, int pgm, int do_sync)
 			selected_datline->selected = FALSE;
 			selected_datline = NULL;
 		}
-		if (selected_spdfile)
+		if (selected_curr_pgm_file_type)
 		{
-			selected_spdfile->selected = FALSE;
-			selected_spdfile = NULL;
+			selected_curr_pgm_file_type->selected = FALSE;
+			selected_curr_pgm_file_type = NULL;
 		}
 	}
 
@@ -1944,7 +2012,8 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 		oldsel = selected_pgmline;
 
 		/*
-		   Man beachte, daû die Listboxen von Dateien und Programmen dieselbe
+		   Man beachte, daû, wenn links kein Programm ausgewÑhlt wurde,
+		   die Listboxen von Dateien und Programmen dieselbe
 		   LBOX_ITEM-Tabelle verwenden, also auch dieselben <selected>-ZustÑnde.
 		*/
 		lbox_do(sbox1, exitbutton);
@@ -1988,9 +2057,10 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 		 (exitbutton == DAT4) ||
 		 (exitbutton == DAT5))
 	{
-		struct spd_file *oldsel = selected_spdfile;
+		struct curr_pgm_file_type *oldsel = selected_curr_pgm_file_type;
 
-		/* Man beachte, daû die Listboxen von Dateien und Programmen dieselbe
+		/* Man beachte, daû, solange links kein Programm ausgewÑhlt ist,
+		   die Listboxen von Dateien und Programmen dieselbe
 		   LBOX_ITEM-Tabelle verwenden, also auch dieselben <selected>-ZustÑnde. */
 		lbox_do(sbox2, exitbutton);
 
@@ -2003,14 +2073,14 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 			* Wir arbeiten ganz normal mit der rechten Liste.
 			*/
 
-			if (!selected_spdfile && oldsel)
+			if (!selected_curr_pgm_file_type && oldsel)
 			{
 				deselect_dfile(d);
 			}
 			else
-			if (selected_spdfile != oldsel)
+			if (selected_curr_pgm_file_type != oldsel)
 			{
-				dat_was_selected(d, selected_spdfile->datnr);
+				dat_was_selected(d, selected_curr_pgm_file_type->datnr);
 			}
 		}
 		else
@@ -2139,10 +2209,10 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 			selected_datline->selected = FALSE;
 			selected_datline = NULL;
 		}
-		if (selected_spdfile)
+		if (selected_curr_pgm_file_type)
 		{
-			selected_spdfile->selected = FALSE;
-			selected_spdfile = NULL;
+			selected_curr_pgm_file_type->selected = FALSE;
+			selected_curr_pgm_file_type = NULL;
 		}
 		delete_dat(sel);
 		sync_sel();
