@@ -88,14 +88,14 @@ APPLICAT Hints
 --------------
 
 There is often some uncertainty about how to assign an icon to a program.
-Let’s take COPS.ACC as an example. Select the program file, choose the
-‘Assign icon’ menu item, and APPLICAT will then open with the relevant path
+Let's take COPS.ACC as an example. Select the program file, choose the
+"Assign icon" menu item, and APPLICAT will then open with the relevant path
 (if COPS has not yet been registered). As we do not want to assign any file
-types for this application, we should shorten ‘C:\AUTO\ACCS\COPS.ACC’ to
-‘COPS’. Click “Install” to register the program. You can then drag an icon from
+types for this application, we should shorten "C:\AUTO\ACCS\COPS.ACC" to
+"COPS". Click "Install" to register the program. You can then drag an icon from
 the icon window onto the program icon, or select the program and assign the
 icon by double-clicking it in the icon window. Finally, you must exit APPLICAT
-by clicking “OK”.
+by clicking "OK".
 
 If you have installed PureC and want to automatically start the IDE when double
 clicking a .PRJ file, this might be somewhat tricky, because there is already
