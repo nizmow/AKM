@@ -33,11 +33,11 @@ Cursor L/R          Cursor bewegen
 
 Unter KAOS gilt:
 
-  Es wird einfach der Cconrs- Aufruf (bzw.  Fread(STDIN,...) benutzt. KAOS 
+  Es wird einfach der Cconrs- Aufruf (bzw. Fread(STDIN,...) benutzt. KAOS 
   enth„lt den oben beschriebenen Editor, der damit jedem Programm 
-  zug„nglich ist.  Damit sind unter jedem Programm, das von KCMD gestartet 
-  wurde,  die Funktionstasten belegt (z.B. SID,PROBE,PASCAL- Programme mit 
-  readln(), FORTRAN- Programme mit READ(*,*) usw.).
+  zug„nglich ist. Damit sind unter jedem Programm, das von KCMD gestartet 
+  wurde, die Funktionstasten belegt (z.B. SID,PROBE,PASCAL-Programme mit 
+  readln(), FORTRAN-Programme mit READ(*,*) usw.).
 
-  In  KAOS 1.4 ist der Zeileneditor noch einmal verbessert und erweitert 
+  In KAOS 1.4 ist der Zeileneditor noch einmal verbessert und erweitert 
   worden, siehe dortige Dokumentation!
