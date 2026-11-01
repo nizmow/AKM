@@ -1,0 +1,6 @@
+EMU_DBG.LIB
+.C[-Iinclude]	; .h search path
+.L[-J]			; create a library
+=
+EMU_DBGS.S
+EMU_DBG.C (emu_dbg.h)
