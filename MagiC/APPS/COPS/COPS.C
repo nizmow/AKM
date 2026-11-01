@@ -58,6 +58,7 @@
 #include "phstuff.h"
 #include "vaproto.h"
 #include "wlib.h"
+#include "emu_dbg.h"			/* print debug messages to MagicOnLinux emulator */
 
 /* default window style */
 #define MAINWINDOWSTYLE	\
@@ -4441,6 +4442,11 @@ init_vwork(void)
 }
 
 
+/*********************************************************************
+*
+* main function
+*
+*********************************************************************/
 int
 main(int argc, char *argv[])
 {
@@ -4450,6 +4456,9 @@ main(int argc, char *argv[])
 
 	app_id = appl_init();
  
+	emu_prints("Hello from COPS to emulator\n");
+	emu_printf("My app_id is %d\n", app_id);
+
 	/* alles in Ordnung, AES vorhanden? */
 	if (app_id >= 0)
 	{

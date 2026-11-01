@@ -9,12 +9,13 @@ cops.app
 .L[-S=16384]
 =
 lib\PCMXSTRT.O
+lib\emu_dbg.lib
 
 rc_inter.c
 
 adaptrsc.c
 callback.c
-cops.c
+cops.c (include\emu_dbg.h)
 cops_rsc.c
 cpx_bind.c [-W-stv]
 fix_rsc.c

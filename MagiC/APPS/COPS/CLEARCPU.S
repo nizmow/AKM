@@ -2,6 +2,8 @@
 	.globl clear_cpu_040
 	.globl clear_cpu_030
 
+	SUPER
+
 clear_cpu_cf:
 	nop					/* synchronize/flush store buffer */
 	moveq.l #0,d0		/* initialize way counter */
