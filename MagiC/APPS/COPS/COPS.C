@@ -31,6 +31,11 @@
  * - 28.12.97 (COPS 1.08):
  *   Wenn beim cpx_init() innerhalb von open_cpx_context() eine 1 zurueckgeliefert wird,
  *   interpretiert das COPS als Anweisung kein Fenster zu oeffnen (fuer NPRNCONF)
+ * - 2026-11-04
+ *   Optionale Emulator-Debug-Ausgabe hinzugefÅgt.
+ *   Strom- und CPU-Fresser evnt_multi() mit Timeout Null entfernt. Trat immer auf,
+ *   wenn ein CPX geîffnet war. Auûerdem war das CPX unter MagiC mit Fast Click fast
+ *   unbedienbar.
  */
 
 #include <mgx_dos.h>
@@ -59,6 +64,9 @@
 #include "vaproto.h"
 #include "wlib.h"
 #include "emu_dbg.h"			/* print debug messages to MagicOnLinux emulator */
+
+/* #define EMU_PRINTF(args) emu_printf args */
+#define EMU_PRINTF(args)
 
 /* default window style */
 #define MAINWINDOWSTYLE	\
@@ -3796,6 +3804,8 @@ cpx_main_loop(void)
 		/* liegt ein CPX-Fenster oben (wg. Event-CPX mit Mausrechteck oder Timer)? */
 		if (cpx_desc)
 		{
+			uint16_t ev_waitfor;
+
 			if (!cpx_desc->is_evnt_cpx &&
 				cpx_desc->dialog == NULL &&
 				cpx_desc->edit_obj &&
@@ -3804,16 +3814,29 @@ cpx_main_loop(void)
 				objc_edit(cpx_desc->tree, cpx_desc->edit_obj, 0, &cpx_desc->cursor_idx, ED_INIT);
 				cpx_desc->cursor = TRUE;
 			}
-			EVNT_multi(MU_KEYBD | MU_BUTTON | MU_MESAG | MU_TIMER | cpx_desc->mask,
-				   258, 3, 0,
-				   &cpx_desc->m1, &cpx_desc->m2, cpx_desc->time, &events);
+
+			ev_waitfor = MU_KEYBD | MU_BUTTON | MU_MESAG | cpx_desc->mask;
+			if (cpx_desc->time)
+			{
+				ev_waitfor |= MU_TIMER;
+			}
+
+			EMU_PRINTF(("EVNT_multi() mit Timeout von %lu ms\n", cpx_desc->time));
+			EVNT_multi(
+					ev_waitfor,
+				   256 + 2, 3, 0,		/* Doppelklick-Erkennung, NICHT beide Maustasten losgelassen */
+				   &cpx_desc->m1, &cpx_desc->m2,		/* BerÅhrungs-Rechtecke */
+				   cpx_desc->time,						/* Timer */
+				   &events);
 		}
 		else
 		{
 			/* kein CPX oben */
 			EVNT_multi(MU_KEYBD | MU_BUTTON | MU_MESAG | MU_TIMER,
-				   258, 3, 0,
-				   NULL, NULL, 30000L, &events);
+				   256 + 2, 3, 0,		/* Doppelklick-Erkennung, NICHT beide Maustasten losgelassen */
+				   NULL, NULL,			/* keine BerÅhrungs-Rechtecke */
+				   30000L,				/* Timer alle 30s. Warum? */
+				   &events);
 		}
 
 		if ((events.mwhich & MU_MESAG) && events.msg[0] == AC_CLOSE)
@@ -4455,148 +4478,151 @@ main(int argc, char *argv[])
 		argc = 0;
 
 	app_id = appl_init();
- 
-	emu_prints("Hello from COPS to emulator\n");
-	emu_printf("My app_id is %d\n", app_id);
+	/*emu_prints("Hello from COPS to emulator\n");*/
+	EMU_PRINTF(("My app_id is %d\n", app_id));
 
-	/* alles in Ordnung, AES vorhanden? */
-	if (app_id >= 0)
+	if (app_id < 0)
 	{
-		/* Accessory? */
+		/* kein AES oder zuviele Programme */
+		(void) Cconws(fstring_addr[noaes_str]);
+		return -1;
+	}
+
+
+	/* Accessory? */
+	if (_app == 0)
+	{
+		/* Taskwechsel unter TOS blockieren */
+		wind_update(BEG_UPDATE);
+	}
+	else
+	{
+		/* als Applikation gestartet */
+		graf_mouse(ARROW, NULL);
+	}
+	
+	aes_handle = graf_handle(&pwchar, &phchar, &pwbox, &phbox);
+
+	if (init_vwork())
+	{
+		/* Voreinstellungen vornehmen */
+		std_settings();
+		xctrl_pb.Country_Code = select_language();
+		init_rsrc();
+		set_texts(xctrl_pb.Country_Code);
 		if (_app == 0)
 		{
-			/* Taskwechsel unter TOS blockieren */
-			wind_update(BEG_UPDATE);
+			/* als Accessory registrieren */
+			menu_id = menu_register(app_id, fstring_addr[menutitle_str]);
 		}
-		else
-			/* als Applikation gestartet */
-			graf_mouse(ARROW, NULL);
-		
-		aes_handle = graf_handle(&pwchar, &phchar, &pwbox, &phbox);
+		/* Checkboxen und öberschriften anpassen */
+		substitute_objects(rsc_rs_object, NUM_OBS, aes_flags, NULL, NULL);
 
-		if (init_vwork())
+		/* Fensterdialoge vorhanden? */
+		if (init_wlib(app_id))
 		{
-			/* Voreinstellungen vornehmen */
-			std_settings();
-			xctrl_pb.Country_Code = select_language();
-			init_rsrc();
-			set_texts(xctrl_pb.Country_Code);
-			if (_app == 0)
+			/* Applikation oder ikonifiziertes Accessory? */
+			if (_app || settings.booticon)
 			{
-				/* als Accessory registrieren */
-				menu_id = menu_register(app_id, fstring_addr[menutitle_str]);
+				/* kein Kontrollfeld sondern das Hauptfenster oeffnen? */
+				if (argc <= 1)
+				{
+					/* OS liefert AP_TERM */
+					if ((aes_flags & GAI_APTERM))
+						/* INF-Datei muss einmal eingelesen werden */
+						must_read_inf = 1;
+
+					/* Hauptfenster oeffnen */
+					open_main_window();
+
+					/* und ikonifizieren? */
+					if (settings.booticon && main_window)
+						iconify_window(main_window->handle, NULL);
+				}
 			}
-			/* Checkboxen und öberschriften anpassen */
-			substitute_objects(rsc_rs_object, NUM_OBS, aes_flags, NULL, NULL);
 
-			/* Fensterdialoge vorhanden? */
-			if (init_wlib(app_id))
+			/* Fenster noch nicht offen und CPXe noch nicht gescannt? */
+			if (main_window == NULL)
 			{
-				/* Applikation oder ikonifiziertes Accessory? */
-				if (_app || settings.booticon)
+				/* CPXe suchen, ggf. cpx_init() aufrufen */
+				update_cpx_list();
+				/* COPS.inf laden, CPXe im Hauptfenster positionieren */
+				read_inf();
+			}
+
+			/* Kontrollfelder direkt starten? */
+			while (argc > 1)
+			{
+				char *path;
+				argc--;
+
+				path = argv[argc];
+
+				if (path)
 				{
-					/* kein Kontrollfeld sondern das Hauptfenster oeffnen? */
-					if (argc <= 1)
+					CPX_DESC *cpx_desc;
+
+					cpx_desc = list_search(cpx_desc_list,
+							       (long)path,
+							       offsetof(CPX_DESC, next), search_cpx_name);
+					if (cpx_desc)
 					{
-						/* OS liefert AP_TERM */
-						if ((aes_flags & GAI_APTERM))
-							/* INF-Datei muss einmal eingelesen werden */
-							must_read_inf = 1;
-
-						/* Hauptfenster oeffnen */
-						open_main_window();
-
-						/* und ikonifizieren? */
-						if (settings.booticon && main_window)
-							iconify_window(main_window->handle, NULL);
-					}
-				}
-
-				/* Fenster noch nicht offen und CPXe noch nicht gescannt? */
-				if (main_window == NULL)
-				{
-					/* CPXe suchen, ggf. cpx_init() aufrufen */
-					update_cpx_list();
-					/* COPS.inf laden, CPXe im Hauptfenster positionieren */
-					read_inf();
-				}
-
-				/* Kontrollfelder direkt starten? */
-				while (argc > 1)
-				{
-					char *path;
-					argc--;
-
-					path = argv[argc];
-
-					if (path)
-					{
-						CPX_DESC *cpx_desc;
-
-						cpx_desc = list_search(cpx_desc_list,
-								       (long)path,
-								       offsetof(CPX_DESC, next), search_cpx_name);
-						if (cpx_desc)
+						struct auto_start *auto_start;
+						
+						auto_start = malloc(sizeof(*auto_start));
+						if (auto_start)
 						{
-							struct auto_start *auto_start;
-							
-							auto_start = malloc(sizeof(*auto_start));
-							if (auto_start)
-							{
-								auto_start->next = NULL;
-								auto_start->cpx_desc = cpx_desc;
+							auto_start->next = NULL;
+							auto_start->cpx_desc = cpx_desc;
 
-								list_append((void **) &auto_start_list,
-									    (void *)auto_start,
-									    offsetof(struct auto_start, next));
-							}
+							list_append((void **) &auto_start_list,
+								    (void *)auto_start,
+								    offsetof(struct auto_start, next));
 						}
 					}
 				}
-
-				/* Accessory? */
-				if (_app == 0)
-					/* Taskwechsel unter TOS wieder zulassen */
-					wind_update(END_UPDATE);
-
-				/* Kontext sichern und Hauptschleife aufrufen */
-				a_call_main();
-				DEBUG((DEBUG_FMT ": a_call_main returned\n", DEBUG_ARGS));
-
-				/* Hauptfenster schliessen */
-				close_main_window(WM_CLOSED);
-				/* Einstellungen sichern */
-				save_inf();
-				/* Speicher fuer CPXe freigeben */
-				unload_all_cpx();
-
-				/* Fensterstrukturen freigeben */
-				reset_wlib();
 			}
 
-			/* Speicher fuer ersetzte Objekttypen freigeben */
-			substitute_free();
-			v_clsvwk(vdi_handle);
+			/* Accessory? */
+			if (_app == 0)
+				/* Taskwechsel unter TOS wieder zulassen */
+				wind_update(END_UPDATE);
+
+			/* Kontext sichern und Hauptschleife aufrufen */
+			a_call_main();
+			DEBUG((DEBUG_FMT ": a_call_main returned\n", DEBUG_ARGS));
+
+			/* Hauptfenster schliessen */
+			close_main_window(WM_CLOSED);
+			/* Einstellungen sichern */
+			save_inf();
+			/* Speicher fuer CPXe freigeben */
+			unload_all_cpx();
+
+			/* Fensterstrukturen freigeben */
+			reset_wlib();
 		}
 
-		/* Accessory? */
-		if (_app == 0)
-		{
-			/* Taskwechsel unter TOS wieder zulassen */
-			wind_update(END_UPDATE);
-			if (aes_global[1] == 1)
-			{
-				for (;;)
-				{
-					evnt_mesag((int16_t *)home);
-				}
-			}
-		}
-
-		appl_exit();
+		/* Speicher fuer ersetzte Objekttypen freigeben */
+		substitute_free();
+		v_clsvwk(vdi_handle);
 	}
-	else
-		(void) Cconws(fstring_addr[noaes_str]);
+
+	/* Accessory? */
+	if (_app == 0)
+	{
+		/* Taskwechsel unter TOS wieder zulassen */
+		wind_update(END_UPDATE);
+		if (aes_global[1] == 1)
+		{
+			for (;;)
+			{
+				evnt_mesag((int16_t *)home);
+			}
+		}
+	}
+
+	appl_exit();
 
 	return 0;
 }

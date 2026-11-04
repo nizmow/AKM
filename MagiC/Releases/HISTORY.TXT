@@ -29,7 +29,11 @@
 - Kernel should no longer send NUL byte to printer on boot.
 - INSTALL.TXT extended.
 
-pending:
+2026-11-04
 
 - APPLICAT v1.10: Fast Click handling
+- COPS.ACC 1.10alpha, old version preserved as COPS109.ACX:
+  Event busy loop repaired (evnt_multi() with timeout zero whenever a CPX was
+  active). Should save CPU and power and should now be usable with Fast Click.
+  This is mainly untested and thus more or less experimental.
 

@@ -258,8 +258,13 @@ extern int16_t MT_evnt_multi(
 			int16_t *nbclicks,
 			int16_t *global);
 
-extern void MT_EVNT_multi(int16_t evtypes, int16_t nclicks, int16_t bmask, int16_t bstate,
-					MOBLK *m1, MOBLK *m2, uint32_t ms, EVNT *event, int16_t *global);
+extern void MT_EVNT_multi(
+			int16_t evtypes,
+			int16_t nclicks, int16_t bmask, int16_t bstate,
+			MOBLK *m1, MOBLK *m2,
+			uint32_t ms,
+			EVNT *event,
+			int16_t *global);
 
 extern int16_t MT_evnt_dclick(int16_t ev_dnew, int16_t ev_dgetset, int16_t *global);
 
