@@ -6,13 +6,26 @@ CFLAGS ?= -O2 -g -Wall -Wextra
 # Do not inherit the kernel's -mshort/-mfastcall flags or Pure C libraries.
 APP_FLAGS := -std=gnu11 -m68000
 
-.PHONY: all mod-app
+.PHONY: all mod-app cmdline mod-app-test-driver
 all: mod-app
 mod-app: $(BUILD_DIR)/mod-app/MOD_APP.TTP
+cmdline: $(BUILD_DIR)/cmdline/CMDLINE.PRG
+mod-app-test-driver: $(BUILD_DIR)/mod-app/NEOSTEST.PRG
+
+$(BUILD_DIR)/mod-app/NEOSTEST.PRG: MagiC/APPS/MOD_APP/TESTDATA/NEOSTEST.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
 $(BUILD_DIR)/mod-app/MOD_APP.TTP: MagiC/APPS/MOD_APP/MOD_APP.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
+$(BUILD_DIR)/cmdline/CMDLINE.PRG: MagiC/TOOLS/CMDLINE/SRC/CMDLINE.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
 -include $(BUILD_DIR)/mod-app/MOD_APP.d
+-include $(BUILD_DIR)/cmdline/CMDLINE.d

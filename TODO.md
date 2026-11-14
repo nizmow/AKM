@@ -26,9 +26,9 @@ Each item is a separate source/build owner. Use public SDK declarations, inspect
 legacy assumptions, and add one independent target/output; no generic application
 framework or shared-library rewrite is required before these are attempted.
 
-- [ ] **CMDLINE** — add `cmdline` producing `CMDLINE.PRG`. Validate the command
-  tail/environment reporting against the original, including ordinary and ARGV
-  invocations. Compare meaningful fields rather than pinning runtime addresses.
+- [x] **CMDLINE** — add `cmdline` producing `CMDLINE.PRG`.
+- [ ] Validate command-tail/environment reporting against the original for
+  ordinary and ARGV invocations; compare meaningful fields, not runtime addresses.
 - [ ] **SHOWFILE** — add `showfile` producing `SHOWFILE.TTP`. Compare visible text
   and exit behavior for representative input files, missing files and arguments.
 - [ ] **LIMITMEM** — add `limitmem` producing `LIMITMEM.TTP`. Check header changes
@@ -58,15 +58,15 @@ framework or shared-library rewrite is required before these are attempted.
 
 ## Repeatable runtime verification
 
-- [ ] Turn the disposable Hatari/Pexec comparison used for MOD_APP into a
-  repeatable, explicitly invoked smoke task. The first run used a throwaway
-  launcher; there is not yet a reusable application test runner.
-- [ ] Require an explicit baseline image/TOS configuration; clone storage before
-  changes, preserve the user's running emulator and capture logs/results/screens.
-- [ ] Keep fixture preparation, child return-code capture and output comparison
-  independent of the application under test. Test real executables and services.
-- [ ] Carry the MOD_APP argument, registration, duplicate/error, backup and cache
-  cases into that runner as regression coverage.
+- [x] Add an explicitly invoked MOD_APP smoke runner. `scripts/neost-mod-app-smoke.py`
+  runs the archived and GCC binaries through NeoST's headless TOS autostart.
+- [x] Fix the NeoST profile at ST/4 MiB with bundled EmuTOS 1.04 by default;
+  each binary gets a separate disposable GEMDOS C: tree. Capture logs, results
+  and screenshots without touching the Hatari boot images or running GUI.
+- [x] Keep fixture preparation, Pexec child-status capture and INF/BAK/DAT
+  comparison in the runner, separate from MOD_APP itself.
+- [x] Cover application, file-type and special-object registration, duplicate
+  and missing-app errors, quoted/empty/long paths, and output-file parity.
 - [ ] Keep crash probes, installers, header patchers and formatters out of the
   default smoke set. Give them disposable fixtures and explicit test targets.
 - [ ] Record compiled, linked, packaged, launched and functionally tested status

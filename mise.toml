@@ -29,3 +29,8 @@ run = "scripts/atari-container run make -f Makefile.atari magic"
 description = "Run Makefile.apps with application targets and options"
 dir = "{{ config_root }}"
 run = "scripts/atari-container run make -f Makefile.apps"
+
+[tasks."test:mod-app-neost"]
+description = "Compare archived and GCC MOD_APP under NeoST"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-mod-app-smoke.py"

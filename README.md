@@ -115,6 +115,12 @@ ARGV paths. Tests used disposable D: files; the real installation was untouched.
 See [PORTING_NOTES.md](PORTING_NOTES.md) and [TODO.md](TODO.md) for the startup
 compatibility finding and the next application tasks.
 
+Repeatable emulator checks use explicit, subsystem-scoped tasks. Run
+`mise run test:mod-app-neost` (or `python3 scripts/neost-mod-app-smoke.py`).
+Runner options and outputs: `python3 scripts/neost-mod-app-smoke.py --help`.
+This tests MOD_APP under NeoST/EmuTOS; the MagiC kernel boot check remains under
+Hatari.
+
 ## Direct build commands
 
 Build the German Atari/68000 kernel from the repository root:
