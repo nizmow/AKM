@@ -67,9 +67,11 @@ letter is changed. The low-level `Malloc` trap returns a LONG address, requiring
 an explicit pointer conversion. `errno.h` values are positive; returning a
 GEMDOS-style allocation error requires `-ENOMEM`, not `ENOMEM`.
 
-The original Atari-encoded source was converted to UTF-8 comments, preserving
-non-ASCII C literal bytes with octal escapes. Do not transcode target strings
-implicitly while making a source file editable.
+The original Atari-encoded MOD_APP source was converted to UTF-8 comments.
+Target string bytes that depended on legacy encoding were preserved explicitly.
+Source-encoding preservation is not a goal by itself: edit the existing source
+for a port when that is the simpler path. Verify emitted bytes only where target
+behavior depends on them; use escapes or compiler charset options as appropriate.
 
 **Startup compatibility is functional behavior.** The installed MiNTLib parser
 split a double-quoted path in a raw TOS command tail when the tail began with an
@@ -106,6 +108,32 @@ other environment bytes matched. This is expected MiNTLib startup behavior, not
 a functional failure. Runtime basepage addresses were excluded; captures are
 under `build/atari/neost-cmdline/`.
 
+### SHOWFILE
+
+`make -f Makefile.apps showfile` builds
+`MagiC/APPS/SHOWFILE/SRC/SHOWFILE.C` as
+`build/atari/apps/showfile/SHOWFILE.TTP`, using MiNTLib's public
+`mint/osbind.h` and the default application ABI. The legacy source was converted
+with `NON-TOS/atari-utf8-conversion/atari-utf8.c -r`, then adapted in place,
+preserving its control flow. The port retains the VT52 viewer, paging/navigation
+keys, reverse argument order, Wordplus control-byte substitution and localized
+pager prompt selection (`COUNTRY`, default USA/English).
+
+The original source included `<tos.h>`, `<tosdefs.h>` and `<country.h>`.
+SHOWFILE has no project manifest or local copies identifying who supplied them,
+so their exact compiler/library provenance (including whether they were Pure C
+headers) is unverified. The port currently defines its GEMDOS error values,
+console/read-mode constants and country IDs locally. Consider replacing or
+factoring these definitions only when public SDK declarations or another real
+consumer establish a reusable contract; avoid inventing a shared compatibility
+header now.
+Missing files and allocation failures remain silent, and the process returns
+zero as the original entry point did. The archived binary and GCC output
+matched under NeoST via a temporary Pexec driver: a two-line CR/LF file rendered
+identically through the EOF prompt, and missing-file/no-argument launches
+returned matching zero child statuses. The driver and logs are disposable
+verification artifacts under `build/atari/showfile-runtime/`.
+
 ### Checklist for the next application
 
 1. Read its PRJ, startup source and actual dependencies before choosing flags.
@@ -117,9 +145,12 @@ under `build/atari/neost-cmdline/`.
 3. Check writable string literals and nonstandard functions explicitly. A
    writable array fixes a mutated path; a cast or writable-memory accident does
    not make modifying a C string literal valid.
-4. Identify the source encoding instead of guessing from a successful decode.
-   Atari ST, CP437 and Latin-1 differ. Convert comments independently from target
-   literal bytes; preserve the latter with explicit escapes where needed.
+4. Do not preserve a legacy source encoding merely for its own sake. For Atari ST
+   text, `NON-TOS/atari-utf8-conversion/atari-utf8.c -r path/to/file.c` writes
+   `file.c.utf8` without overwriting the input. Review the conversion, then port
+   the UTF-8 text in the canonical source instead of keeping a parallel copy.
+   Check target string/data bytes only where behavior or a file-format contract
+   depends on them; use explicit escapes or charset options for those bytes.
 5. Exercise startup through the actual caller: raw TOS command tails **and**
    ARGV, including quoted paths, empty arguments and application-specific literal
    patterns. A clean build did not catch MOD_APP's quote incompatibility.
@@ -242,7 +273,7 @@ booted, and functionally tested.
 | Four-character magic gets truncated | With `-mshort`, multi-character integer constants can truncate. Use explicit 32-bit constants, e.g. `0x4e564449L` for `NVDI`. |
 | Old C accepted by Pure C is rejected or behaves differently | Fix nested comments, function-versus-function-pointer declarations, casts used as assignment targets, and unsequenced expressions. For example, replace `*s++ = toupper(*s)` with assignment followed by increment. Preserve intended behavior, not undefined evaluation order. |
 | Includes work on DOS but fail on Linux | Respect filename case and remove DOS path assumptions. Reuse the generated include aliases or existing compatibility include directories; do not create a second alias scheme. |
-| Text/records change size unexpectedly | Separate source encoding from target bytes. The shared assembler adapter encodes UTF-8 literals using the canonical Atari mapping and preserves legacy byte input. For legacy C input, pair `-finput-charset=ISO-8859-1` with `-fexec-charset=ISO-8859-1` when preserving raw bytes. Do not apply those flags indiscriminately to UTF-8 C sources. |
+| Text/records change size unexpectedly | Separate source encoding from target bytes only where emitted bytes matter. Editing or converting legacy C sources is fine; verify affected strings/records. The shared assembler adapter encodes UTF-8 literals using the canonical Atari mapping and preserves legacy byte input. If legacy C bytes must remain unchanged, `-finput-charset=ISO-8859-1` plus `-fexec-charset=ISO-8859-1` can preserve them; do not apply those flags indiscriminately to UTF-8 C sources. |
 | Assembly succeeds but jump tables are wrong | VASM needs `-spaces` for expressions such as `handler - table`. Without it, an expression can silently become just `handler`. Use it consistently across assembly slices. |
 | VASM reports trailing garbage in an immediate | MAS uses size hints such as `#symbol.l+size` and `#(bufl+4).w`. The shared adapter removes the immediate hint while retaining the whole expression. Do not ignore the warning: VASM previously dropped `+size` in a DSP bound comparison. Preserve non-immediate address-size suffixes. |
 | MAS syntax is rejected | Extend `mas_to_vasm.py`, reusing its handling of nested comments, named macro parameters/local labels, dot directives, `OFFSET`, `MODULE` and `REPT`/`ENDM`. Test nested blocks and labeled repeat openers. Avoid a second per-subsystem translator. |

@@ -32,8 +32,10 @@ framework or shared-library rewrite is required before these are attempted.
 - [x] Test ARGV-style Pexec launch under NeoST. Tail, program path and status
   matched. MiNTLib consumes the reserved `ARGV=` marker before `main`; this
   expected startup difference is not treated as a failure.
-- [ ] **SHOWFILE** — add `showfile` producing `SHOWFILE.TTP`. Compare visible text
-  and exit behavior for representative input files, missing files and arguments.
+- [x] **SHOWFILE** — add `showfile` producing `SHOWFILE.TTP`.
+- [x] Compare visible text and exit behavior for SHOWFILE against the archived
+  binary under NeoST: sample text, EOF prompt, missing-file and no-argument cases
+  matched, including child exit statuses.
 - [ ] **LIMITMEM** — add `limitmem` producing `LIMITMEM.TTP`. Check header changes
   and errors on disposable executable copies; keep the original inputs intact.
 - [ ] **MGCLOCK** — add `mgclock` producing `MGCLOCK.PRG`. Establish the first

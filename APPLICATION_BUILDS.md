@@ -36,7 +36,7 @@ See [PORTING_NOTES.md](PORTING_NOTES.md) for the workflow and known pitfalls.
 | Priority | Application / independent output | Source root | Purpose and build considerations |
 |---|---|---|---|
 | A / verified | `MOD_APP.TTP` | `MagiC/APPS/MOD_APP` | Command-line registration of file types/icons in `APPLICAT.INF`. GCC/MiNTLib build: `mise run apps -- mod-app`. Passed 17 Hatari comparison cases, including quoted arguments, backups and cache invalidation. Test against disposable INF files. |
-| A | `SHOWFILE.TTP` | `MagiC/APPS/SHOWFILE` | Older text-mode viewer, predecessor of MGVIEW. C; localized. Keep as a distinct utility, not a second build of MGVIEW. |
+| A / verified | `SHOWFILE.TTP` | `MagiC/APPS/SHOWFILE` | Older text-mode viewer, predecessor of MGVIEW. GCC/MiNTLib build: `make -f Makefile.apps showfile`. NeoST Pexec comparison matched sample text, EOF prompt, missing-file/no-argument behavior and child statuses against the archived binary. Keep as a distinct utility, not a second build of MGVIEW. |
 | A | `LIMITMEM.TTP` | `MagiC/APPS/LIMITMEM` | Edits a program's memory limit. C; test only copies of executables. |
 | A | `MGCLOCK.PRG` | `MagiC/APPS/MGCLOCK` | Minimal clock. C; small GEM application candidate. |
 | B | `WBDAEMON.PRG` | `MagiC/APPS/WBDAEMON` | Disk writeback daemon. C; no localization needed. Test startup, periodic operation and exit under MagiC. |
