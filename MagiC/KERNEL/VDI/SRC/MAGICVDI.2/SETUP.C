@@ -9,7 +9,7 @@
 /*----------------------------------------------------------------------------------------*/
 /* Struktur fÅr die KompatibilitÑt mit alten MM-Versionen											*/
 /*----------------------------------------------------------------------------------------*/
-#pragma PRAGMA_PACKED_ALIGN											/* Strukturelemente byteweise anordnen */
+#pragma pack(push, 1)											/* Strukturelemente byteweise anordnen */
 
 typedef struct
 {
@@ -47,7 +47,7 @@ typedef struct
 	VDI_SETUP_TROUBLE	*error;											/* Fehlermeldung in d0.l an das Mac-System zurÅckgeben */
 } OLD_MACSYS;
 
-#pragma PRAGMA_RESET_ALIGN												/* Einstellung zurÅcksetzen */
+#pragma pack(pop)												/* Einstellung zurÅcksetzen */
 
 extern OLD_MACSYS	MSys;													/* fÅr alte MagiCMac-Version importieren (bei neuen nur Dummy) */
 

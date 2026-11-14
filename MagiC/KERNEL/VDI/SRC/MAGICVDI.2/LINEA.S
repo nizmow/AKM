@@ -447,7 +447,7 @@ atext_rot270:		add.w 	d4,DESTY.w								;y-Koordinate des n„chsten Zeichens
 atext_call:			move.w	#1,n_intin(a1)							;1 Zeichen
 						clr.w		(a2)										;intin[0]: Index 0
 						movem.w	d2-d3,(a3)								;ptsin[0/1]: x, y
-						bsr		text
+						jsr		text_start
 						
 						lea		sizeof_contrl+2+4+4+sizeof_FONT_HDR(sp),sp
 						movea.l	(sp)+,a6

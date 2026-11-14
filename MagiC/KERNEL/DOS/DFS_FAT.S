@@ -115,7 +115,7 @@ bs_BootSig:    DS.B      1    /* 0x29 legt fest, daß die folgenden drei Felder 
 bs_VolID:      DS.B      4    /* Seriennummer, die mit bs_VolLab zusammen zur Medienwechselerkennung verwendet wird */
                               /* ist i.a. Datum+Uhrzeit der Formatierung kombiniert */
 bs_VolLab:     DS.B      11   /* muß mit dem Disknamen im Wurzelverzeichnis identisch sein. */
-                              /* Ist "NO NAME    ", wenn das Medium unbenannt ist
+                              /* Ist "NO NAME    ", wenn das Medium unbenannt ist */
 bs_FilSysType: DS.B      8    /* "FAT32   ". Darf aber nicht zur Bestimmung des Typs verwendet werden */
 
 ; Noch wichtig: sector[510] == 0x55, sector[511] == 0xaa
@@ -783,7 +783,7 @@ gxb_nsecw:
 ; Sonderbehandlung für abgeschaltete FAT-Spiegelung
 
  move.b   bs_flags(sp),d0          ; Low-Word (intel!)
- btst.b   #7,d0
+ btst.l   #7,d0
  beq.b    gxb_fatmirror_normal
  andi.l   #$0000000f,d0            ; d0 = aktive FAT
  cmp.b    (a0),d0
@@ -830,7 +830,7 @@ gxb_bpb:
  andi.b   #1,d0
  move.b   d0,(a1)+                 ; FAT-Typ (12/16/32 Bit)
  move.w   (a0),d0
- btst.b   #1,d0
+ btst.l   #1,d0
  seq      d0
  andi.b   #1,d0
  addq.b   #1,d0

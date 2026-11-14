@@ -2,13 +2,13 @@
 *
 *             MOD_APP.TTP                            28.04.98
 *             ===========
-*                                 letzte énderung:   2026-10-03
+*                                 letzte √Ñnderung:   2026-10-03
 *
 * geschrieben mit Pure C V1.1
 * Projektdatei: PCX_TTP.PRJ
 *
 * Programm zur Modifikation von APPLICAT.INF. Das Programm sollte
-* auch unter TOS laufen kînnen.
+* auch unter TOS laufen k√∂nnen.
 *
 * Parameter:
 *
@@ -24,17 +24,17 @@
 *
 *		"Insert Data File Type":
 *		X ist das MagiC-Laufwerk
-*		Dateityp fÅr Applikation anmelden, z.B.
+*		Dateityp f√ºr Applikation anmelden, z.B.
 *		pgmname = mupfel.prg dat=*.BAT rscname=MAGICICN.RSC iconnr=132
 *
 *	-Xis key[4] name icondatei iconnr
 *
 *		"Insert Special":
 *		X ist das MagiC-Laufwerk
-*		Icon fÅr "special object" anmelden. z.B.
+*		Icon f√ºr "special object" anmelden. z.B.
 *		key=PARD name=MAGICICN.RSC iconnr=132
 *
-* RÅckgabewert:
+* R√ºckgabewert:
 *
 *	0				OK
 *	< 0				Systemfehler
@@ -42,19 +42,19 @@
 *	2				Formatfehler in APPLICAT.INF
 *	3				Kennung schon vergeben
 *	4				Applikation nicht eingetragen (-id)
-*	5				Pfad fÅr Applikation fehlt (-id)
+*	5				Pfad f√ºr Applikation fehlt (-id)
 *
 *
 * noch nicht eingebaut:
 *
 *	-ad	appath dat	; angemeldete Datei modifizieren
 *
-*	-io	opath		; Icon fÅr Ordner/Disk anmelden
+*	-io	opath		; Icon f√ºr Ordner/Disk anmelden
 *
 *
 * ----------------------------------------------------------------
 *
-* Textdatei fÅr APPLICAT:
+* Textdatei f√ºr APPLICAT:
 * Konfigurationsdatei applicat.inf:
 *
 *	magic			; Zeile mit "applicat.inf" und Versionsnummer
@@ -76,18 +76,30 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <mgx_dos.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <osbind.h>
+#include <mint/basepage.h>
+
+_Static_assert(sizeof(int) == 4 && sizeof(long) == 4,
+			   "Build MOD_APP with the default MiNTLib integer ABI");
+
+enum {
+	MODE_SPECIAL = ('i' << 8) | 's',
+	MODE_APPLICATION = ('i' << 8) | 'a',
+	MODE_FILETYPE = ('i' << 8) | 'd'
+};
 
 #define DEBUG 0
 
 #if DEBUG
-char *infname = "D:\\DEV_ROOT\\APPS\\MOD_APP\\APPLICAT.INF";
-char *bakname = "D:\\DEV_ROOT\\APPS\\MOD_APP\\APPLICAT.BAK";
-char *datname = "D:\\DEV_ROOT\\APPS\\MOD_APP\\APPLICAT.DAT";
+char infname[] = "D:\\DEV_ROOT\\APPS\\MOD_APP\\APPLICAT.INF";
+char bakname[] = "D:\\DEV_ROOT\\APPS\\MOD_APP\\APPLICAT.BAK";
+char datname[] = "D:\\DEV_ROOT\\APPS\\MOD_APP\\APPLICAT.DAT";
 #else
-char *infname = "C:\\GEMSYS\\GEMDESK\\APPLICAT.INF";
-char *bakname = "C:\\GEMSYS\\GEMDESK\\APPLICAT.BAK";
-char *datname = "C:\\GEMSYS\\GEMDESK\\APPLICAT.DAT";
+char infname[] = "C:\\GEMSYS\\GEMDESK\\APPLICAT.INF";
+char bakname[] = "C:\\GEMSYS\\GEMDESK\\APPLICAT.BAK";
+char datname[] = "C:\\GEMSYS\\GEMDESK\\APPLICAT.DAT";
 #endif
 
 char *buf = NULL;
@@ -97,7 +109,7 @@ char drv;
 
 /*********************************************************************
 *
-* Ermittelt zu einem Programmnamen den zugehîrigen
+* Ermittelt zu einem Programmnamen den zugeh√∂rigen
 * Sektionsnamen
 *
 *********************************************************************/
@@ -109,7 +121,7 @@ char *name_to_section(char *s, char *name)
 	*s++ = '[';
 	for	(i = 0; i < 8; i++)
 	{
-		if (*name == '.' || *name == EOS)
+		if (*name == '.' || *name == '\0')
 			break;
 		*s++ = toupper(*name++);
 	}
@@ -131,7 +143,7 @@ char *cr_rscinfo(char *s, char *rscname, int iconnr)
 	strcpy(s, rscname);
 	s += strlen(s);
 	*s++ = ' ';
-	itoa(iconnr, s, 10);
+	sprintf(s, "%d", iconnr);
 	strcat(s, " \"-\"\r\n");
 	s += strlen(s);
 	return s;
@@ -140,7 +152,7 @@ char *cr_rscinfo(char *s, char *rscname, int iconnr)
 
 /*******************************************************************
 *
-* APPLICAT.INF mit eingefÅgten Daten schreiben
+* APPLICAT.INF mit eingef√ºgten Daten schreiben
 *
 ****************************************************************/
 
@@ -152,7 +164,7 @@ static long ainf_save(void)
 
 
 	if (!new_line)
-		return E_OK;			/* nix zu tun */
+		return 0;			/* nix zu tun */
 
 	Fdelete(bakname);
 	ret = Frename(0, infname, bakname);
@@ -209,31 +221,31 @@ static long ainf_save(void)
 
 	/* DAT modifizieren */
 
-	ret = Fopen(datname, RMODE_RW);
+	ret = Fopen(datname, O_RDWR);
 	if (ret >= 0)
 	{
 		f = (int) ret;
 		ret = Fread(f, sizeof(magic), &magic);
-		if ((ret == sizeof(magic)) && (magic == 'AnKr'))
+		if ((ret == sizeof(magic)) && (magic == 0x416e4b72L)) /* AnKr */
 		{
-			ret = Fseek(0L, f, SEEK_SET);		/* zurÅck */
+			ret = Fseek(0L, f, SEEK_SET);		/* zur√ºck */
 			if (!ret)
 			{
-				magic = 'BnKr';
+				magic = 0x426e4b72L; /* BnKr: cache invalidated */
 				Fwrite(f, sizeof(magic), &magic);
 			}
 		}
 		Fclose(f);
 	}
-	return E_OK;
+	return 0;
 }
 
 
 /*******************************************************************
 *
-* APPLICAT.INF îffnen
+* APPLICAT.INF √∂ffnen
 *
-* RÅckgabe: 0 (OK), <0 (Systemfehler) oder 2 (Formatfehler)
+* R√ºckgabe: 0 (OK), <0 (Systemfehler) oder 2 (Formatfehler)
 *
 ****************************************************************/
 
@@ -243,12 +255,12 @@ static long ainf_open(void)
 	int f;
 
 
-	ret = Fopen(infname, RMODE_RD);
+	ret = Fopen(infname, O_RDONLY);
 	if (ret < 0)
 		return ret;
 
 	f = (int) ret;
-	len = Fseek(0L, f, SEEK_END);		/* DateilÑnge bestimmen */
+	len = Fseek(0L, f, SEEK_END);		/* Dateil√§nge bestimmen */
 	if (len > 0)
 	{
 		ret = Fseek(0L, f, SEEK_SET);
@@ -266,18 +278,18 @@ static long ainf_open(void)
 		return len;
 	}
 
-	buf = Malloc(len+1);
+	buf = (char *) Malloc(len+1);	/* GEMDOS returns the address as LONG */
 	if (!buf)
 	{
 		Fclose(f);
-		return ENSMEM;
+		return -ENOMEM;
 	}
 	buf[len] = '\0';				/* Ende-Zeichen */
 	ret = Fread(f, len, buf);
 	Fclose(f);
 
 	if ((ret > 0) && (ret < len))
-		ret = ERROR;
+		ret = -1L;
 	if (ret < 0)
 	{
 		Mfree(buf);
@@ -286,13 +298,13 @@ static long ainf_open(void)
 	}
 	if (strncmp(buf, "[APPLICAT Header V ", 19))
 		return 2;			/* Formatfehler */
-	return E_OK;
+	return 0;
 }
 
 
 /*******************************************************************
 *
-* neue, einzufÅgende Zeile zusammenstellen.
+* neue, einzuf√ºgende Zeile zusammenstellen.
 *
 ****************************************************************/
 
@@ -317,13 +329,13 @@ static long is_get_new_line(char *key, char *name, char *rscname,
 	cr_rscinfo(l + strlen(l), rscname, iconnr);
 	*line = l;
 
-	return E_OK;
+	return 0;
 }
 
 
 /*******************************************************************
 *
-* Position fÅr einzufÅgende Zeile ermitteln.
+* Position f√ºr einzuf√ºgende Zeile ermitteln.
 *
 ****************************************************************/
 
@@ -360,7 +372,7 @@ static long is_get_insert_position(char *key, char **line)
 	end += 2;
 	*end = '\0';					/* EOS statt [ */
 
-	/* nachsehen, ob der SchlÅssel schon vorkommt */
+	/* nachsehen, ob der Schl√ºssel schon vorkommt */
 
 	memcpy(findstr + 2, key, 4);
 	s = strstr(beg, findstr);
@@ -368,11 +380,11 @@ static long is_get_insert_position(char *key, char **line)
 	if (s)
 		return 3;				/* Kennung schon da */
 
-	/* EinfÅgepunkt ist vor nÑchstem Abschnitt */
+	/* Einf√ºgepunkt ist vor n√§chstem Abschnitt */
 
 	*line = end;
 
-	return E_OK;
+	return 0;
 }
 
 
@@ -397,18 +409,18 @@ long do_mode_is(char *key, char *name, char *rscname, int iconnr)
 		return (int) ret;
 	}
 
-	/* EinfÅgeposition festlegen */
+	/* Einf√ºgeposition festlegen */
 
 	ret = is_get_insert_position(key, &ins_pos);
 	if (ret)
 	{
 #if DEBUG
-		printf("Fehler %ld beim Bestimmen der EinfÅgeposition\n", ret);
+		printf("Fehler %ld beim Bestimmen der Einf\201geposition\n", ret);
 #endif
 		return (int) ret;
 	}
 
-	return E_OK;
+	return 0;
 }
 
 
@@ -445,7 +457,7 @@ long do_mode_ia(char *pgmname, char *rscname, int iconnr, char *path, int code)
 	t = buf;
 	for (;;)
 	{
-		t = strstr(t, "\r\n[");	/* nÑchste Applikation suchen */
+		t = strstr(t, "\r\n[");	/* n√§chste Applikation suchen */
 
 		if (!t)
 			return 2;		/* Formatfehler */
@@ -467,26 +479,26 @@ long do_mode_ia(char *pgmname, char *rscname, int iconnr, char *path, int code)
 		t += 3;
 	}
 	
-	ins_pos = t + 2;		/* hier einfÅgen! */
+	ins_pos = t + 2;		/* hier einf√ºgen! */
 	s = cr_rscinfo(s, rscname, iconnr);
 	if ((*path != '-') || (path[1]))
 	{
 		t = strchr(path, ' ');		/* Leerzeichen ? */
 		if (t)
-			*s++ = '\'';			/* in Hochkomma einschlieûen */
+			*s++ = '\'';			/* in Hochkomma einschlie√üen */
 
 		strcpy(s, path);
 		if (t)
-			strcat(s, "'");		/* in Hochkomma einschlieûen */
+			strcat(s, "'");		/* in Hochkomma einschlie√üen */
 	}
 
 	strcat(s, "\r\n");
 	s += strlen(s);
-	itoa(code, s, 10);
+	sprintf(s, "%d", code);
 	strcat(s, "\r\n");
 	new_line = ins_data;
 
-	return E_OK;
+	return 0;
 }
 
 
@@ -515,7 +527,7 @@ long do_mode_id(char *pgmname, char *ftyp, char *rscname, int iconnr)
 		return 1;
 
 	s = name_to_section(section, pgmname);
-	*s = EOS;
+	*s = '\0';
 	namelen = s - section;
 
 	strcpy(ins_data, ftyp);
@@ -527,10 +539,10 @@ long do_mode_id(char *pgmname, char *ftyp, char *rscname, int iconnr)
 	t = buf;
 	for (;;)
 	{
-		t = strstr(t, "\r\n[");	/* nÑchste Applikation suchen */
+		t = strstr(t, "\r\n[");	/* n√§chste Applikation suchen */
 		if (!t)
 			return 2;		/* Formatfehler */
-		t += 2;				/* Åberpringe \r\n */
+		t += 2;				/* √ºberpringe \r\n */
 
 		is_free_app = !strncmp(t, app_free, 8) || !strncmp(t, app_free_compat, 8);
 
@@ -546,15 +558,15 @@ long do_mode_id(char *pgmname, char *ftyp, char *rscname, int iconnr)
 		u = strstr(t, "\r\n");
 		if ((!u) || (u[2] == '['))
 			return 2;		/* Formatfehler */
-		u += 2;				/* u: Icondaten fÅr Programm */
+		u += 2;				/* u: Icondaten f√ºr Programm */
 		u = strstr(u, "\r\n");
 		if ((!u) || (u[2] == '['))
 			return 2;		/* Formatfehler */
-		u += 2;				/* u: Pfad fÅr Programm */
+		u += 2;				/* u: Pfad f√ºr Programm */
 		u = strstr(u, "\r\n");
 		if ((!u) || (u[2] == '['))
 			return 2;		/* Formatfehler */
-		u += 2;				/* u: Code fÅr Programm */
+		u += 2;				/* u: Code f√ºr Programm */
 		u = strstr(u, "\r\n");
 		if (!u)
 			return 2;		/* Formatfehler */
@@ -574,7 +586,7 @@ long do_mode_id(char *pgmname, char *ftyp, char *rscname, int iconnr)
 			if (cmp_typ > 0)
 			{
 				if (!cmp_nam)	/* unsere APP */
-					ins_pos = u;	/* hier gehîren wir hin */
+					ins_pos = u;	/* hier geh√∂ren wir hin */
 				break;		/* wir liegen hier nicht */
 			}
 
@@ -585,8 +597,8 @@ long do_mode_id(char *pgmname, char *ftyp, char *rscname, int iconnr)
 		}
 
 		if ((!cmp_nam) && (!ins_pos))
-			ins_pos = u;			/* anhÑngen! */
-		t = u - 2;				/* nÑchste Section suchen */
+			ins_pos = u;			/* anh√§ngen! */
+		t = u - 2;				/* n√§chste Section suchen */
 	/*	Fwrite(1, 8L, t+2);	*/
 	}
 
@@ -596,9 +608,55 @@ long do_mode_id(char *pgmname, char *ftyp, char *rscname, int iconnr)
 	s = cr_rscinfo(s, rscname, iconnr);
 	new_line = ins_data;
 
-	return E_OK;
+	return 0;
 }
 
+
+/*
+ * PCMXSTRT accepts single/double-quoted arguments anywhere in a TOS tail.
+ * MiNTLib only enables its quote parser when the entire tail starts with '.
+ * Keep this application-local until another port needs the same convention.
+ */
+static int tos_arguments(char *command, char **args)
+{
+	char *read = command, *write = command;
+	int count = 1;
+
+	while (*read)
+	{
+		char quote;
+		while (*read && (unsigned char) *read <= ' ')
+			read++;
+		if (!*read)
+			break;
+		args[count++] = write;
+		quote = (*read == '\'' || *read == '"') ? *read++ : '\0';
+		while (*read)
+		{
+			if (quote)
+			{
+				if (*read == quote)
+				{
+					read++;
+					if (quote == '\'' && *read == '\'')
+					{
+						*write++ = *read++;
+						continue;
+					}
+					break;
+				}
+			}
+			else if ((unsigned char) *read <= ' ')
+				break;
+			*write++ = *read++;
+		}
+		while (*read && (unsigned char) *read <= ' ')
+			read++;
+		*write++ = '\0';
+	}
+	args[count] = NULL;
+	return count;
+}
 
 /*******************************************************************
 *
@@ -611,6 +669,19 @@ int main(int argc, char *argv[])
 	char *s;
 	long ret;
 	int mode;
+	char command[128];
+	char *args[65];		/* at most 63 one-byte arguments in a 126-byte tail */
+	unsigned int length = (unsigned char) _base->p_cmdlin[0];
+
+	/* MiNTLib supplies a nonempty argv[0] for ARGV; retain that parsed vector. */
+	if (length < 127 && argv[0][0] == '\0')
+	{
+		memcpy(command, _base->p_cmdlin + 1, length);
+		command[length] = '\0';
+		args[0] = argv[0];
+		argc = tos_arguments(command, args);
+		argv = args;
+	}
 
 
 	/* Modus ermitteln: mode */
@@ -639,7 +710,7 @@ int main(int argc, char *argv[])
 	if (*s)
 		goto global_syntax;
 
-	if ((mode != 'is') && (mode != 'ia') && (mode != 'id'))
+	if ((mode != MODE_SPECIAL) && (mode != MODE_APPLICATION) && (mode != MODE_FILETYPE))
 		goto global_syntax;
 
 	/* Pfade anpassen */
@@ -647,14 +718,14 @@ int main(int argc, char *argv[])
 
 	infname[0] = bakname[0] = datname[0] = drv;
 
-	/* APPLICAT.INF îffnen und einlesen */
+	/* APPLICAT.INF √∂ffnen und einlesen */
 	/* -------------------------------- */
 
 	ret = ainf_open();
 	if (ret)
 	{
 #if DEBUG
-		printf("Fehler %ld beim ôffnen\n", ret);
+		printf("Fehler %ld beim \231ffnen\n", ret);
 #endif
 		return (int) ret;
 	}
@@ -664,7 +735,7 @@ int main(int argc, char *argv[])
 
 	switch (mode)
 	{
-		case 'is':
+		case MODE_SPECIAL:
 			if (argc != 6)
 			{
 				Cconws("Syntax: mod_app -Xis key name rscname iconnr\r\n");
@@ -673,7 +744,7 @@ int main(int argc, char *argv[])
 			ret = do_mode_is(argv[2],argv[3],argv[4],atoi(argv[5]));
 			break;
 
-		case 'ia':
+		case MODE_APPLICATION:
 			if (argc != 7)
 			{
 				Cconws("Syntax: mod_app -Xia pgmname rscname iconnr path|- code\r\n");
@@ -682,7 +753,7 @@ int main(int argc, char *argv[])
 			ret = do_mode_ia(argv[2],argv[3],atoi(argv[4]), argv[5],atoi(argv[6]));
 			break;
 
-		case 'id':
+		case MODE_FILETYPE:
 			if (argc != 6)
 			{
 				Cconws("Syntax: mod_app -Xid pgmname dtype rscname iconnr\r\n");

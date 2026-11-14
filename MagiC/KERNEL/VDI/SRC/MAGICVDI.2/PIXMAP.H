@@ -17,7 +17,7 @@ typedef struct
 	WORD			pmVersion;		/* pixMap version number */
 	WORD			packType;		/* defines packing format */
 	LONG			packSize;		/* length of pixel data */
-	Fixed			Res;				/* horiz. resolution (ppi) */
+	Fixed			hRes;				/* horiz. resolution (ppi) */
 	Fixed			vRes;				/* vert. resolution (ppi) */
 	WORD			pixelType;		/* defines pixel type */
 	WORD			pixelSize;		/* # bits in pixel */
@@ -31,7 +31,8 @@ typedef struct
 /*
 
 Pixel Maps
-Just as the original QuickDraw does all of its drawing in a bit map, Color QuickDraw
+
+Just as the original QuickDraw does all of its drawing in a bit map, Color QuickDraw
 uses an extended data structure called a pixel map (pixMap). In addition to the
 dimensions and contents of a pixel image, the pixel map also includes information on
 the image's storage format, depth, resolution, and color usage
@@ -122,4 +123,4 @@ one plane to the next. The chunky/planar format isn't supported by this implemen
 of Color QuickDraw.
 
 */
-
+

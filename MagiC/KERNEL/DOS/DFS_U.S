@@ -58,7 +58,7 @@ FT_DEVICE2     EQU  8              ; Device mit Extradaten
      XREF proc_drv,proc_create
      XREF int_malloc
 
-     XDEF      _anb_devdrv    ; 27.6.2002
+     XREF      _anb_devdrv    ; provided by DEV_BIOS
      XREF      _bios_devdrv
      XREF      _midi_devdrv
      XREF      _con_devdrv

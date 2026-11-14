@@ -164,11 +164,9 @@ typedef struct
 
 } NVDI_STRUCT;
 
-#if offsetof( NVDI_STRUCT, nmalloc ) != 140
-	Fehler!!
-#endif
+_Static_assert( offsetof( NVDI_STRUCT, nmalloc ) == 140,
+	"NVDI_STRUCT.nmalloc ABI offset" );
 
 /* Abfrage fÅr Kobold-Funktion */
-#if offsetof( NVDI_STRUCT, id_to_font_file ) != 168
-	Fehler!!
-#endif
+_Static_assert( offsetof( NVDI_STRUCT, id_to_font_file ) == 168,
+	"NVDI_STRUCT.id_to_font_file ABI offset" );

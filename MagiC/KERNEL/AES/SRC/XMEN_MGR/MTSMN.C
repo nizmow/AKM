@@ -1358,7 +1358,6 @@ static void smn_mouse( int saveit)
     scr_gr_mouse( 0x103, NULL);
   };
 } /* smn_mouse */
-*/
 
 void smn_moblk( OBJECT *tree, MOBLK2 *mob, int obj, int out)
 {
@@ -1597,7 +1596,6 @@ DEBUGSTR("enter smn_mgr ");
 /*   wind_update(BEG_MCTRL);  */
 /*
      smn_mouse( TRUE);                  /* Mauszeiger retten und ARROW */
-*/
 
      /* Objekt 2 ist Parent für alle Menütitel, dessen Ausmaße */
      /* werden in smn_mgrmrect gemerkt */

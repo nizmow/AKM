@@ -1,3 +1,5 @@
+struct _lbox_item;
+
 typedef  void  (cdecl *SLCT_ITEM)( void *box, OBJECT *tree, struct _lbox_item *item, void *user_data, WORD obj_index, WORD last_state );
 typedef  WORD  (cdecl *SET_ITEM)( void *box, OBJECT *tree, struct _lbox_item *item, WORD obj_index, void *user_data, GRECT *rect, WORD first );
 

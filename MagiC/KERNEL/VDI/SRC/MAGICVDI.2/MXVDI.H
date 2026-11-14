@@ -12,10 +12,11 @@
 /*----------------------------------------------------------------------------------------*/
 /* Monitorbeschreibung																							*/
 /*----------------------------------------------------------------------------------------*/
-#define	VDI_DISPLAY_MAGIC	CHAR_CONST32('vdid')
+/* GCC -mshort makes multi-character constants 16-bit; keep the full Atari long. */
+#define	VDI_DISPLAY_MAGIC	0x76646964L
 #define	VDI_DISPLAY_ACTIVE	1
 
-#pragma PRAGMA_PACKED_ALIGN											/* Strukturelemente byteweise anordnen */
+#pragma pack(push, 1)											/* Strukturelemente byteweise anordnen */
 
 typedef struct VDI_DISPLAY
 {
@@ -43,7 +44,7 @@ typedef struct VDI_DISPLAY
 
 } VDI_DISPLAY;
 
-#pragma PRAGMA_RESET_ALIGN												/* Einstellung zur…ksetzen */
+#pragma pack(pop)												/* Einstellung zur…ksetzen */
 
 
 #if 0
@@ -81,9 +82,9 @@ typedef int32	VDI_SETUP_TROUBLE( int32 err );
 #define	VDI_DRIVER_MISSING	-1
 
 
-#define	VDI_SETUP_MAGIC	CHAR_CONST32('vdii')
+#define	VDI_SETUP_MAGIC	0x76646969L
 
-#pragma PRAGMA_PACKED_ALIGN											/* Strukturelemente byteweise anordnen */
+#pragma pack(push, 1)											/* Strukturelemente byteweise anordnen */
 
 typedef struct
 {
@@ -99,6 +100,6 @@ typedef struct
 
 } VDI_SETUP_DATA;
 
-#pragma PRAGMA_RESET_ALIGN												/* Einstellung zur…ksetzen */
+#pragma pack(pop)												/* Einstellung zur…ksetzen */
 
 #endif																		/* __VDI_SETUP__ */

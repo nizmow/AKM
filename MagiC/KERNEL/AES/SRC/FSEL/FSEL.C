@@ -29,15 +29,15 @@
 /* #include <magx.h> */
 #undef form_xdo
 #undef APPL
-#include "ger\fselx.h"
-#include "..\wdialog\shelsort.h"
+#include "GER/FSELX.H"
+#include "../WDIALOG/SHELSORT.H"
 
 #if       COUNTRY==FRG
-#include "ger\fselrsrc.h"
+#include "GER/FSELRSRC.H"
 #elif     COUNTRY==USA
-#include "us\fselrsrc.h"
+#include "US/FSELRSRC.H"
 #elif     COUNTRY==FRA
-#include "fra\fselrsrc.h"
+#include "FRA/FSELRSRC.H"
 #endif
 
 #define fsel_rsc ((RSHDR *) fselx)
@@ -197,9 +197,9 @@ extern WORD lbox_sbvis( void *lbox, WORD new);
 #include <wdial_g.h>
 */
 
-#include "listbx_g.h"
-#include "ker_bind.h"
-#include "fsel.h"
+#include "LISTBX_G.H"
+#include "KER_BIND.H"
+#include "FSEL.H"
 
 #define   objc_draw( tree, obj, depth, clip ) \
                set_clip_grect( clip ); \
@@ -362,7 +362,7 @@ static void _resize_fs_tree( OBJECT *tree, WORD offset );
 extern WORD fslx_dlm;         /* min. Dialogbreite in Pixeln */
 extern WORD fslx_dlw;         /* Dialogbreite in Pixeln */
 extern char fslx_exts[FIXED_PATTLEN];
-extern (*fslx_d2s)(char *s, WORD mode);      /* DOS-Datum -> Zeichenkette */
+extern void (*fslx_d2s)(char *s, WORD mode); /* DOS-Datum -> Zeichenkette */
 extern int big_wchar, big_hchar;
 extern int enable_3d;
 extern char toupper( unsigned char c );
@@ -603,7 +603,10 @@ static void trim_path(char *spath, char *dpath)
 static void upperstring( char *s )
 {
      while(*s)
-          *s++ = toupper(*s);
+          {
+          *s = toupper(*s);
+          s++;
+          }
 }
 
 
@@ -1314,7 +1317,7 @@ static long read_dir( FSEL_DIALOG *fsd )
           if   ((!status.show_all) &&
                 (xa.attr & (F_HIDDEN | F_SYSTEM))
                )
-               continue;      /* verst. Dateien! */
+               continue;      (verst. Dateien!)
 */
           /* ggf. Symlink behandeln */
 
@@ -2114,7 +2117,7 @@ static FSEL_DIALOG *fsel_dialog_init(
           if   (!patterns)
                patterns = "*\0";
 
-          fsd->magic = 'fsel';
+          fsd->magic = 0x6673656cL;
           fsd->pathlen = pathlen;
           fsd->fnamelen = fnamelen;
           fsd->fname = fsd->path+pathlen;

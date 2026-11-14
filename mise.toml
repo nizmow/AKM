@@ -1,0 +1,31 @@
+[tasks."toolchain:build"]
+description = "Build the Atari cross-toolchain Podman image"
+dir = "{{ config_root }}"
+run = "scripts/atari-container build"
+
+[tasks."toolchain:shell"]
+description = "Open a shell in the Atari toolchain container"
+dir = "{{ config_root }}"
+raw = true
+run = "scripts/atari-container shell"
+
+[tasks.atari]
+description = "Run a command in the Atari toolchain container"
+dir = "{{ config_root }}"
+raw = true
+run = "scripts/atari-container run"
+
+[tasks.make]
+description = "Run Makefile.atari with arbitrary targets and options"
+dir = "{{ config_root }}"
+run = "scripts/atari-container run make -f Makefile.atari"
+
+[tasks.kernel]
+description = "Build the German Atari/68000 MAGIC.RAM kernel"
+dir = "{{ config_root }}"
+run = "scripts/atari-container run make -f Makefile.atari magic"
+
+[tasks.apps]
+description = "Run Makefile.apps with application targets and options"
+dir = "{{ config_root }}"
+run = "scripts/atari-container run make -f Makefile.apps"

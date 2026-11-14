@@ -4,7 +4,7 @@
 	Strukturen für den Zugriff auf IDE-Platten
 	Julian F. Reschke, 12. November 1993
 */
-#include	<PORTAB.H>
+#include	<portab.h>
 #ifndef __IDE_H
 #define __IDE_H
 
@@ -67,9 +67,7 @@ typedef struct
 	UWORD	reserved7[192];
 } IDE_IDENTIFICATION;
 
-#if sizeof(IDE_IDENTIFICATION) != 512
-#error "IDE_IDENTIFICATION kaputt"
-#endif
+_Static_assert(sizeof(IDE_IDENTIFICATION) == 512, "IDE_IDENTIFICATION kaputt");
 
 typedef struct
 {

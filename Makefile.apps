@@ -1,0 +1,18 @@
+CROSS_COMPILE ?= m68k-atari-mintelf-
+CC := $(CROSS_COMPILE)gcc
+BUILD_DIR ?= build/atari/apps
+CFLAGS ?= -O2 -g -Wall -Wextra
+# Applications use the supplied MiNTLib's default stack ABI and 32-bit int.
+# Do not inherit the kernel's -mshort/-mfastcall flags or Pure C libraries.
+APP_FLAGS := -std=gnu11 -m68000
+
+.PHONY: all mod-app
+all: mod-app
+mod-app: $(BUILD_DIR)/mod-app/MOD_APP.TTP
+
+$(BUILD_DIR)/mod-app/MOD_APP.TTP: MagiC/APPS/MOD_APP/MOD_APP.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+-include $(BUILD_DIR)/mod-app/MOD_APP.d

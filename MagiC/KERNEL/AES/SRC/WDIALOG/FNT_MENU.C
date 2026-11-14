@@ -9,10 +9,10 @@
 /* Globale Includes																								*/
 /*----------------------------------------------------------------------------------------*/ 
 #include <country.h>
-#include <PORTAB.H>
-#include	<AES.H>
-#include <VDI.H>
-#include <TOS.H> 
+#include <portab.h>
+#include	<aes.h>
+#include <vdi.h>
+#include <tos.h> 
 
 #define	CALL_MAGIC_KERNEL	1
 
@@ -67,7 +67,7 @@ extern WORD form_xdo( OBJECT *tree, WORD startob, WORD *endob,
 
 #define	Malloc( size )	((void *) malloc( size ))
 
-#include "shelsort.h"
+#include "SHELSORT.H"
 #else
 
 #include	<STDIO.H>
@@ -108,6 +108,9 @@ extern WORD form_xdo( OBJECT *tree, WORD startob, WORD *endob,
 #define	lbox_free_list \
 			free_list
 
+static void	free_items( LIST_BOX *box );
+static void	free_list( LBOX_ITEM *item );
+
 extern void _rsrc_rcfix( void *global, RSHDR *rsc );
 static void	*_malloc( LONG size );
 static void	_mfree( void *addr );
@@ -125,14 +128,14 @@ extern WORD	is_magic;
 /*----------------------------------------------------------------------------------------*/ 
 /* Lokale Includes																								*/
 /*----------------------------------------------------------------------------------------*/ 
-#include	"OBJ_tool.h"
-#include "ger\FONTSLCT.H"
+#include	"OBJ_TOOL.H"
+#include "GER/FONTSLCT.H"
 #include	"WDIALOG.H"
 #include	"LISTBOX.H"
 #include	"FNTS.H"
 
 #if		COUNTRY==FRG
-#include	"ger\FNTS_RSC.H"													/* Die Resource-Datei */
+#include	"GER/FNTS_RSC.H"													/* Die Resource-Datei */
 #elif	COUNTRY==USA
 #include "us\FNTS_RSC.H"
 #elif	COUNTRY==FRA
@@ -264,8 +267,6 @@ static LBOX_ITEM	*build_name_list( FNT *font, LONG id, FNT **family, FNT **fnt )
 static LBOX_ITEM	*build_style_list( FNT *font, LONG id );
 static LBOX_ITEM	*build_pt_list( FNT *font, LONG size, LBOX_ITEM **selected );
 static void	free_lboxes( FNT_DIALOG *fnt_dialog );
-static void	free_items( LIST_BOX *box );
-static void	free_list( LBOX_ITEM *item );
 static void	enable_lbox( OBJECT *tree, WORD *objs, WORD n );
 static void	disable_lbox( OBJECT *tree, WORD *objs, WORD n );
 
@@ -395,7 +396,7 @@ FNT_DIALOG	*fnts_create( WORD vdi_handle, WORD no_fonts, WORD font_flags, WORD d
 		
 			if ( fonts )
 			{
-				fnt_dialog->magic = 'fnts';
+				fnt_dialog->magic = 0x666e7473L;
 
 				fnt_dialog->dialog = 0L;								/* Zeiger auf die Dialog-Struktur */
 				fnt_dialog->whdl = 0;									/* Handle des Fensters */
@@ -2520,7 +2521,7 @@ static WORD	use_vqt_xfontinfo( void )
 	{
 		while ( search->id )
 		{
-			if ( search->id == 'NVDI' )								/* NVDI-Cookie? */
+			if ( search->id == 0x4e564449L )								/* NVDI-Cookie? */
 			{
 				LONG	datum;
 				LONG	cmp;
