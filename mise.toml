@@ -3,6 +3,11 @@ description = "Build the Atari cross-toolchain Podman image"
 dir = "{{ config_root }}"
 run = "scripts/atari-container build"
 
+[tasks."toolchain:publish"]
+description = "Build and push the Atari cross-toolchain image to GitLab"
+dir = "{{ config_root }}"
+run = "scripts/atari-container publish"
+
 [tasks."toolchain:shell"]
 description = "Open a shell in the Atari toolchain container"
 dir = "{{ config_root }}"

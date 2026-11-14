@@ -83,6 +83,18 @@ mise run toolchain:shell
 For example, `mise run make -- BUILD_DIR=build/atari/experiment magic` keeps a
 separate build. Invoke tasks from repository subdirectories too.
 
+After authenticating with `glab`, configure its credential helper for Docker-compatible
+registry clients such as Podman, then build and push:
+
+```sh
+glab auth configure-docker
+mise run toolchain:publish
+```
+
+The publish task builds and pushes
+`registry.gitlab.com/nizmow/atari-mac-magic-sources/atari-toolchain:latest`.
+Override `ATARI_TOOLCHAIN_IMAGE` to publish under a different image name or tag.
+
 The image is built explicitly, not rebuilt before every command. Build steps
 may need network access; running containers have networking disabled. The shared
 wrapper mounts the repository at `/work`, preserves the caller's user ID and

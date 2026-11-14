@@ -9,6 +9,12 @@ case "${1:-}" in
         shift
         exec podman build -t "$image" -f "$root/Containerfile.atari" "$@" "$root"
         ;;
+    publish)
+        shift
+        image="${ATARI_TOOLCHAIN_IMAGE:-registry.gitlab.com/nizmow/atari-mac-magic-sources/atari-toolchain:latest}"
+        podman build -t "$image" -f "$root/Containerfile.atari" "$@" "$root"
+        exec podman push "$image"
+        ;;
     shell)
         shift
         set -- bash "$@"
@@ -21,7 +27,7 @@ case "${1:-}" in
         fi
         ;;
     *)
-        printf 'Usage: %s {build [OPTIONS...]|shell [BASH_ARGS...]|run COMMAND [ARGS...]}\n' "$0" >&2
+        printf 'Usage: %s {build [OPTIONS...]|publish [BUILD_OPTIONS...]|shell [BASH_ARGS...]|run COMMAND [ARGS...]}\n' "$0" >&2
         exit 2
         ;;
 esac
