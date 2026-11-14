@@ -7,6 +7,27 @@ Prefer small, reviewable source changes. Keep kernel compatibility work in
 `MagiC/KERNEL/BUILD/GCC/`; do not use those private headers or ABI flags as an
 application SDK.
 
+## Application SDK headers
+
+The Podman image installs MiNTLib and GEMlib (`Containerfile.atari`). Their
+target headers are under `/usr/m68k-atari-mintelf/include` and exposed through
+the GCC sysroot at `/usr/m68k-atari-mintelf/sys-root/usr/include`. In particular,
+`mint/basepage.h` and `mint/osbind.h` come from MiNTLib; `gem.h` and `libgem.a`
+come from GEMlib. Use these public headers for ordinary application ports.
+
+Legacy headers are not part of that SDK. The repository has a Borland-era
+`TOS.H` snapshot under `MagiC/APPS/APPLICAT/SRC/IMPORT/`, plus MagiC-specific
+imports and libraries there. CMDLINE has no local `TOS.H`/`AES.H` or project
+file identifying its original include path, so the exact source of the
+`<tos.h>` and `<aes.h>` it once used is not established here. The similarly
+named `tos.h` and `aes.h` under `MagiC/KERNEL/BUILD/GCC/AES_C_INCLUDE/` are
+private kernel compatibility headers, not an application SDK.
+
+For CMDLINE, the port replaces those unavailable include expectations with
+MiNTLib's basepage/OS interfaces and GEMlib's AES interface. Do not add legacy
+import directories or kernel-private include paths to application builds merely
+to make old includes resolve.
+
 ## Current evidence and limits
 
 - GCC 15.2 MiNT ELF compiles the C; VASM assembles the Motorola source.
@@ -69,6 +90,21 @@ arguments and a long ARGV path. Pexec reports the low 16-bit exit status:
 Evidence is under `build/atari/mod-app-smoke/results`; the test image and desktop
 screenshot are under `build/atari/hatari-test/mod-app`. The launcher was
 throwaway verification, not yet a reusable automated application test framework.
+
+### CMDLINE
+
+`make -f Makefile.apps cmdline` builds `MagiC/TOOLS/CMDLINE/SRC/CMDLINE.C` as
+`build/atari/apps/cmdline/CMDLINE.PRG`. The port uses MiNTLib's public
+`mint/basepage.h`, `mint/osbind.h` and GEMlib `gem.h` interfaces, linking `-lgem`;
+it reads command-tail/environment fields through `BASEPAGE` rather than fixed
+basepage offsets. The legacy `isprint` helper was renamed to avoid colliding
+with libc. Both binaries ran under NeoST with a temporary Pexec driver and
+returned status 0. Raw DOS/GEM tails and the program path matched in ordinary and
+ARGV-style launches. For ARGV, the archived environment dump retains `ARGV=`;
+MiNTLib NULs its leading `A` before `main` to consume the reserved marker. The
+other environment bytes matched. This is expected MiNTLib startup behavior, not
+a functional failure. Runtime basepage addresses were excluded; captures are
+under `build/atari/neost-cmdline/`.
 
 ### Checklist for the next application
 

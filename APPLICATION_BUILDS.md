@@ -132,8 +132,7 @@ source but no project file; their archived executable is evidence of an intended
 output, not a complete modern recipe.
 
 | Priority / kind | Outputs | Source root | Purpose / constraints |
-|---|---|---|---|
-| A | `CMDLINE.PRG` | `MagiC/TOOLS/CMDLINE` | C command-line/environment inspector; useful for validating startup and argument handling. |
+| A / built, tested | `CMDLINE.PRG` | `MagiC/TOOLS/CMDLINE` | `make -f Makefile.apps cmdline` builds with GCC/MiNTLib. NeoST raw-tail/environment comparison passed. ARGV launch ran with status 0 and matching tail/path; MiNTLib consumes the reserved `ARGV=` marker before `main`, an expected startup difference rather than a failure. |
 | A | `DUMP.TTP` | `MagiC/TOOLS/DUMP` | C hex dump utility. |
 | A | `FC.TTP` | `MagiC/TOOLS/FC` | C file comparison utility with text/hex options. |
 | A | `MAC2ST.TTP` | `MagiC/TOOLS/MAC2ST` | C Mac-CR to Atari-CRLF filter; output goes to the console, not a newly created destination file. |

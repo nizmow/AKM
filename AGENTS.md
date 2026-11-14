@@ -1,0 +1,1 @@
+- Be careful of recency BIOS when writing documentation. When updating documentation, consider if intricate details of the current session will be of interest to an agent or a human working in the repository in 12 months. Do not overfit to the current session.

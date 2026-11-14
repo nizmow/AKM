@@ -27,8 +27,11 @@ legacy assumptions, and add one independent target/output; no generic applicatio
 framework or shared-library rewrite is required before these are attempted.
 
 - [x] **CMDLINE** — add `cmdline` producing `CMDLINE.PRG`.
-- [ ] Validate command-tail/environment reporting against the original for
-  ordinary and ARGV invocations; compare meaningful fields, not runtime addresses.
+- [x] Compare DOS-tail and environment reports against the original under NeoST
+  using the same Pexec fixture; compare meaningful fields, not runtime addresses.
+- [x] Test ARGV-style Pexec launch under NeoST. Tail, program path and status
+  matched. MiNTLib consumes the reserved `ARGV=` marker before `main`; this
+  expected startup difference is not treated as a failure.
 - [ ] **SHOWFILE** — add `showfile` producing `SHOWFILE.TTP`. Compare visible text
   and exit behavior for representative input files, missing files and arguments.
 - [ ] **LIMITMEM** — add `limitmem` producing `LIMITMEM.TTP`. Check header changes
