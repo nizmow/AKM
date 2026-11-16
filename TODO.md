@@ -36,8 +36,10 @@ framework or shared-library rewrite is required before these are attempted.
 - [x] Compare visible text and exit behavior for SHOWFILE against the archived
   binary under NeoST: sample text, EOF prompt, missing-file and no-argument cases
   matched, including child exit statuses.
-- [ ] **LIMITMEM** — add `limitmem` producing `LIMITMEM.TTP`. Check header changes
-  and errors on disposable executable copies; keep the original inputs intact.
+- [x] **LIMITMEM** — add `limitmem` producing `LIMITMEM.TTP`; compare header
+  changes, child statuses and errors against the archive on disposable PRG copies.
+  EmuTOS's legacy `Fshrink` behavior prevents a successful removal test; details
+  in [porting notes](PORTING_NOTES.md).
 - [ ] **MGCLOCK** — add `mgclock` producing `MGCLOCK.PRG`. Establish the first
   ordinary application-side GEMlib/AES/VDI build and verify its actual window,
   events and exit behavior alongside other processes.

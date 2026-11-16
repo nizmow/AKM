@@ -134,6 +134,31 @@ identically through the EOF prompt, and missing-file/no-argument launches
 returned matching zero child statuses. The driver and logs are disposable
 verification artifacts under `build/atari/showfile-runtime/`.
 
+### LIMITMEM
+
+`make -f Makefile.apps limitmem` builds
+`MagiC/APPS/LIMITMEM/SRC/LIMITMEM.C` as
+`build/atari/apps/limitmem/LIMITMEM.TTP`, using MiNTLib's public headers and
+the default application ABI. The legacy source was converted with the
+repository Atari-to-UTF-8 converter and adapted in place. The executable-header
+record is defined locally with fixed-width fields; GEMDOS errors are returned
+with their negative TOS values rather than positive `errno` values.
+
+`python3 scripts/neost-limitmem-smoke.py --output <new-directory>` compares the
+archived and GCC executables under NeoST/EmuTOS using disposable PRG fixtures.
+The test checks byte-identical console output, Pexec statuses, marker creation,
+unchanged already-limited files, malformed headers/relocations, missing files
+and invalid arguments. Both binaries match; setting the 64 KiB marker changes
+the fixture as expected. Original release inputs are not modified.
+
+EmuTOS returns -64 (`ERANGE`) from the legacy `Fshrink` surrogate
+(`Fwrite(handle, 0, (void *)-1)`). Setting still writes the marker before that
+error; removal returns the same status and leaves the marker in place in both
+binaries. Successful removal therefore remains unverified under MagiC.
+The legacy `nat_str` also read MagiC's system header for runtime country
+selection; this port currently uses its English fallback because no public SDK
+replacement was established. Non-English runtime selection remains unverified.
+
 ### Checklist for the next application
 
 1. Read its PRJ, startup source and actual dependencies before choosing flags.

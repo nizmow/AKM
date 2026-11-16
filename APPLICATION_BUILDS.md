@@ -37,7 +37,7 @@ See [PORTING_NOTES.md](PORTING_NOTES.md) for the workflow and known pitfalls.
 |---|---|---|---|
 | A / verified | `MOD_APP.TTP` | `MagiC/APPS/MOD_APP` | Command-line registration of file types/icons in `APPLICAT.INF`. GCC/MiNTLib build: `mise run apps -- mod-app`. Passed 17 Hatari comparison cases, including quoted arguments, backups and cache invalidation. Test against disposable INF files. |
 | A / verified | `SHOWFILE.TTP` | `MagiC/APPS/SHOWFILE` | Older text-mode viewer, predecessor of MGVIEW. GCC/MiNTLib build: `make -f Makefile.apps showfile`. NeoST Pexec comparison matched sample text, EOF prompt, missing-file/no-argument behavior and child statuses against the archived binary. Keep as a distinct utility, not a second build of MGVIEW. |
-| A | `LIMITMEM.TTP` | `MagiC/APPS/LIMITMEM` | Edits a program's memory limit. C; test only copies of executables. |
+| A / compared | `LIMITMEM.TTP` | `MagiC/APPS/LIMITMEM` | Builds with `make -f Makefile.apps limitmem`. NeoST comparison used disposable PRG copies; console output, marker creation and error cases matched the archive. EmuTOS's legacy `Fshrink` operation returns -ERANGE and leaves the removal fixture unchanged in both binaries; successful removal under MagiC and non-English runtime localization remain unverified. |
 | A | `MGCLOCK.PRG` | `MagiC/APPS/MGCLOCK` | Minimal clock. C; small GEM application candidate. |
 | B | `WBDAEMON.PRG` | `MagiC/APPS/WBDAEMON` | Disk writeback daemon. C; no localization needed. Test startup, periodic operation and exit under MagiC. |
 | B | `SHUTDOWN.PRG` | `MagiC/APPS/SHUTDOWN` | Shutdown/restart helper. C; latest README says one tri-lingual application, not three separately localized binaries. Test last in an emulator session. |

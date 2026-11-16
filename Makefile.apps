@@ -6,11 +6,13 @@ CFLAGS ?= -O2 -g -Wall -Wextra
 # Do not inherit the kernel's -mshort/-mfastcall flags or Pure C libraries.
 APP_FLAGS := -std=gnu11 -m68000
 
-.PHONY: all mod-app cmdline showfile mod-app-test-driver
+.PHONY: all mod-app cmdline showfile limitmem limitmem-test-driver mod-app-test-driver
 all: mod-app
 mod-app: $(BUILD_DIR)/mod-app/MOD_APP.TTP
 cmdline: $(BUILD_DIR)/cmdline/CMDLINE.PRG
 showfile: $(BUILD_DIR)/showfile/SHOWFILE.TTP
+limitmem: $(BUILD_DIR)/limitmem/LIMITMEM.TTP
+limitmem-test-driver: $(BUILD_DIR)/limitmem/NEOSTEST.PRG
 mod-app-test-driver: $(BUILD_DIR)/mod-app/NEOSTEST.PRG
 
 $(BUILD_DIR)/mod-app/NEOSTEST.PRG: MagiC/APPS/MOD_APP/TESTDATA/NEOSTEST.C Makefile.apps
@@ -32,6 +34,18 @@ $(BUILD_DIR)/showfile/SHOWFILE.TTP: MagiC/APPS/SHOWFILE/SRC/SHOWFILE.C Makefile.
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+
+$(BUILD_DIR)/limitmem/NEOSTEST.PRG: MagiC/APPS/LIMITMEM/TESTDATA/LIMITMEMTEST.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+$(BUILD_DIR)/limitmem/LIMITMEM.TTP: MagiC/APPS/LIMITMEM/SRC/LIMITMEM.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 -include $(BUILD_DIR)/mod-app/MOD_APP.d
 -include $(BUILD_DIR)/cmdline/CMDLINE.d
 -include $(BUILD_DIR)/showfile/SHOWFILE.d
+-include $(BUILD_DIR)/limitmem/LIMITMEM.d
+-include $(BUILD_DIR)/limitmem/NEOSTEST.d
