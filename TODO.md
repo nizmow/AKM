@@ -42,10 +42,10 @@ framework or shared-library rewrite is required before these are attempted.
   in [porting notes](PORTING_NOTES.md).
 - [x] **MGCLOCK** — add `mgclock` producing `MGCLOCK.PRG` with MiNTLib GEMlib
   AES/VDI bindings.
-- [x] Verify the actual window, timer/redraw and move/close events under NeoST;
-  the EmuTOS desktop returns after the close box is clicked.
+- [ ] Verify the restored desktop-drawing clock and timer behavior under NeoST;
+  the earlier window-event smoke no longer describes this source.
 - [ ] Verify coexistence with other applications under the MagiC kernel; NeoST
-  confirms the EmuTOS window lifecycle, not MagiC multi-process behavior.
+  runtime behavior has not yet been checked for the restored source.
 
 ## Build conventions to confirm as consumers appear
 
