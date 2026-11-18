@@ -40,9 +40,12 @@ framework or shared-library rewrite is required before these are attempted.
   changes, child statuses and errors against the archive on disposable PRG copies.
   EmuTOS's legacy `Fshrink` behavior prevents a successful removal test; details
   in [porting notes](PORTING_NOTES.md).
-- [ ] **MGCLOCK** — add `mgclock` producing `MGCLOCK.PRG`. Establish the first
-  ordinary application-side GEMlib/AES/VDI build and verify its actual window,
-  events and exit behavior alongside other processes.
+- [x] **MGCLOCK** — add `mgclock` producing `MGCLOCK.PRG` with MiNTLib GEMlib
+  AES/VDI bindings.
+- [x] Verify the actual window, timer/redraw and move/close events under NeoST;
+  the EmuTOS desktop returns after the close box is clicked.
+- [ ] Verify coexistence with other applications under the MagiC kernel; NeoST
+  confirms the EmuTOS window lifecycle, not MagiC multi-process behavior.
 
 ## Build conventions to confirm as consumers appear
 

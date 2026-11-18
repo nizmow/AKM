@@ -159,6 +159,23 @@ The legacy `nat_str` also read MagiC's system header for runtime country
 selection; this port currently uses its English fallback because no public SDK
 replacement was established. Non-English runtime selection remains unverified.
 
+### MGCLOCK
+
+`mise run apps -- mgclock` builds `MagiC/APPS/MGCLOCK/SRC/MGCLOCK.C` as
+`build/atari/apps/mgclock/MGCLOCK.PRG`. The port uses MiNTLib's public
+`<gem.h>` AES/VDI bindings and `<mint/osbind.h>` date/time calls, linked with
+`-lgem`; it needs no resource file. It owns a normal movable, sizeable GEM
+window, updates visible work areas on timer/redraw events, and exits through
+the close box. The original packed DOS date/time formatting and display cycle
+are retained; the port confines new behavior to the AES window/event lifecycle.
+
+`mise run test:mgclock-neost` runs the application in an isolated ST/4 MiB
+NeoST guest with bundled EmuTOS, captures the open window after a move, clicks
+its close box and checks that the desktop returns. Screenshots and the headless
+log remain in the output directory. This checks the AES/VDI window lifecycle
+under EmuTOS; it does not establish multi-process behavior under the MagiC kernel.
+
+
 ### Checklist for the next application
 
 1. Read its PRJ, startup source and actual dependencies before choosing flags.

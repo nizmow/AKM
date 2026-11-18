@@ -39,3 +39,8 @@ run = "scripts/atari-container run make -f Makefile.apps"
 description = "Compare archived and GCC MOD_APP under NeoST"
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-mod-app-smoke.py"
+
+[tasks."test:mgclock-neost"]
+description = "Verify MGClock move and close-box behavior under NeoST"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-mgclock-smoke.py"

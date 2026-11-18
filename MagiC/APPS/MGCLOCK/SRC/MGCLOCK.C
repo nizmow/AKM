@@ -4,30 +4,22 @@
 *
 *****************************************************************/
 
-#include <aes.h>
-#include <vdi.h>
-#include <tos.h>
+#include <gem.h>
+#include <mint/osbind.h>
 
-#define DATESEP 	'-'
-#define TIMESEP	':'
+#define DATESEP '-'
+#define TIMESEP ':'
 #define RIGHTOFFSET 1
 
+char datetime[] = "                 ";
 
-char	datetime[] = "                 ";
 
 void date_to_str(char *s, unsigned int date);
 void time_to_str(char *s, unsigned int time);
 
-/* Modi:
-	0	hh:mm
-	1	hh:mm:ss
-	2	tt.mm  hh:mm:ss
-	3	tt.mm.jj  hh:mm:ss
-*/
-
-void main()
+int main(void)
 {
-	int work_out[57],work_in [12];	 /* VDI- Felder fÅr v_opnvwk() */
+	short work_out[57], work_in[12];	 /* VDI- Felder f√ºr v_opnvwk() */
 	int sec,tp,ln;
 	register int i;
 	int x,y;
@@ -35,15 +27,15 @@ void main()
 	int len    [] = { 5, 8, 15, 18};
 	int timepos[] = { 0, 0,  7, 10};
 	int secpos [] = {-1, 7, 14, 17};
-	int vdi_handle;
-	int dummy, scrw;
-	int hwchar, hhbox, hhchar;
+	short vdi_handle;
+	short dummy, scrw;
+	short hwchar, hhbox, hhchar;
 
 
-     if   (appl_init() < 0)
-          return;
+	if (appl_init() < 0)
+		return 1;
 
-	for  (i = 0; i < 10; work_in[i++] = 1)
+	for (i = 0; i < 10; work_in[i++] = 1)
 		;
 	work_in[10]=2;                     /* Rasterkoordinaten */
 	v_opnvwk(work_in, &vdi_handle, work_out);
@@ -73,23 +65,23 @@ void main()
 		if	(sec >= 0 && datetime[sec] & 1)
 			{
 			if	(mode > 1)
-				date_to_str(datetime, Tgetdate());
+				date_to_str(datetime, (unsigned short)Tgetdate());
 			if	(tp > 0)
 				datetime[tp - 1] = datetime[tp - 2] = ' ';
-			time_to_str(datetime+tp, Tgettime());
+			time_to_str(datetime+tp, (unsigned short)Tgettime());
 			datetime[ln] = '\0';
 			}
 		else	datetime[sec] += 1;
 		v_gtext(vdi_handle, x, y, datetime);
 
-		evnt_timer(1000, 0);		/* 1s warten */
+		evnt_timer(1000);		/* 1s warten */
 		}
 }
 
 
 /*********************************************************************
 *
-* Wandelt DOS- Datum in eine Zeichenkette um.
+* Wandelt DOS-Datum in eine Zeichenkette um.
 *
 *********************************************************************/
 
@@ -117,7 +109,7 @@ void date_to_str(char *s, unsigned int date)
 
 /*********************************************************************
 *
-* Wandelt DOS- Zeit in eine Zeichenkette um.
+* Wandelt DOS-Zeit in eine Zeichenkette um.
 *
 *********************************************************************/
 
