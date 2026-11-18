@@ -1,68 +1,115 @@
 ---
 name: neost
-description: Run isolated Atari application smoke tests and original/rebuilt comparisons with NeoST headless, console captures, and Pexec launchers.
+description: Operate NeoST headless or GUI runs; capture screens and state, drive input, and debug Atari programs.
 ---
 
-# NeoST application checks
+# NeoST operations
 
-Use for Atari application runtime checks. NeoST/EmuTOS results do not establish
-MagiC-kernel compatibility; retain the separate Hatari/MagiC checks.
-Run commands from the repository root.
+Use the installed NeoST version's `--help` as the source of truth; options differ
+between releases. Run commands from the repository root and record `--version`.
 
-## Find the current workflow
+## Executables and configuration
 
-Inspect `mise tasks`, `mise.toml` and the relevant runners under `scripts/`.
-Prefer an existing application-specific task; read its `--help` and fixture
-requirements rather than copying another application's assertions.
+- Prefer `neost-headless` for bounded, reproducible runs; use `neost` for an
+  interactive GUI session.
+- If only an AppImage is installed, extract it in a scratch directory with
+  `neost --appimage-extract`, then locate `usr/bin/neost-headless` and any bundled
+  ROM. Select the ROM explicitly; finding the executable does not guarantee a
+  suitable ROM is selected.
+- `--from-cfg FILE` replays an explicit `neost.cfg`; later CLI options override
+  it. For repeatable runs, avoid implicit per-user settings and specify machine,
+  memory, ROM, drives and frame budget on the command line.
+- A headless ROM is the final positional argument. Record the ROM, image and
+  configuration inputs used for each run.
 
-Use `neost-headless --help` for the installed emulator's options. If only an
-AppImage is available, extract it with `--appimage-extract` in a scratch directory
-and locate the bundled headless executable and ROM. Choose the ROM explicitly;
-do not assume that finding the executable also locates a suitable ROM.
+## Bounded runs and storage
 
-## Isolated runtime check
-
-1. Build the selected target with `Makefile.apps`.
-2. Give original/rebuilt binaries separate disposable host directories mapped to
-   C:. Use identical guest filenames and fixtures. Never map a live installation
-   or reuse a user's running emulator.
-3. Choose the same machine, memory, ROM and frame budget for both runs.
-4. Autostart the application, or a small driver for controlled input. For example:
+Set machine, memory, ROM and frame count explicitly. Example:
 
 ```sh
 "$HEADLESS" --machine st --mem 4m --no-disk --frames 1200 \
-  --gemdos "$GUEST_C" --auto 'C:\NEOSTEST.PRG' \
-  --console-log "$OUTPUT/console.log" \
-  --screenshot "$OUTPUT/screen.ppm" "$ROM"
+  --screenshot "$OUTPUT/final.ppm" "$ROM" \
+  >"$OUTPUT/headless.log" 2>&1
 ```
 
-`HEADLESS`, `GUEST_C`, `OUTPUT` and `ROM` are explicitly chosen paths; create the
-output and guest directories first. A clean emulator exit or elapsed frame count
-is not proof the application ran: require guest completion/status markers and
-assert meaningful output and filesystem effects independently of parity.
+- `--gemdos DIR` redirects GEMDOS hard-disk access to a host directory. A
+  single-letter subdirectory may appear as a separate drive; check the host log
+  rather than assuming the mapping. Use fresh disposable data for writable runs.
+- `--acsi IMG` mounts a block-device image. Clone it before booting; never mount
+  a user's working image writable.
+- `--auto PRG` requests an application autostart after TOS boot. For GUI
+  interaction, use `--keys-at`, `--scancode-at` or `--mouse-at` rather than
+  assuming the program received input.
+- A clean emulator exit or elapsed frame count alone does not prove the guest
+  ran. Check a guest completion/status marker, meaningful filesystem effects,
+  console output, or the visible screen.
 
-## Pexec drivers and gotchas
+## Screenshots
 
-- A Pexec driver is a small Atari executable, autostarted by NeoST, which calls
-  `Pexec(0, program, tail, environment)` and reports each child's result. It can
-  prepare fixtures and invoke the real application without desktop interaction.
-- Ordinary TOS tails are 128-byte buffers: byte 0 is the length, followed by text.
-  Zero-initialize the buffer, allow at most 126 text bytes plus a terminator, and
-  pass a double-NUL-terminated environment block when controlling environment
-  contents. Keep the driver independent of the code under test.
-- Use 8.3 guest names for compatibility with TOS filesystem and autostart paths.
-  An empty console capture warrants inspecting the screenshot, not assuming pass.
-- Read console captures as bytes or Latin-1, not assumed UTF-8. MiNTLib output
-  can produce CR-CR-LF; normalize line endings when parsing result markers.
-- Pexec child exit status is exposed in the low 16 bits. Normalize with `& 0xffff`
-  where appropriate; do not confuse this with negative Pexec loader errors or
-  positive libc errno values.
-- Compare defined output fields, not uninitialized buffer padding or incidental
-  runtime addresses. Startup libraries can rewrite command tails and environments
-  before main; distinguish incoming OS data from the application's observed data.
-- Quoted raw-tail tests are not ARGV tests. Exercise extended ARGV separately;
-  never claim coverage merely because modern MiNTLib parses arguments.
-- Keep logs/screenshots and state exactly what ran. Use disposable fixtures for
-  patchers/installers; never include crash probes in normal smoke runs. Keep
-  permanent regression scenarios in explicit application-specific tasks; remove
-  throwaway driver sources after verification.
+- Headless final frame: `--screenshot FILE.ppm`.
+- Frame series: `--shot-every N PREFIX`; output is named `PREFIX<frame>.ppm`.
+  `--shot-from N` delays the series.
+- GUI bounded run: `--run-frames N --shot FILE`. For repeated rendered-window
+  captures use `--shot-window PREFIX START-FRAME INTERVAL`.
+- Inspect screenshots when console output is empty or a UI path matters. Keep
+  them with the host log and exact run parameters; a screenshot of the boot
+  screen is not proof the application ran.
+
+## Input
+
+- `--keys-at N TEXT` types from frame N; `--key-hold N` sets the press duration.
+- `--scancode-at N HEX[,HEX...]` injects raw ST scancodes.
+- `--mouse-at N SCRIPT`: `L/R/U/D` move by 8 pixels, lowercase variants drag,
+  `1`/`2` click left/right, and `.` waits one frame. `--mouse-step N` changes the
+  movement distance.
+- Use fixed frame input only with a pinned ROM, machine and boot sequence. If
+  those change, inspect intermediate screenshots and re-establish the timing.
+
+## State and memory capture
+
+- `--save-state FILE` saves the complete emulator state at the end of a run;
+  `--load-state FILE` restores it before execution and requires matching machine
+  configuration.
+- `--dump-at FRAME ADDRESS LENGTH FILE` writes a raw RAM range at a chosen frame.
+  Address and length are hexadecimal.
+- `--probe NAME=ADDRESS:LENGTH` samples 1-, 2- or 4-byte values without side
+  effects; `--probe-every N` repeats samples at an interval.
+- Distinguish a whole-machine save-state from a raw RAM dump. Preserve the exact
+  ROM, disk copies and machine options needed to interpret either artifact.
+
+## Debugging
+
+Start with a bounded reproduction, final/interval screenshots and the host log.
+Then narrow the trace to the failure window:
+
+- `--trace FILE --trace-from FRAME` records instructions from a selected frame;
+  `--regs` adds register state and `--irq` includes interrupts. Avoid tracing the
+  whole boot unless necessary.
+- `--break ADDRESS` stops before an instruction; `--until-pc ADDRESS` stops
+  without a register dump. `--symbols FILE` and `--symbols-base ADDRESS` support
+  symbol lookup; `--break-sym NAME` breaks on a loaded symbol.
+- `--watch ADDRESS` breaks after reads or writes to a memory address.
+- Use `--dump-at` or `--probe` to inspect a narrow memory location before
+  collecting a large trace.
+- `--server` provides an interactive command loop for run/play/save/load/peek/
+  observe workflows; see NeoST's `docs/OPENDST.md`.
+
+## Application checks
+
+- Inspect `mise tasks`, `mise.toml` and `scripts/` before adding a test runner.
+  Prefer a focused existing test task and its fixture/assertion contract.
+- Use separate disposable guest trees and identical machine, ROM, frame and
+  input settings when comparing binaries. Keep archived and rebuilt binaries
+  under the same guest filename.
+- For Pexec drivers, use 8.3 guest names. A standard TOS tail is 128 bytes:
+  byte 0 is the text length, with up to 126 text bytes plus a terminator. Use a
+  double-NUL-terminated environment when controlling it.
+- Read console captures as bytes or Latin-1; MiNTLib output can use CR-CR-LF.
+  Pexec child status is in the low 16 bits; distinguish that from loader errors
+  and libc errno values.
+- Compare defined output fields, not uninitialized padding or incidental runtime
+  addresses. Quoted DOS tails are not ARGV tests.
+- State which OS ROM/kernel was tested. NeoST results apply to that OS
+  environment; they do not establish compatibility with a different kernel.
+- Keep crash probes and state-mutating fixtures out of the default smoke set.
+  Store evidence and remove throwaway drivers after verification.
