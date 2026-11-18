@@ -64,12 +64,15 @@ download use HTTP; subsequent package downloads are checked against signed APT m
 
 ## Mise shortcuts (optional)
 
-Mise is a thin front end; Make still owns dependencies, compiler flags and
-linking. Podman and mise must already be installed on the host. Review and trust
-the project configuration, then use:
+Mise selects pinned host tools as well as providing task shortcuts. Make still
+owns dependencies, compiler flags and linking. Podman and mise must already be
+installed on the host. Review and trust the project configuration, then use:
 
 ```sh
 mise trust
+mise install
+mise exec -- python3 --version
+mise exec -- neost-headless --version
 mise tasks
 mise run toolchain:build
 mise run kernel -- -j4
@@ -82,6 +85,29 @@ mise run toolchain:shell
 `atari` forwards an arbitrary command and its arguments into the container.
 For example, `mise run make -- BUILD_DIR=build/atari/experiment magic` keeps a
 separate build. Invoke tasks from repository subdirectories too.
+
+### Host tool versions
+
+| Tool | Version management |
+|---|---|
+| Python | `mise.toml` pins 3.13.7 for host scripts and tests. |
+| NeoST | `mise.toml` pins [0.6.5](https://github.com/habib256/neost/releases/tag/0.6.5) on Linux x86-64 through mise's GitHub backend, with an explicit SHA-256. |
+| Atari GCC, VASM, MiNTLib/GEMlib, Make | Keep in `Containerfile.atari`; do not add a second host toolchain through mise. |
+| Podman | Install through the host package manager; it needs host runtime integration. |
+| Hatari, QEMU user emulation, M68k Linux binutils | Remain host prerequisites for the checks that use them; not currently mise-managed. |
+| `glab` | Optional publishing/authentication helper; suitable for a future mise pin, not needed for builds. |
+
+NeoST's install hook extracts the AppImage once, exposing `neost-headless` and
+the bundled EmuTOS ROM without requiring FUSE. The smoke runners discover this
+layout from `PATH`; a separate downloaded AppImage is no longer required when
+using mise. Other platforms are not covered by this NeoST pin; provide an
+emulator and ROM explicitly using the runner's options.
+
+Use `mise exec -- <command>` without shell activation, or activate mise to get
+the selected versions automatically. `mise run test:encoding` runs the text
+converter regression checks. Host Python pinning does not change the Python
+installed inside the toolchain container. Proprietary TOS ROMs and writable
+MagiC disk images are supplied separately, never installed by mise.
 
 After authenticating with `glab`, configure its credential helper for Docker-compatible
 registry clients such as Podman, then build and push:
@@ -132,6 +158,25 @@ Repeatable emulator checks use explicit, subsystem-scoped tasks. Run
 Runner options and outputs: `python3 scripts/neost-mod-app-smoke.py --help`.
 This tests MOD_APP under NeoST/EmuTOS; the MagiC kernel boot check remains under
 Hatari.
+
+The three `scripts/neost-*-smoke.py` runners use `scripts/neost_common.py` for
+executable/AppImage discovery, ROM selection, bounded subprocess execution,
+host-log capture, fresh output directories and streaming file hashes.
+Discovery prefers `--neost-headless`, then `PATH`, then AppImage extraction in
+temporary storage. `--rom` overrides the bundled EmuTOS ROM. Existing artifact
+directories are never reused; nonzero emulator exits and timeouts identify the
+host log, with partial process output retained on timeout.
+
+Keep machine/ROM choices, frame budgets, mouse/key input, guest fixtures,
+completion markers and application assertions in each runner. Screenshot
+parsing remains local to the clock harness. Shared-host-helper checks:
+
+```sh
+mise exec -- python3 -m unittest discover -s scripts -p 'test_neost_common.py'
+```
+
+These checks cover output-directory safety, ROM override behavior, failure logs
+and timeout output retention; they do not replace the application smoke runs.
 
 ## Direct build commands
 

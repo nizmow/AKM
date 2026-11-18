@@ -88,7 +88,10 @@ framework or shared-library rewrite is required before these are attempted.
 
 ## Following batches
 
-- [ ] Small helpers/background programs: VFATCONF, MGXCLOCK.
+- [x] **VFATCONF** — add `vfatconf` producing `VFATCONF.PRG` plus its required
+  resource; launch reaches the dialog under MagiC, but configuration changes
+  remain untested.
+- [ ] Small helpers/background programs: MGXCLOCK.
 - [ ] Desktop helpers: APPLICAT, MGVIEW, MGEDIT, MGNOTICE version 2, MGSEARCH.
 - [ ] Larger/threaded programs: MGCOPY, MGFORMAT, VT52, MAGXDESK version 5.
 - [ ] Separate assembly builds: MCMD, MAGXCONF, FLP_PAR and appropriate utilities.

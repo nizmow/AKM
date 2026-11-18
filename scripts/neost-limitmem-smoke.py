@@ -4,14 +4,14 @@
 from __future__ import annotations
 
 import argparse
-import datetime
 import hashlib
 from pathlib import Path
 import re
 import shutil
 import struct
-import subprocess
 import tempfile
+
+from neost_common import acquire_headless, create_output, resolve_rom, run_logged, sha256
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
@@ -20,19 +20,6 @@ GCC_APP = BUILD / "apps/limitmem/LIMITMEM.TTP"
 DRIVER = BUILD / "apps/limitmem/NEOSTEST.PRG"
 CASE_LINE = re.compile(r"^CASE\s+(\d+)\s+(-?\d+)\s*$", re.MULTILINE)
 CASES = ("SET.PRG", "SAME.PRG", "REMOVE.PRG", "BADHDR.PRG", "BADREL.PRG")
-
-
-def run(command: list[str], *, cwd: Path | None = None, timeout: int = 240) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(command, cwd=cwd, text=True, stdout=subprocess.PIPE,
-                          stderr=subprocess.STDOUT, timeout=timeout, check=False)
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def make_prg(*, branch: int = 0x601A, relocation: int = 1, limit: int | None = None) -> bytes:
@@ -56,32 +43,17 @@ def fixtures(gemdos: Path) -> dict[str, bytes]:
     return initial
 
 
-def acquire_headless(appimage: Path, scratch: Path) -> tuple[Path, Path, Path]:
-    extraction = scratch / "appimage"
-    extraction.mkdir()
-    result = run([str(appimage.resolve()), "--appimage-extract"], cwd=extraction)
-    if result.returncode:
-        raise RuntimeError(f"NeoST AppImage extraction failed:\n{result.stdout}")
-    root = extraction / "squashfs-root"
-    headless = root / "usr/bin/neost-headless"
-    rom = root / "usr/roms/etos192us.img"
-    if not headless.is_file() or not rom.is_file():
-        raise RuntimeError("NeoST AppImage is missing neost-headless or bundled EmuTOS ROM")
-    return headless, rom, root
-
-
 def invoke(headless: Path, rom: Path, gemdos: Path, out: Path, label: str) -> tuple[list[int], dict[str, str], str]:
     shutil.copy2(DRIVER, gemdos / "NEOSTEST.PRG")
     console = out / f"{label}.console.log"
     host = out / f"{label}.host.log"
     screenshot = out / f"{label}.ppm"
-    result = run([str(headless), "--machine", "st", "--mem", "4m", "--no-disk",
-                  "--frames", "1800", "--gemdos", str(gemdos), "--auto",
-                  r"C:\NEOSTEST.PRG", "--console-log", str(console),
-                  "--screenshot", str(screenshot), str(rom)])
-    host.write_text(result.stdout, encoding="utf-8")
-    if result.returncode or not console.is_file():
-        raise RuntimeError(f"NeoST {label} failed; see {host}")
+    run_logged([str(headless), "--machine", "st", "--mem", "4m", "--no-disk",
+                "--frames", "1800", "--gemdos", str(gemdos), "--auto",
+                r"C:\NEOSTEST.PRG", "--console-log", str(console),
+                "--screenshot", str(screenshot), str(rom)], host, cwd=ROOT)
+    if not console.is_file():
+        raise RuntimeError(f"NeoST did not create {console}; see {host}")
     text = console.read_text(encoding="latin-1")
     cases = [(int(number), int(status) & 0xFFFF) for number, status in CASE_LINE.findall(text)]
     if [case for case, _ in cases] != list(range(1, 9)) or "DONE 8" not in text:
@@ -93,17 +65,20 @@ def invoke(headless: Path, rom: Path, gemdos: Path, out: Path, label: str) -> tu
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--neost", type=Path, default=Path.home() / ".local/bin/neost")
+    parser.add_argument("--neost-headless", type=Path)
+    parser.add_argument("--rom", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    output = args.output.resolve() if args.output else BUILD / f"neost-limitmem-{datetime.datetime.now():%Y%m%d-%H%M%S}"
-    if output.exists():
-        parser.error(f"output already exists: {output}")
     if not ORIGINAL.is_file() or not GCC_APP.is_file() or not DRIVER.is_file():
         parser.error("archived LIMITMEM, GCC LIMITMEM, and test driver must exist")
-    output.mkdir(parents=True)
+    try:
+        output = create_output(args.output, parent=BUILD, prefix="neost-limitmem")
+    except OSError as error:
+        parser.error(str(error))
     try:
         with tempfile.TemporaryDirectory(prefix="neost-limitmem-") as temporary:
-            headless, rom, app_root = acquire_headless(args.neost, Path(temporary))
+            headless, app_root = acquire_headless(args.neost_headless, args.neost, Path(temporary))
+            rom = resolve_rom(args.rom, app_root)
             results = {}
             for label, executable in (("archived", ORIGINAL), ("gcc", GCC_APP)):
                 guest = output / f"guest-{label}" / "C"

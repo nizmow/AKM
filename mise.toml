@@ -1,3 +1,18 @@
+[tools]
+python = "3.13.7"
+
+# The Linux x86-64 AppImage includes the GUI, headless runner and EmuTOS ROMs.
+# Extract once at install time: headless runs must not depend on FUSE.
+
+[tools."github:habib256/neost"]
+version = "0.6.5"
+os = ["linux/x64"]
+asset_pattern = "NeoST-0.6.5-x86_64.AppImage"
+checksum = "sha256:a37c54c65ef882be8ed8cb1f75f87b548692d53bad13849b6244f0e8a24d3af8"
+format = "raw"
+bin_path = "squashfs-root/usr/bin"
+postinstall = 'cd "$MISE_TOOL_INSTALL_PATH" && "./squashfs-root/usr/bin/NeoST-$MISE_TOOL_VERSION-x86_64.AppImage" --appimage-extract > /dev/null'
+
 [tasks."toolchain:build"]
 description = "Build the Atari cross-toolchain Podman image"
 dir = "{{ config_root }}"
@@ -44,3 +59,8 @@ run = "python3 scripts/neost-mod-app-smoke.py"
 description = "Verify MGClock move and close-box behavior under NeoST"
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-mgclock-smoke.py"
+
+[tasks."test:encoding"]
+description = "Verify strict Atari ST text conversion and C literal escapes"
+dir = "{{ config_root }}"
+run = "python3 -m unittest discover -s NON-TOS/atari-utf8-conversion -p 'test_*.py'"

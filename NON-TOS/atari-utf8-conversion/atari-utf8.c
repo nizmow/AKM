@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
 #define ATARI_UC_OMEGA		0xea		// Ω
 #define ATARI_LC_DELTA		0xeb		// δ
 #define ATARI_INTEGRAL		0xec		// ∮
-#define ATARI_LC_PHI		0xed		// σ
+#define ATARI_LC_PHI		0xed		// φ
 #define ATARI_ELEMENT		0xee		// ∈
 #define ATARI_INTERSECT		0xef        // ∩
 #define ATARI_IDENT			0xf0		// ≡
@@ -281,7 +281,7 @@ const char *Atari2Unicode[0x80] =
      /* #define ATARI_UC_OMEGA		0xea */ "Ω",
      /* #define ATARI_LC_DELTA		0xeb */ "δ",
      /* #define ATARI_INTEGRAL		0xec */ "∮",
-     /* #define ATARI_LC_PHI		0xed */ "σ",
+     /* #define ATARI_LC_PHI		0xed */ "φ",
      /* #define ATARI_ELEMENT		0xee */ "∈",
      /* #define ATARI_INTERSECT		0xef */ "∩",
      /* #define ATARI_IDENT			0xf0 */ "≡",

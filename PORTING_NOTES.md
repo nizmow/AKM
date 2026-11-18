@@ -70,8 +70,36 @@ GEMDOS-style allocation error requires `-ENOMEM`, not `ENOMEM`.
 The original Atari-encoded MOD_APP source was converted to UTF-8 comments.
 Target string bytes that depended on legacy encoding were preserved explicitly.
 Source-encoding preservation is not a goal by itself: edit the existing source
-for a port when that is the simpler path. Verify emitted bytes only where target
-behavior depends on them; use escapes or compiler charset options as appropriate.
+for a port when that is the simpler path.
+
+### Source encoding versus runtime bytes
+
+Keep ported C source in UTF-8. That does not make UTF-8 the correct encoding for
+strings displayed by TOS/AES: their non-ASCII bytes normally need Atari ST
+encoding. CP850 is not an Atari ST substitute; for example, sharp S is `0x9e`
+on Atari ST but `0xe1` in CP850. ASCII strings and UTF-8 comments need no
+execution-charset conversion.
+
+Use `NON-TOS/atari-utf8-conversion/atari_text.py` for strict text conversion:
+
+```sh
+python3 NON-TOS/atari-utf8-conversion/atari_text.py decode OLD.C -o OLD.C.utf8
+python3 NON-TOS/atari-utf8-conversion/atari_text.py encode TEXT.utf8 -o TEXT.ST
+printf '%s' 'Straße' | python3 NON-TOS/atari-utf8-conversion/atari_text.py c-literal
+```
+
+The last command produces `"Stra\236e"` for pasting as a C literal, not an
+entire C source conversion. Fixed three-digit octal escapes preserve target
+bytes without consuming following digits. Keep a readable UTF-8 comment where
+useful. The tool reuses the repository's Atari table, preserves line endings,
+rejects invalid/unrepresentable input, and refuses in-place conversion. No
+encoding detection or Unicode normalization is attempted; review the known
+source encoding before conversion. See the converter's `README.TXT` for its
+bullet-character convention and full CLI contract.
+
+Keep binary `.RSC` files unchanged; their embedded strings are not standalone
+text files. A resource screenshot does not verify strings compiled from C.
+Verify literal bytes in the compiled output separately when changing encoding.
 
 **Startup compatibility is functional behavior.** The installed MiNTLib parser
 split a double-quoted path in a raw TOS command tail when the tail began with an
@@ -190,6 +218,25 @@ program. A disposable AES probe found `WBDAEMON`, sent `AP_TERM`, and observed
 the process disappear. This verifies startup and termination; periodic disk
 writeback itself was not measured.
 
+### VFATCONF
+
+`make -f Makefile.apps vfatconf` builds
+`MagiC/APPS/VFATCONF/SRC/VFATCONF.C` as
+`build/atari/apps/vfatconf/VFATCONF.PRG` and copies the default German resource
+to the expected lowercase `vfatconf.rsc` name. The build uses MiNTLib/GEMlib;
+`VFATCONF_GEM.C` replaces only the legacy GEMUTILS calls this app needs.
+
+The port retains its MagiC-specific `AESVARS2` boot-drive lookup and `DRVSTAT`
+query with fixed-width fields, and the public `Dcntl` VFAT commands. AES message
+words are 16-bit despite the application's 32-bit `int` ABI. Its non-ASCII
+source text is confined to comments, so no CP850 execution charset is needed.
+The dialog uses standard `form_do`; NeoST 0.6.5
+with TOS 2.06 and a cloned MagiC disk launched it from a disposable GEMDOS
+drive and displayed the dialog (`build/atari/vfatconf-runtime/final.ppm`). No
+button was selected: MagiC drive-state queries, VFAT `Dcntl` changes and
+`MAGX.INF` edits remain unverified. Use a disposable MagiC configuration and
+VFAT volume for those operations.
+
 ### Checklist for the next application
 
 1. Read its PRJ, startup source and actual dependencies before choosing flags.
@@ -201,12 +248,11 @@ writeback itself was not measured.
 3. Check writable string literals and nonstandard functions explicitly. A
    writable array fixes a mutated path; a cast or writable-memory accident does
    not make modifying a C string literal valid.
-4. Do not preserve a legacy source encoding merely for its own sake. For Atari ST
-   text, `NON-TOS/atari-utf8-conversion/atari-utf8.c -r path/to/file.c` writes
-   `file.c.utf8` without overwriting the input. Review the conversion, then port
-   the UTF-8 text in the canonical source instead of keeping a parallel copy.
-   Check target string/data bytes only where behavior or a file-format contract
-   depends on them; use explicit escapes or charset options for those bytes.
+4. Do not preserve a legacy source encoding merely for its own sake. Convert
+   known Atari ST text with the strict Python CLI described above, review it,
+   then port the UTF-8 text in the canonical source. Use explicit Atari byte
+   escapes for non-ASCII runtime literals and verify the emitted bytes; do not
+   select CP850 as a blanket approximation.
 5. Exercise startup through the actual caller: raw TOS command tails **and**
    ARGV, including quoted paths, empty arguments and application-specific literal
    patterns. A clean build did not catch MOD_APP's quote incompatibility.

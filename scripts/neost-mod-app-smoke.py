@@ -4,15 +4,15 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
-import datetime
 from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+
+from neost_common import acquire_headless, create_output, resolve_rom, run, run_logged, sha256
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
@@ -23,45 +23,6 @@ GCC_APP = APP_BUILD / "MOD_APP.TTP"
 DRIVER = APP_BUILD / "NEOSTEST.PRG"
 EXPECTED = [0, 3, 0, 3, 4, 0, 3, 0, 0, 0, 1, 1, 0, 3, 0, 0, 3]
 CASE_LINE = re.compile(r"^CASE\s+(\d{2})\s+(-?\d+)\s*$", re.MULTILINE)
-
-
-def run(command: list[str], *, cwd: Path | None = None, timeout: int = 180) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(command, cwd=cwd, text=True, stdout=subprocess.PIPE,
-                          stderr=subprocess.STDOUT, timeout=timeout, check=False)
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def acquire_headless(explicit: Path | None, appimage: Path, scratch: Path) -> tuple[Path, Path | None]:
-    if explicit:
-        headless = explicit.expanduser().resolve()
-        if not headless.is_file():
-            raise RuntimeError(f"NeoST headless executable not found: {headless}")
-        return headless, None
-
-    found = shutil.which("neost-headless")
-    if found:
-        return Path(found).resolve(), None
-
-    appimage = appimage.expanduser().resolve()
-    if not appimage.is_file():
-        raise RuntimeError(f"NeoST AppImage not found: {appimage}; pass --neost-headless")
-    extraction = scratch / "neost-appimage"
-    extraction.mkdir()
-    result = run([str(appimage), "--appimage-extract"], cwd=extraction, timeout=120)
-    if result.returncode:
-        raise RuntimeError(f"NeoST AppImage extraction failed:\n{result.stdout}")
-    root = extraction / "squashfs-root"
-    headless = root / "usr/bin/neost-headless"
-    if not headless.is_file():
-        raise RuntimeError(f"AppImage has no headless executable: {headless}")
-    return headless, root
 
 
 def prepare_case(root: Path, executable: Path) -> None:
@@ -83,10 +44,7 @@ def invoke(headless: Path, rom: Path, root: Path, output: Path, label: str, fram
                "--frames", str(frames), "--gemdos", str(gemdos),
                "--auto", r"C:\NEOSTEST.PRG", "--console-log", str(console),
                "--screenshot", str(screenshot), str(rom)]
-    result = run(command, cwd=ROOT, timeout=240)
-    hostlog.write_text(result.stdout, encoding="utf-8")
-    if result.returncode:
-        raise RuntimeError(f"NeoST {label} exited {result.returncode}; see {hostlog}")
+    run_logged(command, hostlog, cwd=ROOT, timeout=240)
     if not console.is_file():
         raise RuntimeError(f"NeoST did not create {console}; see {hostlog}")
 
@@ -116,10 +74,6 @@ def main() -> int:
                         help="new output directory (default: timestamped build/atari path)")
     args = parser.parse_args()
 
-    output = (args.output.expanduser().resolve() if args.output else
-              BUILD / f"neost-mod-app-smoke-{datetime.datetime.now():%Y%m%d-%H%M%S}")
-    if output.exists():
-        parser.error(f"output already exists; choose a new path: {output}")
     if args.frames < 1:
         parser.error("--frames must be positive")
     if not ORIGINAL.is_file():
@@ -136,16 +90,15 @@ def main() -> int:
         print("build completed without producing MOD_APP.TTP and NEOSTEST.PRG", file=sys.stderr)
         return 1
 
-    output.mkdir(parents=True)
+    try:
+        output = create_output(args.output, parent=BUILD, prefix="neost-mod-app-smoke")
+    except OSError as error:
+        parser.error(str(error))
     try:
         with tempfile.TemporaryDirectory(prefix="neost-mod-app-") as temporary:
             headless, app_root = acquire_headless(args.neost_headless, args.neost,
                                                    Path(temporary))
-            rom = args.rom.expanduser().resolve() if args.rom else (
-                app_root / "usr/roms/etos192us.img" if app_root else None)
-            if rom is None or not rom.is_file():
-                raise RuntimeError("TOS ROM unavailable; pass --rom (or use the NeoST AppImage)")
-            rom = rom.resolve()
+            rom = resolve_rom(args.rom, app_root)
             outcomes = {}
             snapshots = {}
             for label, binary in (("original", ORIGINAL), ("gcc", GCC_APP)):
