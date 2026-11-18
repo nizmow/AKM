@@ -47,6 +47,10 @@ framework or shared-library rewrite is required before these are attempted.
 - [ ] Verify coexistence with other applications under the MagiC kernel; NeoST
   runtime behavior has not yet been checked for the restored source.
 
+- [x] **WBDAEMON** — add independent `wbdaemon` target, launch it from MagiC's
+  `#_APP` startup folder, and verify `AP_TERM` exit under NeoST. Periodic
+  writeback remains unmeasured; see [the build catalogue](APPLICATION_BUILDS.md).
+
 ## Build conventions to confirm as consumers appear
 
 - [ ] Confirm another application's startup requirements. MOD_APP's tokenizer
@@ -84,7 +88,7 @@ framework or shared-library rewrite is required before these are attempted.
 
 ## Following batches
 
-- [ ] Small helpers/background programs: SHUTDOWN, WBDAEMON, VFATCONF, MGXCLOCK.
+- [ ] Small helpers/background programs: VFATCONF, MGXCLOCK.
 - [ ] Desktop helpers: APPLICAT, MGVIEW, MGEDIT, MGNOTICE version 2, MGSEARCH.
 - [ ] Larger/threaded programs: MGCOPY, MGFORMAT, VT52, MAGXDESK version 5.
 - [ ] Separate assembly builds: MCMD, MAGXCONF, FLP_PAR and appropriate utilities.

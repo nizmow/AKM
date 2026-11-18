@@ -176,6 +176,20 @@ log remain in the output directory. This checks the AES/VDI window lifecycle
 under EmuTOS; it does not establish multi-process behavior under the MagiC kernel.
 
 
+### WBDAEMON
+
+`mise run apps -- wbdaemon` builds `MagiC/APPS/WBDAEMON/SRC/WBDAEMON.C` as
+`build/atari/apps/wbdaemon/WBDAEMON.PRG`. The source uses MiNTLib's `<gem.h>`,
+`<mint/osbind.h>` and `<mint/sysbind.h>` instead of legacy `<aes.h>`, `<tos.h>`
+and `<magx.h>`. AES message words use `short`, matching the 16-bit AES message
+ABI under the application's 32-bit `int` ABI. The MagiC-only writeback
+mode values remain local constants; `Ssync` uses the public trap binding.
+
+Under NeoST 0.6.5 with TOS 2.06, the cloned MagiC startup folder launched the
+program. A disposable AES probe found `WBDAEMON`, sent `AP_TERM`, and observed
+the process disappear. This verifies startup and termination; periodic disk
+writeback itself was not measured.
+
 ### Checklist for the next application
 
 1. Read its PRJ, startup source and actual dependencies before choosing flags.
