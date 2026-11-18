@@ -50,6 +50,8 @@ framework or shared-library rewrite is required before these are attempted.
 - [x] **WBDAEMON** — add independent `wbdaemon` target, launch it from MagiC's
   `#_APP` startup folder, and verify `AP_TERM` exit under NeoST. Periodic
   writeback remains unmeasured; see [the build catalogue](APPLICATION_BUILDS.md).
+- [ ] Correct WBDAEMON's `SC_WBACK` subcommand width and verify daemon
+  registration; its earlier startup/termination test did not cover this ABI.
 
 ## Build conventions to confirm as consumers appear
 
@@ -91,7 +93,9 @@ framework or shared-library rewrite is required before these are attempted.
 - [x] **VFATCONF** — add `vfatconf` producing `VFATCONF.PRG` plus its required
   resource; launch reaches the dialog under MagiC, but configuration changes
   remain untested.
-- [ ] Small helpers/background programs: MGXCLOCK.
+- [x] **MGXCLOCK** — add `mgxclock` and a registration test driver; verify clock
+  updates and writeback daemon registration on a cloned MagiC disk. Actual
+  disk-flush timing remains unmeasured.
 - [ ] Desktop helpers: APPLICAT, MGVIEW, MGEDIT, MGNOTICE version 2, MGSEARCH.
 - [ ] Larger/threaded programs: MGCOPY, MGFORMAT, VT52, MAGXDESK version 5.
 - [ ] Separate assembly builds: MCMD, MAGXCONF, FLP_PAR and appropriate utilities.

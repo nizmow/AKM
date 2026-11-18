@@ -218,6 +218,12 @@ program. A disposable AES probe found `WBDAEMON`, sent `AP_TERM`, and observed
 the process disappear. This verifies startup and termination; periodic disk
 writeback itself was not measured.
 
+The existing WBDAEMON source still passes `SCWB_SET` through MiNTLib's generic
+`Sconfig` long argument. MagiC's writeback operation reads a word subcommand,
+so that call supplies GET rather than SET. The startup/termination result above
+does not prove registration. MGXCLOCK uses the correct word-sized trap below;
+WBDAEMON's source has not been changed as part of that port.
+
 ### VFATCONF
 
 `make -f Makefile.apps vfatconf` builds
@@ -236,6 +242,39 @@ drive and displayed the dialog (`build/atari/vfatconf-runtime/final.ppm`). No
 button was selected: MagiC drive-state queries, VFAT `Dcntl` changes and
 `MAGX.INF` edits remain unverified. Use a disposable MagiC configuration and
 VFAT volume for those operations.
+
+### MGXCLOCK
+
+`mise run apps -- mgxclock` builds
+`build/atari/apps/mgxclock/MGXCLOCK.PRG`, with no resource file. The UTF-8 source
+uses public MiNTLib/GEMlib headers, 16-bit AES/VDI parameters, a physical VDI
+handle from `graf_handle`, and a 19-byte buffer for the 18-character date/time
+plus NUL. The loop counter uses unsigned 16-bit wraparound rather than signed
+overflow. The original desktop drawing and 500 ms timer loop remain; this is
+not a windowed clock and does not add a new termination protocol.
+
+The kernel marks `Dcntl(KER_SETWBACK = 0x0300)` as removed. Registration now
+uses `trap_1_www(0x33, 4, 1)`: MagiC `Sconfig(SC_WBACK)` expects a **word**
+subcommand. MiNTLib's generic `Sconfig(4, 1)` pushes a long, whose first word
+is zero, silently querying the daemon instead of registering it. Each timer
+iteration calls `Ssync` through trap `0x150`. Registration failure exits rather
+than leaving a clock running without its advertised daemon.
+
+Under NeoST 0.6.5, MegaSTE/4 MiB/monochrome, TOS 2.06 and a cloned MagiC 6.20
+disk, the startup folder launched MGXCLOCK alongside MAGXDESK. Screenshots
+verified initial date/time rendering and subsequent second updates. A guest
+probe found the application and a nonzero registered writeback daemon pointer.
+Evidence is under `build/atari/neost-mgxclock-KjyrfT/`. Disk-flush timing and
+data durability were not independently measured.
+
+`mise run apps -- mgxclock-test-driver` builds `mgxclock/NEOSTEST.PRG`
+under the selected build directory. For the registration regression scenario,
+use a disposable MagiC disk: replace its normal WBDAEMON startup entry with
+MGXCLOCK, then add the probe as `ZZPROBE.PRG` in the same `#_APP` folder. No
+other writeback daemon may run in this fixture. The probe waits 1.5 seconds,
+queries the AES application and writeback registration, and writes PASS/FAIL
+plus observations to `C:\MGXTEST.TXT`. The PASS check detects the generic
+long-argument binding error; a clock screenshot alone does not.
 
 ### Checklist for the next application
 
