@@ -50,8 +50,8 @@ framework or shared-library rewrite is required before these are attempted.
 - [x] **WBDAEMON** — add independent `wbdaemon` target, launch it from MagiC's
   `#_APP` startup folder, and verify `AP_TERM` exit under NeoST. Periodic
   writeback remains unmeasured; see [the build catalogue](APPLICATION_BUILDS.md).
-- [ ] Correct WBDAEMON's `SC_WBACK` subcommand width and verify daemon
-  registration; its earlier startup/termination test did not cover this ABI.
+- [x] Correct WBDAEMON's `SC_WBACK` subcommand width; the MagiC regression probe
+  verifies registration, `AP_TERM` exit and release of the daemon slot.
 
 ## Build conventions to confirm as consumers appear
 

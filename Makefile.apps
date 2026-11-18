@@ -6,7 +6,7 @@ CFLAGS ?= -O2 -g -Wall -Wextra
 # Do not inherit the kernel's -mshort/-mfastcall flags or Pure C libraries.
 APP_FLAGS := -std=gnu11 -m68000
 
-.PHONY: all mod-app cmdline showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon mod-app-test-driver
+.PHONY: all mod-app cmdline showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver
 all: mod-app
 mod-app: $(BUILD_DIR)/mod-app/MOD_APP.TTP
 cmdline: $(BUILD_DIR)/cmdline/CMDLINE.PRG
@@ -18,6 +18,7 @@ mgxclock: $(BUILD_DIR)/mgxclock/MGXCLOCK.PRG
 mgxclock-test-driver: $(BUILD_DIR)/mgxclock/NEOSTEST.PRG
 vfatconf: $(BUILD_DIR)/vfatconf/VFATCONF.PRG $(BUILD_DIR)/vfatconf/vfatconf.rsc
 wbdaemon: $(BUILD_DIR)/wbdaemon/WBDAEMON.PRG
+wbdaemon-test-driver: $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG
 mod-app-test-driver: $(BUILD_DIR)/mod-app/NEOSTEST.PRG
 
 $(BUILD_DIR)/mod-app/NEOSTEST.PRG: MagiC/APPS/MOD_APP/TESTDATA/NEOSTEST.C Makefile.apps
@@ -84,6 +85,11 @@ $(BUILD_DIR)/wbdaemon/WBDAEMON.PRG: MagiC/APPS/WBDAEMON/SRC/WBDAEMON.C Makefile.
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/wbdaemon/NEOSTEST.PRG: MagiC/APPS/WBDAEMON/TESTDATA/NEOSTEST.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 -include $(BUILD_DIR)/mod-app/MOD_APP.d
 -include $(BUILD_DIR)/cmdline/CMDLINE.d
 -include $(BUILD_DIR)/showfile/SHOWFILE.d
@@ -95,3 +101,4 @@ $(BUILD_DIR)/wbdaemon/WBDAEMON.PRG: MagiC/APPS/WBDAEMON/SRC/WBDAEMON.C Makefile.
 -include $(BUILD_DIR)/vfatconf/VFATCONF.d
 -include $(BUILD_DIR)/shutdown/SHUTDOWN.d
 -include $(BUILD_DIR)/wbdaemon/WBDAEMON.d
+-include $(BUILD_DIR)/wbdaemon/NEOSTEST.d

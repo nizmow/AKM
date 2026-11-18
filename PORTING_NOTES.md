@@ -213,16 +213,23 @@ and `<magx.h>`. AES message words use `short`, matching the 16-bit AES message
 ABI under the application's 32-bit `int` ABI. The MagiC-only writeback
 mode values remain local constants; `Ssync` uses the public trap binding.
 
-Under NeoST 0.6.5 with TOS 2.06, the cloned MagiC startup folder launched the
-program. A disposable AES probe found `WBDAEMON`, sent `AP_TERM`, and observed
-the process disappear. This verifies startup and termination; periodic disk
-writeback itself was not measured.
+Registration uses `trap_1_www(0x33, SC_WBACK, SCWB_SET)`, supplying MagiC's
+word-sized subcommand. MiNTLib's generic `Sconfig(4, 1)` instead pushes a long
+whose first word is zero, silently querying the daemon slot rather than setting
+it. The corrected call matches MGXCLOCK's binding.
 
-The existing WBDAEMON source still passes `SCWB_SET` through MiNTLib's generic
-`Sconfig` long argument. MagiC's writeback operation reads a word subcommand,
-so that call supplies GET rather than SET. The startup/termination result above
-does not prove registration. MGXCLOCK uses the correct word-sized trap below;
-WBDAEMON's source has not been changed as part of that port.
+`mise run apps -- wbdaemon wbdaemon-test-driver` builds the application and
+`wbdaemon/NEOSTEST.PRG` under the selected build directory. On a disposable
+MagiC disk, replace the normal WBDAEMON startup binary with this build and add
+the probe as `ZZPROBE.PRG` in the same `#_APP` folder. Run no other writeback
+daemon in that fixture. The probe writes `C:\WBTEST.TXT`, checking a nonzero
+daemon registration, `AP_TERM` delivery, process disappearance and release of
+the daemon slot. This detects the incorrect generic-long binding.
+
+Under NeoST 0.6.5, MegaSTE/4 MiB/monochrome, TOS 2.06 and a cloned MagiC 6.20
+disk, the probe passed all four checks. Evidence is under
+`build/atari/neost-wbdaemon-registration-20261118-221705/`. Periodic disk-flush
+timing and data durability remain unmeasured.
 
 ### VFATCONF
 

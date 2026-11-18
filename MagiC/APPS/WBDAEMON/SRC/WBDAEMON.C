@@ -26,8 +26,8 @@ int main(void)
     /* Tell AES that this application understands AP_TERM. */
     shel_write(SHW_INFRECGN, 1, 0, NULL, NULL);
 
-    /* Enable writeback. */
-    if (Sconfig(SC_WBACK, SCWB_SET) < 0L)
+    /* SC_WBACK takes a word subcommand, unlike generic Sconfig's long argument. */
+    if (trap_1_www(0x33, SC_WBACK, SCWB_SET) < 0L)
         return -1;
 
     /* Prevent freezing. */
