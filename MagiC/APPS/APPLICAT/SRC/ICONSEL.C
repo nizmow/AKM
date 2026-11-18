@@ -1,33 +1,30 @@
 /*
 *
-* EnthÑlt die spezifischen Routinen fÅr das
+* Enth√§lt die spezifischen Routinen f√ºr das
 * Fenster zur Icon-Auswahl
 *
 */
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
-#include <vdi.h>
+#include "APPLICAT_GEM.H"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "gemut_mt.h"
-#include "applicat.h"
-#include "windows.h"
-#include "appl.h"
-#include "inf.h"
-#include "appldata.h"
-#include "iconsel.h"
-#include "ica_dial.h"
-#include "icp_dial.h"
-#include "spc_dial.h"
-
+#include "IMPORT/GEMUT_MT.H"
+#include "APPLICAT.H"
+#include "WINDOWS.H"
+#include "APPL.H"
+#include "INF.H"
+#include "APPLDATA.H"
+#include "ICONSEL.H"
+#include "ICA_DIAL.H"
+#include "ICP_DIAL.H"
+#include "SPC_DIAL.H"
 #define  WXOFFS	3
 #define  WYOFFS	1
 #define  WXDIST	3
 #define  WYDIST	1
 
-/* Daten fÅrs Fenster */
+/* Daten f√ºrs Fenster */
 static WINDOW iconwindow;
 
 WINDOW *mywindow = NULL;
@@ -35,31 +32,23 @@ WINDOW *mywindow = NULL;
 
 /****************************************************************
 *
-* Nach der Bearbeitung eines Einfach-Mausklicks mÅssen wir
-* prÅfen, ob die Maustaste noch gedrÅckt ist. Insbesondere auf
-* schnellen Systemen mÅssen wir dem Anwender etwas Zeit lassen,
+* Nach der Bearbeitung eines Einfach-Mausklicks m√ºssen wir
+* pr√ºfen, ob die Maustaste noch gedr√ºckt ist. Insbesondere auf
+* schnellen Systemen m√ºssen wir dem Anwender etwas Zeit lassen,
 * die linke Maustaste wieder loszulassen, ansonsten wird immer
 * ein "Drag" erkannt.
 *
-* RÅckgabe TRUE bei "timeout", d.h. Maustaste noch gedrÅckt.
+* R√ºckgabe TRUE bei "timeout", d.h. Maustaste noch gedr√ºckt.
 *
 ****************************************************************/
 
 static int detect_mouse_drag(EVNT *w_ev)
 {
-	w_ev->mwhich = evnt_multi(
-                      MU_BUTTON + MU_TIMER,
-					  1,			/* keine Doppelklicks */
-					  1,			/* nur linke Maustaste */
-					  0,			/* linke Maustaste losgelassen */
-					  0,NULL,		/* kein 1. Rechteck */
-					  0,NULL,		/* kein 2. Rechteck */
-					  NULL,			/* keine "message" */
-					  MOUSE_DRAG_DETECT_MS,		/* ms */
-					  (EVNTDATA *) &(w_ev->mx),
-					  &w_ev->key,
-					  &w_ev->mclicks
-					  );
+	MOBLK m1 = {0, 0, 0, 0, 0};
+	MOBLK m2 = {0, 0, 0, 0, 0};
+
+	EVNT_multi(MU_BUTTON + MU_TIMER, 1, 1, 0, &m1, &m2,
+			MOUSE_DRAG_DETECT_MS, w_ev);
 
 	return (w_ev->mwhich & MU_TIMER) != 0;
 }
@@ -67,11 +56,11 @@ static int detect_mouse_drag(EVNT *w_ev)
 
 /****************************************************************
 *
-* FÅr Drag & Drop von Objekten
+* F√ºr Drag & Drop von Objekten
 *
 * Malt alle Objekte in der Liste <mov_boxes[num_boxes]>.
 * Wird als Begrenzung <glimit> != NULL angegeben, wird verhindert,
-*  daû die Objekte auûerhalb des Bildschirms liegen.
+*  da√ü die Objekte au√üerhalb des Bildschirms liegen.
 *
 ****************************************************************/
 
@@ -88,7 +77,7 @@ static void draw_boxes
 )
 {
 	int px, py;
-	int pxy[10];
+	short pxy[10];
 
 
 	vswr_mode(vdi_handle, MD_XOR);
@@ -140,31 +129,31 @@ static void draw_boxes
 * Verschieben von selektierten Objekten.
 * <wnr>,<tree>		: Nummer und Baum der selektierten Objekte
 * <x_koor>,<y_koor>	: Anklickpunkt in absoluten Koordinaten
-* KEIN BEG_UPDATE ausgefÅhrt
+* KEIN BEG_UPDATE ausgef√ºhrt
 *
 ****************************************************************/
 
 void move_icons(int x_koor, int y_koor, OBJECT *tree, int objnr)
 {
-	int clip_rect[4];
+	short clip_rect[4];
 	GRECT g;
 	GRECT *ptr_g;
-	OBJECT *mov_boxes;
+	const OBJECT *mov_boxes[1];
 	EVNTDATA ev;
 	int old_x,old_y;
 	OBJECT *target_tree;
 	int target_whdl;
-	int target_obj;
-	int prev_obj = 0;
+	short target_obj;
+	short prev_obj = 0;
 	OBJECT *prev_tree = NULL;
 	void (*set_icon)(int iconnr, int objnr);
 	void (*drawfn)(int objnr);
 	void (*prev_drawfn)(int objnr) = NULL;
 
 
-	mov_boxes = tree + objnr;		/* Tabelle aller Objekte */
+	mov_boxes[0] = tree + objnr;		/* Tabelle aller Objekte */
 	ptr_g = &g;
-	objc_grect(tree, objnr, ptr_g);	/* HÅlle aller Objekte */
+	objc_grect(tree, objnr, ptr_g);	/* H√ºlle aller Objekte */
 
 	wind_update(BEG_UPDATE);
 	graf_mouse(M_OFF, NULL);
@@ -181,7 +170,7 @@ void move_icons(int x_koor, int y_koor, OBJECT *tree, int objnr)
 	do
 	{
 		vs_clip	(vdi_handle, TRUE, clip_rect);
-		draw_boxes(tree, &mov_boxes, 1, ptr_g,
+		draw_boxes(tree, mov_boxes, 1, ptr_g,
 				 ev.x-x_koor, ev.y-y_koor);
 		graf_mouse(M_ON, NULL);
 
@@ -190,12 +179,12 @@ void move_icons(int x_koor, int y_koor, OBJECT *tree, int objnr)
 
 		do
 		{
-			graf_mkstate(&ev);
+			graf_mkstate(&ev.x, &ev.y, &ev.bstate, &ev.kstate);
 		}
 		while ((ev.x == old_x) && (ev.y == old_y) && (ev.bstate & 1));
 
 		graf_mouse(M_OFF, NULL);
-		draw_boxes(tree, &mov_boxes, 1, ptr_g,
+		draw_boxes(tree, mov_boxes, 1, ptr_g,
 				 old_x - x_koor, old_y - y_koor);
 
 		target_whdl = wind_find(ev.x, ev.y);
@@ -255,10 +244,9 @@ void move_icons(int x_koor, int y_koor, OBJECT *tree, int objnr)
 *
 *******************************************************************/
 
-#pragma warn -par
-static void hdl_key_iconsel(WINDOW *w, int kstate, int key)
+static void hdl_key_iconsel(WINDOW *w, int, int key)
 {
-	int message[8];
+	short message[8];
 	int msg4 = -1;
 	/*
 	printf("0x%04x ", key);
@@ -306,11 +294,10 @@ static void hdl_key_iconsel(WINDOW *w, int kstate, int key)
 *
 *******************************************************************/
 
-#pragma warn -par
-static void button_iconsel(WINDOW *w, int kstate,
-				int x, int y, int button, int nclicks)
+static void button_iconsel(WINDOW *w, int,
+				int x, int y, int, int nclicks)
 {
-	int objnr;
+	short objnr;
 	EVNT ev_drag;
 	int mouse_drag;
 
@@ -354,7 +341,6 @@ static void button_iconsel(WINDOW *w, int kstate,
 
 	window_draw_obj(w->handle, w->tree, objnr);
 }
-#pragma warn .par
 
 
 /*******************************************************************
@@ -385,8 +371,7 @@ void init_iconsel(void)
 *
 *******************************************************************/
 
-#pragma warn -par
-static void close_iconsel(WINDOW *w, int kstate)
+static void close_iconsel(WINDOW *w, int)
 {
 	WINDEFPOS *wd;
 	WINDOW **sw;
@@ -402,12 +387,11 @@ static void close_iconsel(WINDOW *w, int kstate)
 	mywindow = NULL;
 	*sw = NULL;
 }
-#pragma warn .par
 
 
 /*******************************************************************
 *
-* Fenster îffnen
+* Fenster √∂ffnen
 *
 *******************************************************************/
 
@@ -419,19 +403,19 @@ int open_iconsel(void)
 	register int i;
 
 
-	if (mywindow)		/* schon geîffnet */
+	if (mywindow)		/* schon ge√∂ffnet */
 	{
-		wind_set(WF_TOP, mywindow->handle, 0,0,0,0);
+		wind_set(mywindow->handle, WF_TOP, 0,0,0,0);
 		return 0;	/* OK */
 	}
 	w = new_window();
 	if (!w)
 		return -1;		/* kein Slot */
-	iconwindow.handle = wind_create(NAME+CLOSER+FULLER+MOVER+
+	iconwindow.handle = wind_create_grect(NAME+CLOSER+FULLER+MOVER+
 						SIZER+UPARROW+DNARROW+VSLIDE,
 						&scrg);
 
-	iconwindow.tree = Malloc(sizeof(OBJECT) * (icnn + 1));
+	iconwindow.tree = (OBJECT *) Malloc(sizeof(OBJECT) * (icnn + 1));
 	if (!iconwindow.tree)
 		return -3;
 
@@ -439,13 +423,13 @@ int open_iconsel(void)
 	{
 		Mfree(iconwindow.tree);
 		Rform_alert(1, ALRT_ERRWINDOPEN, NULL);
-		return -2;		/* kein AES-Fenster mehr Åbrig */
+		return -2;		/* kein AES-Fenster mehr √ºbrig */
 	}
 
 	/* Baum aufbauen */
 
 	o = iconwindow.tree;
-	/* Objekt der weiûen Hintergrundbox */
+	/* Objekt der wei√üen Hintergrundbox */
 	o->ob_next = -1;
 	o->ob_type = G_BOX;
 	o->ob_state = NORMAL;
@@ -475,9 +459,11 @@ int open_iconsel(void)
 		if (sob->ob_type == G_USERDEF)
 			icb = (ICONBLK *) sob->ob_spec.userblk->ub_parm;
 		else
-		if ((sob->ob_type == G_ICON) ||
-			 (sob->ob_type == G_CICON))
+		if (sob->ob_type == G_ICON)
 			icb = sob->ob_spec.iconblk;
+		else
+		if (sob->ob_type == G_CICON)
+			icb = &sob->ob_spec.ciconblk->monoblk;
 		else
 			icb = NULL;
 
@@ -505,7 +491,7 @@ int open_iconsel(void)
 	iconwindow.button = button_iconsel;
 	iconwindow.close = close_iconsel;
 	*w = mywindow = &iconwindow;
-	wind_set_string(iconwindow.handle, WF_NAME,
+	wind_set_str(iconwindow.handle, WF_NAME,
 				Rgetstring(STR_WTIT_ICONS, NULL));
 	iconwindow.open(&iconwindow);
 	wind_set(iconwindow.handle, WF_BEVENT, 0x0001, 0, 0, 0);

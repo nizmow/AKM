@@ -2,9 +2,7 @@
 * global definitions
 */
 
-#ifndef WORD
-#include <portab.h>
-#endif
+#include "APPLICAT_GEM.H"
 
 #define PROGRAM_VERSION_STR "v1.10"
 
@@ -43,15 +41,15 @@
 
 typedef struct
 {
-	char name[32];				/* SchlÅssel (Fenstername) */
+	char name[32];				/* Schl√ºssel (Fenstername) */
 	GRECT g;					/* Position */
 } WINDEFPOS;
 
 struct dialog_userdata
 {
 	char *ident;
-	int mode;					/* 1: normal, 2: bei HNDL_OPEN weiteren Dialog îffnen */
-	/* nur verwendet fÅr den Dialog "Registrierte Programme: */
+	int mode;					/* 1: normal, 2: bei HNDL_OPEN weiteren Dialog √∂ffnen */
+	/* nur verwendet f√ºr den Dialog "Registrierte Programme: */
 	int cmd_pgm;
 	int cmd_dat;
 	char *cmd_pgm_path;
@@ -74,8 +72,8 @@ struct dat_file
 	char rscname[MAX_NAMELEN];	/* Name der RSC-Datei */
 	int rscindex;				/* Nummer des Icons in rsc */
 	int iconnr;					/* interne Iconnummer */
-	int pgm;					/* zugehîrige Applikation */
-	int next;					/* fÅr Verkettung, bis -1 */
+	int pgm;					/* zugeh√∂rige Applikation */
+	int next;					/* f√ºr Verkettung, bis -1 */
 };
 
 struct pgm_file
@@ -95,7 +93,7 @@ struct pgm_file
 
 struct pth_file
 {
-	struct pth_file *next;		/* Verkettung fÅr scrollbox */
+	struct pth_file *next;		/* Verkettung f√ºr scrollbox */
 	WORD sel;					/* selektiert */
 /*	int sel_icon;		*/		/* Icon selektiert */
 	char path[MAX_PATHLEN];		/* Voller oder rel. Pfad */
@@ -106,10 +104,10 @@ struct pth_file
 
 struct spc_file
 {
-	struct spc_file *next;		/* Verkettung fÅr scrollbox */
-	int sel;					/* selektiert */
+	struct spc_file *next;		/* Verkettung f√ºr scrollbox */
+	WORD sel;					/* LBOX_ITEM's 16-bit selected prefix */
 /*	int sel_icon;		*/		/* Icon selektiert */
-	long key;					/* SchlÅssel fÅr DAT-Datei */
+	long key;					/* Schl√ºssel f√ºr DAT-Datei */
 	char name[MAX_NAMELEN];		/* Name in der Dialogbox */
 	char rscname[MAX_NAMELEN];	/* Name der RSC-Datei */
 	int rscindex;				/* Nummer des Icons in rsc */
@@ -118,7 +116,7 @@ struct spc_file
 
 struct icon
 {
-	int rscfile;				/* fÅr versch. Dateien */
+	int rscfile;				/* f√ºr versch. Dateien */
 	int objnr;					/* Objektnummer */
 /*	int sel_pgm;	*/			/* als Programm-Icon selektiert */
 /*	int sel_dat;	*/			/* als Datei-Icon selektiert */
@@ -127,8 +125,8 @@ struct icon
 /* Diese Struktur ist kompatibel zu LBOX_ITEM */
 struct item_line
 {
-	/* îffentlicher Teil, von LBOX_ITEM */
-	struct item_line *next;		/* Verkettung fÅr scrollbox */
+	/* √∂ffentlicher Teil, von LBOX_ITEM */
+	struct item_line *next;		/* Verkettung f√ºr scrollbox */
 	WORD selected;				/* selektiert */
 	/* privater Teil */
 	int pgmnr;					/* Nummer des Programmnamens */
@@ -170,10 +168,10 @@ extern struct dat_file	datx[MAX_DATN];
 extern struct pth_file	pthx[MAX_PTHN];
 extern struct spc_file	spcx[MAX_SPCN];
 extern struct icon		icnx[MAX_ICNN];
-extern struct item_line	linx[MAX_LINN];	/* LBOX_ITEMs fÅr alle Dialoge */
+extern struct item_line	linx[MAX_LINN];	/* LBOX_ITEMs f√ºr alle Dialoge */
 extern struct iconfile	rscx[MAX_RSCN];
 
-extern int is_3d;
+extern short is_3d;
 
 extern const char *applicat_inf_filename;
 extern void inf_alert_error_text(int id);

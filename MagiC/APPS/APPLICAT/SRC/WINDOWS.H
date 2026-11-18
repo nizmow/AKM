@@ -8,7 +8,7 @@ typedef struct _window
 	void	(*hdl_key)		(struct _window *w, int kstate, int key);
 	void	(*button)		(struct _window *w, int kstate, int x, int y,
 						int button, int nclicks);
-	void	(*message)	(struct _window *w, int kstate, int message[16]);
+	void	(*message)	(struct _window *w, int kstate, short message[16]);
 	void	(*open)		(struct _window *w);
 	void	(*close)		(struct _window *w, int kstate);
 	void	(*iconified)	(struct _window *w, GRECT *g);
@@ -25,12 +25,12 @@ typedef struct _window
 	void	(*draw)		(struct _window *w, GRECT *g);
 	char	title[128];		/* Titelzeile 					*/
 	char	info[60];		/* Infozeile 					*/
-	GRECT 	out;			/* Fenster- Gesamtmaûe 			*/
-	GRECT	in;				/* Fenster- Innenmaûe 			*/
+	GRECT 	out;			/* Fenster- Gesamtma√üe 			*/
+	GRECT	in;				/* Fenster- Innenma√üe 			*/
 	int		is_1col;		/* immer einspaltig				*/
 	int		showw;			/* Breite eines Objekts			*/
-	int		showh;			/* Hîhe eines Objekts			*/
-	int		max_hicon;		/* grîûtes Icon-Objekt			*/
+	int		showh;			/* H√∂he eines Objekts			*/
+	int		max_hicon;		/* gr√∂√ütes Icon-Objekt			*/
 	int		xdist;			/* x-Abstand der Objekte			*/
 	int		ydist;			/* y-Abstand der Objekte			*/
 	int		xoffs;			/* x-Rand des ersten Objekts		*/
@@ -43,7 +43,7 @@ typedef struct _window
 	int		vshift;			/* Nr. der obersten Zeile 		*/
 	int		max_vshift;		/* Maximales <vshift> 			*/
 
-	int	step_hshift;		/* Schrittweite fÅr hor. Scrolling */
+	int	step_hshift;		/* Schrittweite f√ºr hor. Scrolling */
 	int	allsteps_hshift;	/* Gesamtanzahl Schritte			*/
 	int	vissteps_hshift;	/* Anzahl ganz sichtbarer Schritte	*/
 	int	hshift;				/* akt. Anzahl Scrollschritte		*/
@@ -56,20 +56,22 @@ typedef struct _window
 
 typedef union _wmesag 
 {
-	int message[8];
+	short message[8];
 	struct
 	{
-		int code;
-		int dest_apid;
-		int is_zero;
-		int whdl;
+		short code;
+		short dest_apid;
+		short is_zero;
+		short whdl;
 		GRECT g;
 	}
 	msg;
 } WMESAG;
 
+_Static_assert(sizeof(WMESAG) == 16, "AES messages must contain eight 16-bit words");
 
-/* FÅr Fenster */
+
+/* F√ºr Fenster */
 extern int top_whdl(void);
 extern WINDOW *windows[NWINDOWS];
 extern WINDOW **new_window(void);
@@ -80,7 +82,5 @@ extern void window_draw_obj(int whdl, OBJECT *tree, int index);
 extern void init_window(WINDOW *w);
 extern void window_calc_hslider(WINDOW *w);
 extern void window_calc_vslider(WINDOW *w);
-extern void calc_collin(WINDOW *w);
-extern void calc_in(WINDOW *w);
 extern int update_window(WINDOW *w);
 extern void hshift(WINDOW *w, int newpos);

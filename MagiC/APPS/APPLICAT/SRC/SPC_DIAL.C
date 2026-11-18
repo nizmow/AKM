@@ -1,21 +1,20 @@
 /*
 *
-* EnthÑlt die spezifischen Routinen fÅr den Dialog
-* "Spezielle Icons auswÑhlen"
+* Enth√§lt die spezifischen Routinen f√ºr den Dialog
+* "Spezielle Icons ausw√§hlen"
 *
 */
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
+#include "APPLICAT_GEM.H"
 #include <string.h>
 #include <stdlib.h>
-#include "gemut_mt.h"
-#include "applicat.h"
-#include "appl.h"
-#include "inf.h"
-#include "appldata.h"
-#include "iconsel.h"
-#include "spc_dial.h"
+#include "IMPORT/GEMUT_MT.H"
+#include "APPLICAT.H"
+#include "APPL.H"
+#include "INF.H"
+#include "APPLDATA.H"
+#include "ICONSEL.H"
+#include "SPC_DIAL.H"
 
 
 /* Das "Fenster" */
@@ -36,7 +35,7 @@ static void *sbox;
 
 static int showindex_to_icnobj(int index)
 {
-	static const int icons[] =
+	static const WORD icons[] =
 	{ SPCICON1, SPCICON2, SPCICON3, SPCICON4, SPCICON5 };
 
 	return icons[index];
@@ -57,29 +56,20 @@ static int icnobj_to_showindex(int objnr)
 
 /*********************************************************************
 *
-* Auswahl- und Setzroutinen fÅr die Scrollbox
+* Auswahl- und Setzroutinen f√ºr die Scrollbox
 *
 *********************************************************************/
 
-#pragma warn -par
-static void cdecl select_item(LIST_BOX *box, OBJECT *tree,
-			LBOX_ITEM *item, void *user_data,
-			WORD obj_index, WORD last_state)
+static void cdecl select_item(struct SLCT_ITEM_args args)
 {
-/*
-	struct pth_file *myspc = (struct spc_file *) item;
-
-	if (myspc->sel)
-		selected_spec = myspec;
-	else
-		selected_spec = NULL;
-*/
+	(void) args;
 }
 
-static WORD cdecl set_item(LIST_BOX *box, OBJECT *tree,
-			LBOX_ITEM *item, WORD index,
-			void *user_data, GRECT *rect, WORD offset)
+static WORD cdecl set_item(struct SET_ITEM_args args)
 {
+	OBJECT *tree = args.tree;
+	LBOX_ITEM *item = args.item;
+	WORD index = args.obj_index;
 	struct spc_file *myspc = (struct spc_file *) item;
 	OBJECT *dob;
 	OBJECT *sob;
@@ -143,7 +133,6 @@ static WORD cdecl set_item(LIST_BOX *box, OBJECT *tree,
 */
 	return index;
 }
-#pragma warn .par
 
 
 /*********************************************************************
@@ -176,16 +165,16 @@ static LBOX_ITEM *cat_spcs(void)
 
 /*********************************************************************
 *
-* Initialisierung der Objektklasse "Spezialicon auswÑhlen"
+* Initialisierung der Objektklasse "Spezialicon ausw√§hlen"
 *
 *********************************************************************/
 
 void spc_dial_init_rsc(void)
 {
 	int /* dummy, */ i;
-	static int ctrl_objs[5] =
+	static WORD ctrl_objs[5] =
 	{DF_BK, DF_UP, DF_DOWN, DF_BSL, DF_SLID};
-	static int objs[5] =
+	static WORD objs[5] =
 	{SPC1,SPC2,SPC3,SPC4,SPC5};
 
 
@@ -202,12 +191,12 @@ void spc_dial_init_rsc(void)
 					select_item,
 					set_item,
 					cat_spcs(),	/* Items */
-					5,		/* Anzahl sichtbarer EintrÑge */
+					5,		/* Anzahl sichtbarer Eintr√§ge */
 					0,		/* erster sichtbarer Eintrag */
 					ctrl_objs,
 					objs,
 					LBOX_VERT+LBOX_REAL+LBOX_SNGL+LBOX_TOGGLE,
-					20,		/* Scrollverzîgerung */
+					20,		/* Scrollverz√∂gerung */
 					NULL,	/* user data */
 					NULL,
 					0,0,0,0
@@ -219,7 +208,7 @@ void spc_dial_init_rsc(void)
 
 /*********************************************************************
 *
-* Scrolle den Inhalt des "Fensters" so, daû die Zeile fÅr
+* Scrolle den Inhalt des "Fensters" so, da√ü die Zeile f√ºr
 * das "special object" <key> oben sichtbar ist.
 *
 *********************************************************************/
@@ -246,7 +235,7 @@ static void scroll_win_key(DIALOG *d, long key)
 
 /*********************************************************************
 *
-* Das Icon fÅr Object <myspc> hat sich geÑndert.
+* Das Icon f√ºr Object <myspc> hat sich ge√§ndert.
 *
 *********************************************************************/
 
@@ -329,13 +318,13 @@ static void spc_draw_subobj(int objnr)
 }
 
 int spc_get_target_obj(int x, int y, int whdl, OBJECT **tree,
-			int *objnr, void (**set_icon)(int iconnr, int objnr),
+			WORD *objnr, void (**set_icon)(int iconnr, int objnr),
 			void (**drawfn)(int objnr))
 {
 	GRECT dummy;
 
 	if (!d_spc)
-		return FALSE;		/* Objekt ungÅltig */
+		return FALSE;		/* Objekt ung√ºltig */
 
 	if (whdl != wdlg_get_handle(d_spc))
 		return FALSE;
@@ -357,38 +346,41 @@ int spc_get_target_obj(int x, int y, int whdl, OBJECT **tree,
 /*********************************************************************
 *
 * Behandelt die Exit- Objekte des Icondialogs
-* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angewÑhlt.
+* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angew√§hlt.
 *
 * objnr = -1:	Initialisierung.
 *			d->user_data und d->dialog_tree initialisieren!
 *			<data> ist Zeiger auf Argumentzeiger,
 *			d.h.		char *data[2]
 *			<clicks> ist Parameter, z.Zt. immer 0
-*		-2:	Nachricht int data[8] wurde Åbergeben
+*		-2:	Nachricht int data[8] wurde √ºbergeben
 * 		-3:	Fenster wurde durch Closebutton geschlossen.
 *		-4:	Programm wurde beendet.
 *
-* RÅckgabe:	0	Dialog schlieûen
+* R√ºckgabe:	0	Dialog schlie√üen
 *			< 0	Fehlercode
 *
 *********************************************************************/
 
-#pragma warn -par
 
-WORD cdecl spc_wdlg_cb(DIALOG *d, EVNT *ev, int exitbutton, int nclicks, void *data)
+WORD cdecl spc_wdlg_cb(struct HNDL_OBJ_args args)
 {
+	DIALOG *d = args.dialog;
+	short exitbutton = args.obj;
+	short nclicks = args.clicks;
+	void *data = args.data;
 	OBJECT *tree;
 	long key;
 
 
-	/* 1. Fall: Dialog soll geîffnet werden */
+	/* 1. Fall: Dialog soll ge√∂ffnet werden */
 	/* ------------------------------------ */
 
 	tree = adr_spc_dialog;
 
 	if (exitbutton == HNDL_INIT)
 	{
-		if (d_spc)			/* Dialog ist schon geîffnet ! */
+		if (d_spc)			/* Dialog ist schon ge√∂ffnet ! */
 			return 0;		/* create verweigern */
 
 		if (is_multiwindow)
@@ -410,13 +402,13 @@ WORD cdecl spc_wdlg_cb(DIALOG *d, EVNT *ev, int exitbutton, int nclicks, void *d
 	{
 		close_dialog:
 		d_spc = NULL;
-		return 0;		/* ...dann schlieûen wir ihn auch */
+		return 0;		/* ...dann schlie√üen wir ihn auch */
 	}
 
 	if (exitbutton < 0)
 		return 1;
 
-	/* 4. Fall: Exitbutton wurde betÑtigt */
+	/* 4. Fall: Exitbutton wurde bet√§tigt */
 	/* ---------------------------------- */
 
 		/* Doppelklick auf Icon */
@@ -432,7 +424,7 @@ WORD cdecl spc_wdlg_cb(DIALOG *d, EVNT *ev, int exitbutton, int nclicks, void *d
 	if (nclicks != 1)
 		goto ende;
 
-	/* Scrollbox angewÑhlt */
+	/* Scrollbox angew√§hlt */
 	/* ------------------- */
 
 	if (exitbutton == SPCICON1)
@@ -445,14 +437,6 @@ WORD cdecl spc_wdlg_cb(DIALOG *d, EVNT *ev, int exitbutton, int nclicks, void *d
 		exitbutton = SPC4;
 	if (exitbutton == SPCICON5)
 		exitbutton = SPC5;
-/*
-	if ((exitbutton == SPC1) ||
-		 (exitbutton == SPC2) ||
-		 (exitbutton == SPC3) ||
-		 (exitbutton == SPC4) ||
-		 (exitbutton == SPC5))
-		 return 1;		/* Aktivieren nicht zulÑssig */
-*/
 	if ((exitbutton == DF_UP) ||
 		 (exitbutton == DF_DOWN) ||
 		 (exitbutton == DF_BSL) ||
@@ -491,4 +475,3 @@ WORD cdecl spc_wdlg_cb(DIALOG *d, EVNT *ev, int exitbutton, int nclicks, void *d
 	subobj_wdraw(d, exitbutton, exitbutton, 1);
 	return 1;		/* weiter */
 }
-#pragma warn +par

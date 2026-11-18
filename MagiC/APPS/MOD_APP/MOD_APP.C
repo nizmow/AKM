@@ -79,7 +79,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <osbind.h>
-#include <mint/basepage.h>
+#include "../TOS_ARGS.H"
 
 _Static_assert(sizeof(int) == 4 && sizeof(long) == 4,
 			   "Build MOD_APP with the default MiNTLib integer ABI");
@@ -612,51 +612,6 @@ long do_mode_id(char *pgmname, char *ftyp, char *rscname, int iconnr)
 }
 
 
-/*
- * PCMXSTRT accepts single/double-quoted arguments anywhere in a TOS tail.
- * MiNTLib only enables its quote parser when the entire tail starts with '.
- * Keep this application-local until another port needs the same convention.
- */
-static int tos_arguments(char *command, char **args)
-{
-	char *read = command, *write = command;
-	int count = 1;
-
-	while (*read)
-	{
-		char quote;
-		while (*read && (unsigned char) *read <= ' ')
-			read++;
-		if (!*read)
-			break;
-		args[count++] = write;
-		quote = (*read == '\'' || *read == '"') ? *read++ : '\0';
-		while (*read)
-		{
-			if (quote)
-			{
-				if (*read == quote)
-				{
-					read++;
-					if (quote == '\'' && *read == '\'')
-					{
-						*write++ = *read++;
-						continue;
-					}
-					break;
-				}
-			}
-			else if ((unsigned char) *read <= ' ')
-				break;
-			*write++ = *read++;
-		}
-		while (*read && (unsigned char) *read <= ' ')
-			read++;
-		*write++ = '\0';
-	}
-	args[count] = NULL;
-	return count;
-}
 
 /*******************************************************************
 *
@@ -669,19 +624,9 @@ int main(int argc, char *argv[])
 	char *s;
 	long ret;
 	int mode;
-	char command[128];
-	char *args[65];		/* at most 63 one-byte arguments in a 126-byte tail */
-	unsigned int length = (unsigned char) _base->p_cmdlin[0];
+	struct tos_args raw_args;
 
-	/* MiNTLib supplies a nonempty argv[0] for ARGV; retain that parsed vector. */
-	if (length < 127 && argv[0][0] == '\0')
-	{
-		memcpy(command, _base->p_cmdlin + 1, length);
-		command[length] = '\0';
-		args[0] = argv[0];
-		argc = tos_arguments(command, args);
-		argv = args;
-	}
+	argc = tos_arguments(argc, &argv, &raw_args);
 
 
 	/* Modus ermitteln: mode */

@@ -1,26 +1,25 @@
 /*
 *
-* EnthÑlt die spezifischen Routinen fÅr den Dialog
+* Enth√§lt die spezifischen Routinen f√ºr den Dialog
 * "Ordner/Disk anmelden"
 *
 */
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
+#include "APPLICAT_GEM.H"
 #include <string.h>
 #include <stdlib.h>
-#include "gemut_mt.h"
-#include "applicat.h"
-#include "appl.h"
-#include "appldata.h"
-#include "icp_dial.h"
-#include "pth_dial.h"
+#include "IMPORT/GEMUT_MT.H"
+#include "APPLICAT.H"
+#include "APPL.H"
+#include "APPLDATA.H"
+#include "ICP_DIAL.H"
+#include "PTH_DIAL.H"
 
 
 #define TXT(a)      ((((a) -> ob_spec.tedinfo))->te_ptext)
 
 struct pth_file mypth;	/* Pfad/Ordner in Arbeit */
-struct pth_file oldpth;	/* Daten vor énderung */
+struct pth_file oldpth;	/* Daten vor √Ñnderung */
 
 
 /*********************************************************************
@@ -58,39 +57,43 @@ static int is_disk(char *path)
 /*********************************************************************
 *
 * Behandelt die Exit- Objekte des Dialogs "Ordner anmelden"
-* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angewÑhlt.
+* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angew√§hlt.
 *
 * objnr = -1:	Initialisierung.
 *			d->user_data und d->dialog_tree initialisieren!
 *			clicks == 0:	data ist NULL oder struct pth_file *
 *			clicks == 1:	data ist NULL oder char *
-*		-2:	Nachricht int data[8] wurde Åbergeben
+*		-2:	Nachricht int data[8] wurde √ºbergeben
 * 		-3:	Fenster wurde durch Closebutton geschlossen.
 *		-4:	Programm wurde beendet.
-*		-5:	Initialisierung _NACH_ ôffnen des Fensters
+*		-5:	Initialisierung _NACH_ √ñffnen des Fensters
 *
-* RÅckgabe:	0	Dialog schlieûen
+* R√ºckgabe:	0	Dialog schlie√üen
 *			< 0	Fehlercode
 *
 *********************************************************************/
 
-#pragma warn -par
 
-WORD cdecl hdl_pth( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data )
+WORD cdecl hdl_pth(struct HNDL_OBJ_args args)
 {
+	DIALOG *d = args.dialog;
+	short exitbutton = args.obj;
+	short clicks = args.clicks;
+	void *data = args.data;
 	OBJECT *tree;
 	size_t len;
 	char *s;
-	int editob,cursorpos;
+	int editob;
+	short cursorpos;
 
 	tree = adr_newpath;
 
-	/* 1. Fall: Dialog soll geîffnet werden */
+	/* 1. Fall: Dialog soll ge√∂ffnet werden */
 	/* ------------------------------------ */
 
 	if (exitbutton == HNDL_INIT)
 	{
-		if (d_pth)			/* Dialog ist schon geîffnet ! */
+		if (d_pth)			/* Dialog ist schon ge√∂ffnet ! */
 		{
 			wind_set(wdlg_get_handle(d_pth), WF_TOP, 0,0,0,0);
 			return 0;		/* create verweigern */
@@ -111,7 +114,7 @@ WORD cdecl hdl_pth( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
 			mypth.rscname[0] = EOS;
 			mypth.rscindex = 0;
 			mypth.iconnr = get_deficonnr('FLDR');
-			oldpth.path[0] = EOS;	/* alter Wert ungÅltig */
+			oldpth.path[0] = EOS;	/* alter Wert ung√ºltig */
 		}
 
 		TXT(tree+FLDN_PTH) = mypth.path;
@@ -126,13 +129,13 @@ WORD cdecl hdl_pth( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
 	{	/* Wenn Dialog geschlossen werden soll... */
 		close_dialog:
 		save_dialog_xy(d);
-		return 0;		/* ...dann schlieûen wir ihn auch */
+		return 0;		/* ...dann schlie√üen wir ihn auch */
 	}
 
 	if (exitbutton < 0)
 		return 1;
 
-	/* 4. Fall: Exitbutton wurde betÑtigt */
+	/* 4. Fall: Exitbutton wurde bet√§tigt */
 	/* ---------------------------------- */
 
 	if (clicks != 1)
@@ -171,7 +174,7 @@ WORD cdecl hdl_pth( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
 	{
 		char fname[MAX_NAMELEN];
 		char path[MAX_PATHLEN];
-		int ex;
+		short ex;
 
 
 		fname[0] = EOS;
@@ -222,4 +225,3 @@ WORD cdecl hdl_pth( DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data 
 	subobj_wdraw(d, exitbutton, exitbutton, 1);
 	return 1;		/* weiter */
 }
-#pragma warn +par

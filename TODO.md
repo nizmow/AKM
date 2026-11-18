@@ -55,20 +55,19 @@ framework or shared-library rewrite is required before these are attempted.
 
 ## Build conventions to confirm as consumers appear
 
-- [ ] Confirm another application's startup requirements. MOD_APP's tokenizer
-  is intentionally private; extract shared quote/ARGV compatibility only if a
-  second real consumer needs it and the combined contract is tested.
+- [x] Share the established raw-TOS-tail quote/ARGV adapter between MOD_APP and
+  APPLICAT in `MagiC/APPS/TOS_ARGS.H`; the MOD_APP comparison still passes.
 - [ ] Preserve quoted paths, escaped apostrophes, empty arguments, long ARGV
   arguments and literal file-type patterns where the application supports them.
   A link against a modern CRT does not automatically preserve old startup behavior.
-- [ ] Establish GUI structure/message widths using compatible SDK types. Do not
-  restore Pure C's `int` assumptions globally with kernel ABI flags.
+- [x] Establish GUI structure/message widths with public SDK types and by-value
+  callback argument records in APPLICAT, without changing the global integer ABI.
 - [ ] For the first consumer that needs them, map GEM utility/window helpers,
   multitasking AES/DOS bindings and SLB bindings to compatible source builds or
   established SDK equivalents. Record actual missing dependencies.
-- [ ] For the first resource-bearing port, define its RSC/data inputs and runtime
-  search paths. Preserve existing translations/encoding; translation repair is
-  a later phase.
+- [x] Define resource/data inputs and working-directory requirements for
+  APPLICAT's executable/RSC/starter-INF bundle. Keep existing translations and
+  binary resource encodings unchanged; translation repair remains a later phase.
 - [ ] Build selected targets in fresh output directories and record prerequisites
   that were previously supplied only by a developer's machine.
 
@@ -96,7 +95,9 @@ framework or shared-library rewrite is required before these are attempted.
 - [x] **MGXCLOCK** — add `mgxclock` and a registration test driver; verify clock
   updates and writeback daemon registration on a cloned MagiC disk. Actual
   disk-flush timing remains unmeasured.
-- [ ] Desktop helpers: APPLICAT, MGVIEW, MGEDIT, MGNOTICE version 2, MGSEARCH.
+- [x] **APPLICAT** — independent bundle, cache compilation comparison and UI
+  association-save scenario under MagiC; remaining paths are listed in porting notes.
+- [ ] Desktop helpers: MGVIEW, MGEDIT, MGNOTICE version 2, MGSEARCH.
 - [ ] Larger/threaded programs: MGCOPY, MGFORMAT, VT52, MAGXDESK version 5.
 - [ ] Separate assembly builds: MCMD, MAGXCONF, FLP_PAR and appropriate utilities.
 - [ ] Loadable components: editor/image/window-frame SLBs, CPXs and drivers.

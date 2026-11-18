@@ -1,20 +1,20 @@
 /*
 *
-* EnthÑlt die spezifischen Routinen fÅr den Dialog
+* Enth√§lt die spezifischen Routinen f√ºr den Dialog
 * "Anwendung anmelden"
 *
 */
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
+#include "APPLICAT_GEM.H"
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include "gemut_mt.h"
-#include "applicat.h"
-#include "appl.h"
-#include "appldata.h"
-#include "ica_dial.h"
-#include "anw_dial.h"
+#include "IMPORT/GEMUT_MT.H"
+#include "APPLICAT.H"
+#include "APPL.H"
+#include "APPLDATA.H"
+#include "ICA_DIAL.H"
+#include "ANW_DIAL.H"
 
 
 #define TXT(a) ((((a)->ob_spec.tedinfo))->te_ptext)
@@ -41,8 +41,8 @@ void anw_dial_init_rsc(void)
 * Endung BAT,BTP		: Batchdatei
 * sonst				: Textdatei
 *
-* vorbereitet fÅr lange Dateinamen: Die "file name extension" darf
-* groû oder klein geschrieben werden.
+* vorbereitet f√ºr lange Dateinamen: Die "file name extension" darf
+* gro√ü oder klein geschrieben werden.
 *
 *********************************************************************/
 
@@ -73,42 +73,45 @@ static int suffixtyp(char *s)
 /*********************************************************************
 *
 * Behandelt die Exit- Objekte des Dialogs "Anwendung anmelden"
-* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angewÑhlt.
+* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angew√§hlt.
 *
 * objnr = -1:	Initialisierung.
 *			d->user_data und d->dialog_tree initialisieren!
 *			clicks == 0:	data ist NULL oder struct pgm_file *
 *			clicks == 1:	data ist NULL oder char *
-*		-2:	Nachricht int data[8] wurde Åbergeben
+*		-2:	Nachricht int data[8] wurde √ºbergeben
 * 		-3:	Fenster wurde durch Closebutton geschlossen.
 *		-4:	Programm wurde beendet.
 *
-* RÅckgabe:	0	Dialog schlieûen
+* R√ºckgabe:	0	Dialog schlie√üen
 *			< 0	Fehlercode
 *
 *********************************************************************/
 
-#pragma warn -par
 
-WORD cdecl hdl_anwndg(DIALOG *d, EVNT *ev, WORD exitbutton, int clicks, void *data)
+WORD cdecl hdl_anwndg(struct HNDL_OBJ_args args)
 {
+	DIALOG *d = args.dialog;
+	short exitbutton = args.obj;
+	short clicks = args.clicks;
+	void *data = args.data;
 	OBJECT *tree;
 	char fname[MAX_NAMELEN + 10];
 	int only_fname;
 	char *s;
 	char c;
-	int cursorpos;
+	short cursorpos;
 	int editob;
 
 
 	tree = adr_anwndg;
 
-	/* 1. Fall: Dialog soll geîffnet werden */
+	/* 1. Fall: Dialog soll ge√∂ffnet werden */
 	/* ------------------------------------ */
 
 	if (exitbutton == HNDL_INIT)
 	{
-		if (d_anw)			/* Dialog ist schon geîffnet ! */
+		if (d_anw)			/* Dialog ist schon ge√∂ffnet ! */
 		{
 			wind_set(wdlg_get_handle(d_anw), WF_TOP, 0,0,0,0);
 			return 0;		/* create verweigern */
@@ -186,8 +189,9 @@ WORD cdecl hdl_anwndg(DIALOG *d, EVNT *ev, WORD exitbutton, int clicks, void *da
 			ob_dsel(tree, DO_LIMIT);
 			tree[LIMITMEM].ob_state |= DISABLED;
 		}
-		ltoa(mypgm.memlimit,
-				tree[LIMITMEM].ob_spec.tedinfo->te_ptext, 10);
+		snprintf(tree[LIMITMEM].ob_spec.tedinfo->te_ptext,
+				tree[LIMITMEM].ob_spec.tedinfo->te_txtlen, "%ld",
+				(long) mypgm.memlimit);
 
 
 		objs_setradio(tree,
@@ -204,13 +208,13 @@ WORD cdecl hdl_anwndg(DIALOG *d, EVNT *ev, WORD exitbutton, int clicks, void *da
 	{
 		close_dialog:
 		save_dialog_xy(d);
-		return 0;		/* ...dann schlieûen wir ihn auch */
+		return 0;		/* ...dann schlie√üen wir ihn auch */
 	}
 
 	if (exitbutton < 0)
 		return 1;
 
-	/* 4. Fall: Exitbutton wurde betÑtigt */
+	/* 4. Fall: Exitbutton wurde bet√§tigt */
 	/* ---------------------------------- */
 
 	if (clicks != 1)
@@ -240,14 +244,14 @@ WORD cdecl hdl_anwndg(DIALOG *d, EVNT *ev, WORD exitbutton, int clicks, void *da
 		else
 			mypgm.memlimit = 0;
 
-		/* Dateiname isolieren und öberlauf testen */
+		/* Dateiname isolieren und √úberlauf testen */
 		/* --------------------------------------- */
 
 		only_fname = extract_apname(mypgm.path, fname);
 		if (only_fname < 0)	/* Fehler */
 			goto ende;
 
-		/* Test auf énderung des Applikationsnamens */
+		/* Test auf √Ñnderung des Applikationsnamens */
 		/* ---------------------------------------- */
 
 		if (mypgm.name[0] && stricmp(mypgm.name, fname))
@@ -279,7 +283,8 @@ WORD cdecl hdl_anwndg(DIALOG *d, EVNT *ev, WORD exitbutton, int clicks, void *da
 	{
 		char fname[MAX_NAMELEN];
 		char path[MAX_PATHLEN];
-		int ex,old;
+		short ex;
+		int old;
 
 		path[0] = fname[0] = EOS;
 		if (mypgm.path[0])
@@ -361,4 +366,3 @@ WORD cdecl hdl_anwndg(DIALOG *d, EVNT *ev, WORD exitbutton, int clicks, void *da
 	subobj_wdraw(d, exitbutton, exitbutton, 1);
 	return 1;		/* weiter */
 }
-#pragma warn +par

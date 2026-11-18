@@ -153,6 +153,13 @@ ARGV paths. Tests used disposable D: files; the real installation was untouched.
 See [PORTING_NOTES.md](PORTING_NOTES.md) and [TODO.md](TODO.md) for the startup
 compatibility finding and the next application tasks.
 
+`mise run apps -- applicat` builds the association editor bundle in
+`build/atari/apps/applicat/`: `APPLICAT.APP`, `applicat.rsc` (German) and
+`applicat.inf` (minimal internal-icon associations). Run from that writable
+directory; saving, or running with `-c`, generates `applicat.dat`. No archived
+Pure C libraries or prebuilt DAT file are used. Test on a disposable MagiC
+installation: saving also sends the rebuilt cache to its running desktop.
+
 Repeatable emulator checks use explicit, subsystem-scoped tasks. Run
 `mise run test:mod-app-neost` (or `python3 scripts/neost-mod-app-smoke.py`).
 Runner options and outputs: `python3 scripts/neost-mod-app-smoke.py --help`.

@@ -105,10 +105,11 @@ Verify literal bytes in the compiled output separately when changing encoding.
 split a double-quoted path in a raw TOS command tail when the tail began with an
 ordinary option. Original PCMXSTRT handled it. See the
 [upstream parser](https://github.com/freemint/mintlib/blob/master/mintlib/crtinit.c).
-MOD_APP now privately tokenizes raw tails with single/double quotes and doubled
-apostrophes, while retaining MiNTLib's parsed ARGV vector for extended arguments.
-Keep this application-local until a second real consumer establishes a shared
-startup requirement; do not copy it blindly or port the entire old CRT.
+MOD_APP and APPLICAT share `MagiC/APPS/TOS_ARGS.H`, preserving single/double
+quotes and doubled apostrophes in raw tails while retaining MiNTLib's parsed
+ARGV vector for extended arguments. Storage belongs to each caller and lives
+through its `main`; no replacement CRT or heap allocation is needed. The
+17-case MOD_APP comparison passed again after extracting the shared parser.
 
 A disposable Atari launcher invoked both original and rebuilt MOD_APP through
 Pexec under the GCC kernel: 17 cases each, matching exit statuses and 48
@@ -283,6 +284,51 @@ queries the AES application and writeback registration, and writes PASS/FAIL
 plus observations to `C:\MGXTEST.TXT`. The PASS check detects the generic
 long-argument binding error; a clock screenshot alone does not.
 
+### APPLICAT
+
+`mise run apps -- applicat` compiles the eleven application modules plus the
+application's `IMPORT/GEMUT_MT.C` helper using public MiNTLib/GEMlib headers and
+`-lgem`. Output is `build/atari/apps/applicat/APPLICAT.APP`. The target also
+copies the default German resource as `applicat.rsc` and the minimal association
+fixture from `BIN/MINIMAL` as `applicat.inf`. The source-tree INF is not a safe
+starter: it references external icon resources and old developer paths.
+
+Run with the bundle directory as the working directory. The editor requires
+MagiC's window-dialog/listbox extensions; it is not a plain-TOS GUI port.
+Keep the executable, RSC and writable INF together. `-c` rebuilds the INF/DAT
+without opening the editor; interactive Save also rebuilds the cache and sends
+it to the running desktop. Use disposable configurations/images for testing.
+English/French resources remain under `SRC/EN` and `SRC/FRA`, unchanged and
+not runtime-verified by this port. Source comments are UTF-8; resource bytes
+are preserved and no approximate execution charset is selected.
+
+ABI boundaries are explicit: AES/VDI output fields and message words use
+16-bit types, while ordinary application integers stay 32-bit. Dialog and
+listbox callbacks use GEMlib's by-value `HNDL_OBJ_args`, `SLCT_ITEM_args` and
+`SET_ITEM_args` structures to preserve MagiC's packed callback stack layout.
+The DAT application record retains its signed 16-bit configuration field;
+compile-time size/offset assertions guard the disk records. INF window
+coordinates are scanned as shorts, and fixed four-byte special-object keys
+are parsed through a separate NUL-terminated temporary buffer.
+
+Under NeoST 0.6.5, MegaSTE/4 MiB/monochrome, TOS 2.06 and a cloned MagiC disk:
+
+- The archived and GCC `-c` runs returned status 0. Their 2,256-byte starter
+  caches match after excluding the three runtime ICONBLK pointer fields per
+  icon; the header, tables, icon geometry and bitmap data match.
+- The rebuilt editor opened its association windows. Program selection,
+  window movement/backdrop, the new-file-type dialog and Save were exercised.
+  Adding `*.ZZZ` to `MY APP` retained `*.OLD` and `C:\MY APP.APP`.
+  Independent DAT decoding confirmed one application, two patterns attached
+  to it, configuration 1, memory limit 0 and the preserved path.
+- Saving closed the editor and the desktop accepted the updated cache.
+
+Evidence is under `build/atari/applicat-check/` (`original`, `gcc-fixed` and
+`ui-direct`). Path/special-icon edits, drag/drop, color icons and non-German
+resource variants remain untested. Legacy four-character-constant warnings
+and the existing `calc_ic` possibly-uninitialized warning remain.
+
+
 ### Checklist for the next application
 
 1. Read its PRJ, startup source and actual dependencies before choosing flags.
@@ -312,6 +358,22 @@ long-argument binding error; a clock screenshot alone does not.
 8. Record TEXT, DATA, BSS and symbol sizes separately before drawing conclusions
    about a larger executable. Runtime-library and debug-symbol differences must
    not become a speculative optimization detour during a compatibility port.
+9. Preserve scanner contracts when tightening bounds. Fixed-width four-byte
+   keys are not C strings: scan into a five-byte temporary and copy the key,
+   rather than rejecting the fourth byte or overwriting the following field.
+   Legacy Pure C sources may also contain nested comments around disabled code;
+   remove obsolete disabled blocks instead of treating compiler fallout as
+   missing live functions.
+10. Check generated edits at the actual affected lines. A successful rewrite
+    preview is not proof that preprocessor line boundaries survived. Use fresh
+    anchored ranges rather than guessed offsets, especially after other edits.
+11. For GEM UI checks, avoid moving through `(0,0)` while establishing an
+    absolute mouse position: it can activate the system menu. Move from an edge
+    below the menu bar, confirm the actual foreground window, and target the
+    visible text/control hotspot rather than assuming a whole list row is active.
+12. For binary comparisons, identify runtime addresses and reader fixups before
+    demanding byte equality. Exclude only established address fields, never
+    unexplained differences in record widths, offsets or payload data.
 
 ## Kernel workflow
 

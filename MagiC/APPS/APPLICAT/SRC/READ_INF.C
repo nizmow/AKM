@@ -1,27 +1,27 @@
 /*
 *
-* EnthÑlt die Routinen zum Einlesen der INF-Datei
+* Enth√§lt die Routinen zum Einlesen der INF-Datei
 *
 */
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
+#include "APPLICAT_GEM.H"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <ctype.h>
-#include "gemut_mt.h"
-#include "windows.h"
-#include "appl.h"
-#include "inf.h"
-#include "applicat.h"
-#include "appldata.h"
-#include "anw_dial.h"	/* wegen d_anw */
-#include "ica_dial.h"	/* wegen d_ica */
-#include "icp_dial.h"	/* wegen d_icp */
-#include "pth_dial.h"	/* wegen d_pth */
-#include "spc_dial.h"	/* wegen d_spc */
-#include "typ_dial.h"	/* wegen d_typ */
+#include "IMPORT/GEMUT_MT.H"
+#include "WINDOWS.H"
+#include "APPL.H"
+#include "INF.H"
+#include "APPLICAT.H"
+#include "APPLDATA.H"
+#include "ANW_DIAL.H"	/* wegen d_anw */
+#include "ICA_DIAL.H"	/* wegen d_ica */
+#include "ICP_DIAL.H"	/* wegen d_icp */
+#include "PTH_DIAL.H"	/* wegen d_pth */
+#include "SPC_DIAL.H"	/* wegen d_spc */
+#include "TYP_DIAL.H"	/* wegen d_typ */
 
 #define DEBUG 0
 #define WBUFLEN 8000L
@@ -38,7 +38,7 @@ static char *inf_buf;
 static char *cpos;		/* Position innerhalb der Datei */
 static char *lpos;		/* Position innerhalb der Zeile */
 static char line[LBUFLEN];
-static int old_w,old_h;		/* alte Bildschirmgrîûe */
+static int old_w,old_h;		/* alte Bildschirmgr√∂√üe */
 
 /*
 * global variables
@@ -52,34 +52,34 @@ static int old_w,old_h;		/* alte Bildschirmgrîûe */
 *
 ****************************************************************/
 
-static int systemglobal[5];
+static WORD systemglobal[5];
 
-static void save_rscdata(int *save)
+static void save_rscdata(WORD *save)
 {
-	memcpy(save, _GemParBlk.global + 5, 5 * sizeof(int));
+	memcpy(save, aes_global + 5, 5 * sizeof(WORD));
 }
-static void restore_rscdata(int *save)
+static void restore_rscdata(WORD *save)
 {
-	memcpy(_GemParBlk.global + 5, save, 5 * sizeof(int));
+	memcpy(aes_global + 5, save, 5 * sizeof(WORD));
 }
 
 
 /****************************************************************
 *
 * Rechnet Koordinaten linear um. Der Wert <value> wurde bei
-* Bildschirmgrîûe <old> abgespeichert, jetzt ist die
-* Bildschirmgrîûe <new>.
+* Bildschirmgr√∂√üe <old> abgespeichert, jetzt ist die
+* Bildschirmgr√∂√üe <new>.
 *
 ****************************************************************/
 
-static void recalc(int *value, int old, int new)
+static void recalc(short *value, int old, int new)
 {
 	unsigned long tmp;
 
 	tmp    = (unsigned long) *value;
 	tmp   *= new;
 	tmp   /= old;
-	*value  = (int) tmp;
+	*value  = (short)tmp;
 }
 
 
@@ -100,7 +100,7 @@ static void get_wind_pos(const char *s)
 		return;
 
 	w = windefpos + n_windefpos;
-	sscanf(s, "WINDOW %s %d,%d,%d,%d",
+	sscanf(s, "WINDOW %31s %hd,%hd,%hd,%hd",
 					w->name,
 					&(w->g.g_x),
 					&(w->g.g_y),
@@ -141,7 +141,7 @@ static void get_wind_pos(const char *s)
 
 /*********************************************************************
 *
-* Gibt das <n>-te Icon der Datei fname zurÅck, d.h. dessen ID
+* Gibt das <n>-te Icon der Datei fname zur√ºck, d.h. dessen ID
 * -1 bei Fehler
 *
 *********************************************************************/
@@ -172,32 +172,32 @@ static int get_icon(const char *fname, int n)
 
 /*********************************************************************
 *
-* global LÑdt alle internen Icons in den Speicher
+* global L√§dt alle internen Icons in den Speicher
 *
 *********************************************************************/
 
 void load_int_icons(void)
 {
-	rsrc_gtree(T_DEFICN, &(rscx[0].adr_icons));
+	rsrc_gaddr(R_TREE, T_DEFICN, &rscx[0].adr_icons);
 }
 
 
 /*********************************************************************
 *
-* global: LÑdt alle externen Icons in den Speicher
+* global: L√§dt alle externen Icons in den Speicher
 *
 *********************************************************************/
 
 void load_icons(void)
 {
 	register int i;
-	char *fname = "rsc\\12345678901234567890";
+	char fname[4 + 13];
 	long errcode;
 	struct icon *ic;
 	OBJECT *ob;
 	int objnr;
-	DTA mydta;
-	int rscglobal[5];
+	_DTA mydta;
+	WORD rscglobal[5];
 
 
 	save_rscdata(systemglobal);		/* System-RSC merken */
@@ -244,6 +244,7 @@ void load_icons(void)
 	rscn = 1;
 
 	Fsetdta(&mydta);
+	strcpy(fname, "rsc\\");
 	errcode = Fsfirst("rsc\\*.rsc", 0);
 	for (;errcode == E_OK; errcode = Fsnext())
 	{
@@ -256,8 +257,8 @@ void load_icons(void)
 			break;
 		}
 
-		strcpy(fname+4, mydta.d_fname);
-		strcpy(rscx[rscn].fname, mydta.d_fname);
+		strcpy(fname + 4, mydta.dta_name);
+		strcpy(rscx[rscn].fname, mydta.dta_name);
 
 		if (!rsrc_load(fname))
 		{
@@ -278,7 +279,7 @@ void load_icons(void)
 		rscx[rscn].firsticon = icnn;
 		objnr = rscx[rscn].adr_icons->ob_head;	/* erstes Kind */
 	
-		while (objnr > 0)		/* gÅltig und nicht parent */
+		while (objnr > 0)		/* g√ºltig und nicht parent */
 		{
 			ob = rscx[rscn].adr_icons + objnr;
 			if ((ob->ob_type != G_ICON) && (ob->ob_type != G_CICON))
@@ -355,13 +356,13 @@ void load_icons(void)
 		}
 	}
 
-	restore_rscdata(systemglobal);		/* System-RSC zurÅck */
+	restore_rscdata(systemglobal);		/* System-RSC zur√ºck */
 }
 
 
 /****************************************************************
 *
-* Fehler-Alert fÅr APPLICAT.INF, mit Text zum EinfÅgen
+* Fehler-Alert f√ºr APPLICAT.INF, mit Text zum Einf√ºgen
 *
 * ALRT_ERR_IN_INF ist:
 * "[3][Fehler auf APPLICAT.INF:|%s][Abbruch]"
@@ -370,28 +371,29 @@ void load_icons(void)
 *
 ****************************************************************/
 
-static void alert_error_in_inf(char *s)
+static void alert_error_in_inf(const char *s)
 {
-	/* replace control characters "[]|%" in string to insert */
-	char *t = s;
-	while (*t)
-	{
-		if ((*t == '[') || (*t == ']') /*|| (*t == '|')*/ || (*t == '%'))
-		{
-			*t = '_';
-		}
-		t++;
-	}
+	char safe[128];
+	size_t i;
 
-	/* merge alert template with variable text and show alert */
-	sprintf(buf512, Rgetstring(ALRT_ERR_IN_INF, NULL), s);
+	/* Never modify strings owned by the resource system or caller. */
+	for (i = 0; i < sizeof(safe) - 1 && s[i]; i++)
+	{
+		char c = s[i];
+		if ((c == '[') || (c == ']') || (c == '%'))
+			c = '_';
+		safe[i] = c;
+	}
+	safe[i] = EOS;
+
+	sprintf(buf512, Rgetstring(ALRT_ERR_IN_INF, NULL), safe);
 	form_alert(1, buf512);
 }
 
 
 /****************************************************************
 *
-* Fehler-Alert fÅr APPLICAT.INF, mit Text aus der RSC-Datei
+* Fehler-Alert f√ºr APPLICAT.INF, mit Text aus der RSC-Datei
 *
 ****************************************************************/
 
@@ -403,7 +405,7 @@ void inf_alert_error_text(int id)
 
 /****************************************************************
 *
-* Entfernt rechtsbÅndige Leerstellen aus Zeichenkette
+* Entfernt rechtsb√ºndige Leerstellen aus Zeichenkette
 *
 ****************************************************************/
 
@@ -411,12 +413,9 @@ static void trim(char *s)
 {
 	register char *t;
 
-	t = s + strlen(s) - 1;
-	while ((t >= s) && isspace(*t))
-	{
-		*t = EOS;
-		t--;
-	}
+	t = s + strlen(s);
+	while ((t > s) && isspace((unsigned char)t[-1]))
+		*--t = EOS;
 }
 
 
@@ -424,7 +423,7 @@ static void trim(char *s)
 *
 * Liest einen Pfad mit max <len> Zeichen
 *
-* RÅckgabe 1: öberlauf
+* R√ºckgabe 1: √úberlauf
 *
 ****************************************************************/
 
@@ -433,7 +432,7 @@ static int scanpath(char **lpos, char *buf, int len)
 	register char *s;
 
 	s = *lpos;
-	while (isspace(*s))
+	while (isspace((unsigned char)*s))
 		s++;
 
 	if (*s == '\'')
@@ -441,7 +440,7 @@ static int scanpath(char **lpos, char *buf, int len)
 		s++;
 		while (*s && ((*s != '\'') || (s[1] == '\'')))
 		{
-			if (!len)
+			if (len <= 1)
 				return 1;
 			if (*s == '\'' && (s[1] == '\''))	/* doppeltes ' */
 				s++;
@@ -457,7 +456,7 @@ static int scanpath(char **lpos, char *buf, int len)
 	{
 		while (*s && ((*s != ' ')))
 		{
-			if (!len)
+			if (len <= 1)
 				return 1;
 			*buf++ = *s++;
 			len--;
@@ -474,7 +473,7 @@ static int scanpath(char **lpos, char *buf, int len)
 *
 * Extrahiert die Zeichenkette s aus der Gruppe [s]
 *
-* Röckgabe TRUE, wenn Fehler
+* R√úckgabe TRUE, wenn Fehler
 *
 ****************************************************************/
 
@@ -484,7 +483,7 @@ static int getgroup(char *buf)
 
 	*buf = EOS;
 	s = line;
-	while (isspace(*s))		/* fÅhrende Leerstellen Åberlesen */
+	while (isspace(*s))		/* f√ºhrende Leerstellen √ºberlesen */
 		s++;
 	if (*s++ != '[')
 		return 1;		/* Fehler */
@@ -517,39 +516,11 @@ static int getgroup(char *buf)
 	*buf = EOS;
 	return 0;
 }
-/*
-static int getgroup(char *s)
-{
-	char *t;
-
-	*s = EOS;
-	t = line;
-	while (isspace(*t))		/* fÅhrende Leerstellen Åberlesen */
-		t++;
-	if (*t++ != '[')
-		return 1;		/* Fehler */
-
-	if (*t == '\'')
-	{
-		if (scanpath(&t, s, MAX_NAMELEN))
-			return 1;
-	}
-	else
-	{
-		while ((*t) && ((*t != ']')))
-			*s++ = *t++;
-	}
-
-	if (*t != ']')
-		return 1;		/* letztes Zeichen nicht ']' */
-	return 0;
-}
-*/
 
 
 /****************************************************************
 *
-* Liest einen int, RÅckgabe 0 fÅr OK
+* Liest einen int, R√ºckgabe 0 f√ºr OK
 *
 ****************************************************************/
 
@@ -595,14 +566,14 @@ static void readline(void)
 	
 			*s = *cpos++;		/* ein Zeichen */
 			if (*s == '\r')
-				continue;		/* CR Åberlesen */
+				continue;		/* CR √ºberlesen */
 			if (*s != '\n')
 				s++;
 	
 			if ((s - line) > (LBUFLEN - 2))
 			{
 				inf_alert_error_text(STR_ERR_LEN_INF);
-				exit(-1);			/* ZeilenÅberlauf */
+				exit(-1);			/* Zeilen√ºberlauf */
 			}
 		}
 		while (*s != '\n');
@@ -787,10 +758,12 @@ static long _read_inf(int *rsc_id_err)
 			while (line[0] != '[')
 			{
 				/* key: APPS,DATS,BTCH,DEVC,ALIS,FLDR,DRVS,TRSH,PRNT */
-				if (scanpath(&lpos, (char *) &(spcx[spcn].key),	4))
+				char key[5] = {0};
+				if (scanpath(&lpos, key, sizeof(key)))
 				{
 					return 8;
 				}
+				memcpy(&spcx[spcn].key, key, 4);
 				
 				/* With 1.01, the name is treated as comment only: */
 				if (scanpath(&lpos, buf512, MAX_NAMELEN))
@@ -945,38 +918,38 @@ long get_inf(void)
 {
 	long ret;
 	int hdl;
-	XATTR xa;
+	struct stat inf_stat;
 	int rsc_id_err;
 
 
 	/* check, if file exists, and get file size */
-	ret = Fxattr(0, applicat_inf_filename, &xa);
-	if (ret < E_OK)
+	/* Check the file size with the public C runtime interface. */
+	if (stat(applicat_inf_filename, &inf_stat) < 0)
 	{
-		form_xerr(ret, applicat_inf_filename);
-		return ret;
+		form_xerr(EFILNF, applicat_inf_filename);
+		return EFILNF;
 	}
 
 	/* allocate space for whole file plus one byte more */
-	if (NULL == (inf_buf = Malloc(xa.size + 1)))
+	if (NULL == (inf_buf = (char *)(uintptr_t)Malloc(inf_stat.st_size + 1)))
 	{
 		form_xerr(ENSMEM, NULL);
 		return ENSMEM;
 	}
 
 	/* open and read entire file */
-	ret = Fopen(applicat_inf_filename, RMODE_RD);
+	ret = Fopen(applicat_inf_filename, 0);
 	if (ret >= E_OK)
 	{
 		hdl = (int) ret;
-		ret = Fread(hdl, xa.size, inf_buf);
+		ret = Fread(hdl, inf_stat.st_size, inf_buf);
 		Fclose(hdl);
 	}
 
 	/* open or read error */
 	if (ret < E_OK)
 	{
-		Mfree(inf_buf);
+		Mfree((long)(uintptr_t)inf_buf);
 		inf_buf = NULL;
 		form_xerr(ret, applicat_inf_filename);
 		return ret;
@@ -997,7 +970,7 @@ long get_inf(void)
 		alert_error_in_inf(s);
 	}
 
-	Mfree(inf_buf);
+	Mfree((long)(uintptr_t)inf_buf);
 	inf_buf = NULL;
 	return ret;
 }

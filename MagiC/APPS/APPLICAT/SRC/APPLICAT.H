@@ -1,4 +1,4 @@
-/* Resource Datei Indizes fÅr APPLICAT */
+/* Resource Datei Indizes f√ºr APPLICAT */
 
 #define T_APPS           0   /* Formular/Dialog */
 #define PN_BK            2   /* IBOX in Baum T_APPS */

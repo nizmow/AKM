@@ -2,7 +2,7 @@
 *
 *             APPLICAT.APP                             21.03.94
 *             ============
-*                                 letzte énderung:	2.5.98
+*                                 letzte √Ñnderung:	2.5.98
 *
 * geschrieben mit Pure C V1.1
 * Projektdatei: APPLICAT.PRJ
@@ -15,16 +15,16 @@
 *	-aa	appath		; Applikation anmelden
 *	-ad	appath dat	; angemeldete Datei modifizieren
 *
-*	-ia	appath		; Icon fÅr Programm anmelden
-*	-id	apname dat	; Icon fÅr Datei anmelden
+*	-ia	appath		; Icon f√ºr Programm anmelden
+*	-id	apname dat	; Icon f√ºr Datei anmelden
 *					; ggf. <apname> == "<>"
-*	-io	opath		; Icon fÅr Ordner/Disk anmelden
-*	-is	key[4]		; Icon fÅr "special object" anmelden
+*	-io	opath		; Icon f√ºr Ordner/Disk anmelden
+*	-is	key[4]		; Icon f√ºr "special object" anmelden
 *
 *
 * ----------------------------------------------------------------
 *
-* Textdatei fÅr APPLICAT:
+* Textdatei f√ºr APPLICAT:
 * Konfigurationsdatei applicat.inf:
 *
 *	magic			; Zeile mit "applicat.inf" und Versionsnummer
@@ -42,14 +42,14 @@
 *
 *	
 *
-* BinÑrdatei fÅr MAGXDESK:
+* Bin√§rdatei f√ºr MAGXDESK:
 * Konfigurationsdatei magxdesk.icn:
 *
 *	long magic;		'APNF'
 *	int ver;			0	(Versionskennung)
 *	int n_icons;
-*	int n_pgm;		Anzahl ProgrammeintrÑge
-*	int n_dat;		Anzahl DateieintrÑge
+*	int n_pgm;		Anzahl Programmeintr√§ge
+*	int n_dat;		Anzahl Dateieintr√§ge
 *	long offs_pgm;
 *	long offs_dat;		Zeiger auf Tabelle der Daten-Dateien
 *	void *pgmx[n_pgm];	Angemeldete Programme
@@ -64,7 +64,7 @@
 *	char cpath[?]		kompletter Pfadname nullterminiert,
 *					auf gerade Adresse erweitert
 *					ggf. '\0', wenn kein Pfad bekannt ist.
-*	int icon;		Index fÅr Icon (ggf. auch Standardicon)
+*	int icon;		Index f√ºr Icon (ggf. auch Standardicon)
 *	int config;		Konfigurationsbits (TTP/Single...)
 *	int types[?];		Index auf Dateitypen, durch -1
 *					abgeschlossen
@@ -72,40 +72,34 @@
 *	 Daten:
 *	char name[?];		Extension, nullterminiert,
 *					auf gerade Adresse erweitert
-*	int icon;		Index fÅr Icon (ggf. auch Standardicon)
+*	int icon;		Index f√ºr Icon (ggf. auch Standardicon)
 *
 *
 ****************************************************************/
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
-#include <vdi.h>
+#include "APPLICAT_GEM.H"
+#include "../../TOS_ARGS.H"
 #include <string.h>
 #include <stdlib.h>
-#include "windows.h"
-#include "applicat.h"
-#include "gemut_mt.h"
-
-#include "anw_dial.h"
-#include "typ_dial.h"
-#include "ica_dial.h"
-
-#include "icp_dial.h"
-#include "pth_dial.h"
-
-#include "spc_dial.h"
-
-#include "appl.h"
-#include "inf.h"
-#include "read_inf.h"
-#include "appldata.h"
-#include "iconsel.h"
-
+#include "WINDOWS.H"
+#include "APPLICAT.H"
+#include "IMPORT/GEMUT_MT.H"
+#include "APPL.H"
+#include "ANW_DIAL.H"
+#include "TYP_DIAL.H"
+#include "ICA_DIAL.H"
+#include "ICP_DIAL.H"
+#include "PTH_DIAL.H"
+#include "SPC_DIAL.H"
+#include "INF.H"
+#include "READ_INF.H"
+#include "APPLDATA.H"
+#include "ICONSEL.H"
 #define _HZ_200     ((long *)          0x4ba)
 
-int gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
+short gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
 int ap_id;
-int is_3d;
+short is_3d;
 GRECT scrg;
 
 int is_multiwindow;		/* alle Fenster sind offen */
@@ -131,15 +125,14 @@ void close_work(void);
 
 const char *applicat_inf_filename = "applicat.inf";
 
-static void _rsrc_load(char *fname);
 void Mgraf_mouse(int type);
 
 /* Dialoge */
 
-DIALOG *d_ica = NULL;			/* Icons fÅr Applikationen */
+DIALOG *d_ica = NULL;			/* Icons f√ºr Applikationen */
 OBJECT *adr_ica_dialog;
 
-DIALOG *d_icp = NULL;			/* Icons fÅr Pfade */
+DIALOG *d_icp = NULL;			/* Icons f√ºr Pfade */
 OBJECT *adr_icp_dialog;
 
 DIALOG *d_spc = NULL;			/* Spezial-Icons */
@@ -157,7 +150,7 @@ OBJECT *adr_ftypes;
 
 /****************************************************************
 *
-* Hilfsfunktion fÅr getHz200
+* Hilfsfunktion f√ºr getHz200
 *
 ****************************************************************/
 
@@ -169,7 +162,7 @@ static long _getHz200(void)
 
 /****************************************************************
 *
-* Systemzeit fÅr Intervall-Berechnungen
+* Systemzeit f√ºr Intervall-Berechnungen
 *
 ****************************************************************/
 
@@ -182,7 +175,7 @@ long getHz200(void)
 /****************************************************************
 *
 * Doppelklick-Zeit in Millisekunden,
-* muû mit 5 multipliziert werden fÅr 5-ms-Einheiten fÅr den 200-Hz-Timer
+* mu√ü mit 5 multipliziert werden f√ºr 5-ms-Einheiten f√ºr den 200-Hz-Timer
 *
 ****************************************************************/
 
@@ -214,7 +207,7 @@ unsigned get_dclick_interval_ms(void)
 *
 *********************************************************************/
 
-static int process_action(const char action[2], const char *args[2])
+static int process_action(const char action[2], char *args[2])
 {
 	if (action[0] == 'i')
 	{
@@ -346,10 +339,10 @@ static int process_action(const char action[2], const char *args[2])
 
 static int handle_key(EVNT *w_ev)
 {
-	int whdl;
+	short whdl;
 	WORD intin2;
-	int message[8];
-	int dummy;
+	short message[8];
+	short dummy;
 	WINDOW *w;
 
 	if (w_ev->key == 0x1011)	/* Ctrl-Q */
@@ -416,15 +409,17 @@ static int handle_key(EVNT *w_ev)
 int main(int argc, char *argv[])
 {
 	EVNT w_ev;
+	struct tos_args raw_args;
 	char action[2] = {0,0};
 	char *args[2] = { NULL, NULL };
 	WINDOW *w;
-	int dummy;
+	short dummy;
 	const int wait_nclicks = 1;		/* Fast Click */
-	long last_clicktime = 0;
+	unsigned long last_clicktime = 0;
 	unsigned dclick_interval_hz200;		/* in 5-ms-Einheiten */
 
 
+	argc = tos_arguments(argc, &argv, &raw_args);
 	Pdomain(PDOM_MINT);
 	if ((ap_id = appl_init()) < 0)
 	{
@@ -519,27 +514,17 @@ int main(int argc, char *argv[])
 
 	for (;;)
 	{
-		/* Das eingestellte Doppelklick-Intervall kînnte geÑndert worden sein. */
+		/* Das eingestellte Doppelklick-Intervall k√∂nnte ge√§ndert worden sein. */
 		dclick_interval_hz200 = get_dclick_interval_ms() / 5;
 
-		w_ev.mwhich = evnt_multi(
-					  MU_KEYBD + MU_BUTTON + MU_MESAG,
-					  wait_nclicks,	/* 1: Doppelklicks selber auswerten */
-					  1,			/* nur linke Maustaste		*/
-					  1,			/* linke Maustaste gedrÅckt	*/
-					  0,NULL,		/* kein 1. Rechteck			*/
-					  0,NULL,		/* kein 2. Rechteck			*/
-					  w_ev.msg,
-					  0L,	/* ms */
-					  (EVNTDATA*) &(w_ev.mx),
-					  &w_ev.key,
-					  &w_ev.mclicks);
+		EVNT_multi(MU_KEYBD | MU_BUTTON | MU_MESAG,
+				   wait_nclicks, 1, 1, NULL, NULL, 0L, &w_ev);
 
 		/* Doppelklick der linken Maustaste erkennen */
 
 		if (w_ev.mbutton & 1)
 		{
-			long clicktime = getHz200();
+			unsigned long clicktime = (unsigned long)getHz200();
 			if (clicktime - last_clicktime < dclick_interval_hz200)
 			{
 				w_ev.mclicks = 2;
@@ -648,7 +633,7 @@ long err_alert(long e)
 
 /*************************************************************
 *
-* Einen Fensterdialog îffnen
+* Einen Fensterdialog √∂ffnen
 *
 *************************************************************/
 
@@ -668,7 +653,7 @@ DIALOG *xy_wdlg_init(
 	struct dialog_userdata *du;
 
 
-	if (NULL == (du = Malloc(sizeof(struct dialog_userdata))))
+	if (NULL == (du = (struct dialog_userdata *)Malloc(sizeof(*du))))
 		return NULL;
 
 	if ((wd = def_wind_pos(ident)) != NULL)
@@ -794,9 +779,9 @@ int rsrc_gtree(int index, OBJECT **tree)
 
 /****************************************************************
 *
-* Dateiname isolieren und öberlauf testen
+* Dateiname isolieren und √úberlauf testen
 *
-* RÅckgabe:	-1	Name ungÅltig
+* R√ºckgabe:	-1	Name ung√ºltig
 *			1	Name ohne Pfad
 *			0	Name mit Pfad
 *
