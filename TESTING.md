@@ -40,6 +40,34 @@ desktop drawing, one-second timer updates and coexistence with APPLICAT under
 the tested MagiC kernel; it does not measure CPU load, long-term stability or
 behavior under a different desktop/OS version.
 
+## NeoST: MGNOTICE archived/rebuilt lifecycle
+
+`scripts/neost-mgnotice-smoke.py` builds `MGNOTICE.APP`, its German resource,
+the rebuilt `EDITOBJC.SLB` and the `NEOSTART.PRG` test helper. It then runs the
+archived and rebuilt bundles in separate clones of the same MagiC image:
+
+1. Start MagiC and let `NEOSTART.PRG` bring MGNOTICE to the foreground after
+   the desktop settles.
+2. Create a note with Ctrl-N, type `hello`, leave edit mode with Esc, and quit
+   with Ctrl-Q.
+3. Compare every UI state and the saved `0.NOT` file.
+4. Reboot the same image and compare the reopened note window.
+
+The delayed launcher is required because MagiC starts `#_APP` entries before
+MAGXDESK owns the menu bar; MGNOTICE needs foreground windows for input.
+
+Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
+`mtools`. Run with fresh output:
+
+```sh
+MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
+  python3 scripts/neost-mgnotice-smoke.py --output build/atari/neost-mgnotice-check
+```
+
+Use `--partition-offset` for a different MagiC partition offset. The source
+image is cloned for each binary. Delete, font/colour/options, multiple windows,
+resize and alternate resources are outside this scenario.
+
 ## NeoST: MagiC SHUTDOWN smoke
 
 This is a manual, opt-in smoke test. NeoST's default EmuTOS ROM cannot verify

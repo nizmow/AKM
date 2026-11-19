@@ -60,6 +60,11 @@ description = "Verify MGCLOCK desktop timer and MagiC coexistence under NeoST"
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-mgclock-smoke.py"
 
+[tasks."test:mgnotice-neost"]
+description = "Compare archived and rebuilt MGNOTICE note lifecycle under NeoST"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-mgnotice-smoke.py"
+
 [tasks."test:neost-server"]
 description = "Run NeoST server client protocol regression tests"
 dir = "{{ config_root }}"

@@ -100,6 +100,10 @@ framework or shared-library rewrite is required before these are attempted.
 - [x] **MGVIEW** — independent executable; six archived/rebuilt MagiC scenarios
   verify line endings, quoted/ARGV startup, empty input and keyboard navigation.
 - [ ] Desktop helpers: MGEDIT, MGNOTICE version 2, MGSEARCH.
+- [x] **MGNOTICE version 2** — add `mgnotice` producing the application, German
+  resource and rebuilt `EDITOBJC.SLB`; archived/rebuilt create, edit, save and
+  reopen states match on a cloned MagiC image.
+- [ ] Desktop helpers: MGSEARCH.
 - [ ] Larger/threaded programs: MGCOPY, MGFORMAT, VT52, MAGXDESK version 5.
 - [ ] Separate assembly builds: MCMD, MAGXCONF, FLP_PAR and appropriate utilities.
 - [ ] Loadable components: editor/image/window-frame SLBs, CPXs and drivers.

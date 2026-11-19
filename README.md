@@ -180,6 +180,12 @@ tail or ARGV. LF, CRLF, classic Mac CR, spaced paths with VFAT enabled, empty
 files and keyboard navigation were compared with the archive under NeoST/MagiC.
 See the catalogue and porting notes for verification limits.
 
+`mise run apps -- mgnotice` builds `build/atari/apps/mgnotice/`: `MGNOTICE.APP`,
+the German `mgnotice.rsc` and the rebuilt `EDITOBJC.SLB`. It reuses the shared
+`GEMUT_MT.C` helper and neutral `MagiC/APPS/GEMUT_MT_SDK.H`. Archived/rebuilt
+NeoST/MagiC cases create, edit, save and reopen a note with identical screens
+and byte-identical `.NOT` output.
+
 Repeatable emulator checks use explicit, subsystem-scoped tasks. Run
 `mise run test:mod-app-neost` (or `python3 scripts/neost-mod-app-smoke.py`).
 Runner options and outputs: `python3 scripts/neost-mod-app-smoke.py --help`.
@@ -191,7 +197,11 @@ to verify the restored desktop clock and its coexistence with APPLICAT. The
 MagiC half needs `MAGIC_IMAGE`, `TOS206_ROM` and host `mtools`; see
 [TESTING.md](TESTING.md).
 
-The three `scripts/neost-*-smoke.py` runners use `scripts/neost_common.py` for
+Run `mise run test:mgnotice-neost` (or `python3 scripts/neost-mgnotice-smoke.py`)
+to compare the archived and rebuilt MGNOTICE note lifecycle. It uses the same
+MagiC image, TOS 2.06 and `mtools` inputs.
+
+The `scripts/neost-*-smoke.py` runners use `scripts/neost_common.py` for
 executable/AppImage discovery, ROM selection, bounded subprocess execution,
 host-log capture, fresh output directories and streaming file hashes.
 Discovery prefers `--neost-headless`, then `PATH`, then AppImage extraction in

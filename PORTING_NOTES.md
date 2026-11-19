@@ -397,6 +397,51 @@ Other display modes/OSes, resize/full, multiple-window cycling and VA_START/
 drag-drop IPC were not exercised. `VIEW.PRG` remains an archived historical
 binary, not a second claimed build of MGVIEW.
 
+### MGNOTICE
+
+`mise run apps -- mgnotice` builds `MagiC/APPS/MGNOTICE.2/SRC` as
+`build/atari/apps/mgnotice/MGNOTICE.APP`, packages the default German
+`mgnotice.rsc`, and copies the independently built `EDITOBJC.SLB`. The source
+was converted to UTF-8 and adapted to public MiNTLib/GEMlib interfaces. It
+reuses the shared `GEMUT_MT.C` utility implementation; `MagiC/APPS/GEMUT_MT_SDK.H`
+now holds the public-SDK definitions used by both APPLICAT and MGNOTICE, while
+`APPLICAT_GEM.H` remains a thin compatibility include. APPLICAT compiles again
+after that move; its earlier runtime evidence was not rerun.
+
+ABI boundaries that mattered:
+
+- `WINDOW`'s AES/VDI fields and the message union are 16-bit. `WMESAG` is
+  asserted to be eight AES words (16 bytes).
+- The legacy 23-argument `evnt_multi` call becomes `mt_evnt_multi`; window
+  messages are `short[8]`.
+- `wind_create`, `wind_open` and `wind_calc` use the SDK's GRECT helpers;
+  `graf_mkstate` takes four output pointers and `graf_dragbox` takes the
+  expanded rectangle coordinates.
+- The MagiC dialog callback uses the SDK's by-value `HNDL_OBJ_args`, not five
+  separate arguments.
+- `TEDINFO.te_color` bits 4–7 hold the text colour; the legacy `te_ucolor`
+  union is not present in GEMlib.
+- `edit_evnt` writes through a native `long *`, not `LONG`/`int32_t`.
+- The GEMDOS directory record is `_DTA` (`dta_name`, `dta_size`), and
+  `Mshrink` takes `(pointer, size)`.
+- `notice_path` is a writable array; the code changes its drive byte from
+  `Dgetdrv()`. `sprintf` replaces the nonstandard `itoa`.
+
+`python3 scripts/neost-mgnotice-smoke.py` builds the application, test helper
+and SLB, then boots archived and rebuilt bundles in separate MagiC 6.20/TOS 2.06
+clones. It creates a note with Ctrl-N, types `hello`, leaves edit mode with Esc,
+quits with Ctrl-Q, compares every UI state, extracts the saved note, and reboots
+the same image to compare the reopened note. The delayed `NEOSTART.PRG` helper
+is needed because MagiC starts `#_APP` entries before MAGXDESK owns the menu bar;
+MGNOTICE needs foreground windows for input.
+
+Verified results: initial, new, typed, escaped and quit screens are pixel-identical;
+the 75-byte `0.NOT` files are byte-identical and contain `hello`; the reopened
+screens are identical and the note window occupies `(98,98)-(141,117)`. Evidence
+is under `build/atari/neost-mgnotice-verify2/`. Delete, font/colour/options,
+multiple-window operation, window resize and French/US resources remain
+unverified.
+
 ## Application porting workflow
 
 Use these gates in order; the checklist below supplies the boundary details.

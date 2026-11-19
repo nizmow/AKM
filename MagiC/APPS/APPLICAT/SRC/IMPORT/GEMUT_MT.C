@@ -8,13 +8,13 @@
 *
 *******************************************************/
 
-#include "APPLICAT_GEM.H"
+#include "../../../GEMUT_MT_SDK.H"
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include "IMPORT/GEMUT_MT.H"
+#include "GEMUT_MT.H"
 
 #define ABS(X) ((X>0) ? X : -X)
 

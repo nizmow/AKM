@@ -14,14 +14,22 @@ APPLICAT_OBJECTS := $(patsubst $(APPLICAT_DIR)/%.C,$(BUILD_DIR)/applicat/%.o,$(A
 MGVIEW_DIR := MagiC/APPS/MGVIEW/SRC
 MGVIEW_SOURCES := $(addprefix $(MGVIEW_DIR)/,MGVIEW.C WINDOWS.C MGWIND.C MEMCHAR2.C)
 MGVIEW_OBJECTS := $(patsubst $(MGVIEW_DIR)/%.C,$(BUILD_DIR)/mgview/%.o,$(MGVIEW_SOURCES))
+MGNOTICE_DIR := MagiC/APPS/MGNOTICE.2/SRC
+MGNOTICE_GEMUT_DIR := MagiC/APPS/APPLICAT/SRC/IMPORT
+MGNOTICE_SOURCES := $(addprefix $(MGNOTICE_DIR)/,MGNOTICE.C MGNWIND.C \
+  OPT_DIAL.C WINDOWS.C)
+MGNOTICE_OBJECTS := $(patsubst $(MGNOTICE_DIR)/%.C,$(BUILD_DIR)/mgnotice/%.o,$(MGNOTICE_SOURCES))
 
 
-.PHONY: all applicat mod-app cmdline showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview
+.PHONY: all applicat mod-app cmdline showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver
 all: mod-app
 applicat: $(BUILD_DIR)/applicat/APPLICAT.APP $(BUILD_DIR)/applicat/applicat.rsc \
   $(BUILD_DIR)/applicat/applicat.inf
 mod-app: $(BUILD_DIR)/mod-app/MOD_APP.TTP
 mgview: $(BUILD_DIR)/mgview/MGVIEW.APP
+mgnotice: $(BUILD_DIR)/mgnotice/MGNOTICE.APP $(BUILD_DIR)/mgnotice/mgnotice.rsc \
+  $(BUILD_DIR)/mgnotice/EDITOBJC.SLB
+mgnotice-test-driver: $(BUILD_DIR)/mgnotice/NEOSTART.PRG
 
 cmdline: $(BUILD_DIR)/cmdline/CMDLINE.PRG
 showfile: $(BUILD_DIR)/showfile/SHOWFILE.TTP
@@ -51,6 +59,34 @@ $(BUILD_DIR)/mgview/%.o: $(MGVIEW_DIR)/%.C Makefile.apps
 
 $(BUILD_DIR)/mgview/MGVIEW.APP: $(MGVIEW_OBJECTS) Makefile.apps
 	$(CC) $(APP_FLAGS) $(MGVIEW_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mgnotice/%.o: $(MGNOTICE_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGNOTICE_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgnotice/GEMUT_MT.o: $(MGNOTICE_GEMUT_DIR)/GEMUT_MT.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGNOTICE_GEMUT_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgnotice/MGNOTICE.APP: $(MGNOTICE_OBJECTS) \
+  $(BUILD_DIR)/mgnotice/GEMUT_MT.o Makefile.apps
+	$(CC) $(APP_FLAGS) $(MGNOTICE_OBJECTS) $(BUILD_DIR)/mgnotice/GEMUT_MT.o \
+	  $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mgnotice/mgnotice.rsc: $(MGNOTICE_DIR)/MGNOTICE.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/mgnotice/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/mgnotice/NEOSTART.PRG: MagiC/APPS/MGNOTICE.2/TESTDATA/NEOSTART.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/applicat/applicat.rsc: $(APPLICAT_DIR)/APPLICAT.RSC
 	mkdir -p "$(@D)"
@@ -143,3 +179,7 @@ $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG: MagiC/APPS/WBDAEMON/TESTDATA/NEOSTEST.C Make
 -include $(BUILD_DIR)/wbdaemon/NEOSTEST.d
 -include $(APPLICAT_OBJECTS:.o=.d)
 -include $(MGVIEW_OBJECTS:.o=.d)
+
+-include $(MGNOTICE_OBJECTS:.o=.d)
+-include $(BUILD_DIR)/mgnotice/GEMUT_MT.d
+-include $(BUILD_DIR)/mgnotice/NEOSTART.d
