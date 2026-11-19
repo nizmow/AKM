@@ -79,3 +79,8 @@ run = "python3 -m unittest discover -s NON-TOS/atari-utf8-conversion -p 'test_*.
 description = "Scan the port catalogue for remaining sources and legacy paths"
 dir = "{{ config_root }}"
 run = "python3 scripts/port_scan.py"
+
+[tasks."ports:deps"]
+description = "Resolve legacy PRJ module and header references"
+dir = "{{ config_root }}"
+run = "python3 scripts/port_deps.py"

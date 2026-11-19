@@ -106,8 +106,10 @@ emulator and ROM explicitly using the runner's options.
 
 Use `mise exec -- <command>` without shell activation, or activate mise to get
 the selected versions automatically. `mise run test:encoding` runs the text
-converter regression checks. Host Python pinning does not change the Python
-installed inside the toolchain container. Proprietary TOS ROMs and writable
+converter regression checks. `mise run ports:scan` inventories the catalogue
+and source roots; `mise run ports:deps` resolves legacy `.PRJ` module and header
+references to repository candidates. Host Python pinning does not change the
+Python installed inside the toolchain container. Proprietary TOS ROMs and writable
 MagiC disk images are supplied separately, never installed by mise.
 
 
