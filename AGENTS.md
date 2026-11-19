@@ -19,12 +19,18 @@
   output pointers, message buffers and persisted fields can still be 16-bit.
   Check `scanf` formats as well as declarations; guard disk layouts with size
   and offset assertions.
+  Match pointer target types, not just widths: this SDK uses `long *` for long
+  outputs, while its `int32_t` is `int`. Guard native `long` width when using it.
 - Use public `gem.h`/`gemx.h` callback definitions. MagiC dialog/listbox callbacks
   need the SDK's by-value argument structures; changing separate parameters to
   `short` does not establish the correct callback stack layout.
 - Trace the callee's actual trap layout for MagiC extensions. For example,
   `SC_WBACK` takes a word subcommand, unlike generic MiNTLib `Sconfig`'s long
   argument. A successful return can be a query, not the requested state change.
+- For SLBs, read the library-specific porting notes before linking. Registered
+  editor AES handlers receive `AESPB *` in A0; SLB lifecycle entries use the stack.
+  An ordinary MiNT ELF startup wrapper cannot precede the SLB's TEXT header.
+  Preserve linked constructors and BSS relocations when supplying custom startup.
 - Distinguish fixed-width binary keys from NUL-terminated strings. A four-byte
   key needs a separate five-byte buffer when passed through a string scanner.
 - Use `NON-TOS/atari-utf8-conversion/atari_text.py` for known Atari ST text.

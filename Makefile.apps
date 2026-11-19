@@ -1,5 +1,6 @@
 CROSS_COMPILE ?= m68k-atari-mintelf-
 CC := $(CROSS_COMPILE)gcc
+VASM ?= vasmm68k_mot
 BUILD_DIR ?= build/atari/apps
 CFLAGS ?= -O2 -g -Wall -Wextra
 # Applications use the supplied MiNTLib's default stack ABI and 32-bit int.
@@ -179,7 +180,64 @@ $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG: MagiC/APPS/WBDAEMON/TESTDATA/NEOSTEST.C Make
 -include $(BUILD_DIR)/wbdaemon/NEOSTEST.d
 -include $(APPLICAT_OBJECTS:.o=.d)
 -include $(MGVIEW_OBJECTS:.o=.d)
+EDIT_SLB_DIR := MagiC/EXTENSIO/EDIT_SLB/SRC
+EDIT_SLB_OBJECTS := $(BUILD_DIR)/edit-slb/EDIT_SLB.o $(BUILD_DIR)/edit-slb/EDITOB.o \
+  $(BUILD_DIR)/edit-slb/MEMCHAR2.o $(BUILD_DIR)/edit-slb/EDIT_ENTRY.o
 
+.PHONY: edit-slb
+edit-slb: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
+
+$(BUILD_DIR)/edit-slb/%.o: $(EDIT_SLB_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(EDIT_SLB_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/edit-slb/MEMCHAR2.o: MagiC/APPS/MGVIEW/SRC/MEMCHAR2.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(EDIT_SLB_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/edit-slb/EDIT_ENTRY.o: $(EDIT_SLB_DIR)/EDIT_ENTRY.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/edit-slb/EDITOBJC.elf: $(EDIT_SLB_OBJECTS) $(EDIT_SLB_DIR)/edit_slb.ld Makefile.apps
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,$(EDIT_SLB_DIR)/edit_slb.ld \
+	  $(EDIT_SLB_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
+
+$(BUILD_DIR)/edit-slb/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.elf scripts/elf_to_slb.py
+	python3 scripts/elf_to_slb.py "$<" "$@"
+
+-include $(BUILD_DIR)/edit-slb/EDIT_SLB.d
+-include $(BUILD_DIR)/edit-slb/EDITOB.d
+-include $(BUILD_DIR)/edit-slb/MEMCHAR2.d
+
+MGEDIT_DIR := MagiC/APPS/MGEDIT/SRC
+MGEDIT_SOURCES := $(addprefix $(MGEDIT_DIR)/,MGEDIT.C MGEDWIND.C OPT_DIAL.C \
+  MGEDIT_GEM.C)
+MGEDIT_OBJECTS := $(patsubst $(MGEDIT_DIR)/%.C,$(BUILD_DIR)/mgedit/%.o,$(MGEDIT_SOURCES))
+
+.PHONY: mgedit
+mgedit: $(BUILD_DIR)/mgedit/MGEDIT.APP $(BUILD_DIR)/mgedit/mgedit.rsc \
+  $(BUILD_DIR)/mgedit/EDITOBJC.SLB
+
+$(BUILD_DIR)/mgedit/%.o: $(MGEDIT_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGEDIT_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgedit/MGEDIT.APP: $(MGEDIT_OBJECTS) Makefile.apps
+	$(CC) $(APP_FLAGS) $(MGEDIT_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mgedit/mgedit.rsc: $(MGEDIT_DIR)/MGEDIT.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/mgedit/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+-include $(MGEDIT_OBJECTS:.o=.d)
 -include $(MGNOTICE_OBJECTS:.o=.d)
 -include $(BUILD_DIR)/mgnotice/GEMUT_MT.d
 -include $(BUILD_DIR)/mgnotice/NEOSTART.d

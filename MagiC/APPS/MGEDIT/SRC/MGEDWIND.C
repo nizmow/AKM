@@ -1,17 +1,16 @@
 /*
 *
-* EnthÑlt die Routinen fÅr die Editorfenster
+* Enth√§lt die Routinen f√ºr die Editorfenster
 *
 */
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
-#include <vdi.h>
-#include <string.h>
+#include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include "gemut_mt.h"
-#include "globals.h"
-#include "mgedit.h"
+#include <string.h>
+#include <sys/stat.h>
+#include "GLOBALS.H"
+#include "MGEDIT.H"
 
 /****************************************************************
 *
@@ -80,7 +79,7 @@ WINDOW **find_slot_window( WINDOW *myw )
 
 /****************************************************************
 *
-* îffnet ein neues Fenster.
+* √∂ffnet ein neues Fenster.
 * Wenn <path> == NULL ist, wird ein leeres Dokument erzeugt.
 *
 ****************************************************************/
@@ -105,7 +104,7 @@ void close_window( WINDOW *w )
 
 /****************************************************************
 *
-* îffnet ein neues Fenster.
+* √∂ffnet ein neues Fenster.
 * Wenn <path> == NULL ist, wird ein leeres Dokument erzeugt.
 *
 ****************************************************************/
@@ -114,28 +113,38 @@ WINDOW *open_new_window( char *path )
 {
 	WINDOW *w = NULL;
 	WINDOW **pw;
-	int file = 0;
-	int success = FALSE;
-	long ret = E_OK;
-	XATTR xa;
+	int file = -1;
+	int success = 0;
+	long ret = 0;
+	struct stat st;
 	int wnr;
 
+
+	/* Der Fensterpfad ist auf 127 Zeichen plus Terminator begrenzt. */
+	/* ------------------------------------------------------------ */
+
+	if	(path && (strlen(path) >= sizeof(w->path)))
+		{
+		form_xerr(-ENAMETOOLONG, path);
+		return(NULL);
+		}
 
 	pw = new_window();
 	if	(!pw)
 		{
-		ret = ENSMEM;
+		ret = -ENOMEM;
 		goto fehler;
 		}
 
 	wnr = (int) (pw-windows);
-	w = Malloc(sizeof(WINDOW));
+	w = (WINDOW *) Malloc(sizeof(WINDOW));
 	if	(!w)
 		{
-		ret = ENSMEM;
+		ret = -ENOMEM;
 		goto fehler;
 		}
 
+	w->handle = -1;
 	w->buf = NULL;
 
 	w->out.g_x = -1 + wnr * 8;
@@ -143,18 +152,18 @@ WINDOW *open_new_window( char *path )
 	w->out.g_w = 640;
 	w->out.g_h = scrg.g_h-16;
 
-	w->handle = wind_create(EDITOR_W_KIND, &scrg);
+	w->handle = wind_create_grect(EDITOR_W_KIND, &scrg);
 	if	(w->handle < 0)
 		{
-		ret = ENSMEM;
+		ret = -ENOMEM;
 		goto fehler;
 		}
 
 	/* Allgemeine Einstellungen */
 	/* ------------------------ */
 
-	w->dirty = FALSE;
-	w->save_active = FALSE;
+	w->dirty = 0;
+	w->save_active = 0;
 	w->flags = 0;
 	w->fontID = prefs.fontID;
 	w->fontH = prefs.fontH;
@@ -163,72 +172,74 @@ WINDOW *open_new_window( char *path )
 	w->bcolour = prefs.bcolour;
 	w->tabwidth = prefs.tabwidth;
 
-	/* ggf. DateilÑnge ermitteln */
+	/* ggf. Dateil√§nge ermitteln */
 	/* ------------------------- */
 
 	if	(path)
 		{
 		strcpy(w->path, path);
 		strcpy(w->title, path);
-		ret = Fopen(path, RMODE_RD);
+		ret = Fopen(path, FO_READ);
 		if	(ret < 0)
 			goto fehler;
 
 		file = (int) ret;
 
-		ret = Fcntl(file, (long) (&xa), FSTAT);
-		if	(ret < 0)
+		if	(fstat(file, &st) < 0)
+			{
+			ret = -errno;
 			goto fehler;
+			}
 		}
 	else	{
 		w->path[0] = '\0';
 		strcpy(w->title, Rgetstring(STR_NONAME, NULL));
-		itoa(wnr+1, w->title+strlen(w->title), 10);
-		xa.size = 0L;
+		sprintf(w->title+strlen(w->title), "%d", wnr+1);
+		st.st_size = 0;
 		}
 
-	w->bufsize = xa.size + prefs.bufsize;
-	w->buf = Malloc(w->bufsize);
+	w->bufsize = (long) st.st_size + prefs.bufsize;
+	w->buf = (char *) Malloc(w->bufsize);
 	if	(!w->buf)
 		{
-		ret = ENSMEM;
+		ret = -ENOMEM;
 		goto fehler;
 		}
 
-	if	(file)
+	if	(file >= 0)
 		{
-		ret = Fread(file, xa.size, w->buf);
+		ret = Fread(file, (long) st.st_size, w->buf);
 		Fclose(file);
-		file = 0;
-		if	(ret != xa.size)
+		file = -1;
+		if	(ret != (long) st.st_size)
 			{
-			ret = ERROR;
+			ret = -EIO;
 			goto fehler;
 			}
 		}
 
-	w->buf[xa.size] = '\0';
+	w->buf[(size_t) st.st_size] = '\0';
 
 	w->xedit = edit_create();
 	if	(!w->xedit)
 		{
-		ret = ENSMEM;
+		ret = -ENOMEM;
 		goto fehler;
 		}
 	w->tree.ob_next = w->tree.ob_head = w->tree.ob_tail = -1;
-	w->tree.ob_flags = LASTOB;
+	w->tree.ob_flags = OF_LASTOB;
 	w->tree.ob_state = 0;
 	w->tree.ob_type = G_EDIT;
 	w->tree.ob_spec.index = (long) w->xedit;
 	edit_set_buf( &w->tree, EDITFELD,	w->buf, w->bufsize );
 	edit_set_font( &w->tree, EDITFELD,
-				w->fontID, w->fontH, FALSE, !w->fontprop);
+				w->fontID, w->fontH, 0, !w->fontprop);
 	edit_set_colour( &w->tree, EDITFELD,
 				w->tcolour, w->bcolour);
 	edit_set_format( &w->tree, EDITFELD,
-				w->tabwidth, FALSE);
-	wind_set_string(w->handle, WF_NAME, w->title);
-	success = TRUE;
+				w->tabwidth, 0);
+	wind_set_str(w->handle, WF_NAME, w->title);
+	success = 1;
 
 
 	fehler:
@@ -236,23 +247,26 @@ WINDOW *open_new_window( char *path )
 		{
 		if	(w)
 			{
-			if	(w->handle > 0)
+			if	(w->handle >= 0)
 				wind_delete(w->handle);
 			if	(w->buf)
 				Mfree(w->buf);
 			Mfree(w);
 			}
-		if	(file)
+		if	(file >= 0)
 			Fclose(file);
 		form_xerr(ret, path);
 		}
 	else	{
 		*pw = w;
-		wind_open(w->handle, &(w->out));
+		wind_open_grect(w->handle, &(w->out));
 		wind_get_grect(w->handle, WF_WORKXYWH, &(w->in));
-		*((GRECT *) &(w->tree.ob_x)) = w->in;
+		w->tree.ob_x = w->in.g_x;
+		w->tree.ob_y = w->in.g_y;
+		w->tree.ob_width = w->in.g_w;
+		w->tree.ob_height = w->in.g_h;
 		edit_open( &w->tree, EDITFELD );
-		w->nlines = w->yscroll = w->xscroll = w->ncols = -1L;
+		w->nlines = w->yscroll = w->xscroll = w->ncols = -1;
 		window_set_slider(w);
 		}
 	return(w);
@@ -269,29 +283,29 @@ int update_window(WINDOW *w, GRECT *g)
 {
 	WMESAG mesag;
 
-	/* Der Redraw wird nicht direkt ausgefÅhrt, sondern schickt */
+	/* Der Redraw wird nicht direkt ausgef√ºhrt, sondern schickt */
 	/* eine Nachricht an die Applikation, um Kollisionen mit    */
 	/* von AES erzeugten Redraws zu vermeiden                   */
 	/* -------------------------------------------------------- */
 
 	mesag.msg.code		= WM_REDRAW;
-	mesag.msg.dest_apid	= ap_id;
+	mesag.msg.dest_apid	= gl_apid;
 	mesag.msg.is_zero	= 0;
 	mesag.msg.whdl		= w->handle;
 	mesag.msg.g		= (g) ? *g : w->out;
-	return(appl_write(ap_id, 16, mesag.message));
+	return(appl_write(gl_apid, 16, mesag.message));
 }
 
 
 /****************************************************************
 *
-* Fenster <w> in Grîûe und/oder Position Ñndern
+* Fenster <w> in Gr√∂√üe und/oder Position √§ndern
 *
 ****************************************************************/
 
 static void change_g(WINDOW *w, GRECT *g, int resized)
 {
-	WORD oldrh,newrh;
+	short oldrh,newrh;
 	GRECT rg;
 
 	if	(w->flags & WFLAG_ICONIFIED)
@@ -299,12 +313,15 @@ static void change_g(WINDOW *w, GRECT *g, int resized)
 	w->out = *g;
 	wind_set_grect(w->handle, WF_CURRXYWH, &(w->out));
 	wind_get_grect(w->handle, WF_WORKXYWH, &(w->in));
-	*((GRECT *) &(w->tree.ob_x)) = w->in;
+	w->tree.ob_x = w->in.g_x;
+	w->tree.ob_y = w->in.g_y;
+	w->tree.ob_width = w->in.g_w;
+	w->tree.ob_height = w->in.g_h;
 	if	(resized)
 		{
 		edit_resized(&w->tree, EDITFELD, &oldrh, &newrh);
 
-		/* weiûen Rand nachbessern */
+		/* wei√üen Rand nachbessern */
 		/* ----------------------- */
 
 		if	(newrh != oldrh)
@@ -330,7 +347,7 @@ static void change_g(WINDOW *w, GRECT *g, int resized)
 
 /****************************************************************
 *
-* Das Fenster <w> wird auf Maximalgrîûe gebracht.
+* Das Fenster <w> wird auf Maximalgr√∂√üe gebracht.
 *
 ****************************************************************/
 
@@ -343,30 +360,30 @@ static void fulled(WINDOW *w)
 
 	if	(w->flags & WFLAG_ICONIFIED)
 		return;
-	out = &(w->out);				/* out = Auûenmaûe */
-	wind_get(w->handle, WF_PREVXYWH, &prev.g_x, &prev.g_y, &prev.g_w, &prev.g_h);
-	wind_get(w->handle, WF_FULLXYWH, &full.g_x, &full.g_y, &full.g_w, &full.g_h);
+	out = &(w->out);				/* out = Au√üenma√üe */
+	wind_get_grect(w->handle, WF_PREVXYWH, &prev);
+	wind_get_grect(w->handle, WF_FULLXYWH, &full);
  
-	/* 1. Fall: Das Fenster hat bereits Maximalgrîûe	  */
-	/*		  Also muû das Fenster verkleinert werden */
+	/* 1. Fall: Das Fenster hat bereits Maximalgr√∂√üe	  */
+	/*		  Also mu√ü das Fenster verkleinert werden */
 	/* ------------------------------------------------ */
 
 	if	((out->g_x == full.g_x) && (out->g_y == full.g_y) &&
 		 (out->g_w == full.g_w) && (out->g_h == full.g_h)) {
-		graf_shrinkbox(&prev, &full);
+		graf_shrinkbox_grect(&prev, &full);
 		newg = &prev;
 		}
 
-	/* 2. Fall: Das Fenster hat nicht Maximalgrîûe	  */
-	/*		  Also Grîûe auf Maximum 			  */
+	/* 2. Fall: Das Fenster hat nicht Maximalgr√∂√üe	  */
+	/*		  Also Gr√∂√üe auf Maximum 			  */
 	/* ------------------------------------------------ */
 
 	else {
-		graf_growbox(out, &full);
+		graf_growbox_grect(out, &full);
 		newg = &full;
 		}
 
-	change_g(w, newg, TRUE);
+	change_g(w, newg, 1);
 }
 
 
@@ -376,23 +393,29 @@ static void fulled(WINDOW *w)
 *
 ****************************************************************/
 
-#pragma warn -par
-void window_message(WINDOW *w, int kstate, int message[16])
+void window_message(WINDOW *w, int kstate, short message[8])
 {
 	EVNT w_ev;
 	int key = 0;
 	long line;
 	long ldummy;
-	WORD dummy;
-	WORD yvis,xvis;
-	LONG h_offs;
-	LONG err;
+	short dummy;
+	short yvis,xvis;
+	GRECT g;
+	long h_offs;
+	long err;
 
+
+	(void) kstate;
 
 	switch(message[0])
 		{
 		case WM_REDRAW:
-			objc_wdraw(&w->tree,0,0,(GRECT *) (message+4),
+			g.g_x = message[4];
+			g.g_y = message[5];
+			g.g_w = message[6];
+			g.g_h = message[7];
+			objc_wdraw(&w->tree,0,0, &g,
 					w->handle);
 			break;
 		case WM_TOPPED:
@@ -435,7 +458,7 @@ void window_message(WINDOW *w, int kstate, int message[16])
 						h_offs = 0;
 					if	(w->xscroll != h_offs)
 						{
-						if	(edit_scroll( &w->tree, EDITFELD, w->handle, -1L, (WORD) h_offs ))
+						if	(edit_scroll( &w->tree, EDITFELD, w->handle, -1L, (short) h_offs ))
 							window_set_slider(w);
 						}
 					break;
@@ -475,7 +498,7 @@ void window_message(WINDOW *w, int kstate, int message[16])
 				&dummy, &dummy, &xvis);
 
 			line = (message[4] * (w->ncols - xvis + 1L))/1000L;
-			if	(edit_scroll( &w->tree, EDITFELD, w->handle, -1L, (WORD) line ))
+			if	(edit_scroll( &w->tree, EDITFELD, w->handle, -1L, (short) line ))
 				window_set_slider(w);
 			break;
 
@@ -486,14 +509,22 @@ void window_message(WINDOW *w, int kstate, int message[16])
 				&dummy, &dummy, &dummy);
 
 			line = (message[4] * (w->nlines - yvis + 1L))/1000L;
-			if	(edit_scroll( &w->tree, EDITFELD, w->handle, line, -1 ))
+			if	(edit_scroll( &w->tree, EDITFELD, w->handle, line, (short) -1 ))
 				window_set_slider(w);
 			break;
 		case WM_SIZED:
-			change_g(w, ((GRECT *) (message+4)), TRUE);
+			g.g_x = message[4];
+			g.g_y = message[5];
+			g.g_w = message[6];
+			g.g_h = message[7];
+			change_g(w, &g, 1);
 			break;
 		case WM_MOVED:
-			change_g(w, ((GRECT *) (message+4)), FALSE);
+			g.g_x = message[4];
+			g.g_y = message[5];
+			g.g_w = message[6];
+			g.g_h = message[7];
+			change_g(w, &g, 0);
 			break;
 		case WM_SHADED:
 			w->flags |= WFLAG_SHADED;
@@ -503,22 +534,20 @@ void window_message(WINDOW *w, int kstate, int message[16])
 			break;
 		}
 }
-#pragma warn +par
 
 
 /****************************************************************
 *
-* Fenster-Slider ggf. Ñndern
+* Fenster-Slider ggf. √§ndern
 *
 ****************************************************************/
 
-#pragma warn -par
 void window_set_slider(WINDOW *w)
 {
-	LONG nlines,yscroll;
-	WORD ncols,xscroll;
-	WORD yvis,yval,xvis;
-	LONG size;
+	long nlines,yscroll;
+	short ncols,xscroll;
+	short yvis,yval,xvis;
+	long size;
 
 
 	edit_get_scrollinfo(&w->tree, EDITFELD,
@@ -539,7 +568,7 @@ void window_set_slider(WINDOW *w)
 			size /= nlines;
 			}
 		else	size = 1000;
-		wind_set_int(w->handle, WF_VSLSIZE, (int) size);
+		wind_set_int(w->handle, WF_VSLSIZE, (short) size);
 		}
 	if	(w->yscroll != yscroll)
 		{
@@ -551,7 +580,7 @@ void window_set_slider(WINDOW *w)
 			yscroll /= nlines;
 			}
 		else	yscroll = 1;
-		wind_set_int(w->handle, WF_VSLIDE, (int) yscroll);
+		wind_set_int(w->handle, WF_VSLIDE, (short) yscroll);
 		}
 	if	((w->ncols != ncols) || (w->xvis != xvis))
 		{
@@ -564,7 +593,7 @@ void window_set_slider(WINDOW *w)
 			size /= ncols;
 			}
 		else	size = 1000;
-		wind_set_int(w->handle, WF_HSLSIZE, (int) size);
+		wind_set_int(w->handle, WF_HSLSIZE, (short) size);
 		}
 	if	(w->xscroll != xscroll)
 		{
@@ -577,6 +606,6 @@ void window_set_slider(WINDOW *w)
 			size /= ncols;
 			}
 		else	size = 1;
-		wind_set_int(w->handle, WF_HSLIDE, (int) size);
+		wind_set_int(w->handle, WF_HSLIDE, (short) size);
 		}
 }

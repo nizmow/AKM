@@ -397,6 +397,72 @@ Other display modes/OSes, resize/full, multiple-window cycling and VA_START/
 drag-drop IPC were not exercised. `VIEW.PRG` remains an archived historical
 binary, not a second claimed build of MGVIEW.
 
+### MGEDIT and EDITOBJC.SLB
+
+`mise run apps -- mgedit` produces `build/atari/apps/mgedit/MGEDIT.APP`,
+the unchanged default German `mgedit.rsc` and source-built `EDITOBJC.SLB`.
+`mise run apps -- edit-slb` independently produces the library under
+`build/atari/apps/edit-slb/`. Run from the bundle directory on MagiC. The client
+supplies a relative library search path; MagiC also searches `SLBPATH` or its
+default `GEMSYS\MAGIC\XTENSION` directory. No archived SLB bindings, GEM utilities
+or compiler objects are linked. Alternative resources remain unchanged.
+
+The library implements AES 210–217 through MagiC's registration interface;
+its version-9 SLB header exports zero numbered procedures. These are distinct
+interfaces: the kernel dispatches registered AES handlers with `AESPB *` in A0,
+whereas SLB init/open/close/exit use stack arguments. `EDIT_ENTRY.S` bridges A0
+to the default GCC stack ABI. Its USERDEF callback takes the public `PARMBLK *`.
+Private `EDITINFO`/`xedit_*` names avoid colliding with GEMlib's opaque
+`XEDITINFO` and public client bindings.
+
+A normal MiNT ELF executable starts with an ELF loader wrapper, not the required
+SLB magic at the first TEXT byte. The dedicated linker script places the SLB
+header at address zero, followed by code, DATA and NOLOAD BSS. The host packager
+`scripts/elf_to_slb.py` emits classic TOS flags 15, records the BSS size and
+encodes movable 32-bit absolute references, including BSS targets, as TOS base
+relocations. Absolute constants and PC-relative references are not rebased.
+The linked libc includes a real `init_clock` constructor: initializer pointers
+belong in DATA, and custom startup must call them after setting `_base`.
+Finalizers run in reverse order on unload. This packager currently validates
+the editor-specific version/name/zero-export header, not arbitrary SLB variants.
+
+The client uses public GEMlib event and editor APIs, short-word AES/VDI outputs,
+16-byte messages and the SDK's by-value options callback record. `LONG` matches
+the SDK's native `long`, guarded at four bytes: `int32_t` is `int` here and is not
+a compatible `long *` target. INF scan/print helpers operate on shorts, including
+GRECT coordinates. The shared TOS-tail adapter preserves quoting and true ARGV.
+Edited source is UTF-8; RSC bytes and edited file contents remain Atari bytes.
+
+Verification used NeoST 0.6.5, MegaSTE/4 MiB/monochrome/TOS 2.06 and disposable
+MagiC images. First, the rebuilt library passed edit/save, clipboard and options
+scenarios through the archived client. The complete rebuilt bundle then matched
+six archived cases: insertion/save; select/copy/paste/cut/restore; tab-width
+editing and INF persistence; New/Save As; quoted spaced filename; true ARGV
+spaced filename. Saved text and INF bytes matched independently asserted
+expectations; normal Save created no backup. Every child exited with status 0.
+Fourteen full editor UI captures matched the archive pixel-for-pixel. Spaced-path
+fixtures enabled VFAT on C: in the cloned INF; original images stayed unchanged.
+Logs, screenshots and guest files are under
+`build/atari/output/mgedit-archive-*`, `mgedit-library-cutover-*` and
+`mgedit-complete-*`.
+
+`mise exec -- python -m unittest discover -s scripts -p 'test_elf_to_slb.py'`
+covers classic headers, base relocation including a 254-byte delta extension,
+BSS pointers, absolute/PC-relative exclusions and malformed relocation rejection.
+
+| Component | TEXT | DATA | BSS | Symbols | File bytes |
+|---|---:|---:|---:|---:|---:|
+| Archived MGEDIT | 15114 | 1992 | 6636 | 0 | 17366 |
+| GCC MGEDIT | 130388 | 2238 | 8240 | 81498 | 217017 |
+| Archived EDITOBJC | 16234 | 1556 | 1816 | 0 | 17960 |
+| GCC EDITOBJC | 128680 | 1616 | 7256 | 0 | 132546 |
+
+Other display modes/OSes, font and colour selection, resize/scroll interaction,
+IPC and alternate resources were not exercised. The core still produces
+possible-uninitialized-value warnings in font/selection paths; the ELF carrier
+also produces a RWX segment warning. The delivered SLB is the validated classic
+TOS image, not that ELF carrier. The separate `EDIT.PRG` demo is not rebuilt.
+
 ### MGNOTICE
 
 `mise run apps -- mgnotice` builds `MagiC/APPS/MGNOTICE.2/SRC` as

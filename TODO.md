@@ -56,15 +56,15 @@ framework or shared-library rewrite is required before these are attempted.
 ## Build conventions to confirm as consumers appear
 
 - [x] Share the established raw-TOS-tail quote/ARGV adapter among MOD_APP,
-  APPLICAT and MGVIEW in `MagiC/APPS/TOS_ARGS.H`; MOD_APP's extraction comparison passed.
+  APPLICAT, MGVIEW and MGEDIT in `MagiC/APPS/TOS_ARGS.H`.
 - [ ] Preserve quoted paths, escaped apostrophes, empty arguments, long ARGV
   arguments and literal file-type patterns where the application supports them.
   A link against a modern CRT does not automatically preserve old startup behavior.
 - [x] Establish GUI structure/message widths with public SDK types and by-value
   callback argument records in APPLICAT, without changing the global integer ABI.
-- [ ] For the first consumer that needs them, map GEM utility/window helpers,
-  multitasking AES/DOS bindings and SLB bindings to compatible source builds or
-  established SDK equivalents. Record actual missing dependencies.
+- [x] Map MGEDIT's required GEM utilities and SLB bindings to public SDK calls
+  and source helpers; build `EDITOBJC.SLB` independently rather than linking
+  archived SLB/GEM utility objects.
 - [x] Define resource/data inputs and working-directory requirements for
   APPLICAT's executable/RSC/starter-INF bundle. Keep existing translations and
   binary resource encodings unchanged; translation repair remains a later phase.
@@ -99,14 +99,16 @@ framework or shared-library rewrite is required before these are attempted.
   association-save scenario under MagiC; remaining paths are listed in porting notes.
 - [x] **MGVIEW** — independent executable; six archived/rebuilt MagiC scenarios
   verify line endings, quoted/ARGV startup, empty input and keyboard navigation.
-- [ ] Desktop helpers: MGEDIT, MGNOTICE version 2, MGSEARCH.
+- [x] **MGEDIT / EDITOBJC.SLB** — independent library and complete editor bundle;
+  six archived/rebuilt cases verify editing, clipboard, preferences, Save As
+  and quoted/ARGV startup under MagiC.
 - [x] **MGNOTICE version 2** — add `mgnotice` producing the application, German
   resource and rebuilt `EDITOBJC.SLB`; archived/rebuilt create, edit, save and
   reopen states match on a cloned MagiC image.
 - [ ] Desktop helpers: MGSEARCH.
 - [ ] Larger/threaded programs: MGCOPY, MGFORMAT, VT52, MAGXDESK version 5.
 - [ ] Separate assembly builds: MCMD, MAGXCONF, FLP_PAR and appropriate utilities.
-- [ ] Loadable components: editor/image/window-frame SLBs, CPXs and drivers.
+- [ ] Loadable components: image/window-frame SLBs, CPXs and drivers.
 - [ ] Account explicitly for remaining diagnostic, historical, host-specific,
   missing-source and external-dependency entries from the catalogue.
 

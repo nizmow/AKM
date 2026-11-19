@@ -2,7 +2,7 @@
 *
 *             MGEDIT.APP                             03.11.97
 *             ==========
-*                                 letzte énderung:
+*                                 letzte √Ñnderung:
 *
 * geschrieben mit Pure C V1.1
 * Projektdatei: MGEDIT.PRJ
@@ -13,28 +13,24 @@
 
 #define DEBUG 0
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
-#include <vdi.h>
-#include <string.h>
-#include <stdlib.h>
-#include "globals.h"
-#include "mgedit.h"
-#include "gemut_mt.h"
-#if DEBUG
+#include <errno.h>
 #include <stdio.h>
-#endif
+#include <stdlib.h>
+#include <string.h>
+#include "GLOBALS.H"
+#include "MGEDIT.H"
+#include "../../TOS_ARGS.H"
 
-int	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
+short	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
 int	ap_id;
 int	ncolours;
 GRECT scrg;
-int aes_handle;		/* Screen-Workstation des AES */
-int terminate = FALSE;
+short aes_handle;		/* Screen-Workstation des AES */
+int terminate = 0;
 
-/* fÅr die SharedLib */
+/* f√ºr die SharedLib */
 SLB_EXEC	slbexec;
-SHARED_LIB  slb;
+SLB_HANDLE	slb;
 
 /* globale Einstellungen */
 
@@ -52,11 +48,11 @@ void *d_options = NULL;
 
 typedef enum { fxopen, fxsaveas } fslx_modet;
 static fslx_modet fslx_mode;
-static FSLX_DIALOG fslx_dialog = NULL;
-static WORD fslx_whdl;
+static XFSL_DIALOG *fslx_dialog = NULL;
+static short fslx_whdl;
 static char fslx_path[258];
 static char fslx_fname[66];
-static WORD fslx_button,fslx_nfiles;	/* Ergebnis */
+static short fslx_button,fslx_nfiles;	/* Ergebnis */
 static WINDOW *fslx_saveas_w;			/* zu speicherndes Fenster */
 static char *fslx_bsel,*fslx_esel;		/* zu speichernder Bereich */
 
@@ -67,26 +63,26 @@ WINDOW *windows[NWINDOWS];
 /****************************************************************
 *
 * Rechnet Koordinaten linear um. Der Wert <wert> wurde bei
-* Bildschirmgrîûe <old> abgespeichert, jetzt ist die
-* Bildschirmgrîûe <new>.
+* Bildschirmgr√∂√üe <old> abgespeichert, jetzt ist die
+* Bildschirmgr√∂√üe <new>.
 *
 * Liegt das Fenster links aus dem Bildschirm heraus, wird
 * nichts umgerechnet. Hier sollte aber sichergestellt werden,
-* daû man an das Fenster noch herankommt, d.h.:
+* da√ü man an das Fenster noch herankommt, d.h.:
 *	x+w > k > 0.
 *
 ****************************************************************/
 
-static void recalc(int *wert, int old, int new)
+static void recalc(short *wert, int old, int new)
 {
 	unsigned long tmp;
 
-	if	(*wert > 0)
+	if	((*wert > 0) && (old > 0) && (new > 0))
 		{
 		tmp    = (unsigned long) *wert;
 		tmp   *= new;
 		tmp   /= old;
-		*wert  = (int) tmp;
+		*wert  = (short) tmp;
 		}
 }
 
@@ -105,19 +101,21 @@ void read_inf( void )
 	long len;
 	int hdl;
 	char *s,*t;
-	int oldwh[2];
-	int font[3];
+	short oldwh[2];
+	short font[3];
 
 
 	prefs.fontID = 1;
 	prefs.fontH = 10;
-	prefs.fontprop = FALSE;
+	prefs.fontprop = 0;
 	strcpy(prefs.fontname, "System Font");
 	prefs.tcolour = 1;
 	prefs.bcolour = 0;
 	prefs.tabwidth = 64;
 	prefs.bufsize = 65536L;		/* freier Platz in Puffer */
 	prefs.prefs_win.g_x = prefs.prefs_win.g_y = -1;
+	oldwh[0] = scrg.g_w;
+	oldwh[1] = scrg.g_h;
 
 	s = getenv("HOME");
 	if	(s)
@@ -132,16 +130,16 @@ void read_inf( void )
 
 	if	((s) || (shel_find(infpath)))
 		{
-		hdl = (int) Fopen(infpath, RMODE_RD);
+		hdl = (int) Fopen(infpath, 0);
 		if	(hdl < 0)
 			return;
 		len = Fread(hdl, 511L, buf);
 		Fclose(hdl);
-		if	(len < E_OK)
+		if	(len < 0)
 			return;
-		buf[len] = EOS;
+		buf[len] = 0;
 
-		/* erste Zeile Åberlesen */
+		/* erste Zeile √ºberlesen */
 
 		for	(s = buf; (*s) && (*s != '\n'); s++)
 			;
@@ -163,7 +161,7 @@ void read_inf( void )
 			if	(!strncmp(s, "WINDOW PREFS ", 12))
 				{
 				s += 13;
-				scan_values(&s, 4, (int *) &prefs.prefs_win);
+				scan_values(&s, 4, (short *) &prefs.prefs_win);
 				}
 
 			if	(!strncmp(s, "FONT ", 5))
@@ -179,9 +177,10 @@ void read_inf( void )
 				{
 				s += 9;
 				t = prefs.fontname;
-				while((*s) && (*s != '\r'))
+				while((*s) && (*s != '\r') &&
+						(t < prefs.fontname + sizeof(prefs.fontname) - 1))
 					*t++ = *s++;
-				*t = EOS;
+				*t = 0;
 				}
 
 			if	(!strncmp(s, "TCOLOUR ", 8))
@@ -231,7 +230,7 @@ void read_inf( void )
 
 /****************************************************************
 *
-* Schreibe Fensterposition auflîsungsunabhÑngig in
+* Schreibe Fensterposition aufl√∂sungsunabh√§ngig in
 * Zeichenkette.
 *
 ****************************************************************/
@@ -240,7 +239,7 @@ static void print_winpos(char *s, GRECT *g, int n)
 {
 	g->g_x -= scrg.g_x;
 	g->g_y -= scrg.g_y;
-	print_values(s, n, (int *) g);
+	print_values(s, n, (short *) g);
 	g->g_x += scrg.g_x;
 	g->g_y += scrg.g_y;
 }
@@ -256,8 +255,8 @@ void save_options( void )
 {
 	int hdl;
 	char buf[512];
-	int scrwh[2];
-	int font[3];
+	short scrwh[2];
+	short font[3];
 
 
 
@@ -304,22 +303,22 @@ void save_options( void )
 
 /****************************************************************
 *
-* WÑhlt einen Zeichensatz aus.
+* W√§hlt einen Zeichensatz aus.
 *
 ****************************************************************/
 
 #define	FONT_FLAGS	( FNTS_BTMP + FNTS_OUTL + FNTS_MONO + FNTS_PROP )
 #define	BUTTON_FLAGS ( FNTS_SNAME + FNTS_SSTYLE + FNTS_SSIZE )
 
-int dial_font( long *id, long *pt, int *mono, char *name )
+short dial_font( long *id, long *pt, short *mono, char *name )
 {
-	int work_out[57],work_in [12];	 /* VDI- Felder fÅr v_opnvwk() */
-	int	handle;
+	short work_out[57],work_in [12];	 /* VDI- Felder f√ºr v_opnvwk() */
+	short	handle;
 	register int i;
 	FNT_DIALOG *fnt_dialog;
-	int button,check_boxes;
+	short button,check_boxes;
 	long ratio;
-	int dummy;
+	short dummy;
 
 
 	for( i = 1; i < 10 ; i++ )											/* work_in initialisieren */
@@ -330,7 +329,7 @@ int dial_font( long *id, long *pt, int *mono, char *name )
 
 	ratio = (1L<<16L);
 	fnt_dialog = fnts_create( handle, 0, FONT_FLAGS, FNTS_3D,
-				  "Was Shumway Your favourite Gordon?", 0L );
+				  "Was Shumway Your favourite Gordon?", NULL );
 	if	(!fnt_dialog )
 		return(0);
 	button = fnts_do( fnt_dialog, BUTTON_FLAGS, *id, *pt, ratio,
@@ -352,7 +351,7 @@ int dial_font( long *id, long *pt, int *mono, char *name )
 		Cnecin();
 */
 		if	(!fnts_get_info(fnt_dialog, *id, mono, &dummy ))
-			*mono = FALSE;
+			*mono = 0;
 		if	(name)
 			{
 			fnts_get_name(fnt_dialog, *id, name, NULL, NULL);
@@ -367,7 +366,7 @@ int dial_font( long *id, long *pt, int *mono, char *name )
 /****************************************************************
 *
 * Das Dateiauswahl-Fenster wurde mit OK verlassen.
-* LÑdt eine Datei per Dateiauswahl in ein neues Fenster
+* L√§dt eine Datei per Dateiauswahl in ein neues Fenster
 *
 ****************************************************************/
 
@@ -414,7 +413,7 @@ int save_window( WINDOW *w, char *path,
 	ret = Fwrite(file, actsize, buf);
 	Fclose(file);
 	if	((ret >= 0) && (ret != actsize))
-		ret = ERROR;
+		ret = -EIO;
 	if	(ret < 0)
 		{
 		form_xerr(ret, path);
@@ -427,16 +426,16 @@ int save_window( WINDOW *w, char *path,
 
 		if	(w->dirty)
 			{
-			edit_set_dirty( &w->tree, EDITFELD, FALSE );
-			w->dirty = FALSE;
-			ret2 = TRUE;
+			edit_set_dirty( &w->tree, EDITFELD, 0 );
+			w->dirty = 0;
+			ret2 = 1;
 			}
 
 		if	(ret2)
 			{
 			strcpy(w->path, path);
 			strcpy(w->title, path);
-			wind_set_string(w->handle, WF_NAME, w->title);
+			wind_set_str(w->handle, WF_NAME, w->title);
 			}
 		}
 
@@ -446,7 +445,7 @@ int save_window( WINDOW *w, char *path,
 
 /****************************************************************
 *
-* ôffnet den Fensterdialog "Datei speichern als..."
+* √ñffnet den Fensterdialog "Datei speichern als..."
 *
 ****************************************************************/
 
@@ -463,7 +462,7 @@ void saveas_file_open( WINDOW *w )
 	if	(fslx_bsel)
 		fslx_fname[0] = '\0';
 	else	strcpy(fslx_fname, s);
-	*s = EOS;
+	*s = 0;
 
 	fslx_mode = fxsaveas;
 	fslx_dialog = fslx_open(
@@ -474,12 +473,12 @@ void saveas_file_open( WINDOW *w )
 				fslx_path, 256,
 				fslx_fname, 64,
 				NULL,
-				0L,
+				NULL,
 				NULL,
 				SORTDEFAULT,
 				0);
 	fslx_saveas_w = w;
-	w->save_active = TRUE;
+	w->save_active = 1;
 }
 
 
@@ -500,7 +499,7 @@ void saveas_file_close( void )
 		}
 	if	(fslx_saveas_w)
 		{
-		fslx_saveas_w->save_active = FALSE;
+		fslx_saveas_w->save_active = 0;
 		fslx_saveas_w = NULL;
 		}
 }
@@ -508,8 +507,8 @@ void saveas_file_close( void )
 
 /****************************************************************
 *
-* Schlieût eine Datei.
-* RÅckgabe 0: geschlossen 1: noch nicht geschlossen.
+* Schlie√üt eine Datei.
+* R√ºckgabe 0: geschlossen 1: noch nicht geschlossen.
 *
 ****************************************************************/
 
@@ -534,11 +533,11 @@ int close_file( WINDOW *w )
 		{
 		if	(terminate)
 			{
-			menu_ienable( adr_menu, MT_DESK, TRUE );
-			menu_ienable( adr_menu, MT_FILE, TRUE );
-			menu_ienable( adr_menu, MT_OPTIONS, TRUE );
-			menu_bar(adr_menu, TRUE);
-			terminate = FALSE;
+			menu_ienable( adr_menu, MT_DESK, 1 );
+			menu_ienable( adr_menu, MT_FILE, 1 );
+			menu_ienable( adr_menu, MT_OPTIONS, 1 );
+			menu_bar(adr_menu, 1);
+			terminate = 0;
 			}
 		return(1);	/* Abbruch, nicht erledigt */
 		}
@@ -563,8 +562,8 @@ erledigt:
 
 /****************************************************************
 *
-* Schlieût alle Dateien, allerdings nacheinander.
-* Die Routine muû solange aufgerufen werden, bis alle
+* Schlie√üt alle Dateien, allerdings nacheinander.
+* Die Routine mu√ü solange aufgerufen werden, bis alle
 * Dateien geschlossen sind.
 *
 ****************************************************************/
@@ -588,7 +587,7 @@ void close_all_files( void )
 
 /****************************************************************
 *
-* éndert alle Fenster
+* √Ñndert alle Fenster
 *
 ****************************************************************/
 
@@ -610,7 +609,7 @@ void prefs_were_changed( void )
 				w->fontH = prefs.fontH;
 				w->fontprop = prefs.fontprop;
 				edit_set_font( &w->tree, EDITFELD,
-					w->fontID, w->fontH, FALSE, !w->fontprop);
+					w->fontID, w->fontH, 0, !w->fontprop);
 				}
 
 			if	((prefs.tcolour != w->tcolour) ||
@@ -627,7 +626,7 @@ void prefs_were_changed( void )
 				w->tabwidth = prefs.tabwidth;
 				w->bcolour = prefs.bcolour;
 				edit_set_format( &w->tree, EDITFELD,
-					w->tabwidth, FALSE);
+					w->tabwidth, 0);
 				}
 			update_window(w, NULL);
 			wind_update(END_UPDATE);
@@ -638,7 +637,7 @@ void prefs_were_changed( void )
 
 /****************************************************************
 *
-* ôffnet den "Voreinstllungen" Dialog
+* √ñffnet den "Voreinstllungen" Dialog
 *
 ****************************************************************/
 
@@ -647,7 +646,7 @@ void open_options( void )
 	int whdl;
 
 
-	if	(d_options)	/* ist schon geîffnet */
+	if	(d_options)	/* ist schon ge√∂ffnet */
 		{
 		}
 	else	{
@@ -689,7 +688,7 @@ void open_options( void )
 
 /****************************************************************
 *
-* Bearbeitet die MenÅbefehle
+* Bearbeitet die Men√ºbefehle
 *
 ****************************************************************/
 
@@ -699,13 +698,13 @@ static int do_menu( int title, int entry, WINDOW *w)
 	int ret = 0;
 
 
-	/* Sonderfall fÅr Tastaturbedienung: */
+	/* Sonderfall f√ºr Tastaturbedienung: */
 	/* --------------------------------- */
 
 	state = adr_menu[title].ob_state;
-	if	(state & DISABLED)
-		return(0);	/* Eintrag ungÅltig */
-	if	(!(state & SELECTED))
+	if	(state & OS_DISABLED)
+		return(0);	/* Eintrag ung√ºltig */
+	if	(!(state & OS_SELECTED))
 		menu_tnormal(adr_menu, title, 0);
 
 	switch( entry )
@@ -727,7 +726,7 @@ static int do_menu( int title, int entry, WINDOW *w)
 				}
 			else	{
 				fslx_mode = fxopen;
-				fslx_path[0] = fslx_fname[0] = EOS;
+				fslx_path[0] = fslx_fname[0] = 0;
 				fslx_dialog = fslx_open(
 							Rgetstring(STR_LOADFILE,NULL),
 							-1,-1,
@@ -735,7 +734,7 @@ static int do_menu( int title, int entry, WINDOW *w)
 							fslx_path, 256,
 							fslx_fname, 64,
 							NULL,
-							0L,
+							NULL,
 							NULL,
 							SORTDEFAULT,
 							0);
@@ -743,9 +742,11 @@ static int do_menu( int title, int entry, WINDOW *w)
 			break;
 		case MEN_CLOSE:
 			if	(w)
+				{
 				if	(w->save_active)
 					Bconout(2,7);
 				else close_file(w);
+				}
 			break;
 		case MEN_SAVE:
 			if	(w)
@@ -760,8 +761,8 @@ static int do_menu( int title, int entry, WINDOW *w)
 					save_window(w, w->path, NULL, NULL);
 					break;
 					}
-				/* fall through */
 				}
+			/* fall through */
 		case MEN_SAVEAS:
 			if	((!w) || fslx_dialog)
 				break;
@@ -859,7 +860,8 @@ int main( int argc, char *argv[] )
 	EVNT w_ev;
 	int i;
 	LONG err;
-	int update = FALSE;
+	int update = 0;
+	struct tos_args ta;
 
 
 
@@ -867,24 +869,25 @@ int main( int argc, char *argv[] )
 	/* --------------- */
 
 	Pdomain(1);
-	err = Slbopen("EDITOBJC.SLB", NULL, 6L, &slb, &slbexec, 0L);
+	slb = NULL;
+	err = Slbopen("EDITOBJC.SLB", ".\\", 6L, &slb, &slbexec);
 	if	(err < 0)
-		Pterm((WORD) err);
+		Pterm((short) err);
 
 	/* Initialisierung */
 	/* --------------- */
 
 	if   ((ap_id = appl_init()) < 0)
 		Pterm(-1);
-	i = _GemParBlk.global[10];
+	i = aes_global[10];
 	ncolours = (i > 8) ? 32767 : (1 << i);
-	wind_get_grect(SCREEN, WF_WORKXYWH, &scrg);
+	wind_get_grect(0, WF_WORKXYWH, &scrg);
 
 	if	(!rsrc_load("mgedit.rsc"))
 		{
-		form_xerr(EFILNF, "mgedit.rsc");
+		form_xerr(-ENOENT, "mgedit.rsc");
 		appl_exit();
-		Pterm((int) EFILNF);
+		Pterm((short) -ENOENT);
 		}
 
 	aes_handle = graf_handle(&gl_hwchar, &gl_hhchar, &gl_hwbox, &gl_hhbox);
@@ -900,11 +903,12 @@ int main( int argc, char *argv[] )
 
 	options_dial_init_rsc();
 
-	menu_bar(adr_menu, TRUE);
+	menu_bar(adr_menu, 1);
 
-	/* Alle Åbergebenen Dateien îffnen */
+	/* Alle √ºbergebenen Dateien √∂ffnen */
 	/* ------------------------------- */
 
+	argc = tos_arguments(argc, &argv, &ta);
 	for	(argc--,argv++; argc; argc--,argv++)
 		{
 		open_new_window(*argv);
@@ -912,21 +916,18 @@ int main( int argc, char *argv[] )
 
 	while((!terminate) || (fslx_dialog))
 		{
-		w_ev.mwhich = evnt_multi(MU_KEYBD+MU_BUTTON+MU_MESAG,
+		mt_EVNT_multi(MU_KEYBD|MU_BUTTON|MU_MESAG,
 			  2,			/* Doppelklicks erkennen 	*/
 			  1,			/* nur linke Maustaste		*/
-			  1,			/* linke Maustaste gedrÅckt	*/
-			  0,NULL,		/* kein 1. Rechteck			*/
-			  0,NULL,		/* kein 2. Rechteck			*/
-			  w_ev.msg,
-			  0L,	/* ms */
-			  (EVNTDATA*) &(w_ev.mx),
-			  &w_ev.key,
-			  &w_ev.mclicks
-			  );
+			  1,			/* linke Maustaste gedr√ºckt	*/
+			  NULL,			/* kein 1. Rechteck			*/
+			  NULL,			/* kein 2. Rechteck			*/
+			  0,			/* ms */
+			  &w_ev,
+			  aes_global );
 
 		wind_update(BEG_UPDATE);
-		update = TRUE;
+		update = 1;
 
 		/* Fensterdialoge */
 		/* -------------- */
@@ -994,10 +995,10 @@ int main( int argc, char *argv[] )
 				w->dirty = edit_get_dirty( &w->tree, EDITFELD );
 				if	(w->dirty)
 					{
-					memcpy(w->title+1, w->title,
+					memmove(w->title+1, w->title,
 							strlen(w->title)+1);
 					w->title[0] = '*';
-					wind_set_string(w->handle, WF_NAME, w->title);
+					wind_set_str(w->handle, WF_NAME, w->title);
 					}
 				}
 			window_set_slider(w);
@@ -1021,27 +1022,27 @@ int main( int argc, char *argv[] )
 				ende:
 				if	(!terminate)
 					{
-					menu_ienable( adr_menu, MT_DESK, FALSE );
-					menu_ienable( adr_menu, MT_FILE, FALSE );
-					menu_ienable( adr_menu, MT_OPTIONS, FALSE );
-					menu_bar(adr_menu, TRUE);
+					menu_ienable( adr_menu, MT_DESK, 0 );
+					menu_ienable( adr_menu, MT_FILE, 0 );
+					menu_ienable( adr_menu, MT_OPTIONS, 0 );
+					menu_bar(adr_menu, 1);
 					if	(fslx_dialog && (fslx_mode == fxopen))
 						{
 						fslx_close(fslx_dialog);
 						fslx_dialog = NULL;
 						}
-					terminate = TRUE;
+					terminate = 1;
 					}
 				}
 
 			else
 			if	(w_ev.msg[0] == VA_START)
 				{
-				register char *s;
-				register char *p,*p2;
+				char *s;
+				char *p,*p2;
 				char path[256];
 
-				s = *((char **)(w_ev.msg+3));
+				memcpy(&s, w_ev.msg+3, sizeof s);
 				while((s) && (*s))
 					{
 					p = path;
@@ -1079,8 +1080,8 @@ int main( int argc, char *argv[] )
 
 				w_ev.msg[0] = AV_STARTED;
 				w_ev.msg[1] = ap_id;
-				w_ev.msg[2] = 0;		/* keine öberlÑnge */
-				/* Wort 3 und 4 unverÑndert */
+				w_ev.msg[2] = 0;		/* keine √úberl√§nge */
+				/* Wort 3 und 4 unver√§ndert */
 				w_ev.msg[5] =
 				w_ev.msg[6] =
 				w_ev.msg[7] = 0;
@@ -1129,9 +1130,14 @@ void subobj_wdraw(void *d, int obj, int startob, int depth)
 {
 	OBJECT *tree;
 	GRECT g;
+	short x, y;
 
 
 	wdlg_get_tree( d, &tree, &g );
-	objc_grect(tree, obj, &g);
+	objc_offset(tree, obj, &x, &y);
+	g.g_x = x;
+	g.g_y = y;
+	g.g_w = tree[obj].ob_width;
+	g.g_h = tree[obj].ob_height;
 	wdlg_redraw( d, &g, startob, depth );
 }

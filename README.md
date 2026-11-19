@@ -180,6 +180,15 @@ tail or ARGV. LF, CRLF, classic Mac CR, spaced paths with VFAT enabled, empty
 files and keyboard navigation were compared with the archive under NeoST/MagiC.
 See the catalogue and porting notes for verification limits.
 
+`mise run apps -- mgedit` builds `build/atari/apps/mgedit/`: `MGEDIT.APP`,
+the unchanged German `mgedit.rsc` and a source-built `EDITOBJC.SLB`.
+`mise run apps -- edit-slb` builds the library independently. Run from the
+bundle's directory on MagiC; the loader also supports its normal `SLBPATH`/
+`GEMSYS\MAGIC\XTENSION` search. No archived Pure C objects are linked.
+Archived/rebuilt comparisons cover editing/saving, clipboard, preferences,
+New/Save As and quoted/ARGV paths. Binary-format regression checks:
+`mise exec -- python -m unittest discover -s scripts -p 'test_elf_to_slb.py'`.
+
 `mise run apps -- mgnotice` builds `build/atari/apps/mgnotice/`: `MGNOTICE.APP`,
 the German `mgnotice.rsc` and the rebuilt `EDITOBJC.SLB`. It reuses the shared
 `GEMUT_MT.C` helper and neutral `MagiC/APPS/GEMUT_MT_SDK.H`. Archived/rebuilt

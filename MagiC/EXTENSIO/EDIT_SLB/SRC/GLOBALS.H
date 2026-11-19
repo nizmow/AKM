@@ -1,7 +1,12 @@
+#ifndef EDIT_SLB_GLOBALS_H
+#define EDIT_SLB_GLOBALS_H
+
+#include "EDIT_GEM.H"
+
 #ifndef NULL
-#define NULL        ( ( void * ) 0L )
+#define NULL ((void *)0L)
 #endif
 
-extern int vdi_handle;
-extern WORD rc_intersect(GRECT *p1, GRECT *p2);
-extern WORD xy_in_grect( WORD x, WORD y, GRECT *g );
+extern short vdi_handle;
+
+#endif
