@@ -92,6 +92,18 @@ def project_paths(files):
     return sorted(paths)
 
 
+def classify_paths(paths):
+    source, install = [], []
+    for path in paths:
+        lower = path.lower()
+        if (lower.startswith("c:\\pc\\") or lower.endswith((".c", ".h", ".o", ".lib", ".prj"))
+                or "\\source\\" in lower):
+            source.append(path)
+        else:
+            install.append(path)
+    return source, install
+
+
 def scan():
     section = ""
     rows = []
@@ -139,6 +151,8 @@ def scan():
             "atari_text_files": encodings.count("atari"),
             "invalid_text_files": encodings.count("binary/invalid"),
             "absolute_project_paths": project_paths(files),
+            "source_project_paths": classify_paths(project_paths(files))[0],
+            "install_project_paths": classify_paths(project_paths(files))[1],
             "description": description,
         }
         rows.append(row)
@@ -148,6 +162,7 @@ def scan():
                 "output": "EDIT.PRG", "source": source, "exists": True,
                 "text_files": 0, "projects": 0, "atari_text_files": 0,
                 "invalid_text_files": 0, "absolute_project_paths": [],
+                "source_project_paths": [], "install_project_paths": [],
                 "description": "EDITOBJC.SLB companion demo",
             })
 
@@ -161,13 +176,15 @@ def scan():
 
 def markdown(rows, counts):
     def table(items):
-        lines = ["| Status | Output | Source | C/H/S | PRJ | Atari text | Absolute PRJ paths |",
-                 "|---|---|---|---:|---:|---:|---|"]
+        lines = ["| Status | Output | Source | C/H/S | PRJ | Atari text | Source paths | Install paths |",
+                 "|---|---|---|---:|---:|---:|---|---|"]
         for row in items:
-            paths = ", ".join(f"`{path}`" for path in row["absolute_project_paths"]) or ""
+            source_paths = ", ".join(f"`{path}`" for path in row["source_project_paths"]) or ""
+            install_paths = ", ".join(f"`{path}`" for path in row["install_project_paths"]) or ""
             lines.append(
                 f"| {row['status']} | `{row['output']}` | `{row['source']}` | "
-                f"{row['text_files']} | {row['projects']} | {row['atari_text_files']} | {paths} |")
+                f"{row['text_files']} | {row['projects']} | {row['atari_text_files']} | "
+                f"{source_paths} | {install_paths} |")
         return lines
 
     lines = [
@@ -182,7 +199,8 @@ def markdown(rows, counts):
         f"- Binary-only: **{counts.get('binary', 0)}**",
         "",
         "`Atari text` counts files that are valid Atari ST text but not UTF-8.",
-        "`Absolute PRJ paths` are developer-machine paths that still need mapping.",
+        "`Source paths` are legacy developer paths that still need mapping.",
+        "`Install paths` are project destinations, not build dependencies.",
         "",
         "## Remaining core",
         "",
