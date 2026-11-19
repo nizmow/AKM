@@ -208,7 +208,9 @@ differs from the APPLICAT control only inside the clock rectangle. The verified
 MagiC runs produced six clock-update frame pairs per MGCLOCK scenario; the
 combined overlay changed `(489,2)-(630,14)`, while APPLICAT differed by 67,991
 pixels outside the clock area. Evidence is under
-`build/atari/neost-mgclock-verify2/`.
+`build/atari/neost-mgclock-server/`. The runner drives every scenario through
+`scripts/neost_server.py`, NeoST's canonical server client, and keeps
+`protocol.log`/`diagnostics.log` with each scenario's screenshots.
 
 Inputs are `MAGIC_IMAGE`, `TOS206_ROM` and host `mtools`; the runner clones the
 image for every scenario and assumes its C: partition starts at `@@1024` unless

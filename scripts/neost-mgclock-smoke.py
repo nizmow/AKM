@@ -13,7 +13,9 @@ The MagiC check compares three disposable boots of the same image:
   must otherwise be pixel-identical to the control run.
 
 This proves timer behavior and that the desktop clock coexists with a normal
-multitasking application.  It does not measure CPU load or long-term stability.
+multitasking application.  Every run is driven through the shared
+`neost_server.NeoSTServer` client, which owns protocol framing and cleanup.
+The check does not measure CPU load or long-term stability.
 """
 
 from __future__ import annotations
@@ -22,11 +24,11 @@ import argparse
 import os
 from pathlib import Path
 import shutil
-import subprocess
 import sys
 import tempfile
 
-from neost_common import acquire_headless, create_output, resolve_rom, run, run_logged
+from neost_common import acquire_headless, create_output, resolve_rom, run
+from neost_server import NeoSTServer
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
@@ -121,9 +123,19 @@ def bbox_inside(bbox: tuple[int, int, int, int],
             top <= bbox[1] <= bbox[3] < bottom)
 
 
-def clock_frames(output: Path, start: int, stop: int, interval: int) -> list[Path]:
-    frames = [output / f"frame{frame:05d}.ppm"
-              for frame in range(start, stop + 1, interval)]
+def capture_frames(headless: Path, rom: Path, output: Path, options: list[str],
+                   start: int, stop: int, interval: int) -> list[Path]:
+    """Run an empty server artifact directory and capture clock samples."""
+    output.mkdir(parents=True)
+    frames = []
+    current = 0
+    with NeoSTServer(headless, rom, output, options=options, timeout=180.0) as server:
+        for frame in range(start, stop + 1, interval):
+            server.run_frames(frame - current)
+            current = frame
+            screenshot = output / f"frame{frame:05d}.ppm"
+            server.screenshot(screenshot)
+            frames.append(screenshot)
     missing = [str(frame) for frame in frames if not frame.is_file()]
     if missing:
         raise RuntimeError(f"NeoST did not produce expected screenshots: {missing}")
@@ -219,34 +231,24 @@ def run_emutos(headless: Path, rom: Path, output: Path) -> list[Path]:
     guest = guest_root / "C"
     guest.mkdir(parents=True)
     shutil.copy2(APP, guest / "MGCLOCK.PRG")
-    hostlog = output / "headless.log"
-    command = [
-        str(headless), "--machine", "st", "--mem", "4m", "--no-disk",
-        "--frames", str(EMUTOS_FRAMES), "--gemdos", str(guest_root),
-        "--auto", r"C:\MGCLOCK.PRG",
-        "--shot-every", str(EMUTOS_INTERVAL), str(output / "frame"),
-        "--screenshot", str(output / "final.ppm"), str(rom),
+    options = [
+        "--machine", "st", "--mem", "4m", "--no-disk",
+        "--gemdos", str(guest_root), "--auto", r"C:\MGCLOCK.PRG",
     ]
-    run_logged(command, hostlog, cwd=ROOT, timeout=180)
-    return clock_frames(output, EMUTOS_STABLE_FRAME, EMUTOS_FRAMES,
-                        EMUTOS_INTERVAL)
+    return capture_frames(headless, rom, output / "server", options,
+                          EMUTOS_STABLE_FRAME, EMUTOS_FRAMES, EMUTOS_INTERVAL)
 
 
 def run_magic(headless: Path, rom: Path, image: Path, output: Path) -> list[Path]:
     guest_root = output / "GEMDRIVE"
     (guest_root / "E").mkdir(parents=True)
-    hostlog = output / "headless.log"
-    command = [
-        str(headless), "--machine", "megaste", "--mem", "4m", "--mono",
-        "--no-disk", "--acsi", str(image), "--gemdos", str(guest_root),
+    options = [
+        "--machine", "megaste", "--mem", "4m", "--mono", "--no-disk",
+        "--acsi", str(image), "--gemdos", str(guest_root),
         "--auto", r"C:\AUTO\MAGXBOOT.TOS",
-        "--frames", str(MAGIC_FRAMES),
-        "--shot-every", str(MAGIC_INTERVAL), str(output / "frame"),
-        "--screenshot", str(output / "final.ppm"), str(rom),
     ]
-    run_logged(command, hostlog, cwd=ROOT, timeout=240)
-    return clock_frames(output, MAGIC_STABLE_FRAME, MAGIC_FRAMES,
-                        MAGIC_INTERVAL)
+    return capture_frames(headless, rom, output / "server", options,
+                          MAGIC_STABLE_FRAME, MAGIC_FRAMES, MAGIC_INTERVAL)
 
 
 def main() -> int:
@@ -348,7 +350,7 @@ def main() -> int:
 
         print(f"MGCLOCK desktop timer and coexistence checks passed; "
               f"artifacts: {output}")
-    except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
+    except (OSError, RuntimeError) as error:
         print(f"NeoST MGCLOCK smoke failed: {error}\nArtifacts: {output}",
               file=sys.stderr)
         return 1

@@ -32,7 +32,8 @@ MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
 
 Use `--partition-offset` if the MagiC `C:` partition does not start at byte
 1024 (`@@1024` in mtools syntax). `--skip-emutos` or `--skip-magic` isolates one
-half of the check. Screenshots and headless logs stay in the output directory.
+half of the check. Screenshots, `protocol.log` and `diagnostics.log` stay in
+each scenario's `server/` directory.
 
 The test compares pixels, not process exit status. It establishes the restored
 desktop drawing, one-second timer updates and coexistence with APPLICAT under
