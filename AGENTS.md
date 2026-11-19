@@ -5,9 +5,10 @@
 - Before choosing work, read `TODO.md` and the relevant row in `APPLICATION_BUILDS.md`.
   Distinguish compiled, launched and functionally tested; an unchecked runtime path
   is not evidence of a missing implementation.
-- Before porting an application, read `PORTING_NOTES.md`, especially “Source
-  encoding versus runtime bytes” and “Checklist for the next application”.
-  Inspect its original PRJ and resource/data dependencies before editing.
+- Before porting an application, follow “Application porting workflow” in
+  `PORTING_NOTES.md`, then its encoding guidance and boundary checklist.
+  Map contracts and capture a baseline before broad edits; prove a representative
+  boundary before parallelizing the remaining migration.
 - Keep documentation useful to someone returning in 12 months. Record durable
   contracts and verification limits, not a transcript of the latest session.
 
@@ -37,11 +38,16 @@
 - Reuse `scripts/neost_common.py` for emulator discovery, ROM lookup, bounded
   execution/logging and fresh artifact directories. Keep fixtures, launch
   profiles, input timing and success assertions application-specific.
-- Establish shared ABI contracts before splitting a port among file owners.
-  Check representative boundary code before spreading an assumed adaptation
-  across every module. Use fresh numbered snapshots for edits; never guess
-  offsets. Legacy parsers and automated preprocessor rewrites can fail or alter
-  line boundaries—check the actual affected text rather than trusting a preview.
+- Reuse only helpers whose contracts match the new consumer. Do not copy another
+  application's compatibility header wholesale or build a universal AES shim
+  merely because legacy symbols have similar names.
+- Establish shared ABI contracts before splitting a port among disjoint file
+  owners. The integration owner checks a stable source snapshot, not files still
+  being edited. A representative compile is a gate, not proof that the entire
+  application is ported.
+- Use fresh numbered snapshots for edits; never guess offsets. Legacy parsers
+  and automated preprocessor rewrites can fail or alter line boundaries—check
+  the actual affected text rather than trusting a preview.
 - Follow `.agents/skills/neost/SKILL.md` for emulator work. Clone writable MagiC
   images and association files; saving an editor can also update the running
   desktop. Verify guest effects, not just emulator exit status.

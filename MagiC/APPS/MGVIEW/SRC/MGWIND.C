@@ -1,20 +1,18 @@
 /*
 *
-* Dieses Modul enthÑlt die Fenster-Routinen
-* FÅr ein Textfenster
+* Dieses Modul enth√§lt die Fenster-Routinen
+* F√ºr ein Textfenster
 *
 */
 
-#include <stddef.h>
+#include <errno.h>
+#include <sys/stat.h>
 #include <string.h>
-#include <mgx_dos.h>
-#include <mt_aes.h>
-#include <vdi.h>
-#include "globals.h"
-#include "windows.h"
-#include "mgwind.h"
+#include "GLOBALS.H"
+#include "WINDOWS.H"
+#include "MGWIND.H"
 
-extern void  *memchr2( const void *s, size_t len );
+
 
 #define	MAXWIDTH	272
 
@@ -25,11 +23,11 @@ extern void  *memchr2( const void *s, size_t len );
 
 /*****************************************************************
 *
-* Expandiert eine Zeile mit Tabulatoren. Die ZeilenlÑnge
+* Expandiert eine Zeile mit Tabulatoren. Die Zeilenl√§nge
 * im Text ist <len>, ohne crlf.
-* Die neue ZeilenlÑnge wird zurÅckgegeben.
+* Die neue Zeilenl√§nge wird zur√ºckgegeben.
 * Ist die Zeile zu breit, wird abgebrochen.
-* Ist <tabsize> = 0, werden Tabs wîrtlich angezeigt (als Kuller)
+* Ist <tabsize> = 0, werden Tabs w√∂rtlich angezeigt (als Kuller)
 * Ist <buf> = NULL, wird nix kopiert.
 *
 *****************************************************************/
@@ -83,10 +81,10 @@ static long expand_line( unsigned char *text, long len, int tabsize,
 *
 * Ermittelt die Anzahl der Zeilen und die maximale
 * Spaltenbreite in einem Text.
-* Dabei wird nur '\n' berÅcksichtigt, daû Zeilen mit '\n' oder
-* mit '\r' abgeschlossen werden kînnen damit man mit UNIX-
+* Dabei wird nur '\n' ber√ºcksichtigt, da√ü Zeilen mit '\n' oder
+* mit '\r' abgeschlossen werden k√∂nnen damit man mit UNIX-
 * und Mac- Textdateien keine Probleme hat.
-* D.h. Zeilen kînnen beendet werden durch:
+* D.h. Zeilen k√∂nnen beendet werden durch:
 *
 *	$d$a
 *	$a
@@ -100,7 +98,7 @@ static void get_line_column_count( unsigned char *text, long len,
 {
 	unsigned char *ende = text+len;
 	unsigned char *eol,*eol2;
-	long w;			/* LÑnge einer Zeile */
+	long w;			/* L√§nge einer Zeile */
 
 
 	*lc = *cc = 0;
@@ -110,14 +108,14 @@ static void get_line_column_count( unsigned char *text, long len,
 
 		/* eol markiert das erste Zeichen hinter der Zeile */
 		/* Das Zeilenende kann CR,LF oder CRLF sein. eol2  */
-		/* markiert das erste Zeichen der nÑchsten Zeile   */
+		/* markiert das erste Zeichen der n√§chsten Zeile   */
 		/* ----------------------------------------------- */
 
 		eol = memchr2(text, ende-text);
 		if	(eol)
 			{
-			eol2 = eol+1;		/* nÑchstes Zeichen */
-			if	((*eol == '\r') && (*eol2 == '\n'))
+			eol2 = eol+1;
+			if ((*eol == '\r') && (eol2 < ende) && (*eol2 == '\n'))
 				eol2++;
 			}
 
@@ -132,14 +130,14 @@ static void get_line_column_count( unsigned char *text, long len,
 
 		if	(w > *cc)
 			*cc = w;
-		text = eol2;		/* aufs nÑchste Zeichen */
+		text = eol2;		/* aufs n√§chste Zeichen */
 		}
 }
 
 
 /*****************************************************************
 *
-* Initialisiert das Feld w->user_lines[], das die ZeilenanfÑnge
+* Initialisiert das Feld w->user_lines[], das die Zeilenanf√§nge
 * definiert.
 *
 *****************************************************************/
@@ -161,8 +159,8 @@ static void init_line_ptrs( unsigned char *text, long len,
 		if	(!eol)
 			break;
 
-		text = eol+1;		/* aufs nÑchste Zeichen */
-		if	((*eol == '\r') && (*text == '\n'))
+		text = eol+1;
+		if ((*eol == '\r') && (text < ende) && (*text == '\n'))
 			text++;
 		}
 }
@@ -171,7 +169,7 @@ static void init_line_ptrs( unsigned char *text, long len,
 /*****************************************************************
 *
 * Ermittelt einen Zeiger auf die <n>-te Zeile des Textes.
-* Gibt die LÑnge dieser Zeile (ohne CRLF bzw. LF) zurÅck.
+* Gibt die L√§nge dieser Zeile (ohne CRLF bzw. LF) zur√ºck.
 *
 *****************************************************************/
 
@@ -204,9 +202,9 @@ static unsigned char *get_line( WINDOW *w, long n, long *lw )
 
 /****************************************************************
 *
-* éndert die Objektkoordinaten von w->out so, daû sie in
+* √Ñndert die Objektkoordinaten von w->out so, da√ü sie in
 * bestimmte Raster einrasten.
-* Hier:	Innen-GRECT muû ganzzahliges Vielfaches der Zeichengrîûe
+* Hier:	Innen-GRECT mu√ü ganzzahliges Vielfaches der Zeichengr√∂√üe
 *		sein.
 *
 ****************************************************************/
@@ -214,27 +212,27 @@ static unsigned char *get_line( WINDOW *w, long n, long *lw )
 static void _my_snap( WINDOW *w )
 {
 	/* Innenbereich berechnen */
-	wind_calc(WC_WORK, MY_KIND, &(w->out), &(w->in));
+	wind_calc_grect(WC_WORK, MY_KIND, &(w->out), &(w->in));
 	/* x-Position auf 8er-Grenze */
 	w->in.g_x &= ~7;
-	/* Minimalgrîûe */
+	/* Minimalgr√∂√üe */
 	if	(w->in.g_w < 8*text_attrib[8])
 		w->in.g_w = 8*text_attrib[8];
 	if	(w->in.g_h < 3*text_attrib[9])
 		w->in.g_h = 3*text_attrib[9];
-	/* Breite und Hîhe */
+	/* Breite und H√∂he */
 	w->in.g_w -= w->in.g_w % w->hscroll.pixelsize;
 	w->in.g_h -= w->in.g_h % w->vscroll.pixelsize;
-	/* nochmal Auûenbereich berechnen */
-	wind_calc(WC_BORDER, MY_KIND, &(w->in), &(w->out));
+	/* nochmal Au√üenbereich berechnen */
+	wind_calc_grect(WC_BORDER, MY_KIND, &(w->in), &(w->out));
 }
 
 
 /****************************************************************
 *
 * Organisiert das Fenster neu, d.h. legt Position der Objekte fest.
-* gibt TRUE zurÅck, falls sich fenster.cols oder fenster.shift
-* geÑndert haben.
+* gibt TRUE zur√ºck, falls sich fenster.cols oder fenster.shift
+* ge√§ndert haben.
 *
 ****************************************************************/
 
@@ -250,9 +248,9 @@ static int _my_arrange( WINDOW *w )
 	w->vscroll.nvis = w->in.g_h / (w->vscroll.pixelsize);
 
 	if	(w->vscroll.n >= 0)
-		window_calc_slider(w, FALSE);
+		window_calc_slider(w, 0);
 	if	(w->hscroll.n >= 0)
-		window_calc_slider(w, TRUE);
+		window_calc_slider(w, 1);
 
 	return((old_vshift != w->vscroll.shift) ||
 		  (old_hshift != w->hscroll.shift));
@@ -272,7 +270,7 @@ static void _my_draw(WINDOW *w, GRECT *g)
 	long l;
 	long lw;
 	int x,y;
-	int pxy[4];
+	short pxy[4];
 	unsigned char textbuf[MAXWIDTH+1];
 
 
@@ -280,9 +278,9 @@ static void _my_draw(WINDOW *w, GRECT *g)
 	pxy[1] = g->g_y;
 	pxy[2] = g->g_x + g->g_w - 1;
 	pxy[3] = g->g_y + g->g_h - 1;
-	vs_clip(vdi_handle, TRUE, pxy);
+	vs_clip(vdi_handle, 1, pxy);
 
-	/* FÅr jede sichtbare Zeile */
+	/* F√ºr jede sichtbare Zeile */
 
 	x = w->in.g_x - (int) (w->hscroll.shift*w->hscroll.pixelsize);
 	y = w->in.g_y;
@@ -311,7 +309,7 @@ static void _my_draw(WINDOW *w, GRECT *g)
 
 			lw *= w->hscroll.pixelsize;	/* ausgegebene Pixel */
 
-			/* dann ggf. ein weiûes Rechteck dahinter */
+			/* dann ggf. ein wei√ües Rechteck dahinter */
 
 			if	(x+lw < w->in.g_x+w->in.g_w)
 				{
@@ -324,7 +322,7 @@ static void _my_draw(WINDOW *w, GRECT *g)
 
 			}
 
-		/* nÑchste Zeile */
+		/* n√§chste Zeile */
 
 		y += w->vscroll.pixelsize;
 		l++;
@@ -334,40 +332,47 @@ static void _my_draw(WINDOW *w, GRECT *g)
 
 /*****************************************************************
 *
-* Schlieût ein Textfenster
+* Schlie√üt ein Textfenster
 *
 *****************************************************************/
+
+
 
 static void _my_close(WINDOW *w, int kstate)
 {
 	WINDOW **sl;
 
-	if	(kstate & K_CTRL)
+	if (kstate & K_CTRL)
 		{
 		v_clsvwk(vdi_handle);
 		appl_exit();
-		Pterm0();				/* brutalo */
+		Pterm0();
 		}
 	wind_close(w->handle);
 	wind_delete(w->handle);
-	Mfree(w->user_file);
-	Mfree(w->user_lines);
+	if (w->user_file)
+		Mfree(w->user_file);
+	if (w->user_lines)
+		Mfree(w->user_lines);
 	sl = find_slot_window(w);
-	*sl = NULL;
-	nwindows--;
+	if (sl)
+		{
+		*sl = NULL;
+		nwindows--;
+		}
+	Mfree(w);
 }
-
 
 /*****************************************************************
 *
-* Tastatureingabe fÅr Textfenster
+* Tastatureingabe f√ºr Textfenster
 *
 *****************************************************************/
 
 
-#pragma warn -par
 static void _my_keyed( WINDOW *w, int kstate, int key )
 {
+	(void) kstate;
 	int newtab;
 	int ascii;
 
@@ -433,12 +438,12 @@ static void _my_keyed( WINDOW *w, int kstate, int key )
 					break;
 		}
 }
-#pragma warn +par
+
 
 
 /*****************************************************************
 *
-* Initialisiert und îffnet ein Textfenster
+* Initialisiert und √∂ffnet ein Textfenster
 *
 *****************************************************************/
 
@@ -446,111 +451,79 @@ void open_textwind( char *path )
 {
 	WINDOW **new_slot;
 	WINDOW *w;
-	XATTR xa;
+	struct stat st;
 	long err;
 	int handle;
-	GRECT full;		/* berechne maximale Fenstergrîûe */
+	GRECT full;
 
-
-	/* Fensterstruktur allozieren und Fenster erstellen */
-	/* ------------------------------------------------ */
-
-	if	(strlen(path) > 127)
-		return;				/* Pfad zu tief */
+	if (strlen(path) > 127)
+		return;
 	new_slot = new_window();
-	if	(!new_slot)
+	if (!new_slot)
 		{
-		err:
 		form_alert(1,"[3][Kein Fenster mehr.][Abbruch]");
 		return;
 		}
-	w = Malloc(sizeof(WINDOW));
-	if	(!w)
+	w = (WINDOW *) Malloc(sizeof(WINDOW));
+	if (!w)
 		{
-		form_xerr(ENSMEM, NULL);
+		form_xerr(-ENOMEM, NULL);
 		return;
 		}
-
-	/* Fenster-Maximalgrîûe berechnen */
-	/* ------------------------------ */
-
-	wind_calc(WC_WORK, MY_KIND, &scrg, &full);	/* Innenbereich */
-	/* x-Position auf 8er-Grenze */
+	w->user_file = NULL;
+	w->user_lines = NULL;
+	wind_calc_grect(WC_WORK, MY_KIND, &scrg, &full);
 	full.g_x &= ~7;
-	/* Breite und Hîhe */
 	full.g_w -= full.g_w % text_attrib[8];
 	full.g_h -= full.g_h % text_attrib[9];
-	/* nochmal Auûenbereich berechnen */
-	wind_calc(WC_BORDER, MY_KIND, &full, &full);
-
-	w->handle = wind_create(MY_KIND, &full );
-	if	(w->handle <= 0)
+	wind_calc_grect(WC_BORDER, MY_KIND, &full, &full);
+	w->handle = wind_create_grect(MY_KIND, &full);
+	if (w->handle <= 0)
 		{
 		Mfree(w);
-		goto err;
-		}
-
-	/* Datei einlesen */
-	/* -------------- */
-
-	err = Fopen(path, RMODE_RD);
-	if	(err < E_OK)
-		{
-		err2:
-		wind_delete(w->handle);
-		Mfree(w);
-		form_xerr(err, path);
+		form_alert(1,"[3][Kein Fenster mehr.][Abbruch]");
 		return;
 		}
+	err = Fopen(path, 0);
+	if (err < 0)
+		goto fail_window;
 	handle = (int) err;
-	err = Fcntl(handle, (long) &xa, FSTAT);
-	if	(err < E_OK)
+	if (fstat(handle, &st) < 0)
 		{
-		err3:
-		Fclose(handle);
-		goto err2;
+		err = -errno;
+		goto fail_file;
 		}
-
-	w->user_fsize = xa.size;
-	w->user_file = Malloc(xa.size + 1);	/* Platz fÅr EOS */
-	if	(!w->user_file)
+	w->user_fsize = st.st_size;
+	w->user_file = (unsigned char *) Malloc(w->user_fsize + 1);
+	if (!w->user_file)
 		{
-		err = ENSMEM;
-		goto err3;
+		err = -ENOMEM;
+		goto fail_file;
 		}
-
-	err = Fread(handle, xa.size, w->user_file);
-	if	(err != xa.size)
+	err = Fread(handle, w->user_fsize, w->user_file);
+	if (err != w->user_fsize)
 		{
-		if	(err >= 0)
-			err = EREADF;
-		err4:
-		Mfree(w->user_file);
-		goto err3;
+		if (err >= 0)
+			err = -EIO;
+		goto fail_buffer;
 		}
-
+	w->user_file[w->user_fsize] = 0;
 	Fclose(handle);
-	*new_slot = w;
-	nwindows++;
-
-	/* Default-Einstellungen */
-
 	init_window(w);
-
-	/* Eigene Einstellungen */
-
 	w->user_tabsize = 8;
 	get_line_column_count(w->user_file, w->user_fsize,
-					&(w->vscroll.n), &(w->hscroll.n),
-					w->user_tabsize);
-	w->user_lines = Malloc(w->vscroll.n * sizeof(char *));
-	if	(!w->user_lines)
+			&(w->vscroll.n), &(w->hscroll.n), w->user_tabsize);
+	w->user_lines = NULL;
+	if (w->vscroll.n)
 		{
-		err = ENSMEM;
-		goto err4;
+		w->user_lines = (unsigned char **) Malloc(w->vscroll.n * sizeof(*w->user_lines));
+		if (!w->user_lines)
+			{
+			err = -ENOMEM;
+			goto fail_buffer_closed;
+			}
+		init_line_ptrs(w->user_file, w->user_fsize, w->user_lines);
 		}
-	init_line_ptrs( w->user_file, w->user_fsize,
-				w->user_lines );
 	strcpy(w->title, path);
 	w->hscroll.pixelsize = text_attrib[8];
 	w->vscroll.pixelsize = text_attrib[9];
@@ -559,32 +532,40 @@ void open_textwind( char *path )
 	w->arrange = _my_arrange;
 	w->close = _my_close;
 	w->key = _my_keyed;
-
 	w->in.g_x = scrg.g_x;
 	w->in.g_y = scrg.g_y;
-	err = (long) w->hscroll.n * (long) text_attrib[8];
-	if	(err > scrg.g_w)
+	err = (long) w->hscroll.n * text_attrib[8];
+	if (err > scrg.g_w)
 		err = scrg.g_w;
 	w->in.g_w = (int) err;
-	err = (long) w->vscroll.n * (long) text_attrib[9];
-	if	(err > scrg.g_h)
+	err = (long) w->vscroll.n * text_attrib[9];
+	if (err > scrg.g_h)
 		err = scrg.g_h;
 	w->in.g_h = (int) err;
-	wind_calc(WC_BORDER, MY_KIND, &(w->in),&(w->out));
-
-	if	(w->out.g_y < scrg.g_y)
+	wind_calc_grect(WC_BORDER, MY_KIND, &w->in, &w->out);
+	if (w->out.g_y < scrg.g_y)
 		w->out.g_y = scrg.g_y;
-	if	(w->out.g_w > scrg.g_w)
+	if (w->out.g_w > scrg.g_w)
 		w->out.g_w = scrg.g_w;
-	if	(w->out.g_h > scrg.g_h)
+	if (w->out.g_h > scrg.g_h)
 		w->out.g_h = scrg.g_h;
-
-	/* Fenster staffeln */
 	w->out.g_x += (int) (new_slot-windows)*text_attrib[8];
 	w->out.g_y += (int) (new_slot-windows)*text_attrib[9];
-
-	/* Und schlieûlich îffnen */
-
+	*new_slot = w;
+	nwindows++;
 	w->open(w);
-	wind_set_string(w->handle, WF_NAME, w->title);
+	wind_set_str(w->handle, WF_NAME, w->title);
+	return;
+
+fail_buffer_closed:
+	Mfree(w->user_file);
+	goto fail_window;
+fail_buffer:
+	Mfree(w->user_file);
+fail_file:
+	Fclose(handle);
+fail_window:
+	wind_delete(w->handle);
+	Mfree(w);
+	form_xerr(err, path);
 }

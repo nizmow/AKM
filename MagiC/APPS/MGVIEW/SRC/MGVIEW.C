@@ -2,247 +2,164 @@
 *
 *             MGVIEW.C                             7.7.96
 *             ========
-*                                 letzte énderung:
+*                                 letzte √Ñnderung:
 *
 * geschrieben mit Pure C V1.1
 * Projektdatei: MGVIEW.PRJ
 *
 * Modul zum Anzeigen von ASCII-Dateien.
 *
-* ParameterÅbergabe Åber:
+* Parameter√ºbergabe √ºber:
 *	Kommandozeile
 *	ARGV
 *	VA_START
 *
 ****************************************************************/
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
-#include <vdi.h>
+#include <gem.h>
+#include <gemx.h>
+#include <mint/osbind.h>
 #include <string.h>
 #include <stdlib.h>
-#include "mgview.h"
-#include "gemut_mt.h"
-#include "globals.h"
-#include "windows.h"
-#include "mgwind.h"
+#include "MGVIEW_GEM.H"
+#include "MGVIEW.H"
+#include "GLOBALS.H"
+#include "WINDOWS.H"
+#include "MGWIND.H"
+#include "../../TOS_ARGS.H"
 
-#define DEBUG 0
+#define AV_STARTED 0x4738
 
-
-/*	int	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;	*/
-int	ap_id;
-int text_attrib[10];			 /* Default- Textattribute */
+int ap_id;
+short text_attrib[10];
+short work_in[12];
+short work_out[57];
+short vdi_handle;
 GRECT scrg;
-void close_work     (void);
-WORD global[15];
-int nwindows = 0;				/* Anzahl geîffneter Fenster */
+int nwindows = 0;
 
-
-/*************************************************/
-/**************** HAUPTPROGRAMM ******************/
-/*************************************************/
-
-int main( int argc, char *argv[] )
+static void open_work(void)
 {
-	int i,dummy;
+	int i;
+	for (i = 0; i < 10; i++)
+		work_in[i] = 1;
+	work_in[10] = 2;
+	v_opnvwk(work_in, &vdi_handle, work_out);
+}
+
+int main(int argc, char *argv[])
+{
+	int i;
+	short vdi_dummy;
 	WINDOW *w;
-	EVNT w_ev;
-	register char *s;
-	register char *p,*p2;
-	int	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
+	EVMULT_IN event_in;
+	EVMULT_OUT event_out;
+	short message[8];
+	short gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
 	char path[256];
+	struct tos_args raw_args;
 
-
-
-	/* Initialisierung */
-	/* --------------- */
-
-	if   ((ap_id = MT_appl_init(global)) < 0)
+	argc = tos_arguments(argc, &argv, &raw_args);
+	if ((ap_id = appl_init()) < 0)
 		Pterm(-1);
 	graf_mouse(ARROW, NULL);
-	wind_get_grect(SCREEN, WF_WORKXYWH, &scrg);
-	vdi_handle = graf_handle(&gl_hwchar, &gl_hhchar, &gl_hwbox, &gl_hhbox);
+	/* handle 0 is the AES desktop, whose work area is the full screen */
+	wind_get_grect(0, WF_WORKXYWH, &scrg);
+	vdi_handle = (short)graf_handle(&gl_hwchar, &gl_hhchar, &gl_hwbox, &gl_hhbox);
 	open_work();
-	vsf_color(vdi_handle,WHITE);           /* FÅllfarbe weiû */
-	/* linksbÅndig, Zeichenzellenoberkante */
-	vst_alignment(vdi_handle, 0, 5, &dummy, &dummy);
+	vsf_color(vdi_handle, G_WHITE);
+	vst_alignment(vdi_handle, 0, 5, &vdi_dummy, &vdi_dummy);
 	vqt_attributes(vdi_handle, text_attrib);
-/*
-	vswr_mode(vdi_handle,MD_REPLACE);      /* Replace- Modus */
-	vsf_interior(vdi_handle,SOLID);        /* komplett ausfÅllen */
-	Cursconf(0,0);
-	if	(vq_gdos())
-		vst_load_fonts(vdi_handle, 0);
-*/
-
-/*	Mrsrc_load("mgview.rsc", global);	*/
-
-	/* Kommandozeile abarbeiten */
-	/* ------------------------ */
-
-	for	(i = 1,argv++; i < argc; i++,argv++)
-		{
+	for (i = 1, argv++; i < argc; i++, argv++)
 		open_textwind(*argv);
-		}
 
-	/* Event-Schleife */
-	/* -------------- */
-
-	while(nwindows)
-		{
-		w_ev.mwhich = evnt_multi(MU_KEYBD+MU_MESAG,
-			  2,			/* Doppelklicks erkennen 	*/
-			  1,			/* nur linke Maustaste		*/
-			  1,			/* linke Maustaste gedrÅckt	*/
-			  0,NULL,		/* kein 1. Rechteck			*/
-			  0,NULL,		/* kein 2. Rechteck			*/
-			  w_ev.msg,
-			  0L,	/* ms */
-			  (EVNTDATA*) &(w_ev.mx),
-			  &w_ev.key,
-			  &w_ev.mclicks
-			  );
-
-
-		if	(w_ev.mwhich & MU_KEYBD)
-			{
+	event_in.emi_flags = MU_KEYBD | MU_MESAG;
+	event_in.emi_bclicks = 2;
+	event_in.emi_bmask = 1;
+	event_in.emi_bstate = 1;
+	while (nwindows) {
+		evnt_multi_fast(&event_in, message, &event_out);
+		if (event_out.emo_events & MU_KEYBD) {
 			w = whdl2window(top_whdl());
-
-			if	(w_ev.key == 0x1011)
-				break;		/* ^Q */
-
-			else
-			if	((w_ev.key == 0x1117) && (w))
-				{
-				int wnr;
-
-				wnr = (int) (find_slot_window(w) - windows);
+			if (event_out.emo_kreturn == 0x1011)
+				break;
+			if (event_out.emo_kreturn == 0x1117 && w) {
+				int wnr = (int)(find_slot_window(w) - windows);
 				i = wnr;
-				do	{
-					i++;
-					if	(i >= NWINDOWS)
-						i = 0;
-					if	(windows[i])
-						{
-						wind_set(windows[i]->handle,
-								WF_TOP, 0, 0, 0, 0);
+				do {
+					i = (i + 1) % NWINDOWS;
+					if (windows[i]) {
+						wind_set(windows[i]->handle, WF_TOP, 0, 0, 0, 0);
 						break;
-						}
 					}
-				while(i != wnr);
+				} while (i != wnr);
+			} else if (w)
+				w->key(w, event_out.emo_kmeta, event_out.emo_kreturn);
+		}
+		if (event_out.emo_events & MU_MESAG) {
+			if (((message[0] >= 20 && message[0] < 40) || message[0] >= 1040) &&
+			    (w = whdl2window(message[3])) != NULL)
+				w->message(w, event_out.emo_kmeta, message);
+			switch (message[0]) {
+			case AP_TERM:
+			case PA_EXIT:
+				goto ende;
+			case AP_DRAGDROP: {
+				char pipe[] = "U:\\PIPE\\DRAGDROP.AA";
+				char nak = DD_NAK;
+				memcpy(pipe + 17, &message[7], 2);
+				i = (int)Fopen(pipe, 1); /* GEMDOS mode 1: write-only */
+				if (i >= 0) {
+					Fwrite(i, 1L, &nak);
+					Fclose(i);
 				}
-			else	{
-				if	(w)
-					{
-					w->key(w, w_ev.kstate, w_ev.key);
-					w_ev.mwhich &= ~MU_KEYBD;	/* bearbeitet */
-					}
-				}
+				break;
 			}
-
-		if	(w_ev.mwhich & MU_MESAG)
-			{
-
-			/* Fenster-Nachricht empfangen */
-			/* --------------------------- */
-	
-			if	(((w_ev.msg[0] >= 20) &&
-					(w_ev.msg[0] < 40)) ||		/* WM_XX */
-				 	(w_ev.msg[0] >= 1040))
-				{
-				w = whdl2window(w_ev.msg[3]);
-				if	(w)
-					{
-					w->message(w, w_ev.kstate, w_ev.msg);
-					w_ev.mwhich &= ~MU_MESAG;	/* bearbeitet */
+			case VA_START: {
+				char *s;
+				memcpy(&s, &message[3], sizeof(s));
+				while (s && *s) {
+					char *p = path;
+					char *p2 = p + 255;
+					while (*s == ' ')
+						s++;
+					if (*s == '\'') {
+						s++;
+						while (*s && p < p2) {
+							if (*s == '\'') {
+								if (s[1] != '\'')
+									break;
+								s++;
+							}
+							*p++ = *s++;
+						}
+						if (*s)
+							s++;
+					} else {
+						while (*s && *s != ' ' && p < p2)
+							*p++ = *s++;
 					}
+					*p = '\0';
+					if (*s)
+						s++;
+					if (path[0])
+						open_textwind(path);
 				}
-
-			if	(w_ev.mwhich & MU_MESAG)
-				{
-				switch(w_ev.msg[0])
-					{
-					case AP_TERM:
-					case PA_EXIT:
-						goto ende;
-
-					/* MultiTOS-Drag&Drop empfangen */
-					/* ---------------------------- */
-
-					case AP_DRAGDROP:
-						s = "U:\\PIPE\\DRAGDROP.AA";
-						s[17] = ((char *) (w_ev.msg+7))[0];
-						s[18] = ((char *) (w_ev.msg+7))[1];
-						i = (int) Fopen(s, RMODE_WR);
-						if	(i >= 0)
-							{
-							s[17] = DD_NAK;
-							Fwrite(i, 1L, &s[17]);
-							Fclose(i);
-							}
-						break;
-
-					/* Kommandozeile empfangen */
-					/* ----------------------- */
-
-					case VA_START:
-						s = *((char **)(w_ev.msg+3));
-						while((s) && (*s))
-							{
-							p = path;
-							p2 = p+255;
-							while(*s == ' ')
-								s++;		/* leading blanks */
-							if	(*s == '\'')
-								{
-								s++;
-								while((*s) && (p < p2))
-									{
-									if	(*s == '\'')
-										{
-										if	(s[1] != '\'')
-											break;
-										s++;		/* Doppelte ' entfernen */
-										}
-									*p++ = *s++;
-									}
-								if	(*s)
-									s++;
-								}
-							else	{
-								while(*s && (*s != ' ') && (p < p2))
-									*p++ = *s++;
-								}
-							*p = '\0';
-							if	(*s)
-								s++;
-							if	(path[0])
-								open_textwind(path);
-							}
-		
-						i = w_ev.msg[1];		/* Absender */
-		
-						w_ev.msg[0] = AV_STARTED;
-						w_ev.msg[1] = ap_id;
-						w_ev.msg[2] = 0;		/* keine öberlÑnge */
-						/* Wort 3 und 4 unverÑndert */
-						w_ev.msg[5] =
-						w_ev.msg[6] =
-						w_ev.msg[7] = 0;
-		
-						appl_write(i, 16, w_ev.msg);
-						break;
-					}	/* end switch */
-				w_ev.mwhich &= ~MU_MESAG;
-				}
+				i = message[1];
+				message[0] = AV_STARTED;
+				message[1] = (short)ap_id;
+				message[2] = 0;
+				message[5] = message[6] = message[7] = 0;
+				appl_write(i, 16, message);
+				break;
+			}
 			}
 		}
-
+	}
 ende:
-
 	v_clsvwk(vdi_handle);
-/*	MT_rsrc_free(global);	*/
 	appl_exit();
-	return(0);
+	return 0;
 }
+
+

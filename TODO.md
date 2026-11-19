@@ -55,8 +55,8 @@ framework or shared-library rewrite is required before these are attempted.
 
 ## Build conventions to confirm as consumers appear
 
-- [x] Share the established raw-TOS-tail quote/ARGV adapter between MOD_APP and
-  APPLICAT in `MagiC/APPS/TOS_ARGS.H`; the MOD_APP comparison still passes.
+- [x] Share the established raw-TOS-tail quote/ARGV adapter among MOD_APP,
+  APPLICAT and MGVIEW in `MagiC/APPS/TOS_ARGS.H`; MOD_APP's extraction comparison passed.
 - [ ] Preserve quoted paths, escaped apostrophes, empty arguments, long ARGV
   arguments and literal file-type patterns where the application supports them.
   A link against a modern CRT does not automatically preserve old startup behavior.
@@ -97,7 +97,9 @@ framework or shared-library rewrite is required before these are attempted.
   disk-flush timing remains unmeasured.
 - [x] **APPLICAT** — independent bundle, cache compilation comparison and UI
   association-save scenario under MagiC; remaining paths are listed in porting notes.
-- [ ] Desktop helpers: MGVIEW, MGEDIT, MGNOTICE version 2, MGSEARCH.
+- [x] **MGVIEW** — independent executable; six archived/rebuilt MagiC scenarios
+  verify line endings, quoted/ARGV startup, empty input and keyboard navigation.
+- [ ] Desktop helpers: MGEDIT, MGNOTICE version 2, MGSEARCH.
 - [ ] Larger/threaded programs: MGCOPY, MGFORMAT, VT52, MAGXDESK version 5.
 - [ ] Separate assembly builds: MCMD, MAGXCONF, FLP_PAR and appropriate utilities.
 - [ ] Loadable components: editor/image/window-frame SLBs, CPXs and drivers.

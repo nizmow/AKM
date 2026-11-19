@@ -160,6 +160,12 @@ directory; saving, or running with `-c`, generates `applicat.dat`. No archived
 Pure C libraries or prebuilt DAT file are used. Test on a disposable MagiC
 installation: saving also sends the rebuilt cache to its running desktop.
 
+`mise run apps -- mgview` produces `build/atari/apps/mgview/MGVIEW.APP`.
+It needs no RSC or companion data: pass text filenames through a TOS command
+tail or ARGV. LF, CRLF, classic Mac CR, spaced paths with VFAT enabled, empty
+files and keyboard navigation were compared with the archive under NeoST/MagiC.
+See the catalogue and porting notes for verification limits.
+
 Repeatable emulator checks use explicit, subsystem-scoped tasks. Run
 `mise run test:mod-app-neost` (or `python3 scripts/neost-mod-app-smoke.py`).
 Runner options and outputs: `python3 scripts/neost-mod-app-smoke.py --help`.

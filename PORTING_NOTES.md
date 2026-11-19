@@ -329,6 +329,82 @@ resource variants remain untested. Legacy four-character-constant warnings
 and the existing `calc_ic` possibly-uninitialized warning remain.
 
 
+### MGVIEW
+
+`mise run apps -- mgview` builds the self-contained
+`build/atari/apps/mgview/MGVIEW.APP`; no RSC or companion data is needed.
+The original PRJ identifies three C modules, a register-ABI assembly delimiter
+scanner and GEM utilities. The GCC build uses those C modules, public GEMlib,
+local workstation/top-window operations and a bounded C `memchr2` instead of
+linking Pure C objects. Raw-tail quoting reuses `MagiC/APPS/TOS_ARGS.H` while
+retaining true ARGV startup. Edited source is UTF-8; displayed file bytes remain
+Atari bytes, not host Unicode text.
+
+AES messages remain 16-byte short-word records, VDI pointer outputs and coordinate
+arrays use shorts, and events use the SDK's `EVMULT_IN`/`EVMULT_OUT` interface.
+File size comes from the opened descriptor via `fstat`; failure cleanup releases
+the descriptor, buffers and window before reporting the error. Empty files do
+not require a zero-sized line-pointer allocation, and CR lookahead is bounded.
+
+Under NeoST 0.6.5, MegaSTE/4 MiB/monochrome/TOS 2.06 and cloned MagiC images,
+six cases per binary exited with status 0 and unchanged inputs: LF, CRLF, Mac CR,
+quoted spaced filename, true ARGV spaced filename and empty file. Seven
+content-region captures per case matched the archive exactly (42 comparisons).
+Down/page-down, Home/End, tab width, horizontal scrolling and Ctrl-U closure
+were exercised; Home restored the initial view, and tab/scroll inputs visibly
+changed the content. Fixtures include blank lines, Atari high bytes, long lines
+and a final unterminated line. Evidence is under
+`build/atari/mgview-check/output/old-*` and `new-*`.
+
+The spaced-path cases enable `#[vfat]` / `drives=c` in the **cloned** `MAGX.INF`.
+The archive reports file-not-found without that prerequisite; that is not
+evidence of a quoting bug. Startup can also leave a desktop window foreground:
+top the viewer before sending keys, and target its actual title geometry
+(an empty-file window is much narrower).
+
+| Executable | TEXT | DATA | BSS | Symbols | File bytes |
+|---|---:|---:|---:|---:|---:|
+| Archived MGVIEW | 8094 | 1776 | 5830 | 0 | 10052 |
+| GCC, default optimization/debug flags | 119444 | 1798 | 7396 | 55512 | 179192 |
+
+Other display modes/OSes, resize/full, multiple-window cycling and VA_START/
+drag-drop IPC were not exercised. `VIEW.PRG` remains an archived historical
+binary, not a second claimed build of MGVIEW.
+
+## Application porting workflow
+
+Use these gates in order; the checklist below supplies the boundary details.
+
+1. **Map contracts before editing broadly.** Read the original project, startup
+   and actual inputs. Identify source/library/resource ownership and every
+   C/assembly, OS, callback and persisted-data boundary. Establish argument widths,
+   stack/register conventions, return values, structure layouts and semantic
+   requirements from the public SDK and actual callees—not similarly named
+   functions in an earlier port. Choose shared helpers only where contracts match.
+2. **Capture a behavioral baseline.** Run the archive on small disposable fixtures
+   under a pinned emulator/OS configuration. Record visible behavior and relevant
+   outputs before changing the implementation. Choose cases around the
+   application's contracts: for example, LF/CRLF/CR inputs for a text viewer,
+   navigation at file boundaries, quoting, or save/backup behavior. If no matching
+   executable is available, state that limit and derive independent expectations
+   from source/docs; do not invent a parity result.
+3. **Prove the shared boundary before spreading changes.** Adapt the minimum real
+   source needed for a representative compile/link check. Exercise an uncertain
+   runtime ABI with a focused guest scenario. Do not use stubs, archived objects
+   or unresolved-symbol exceptions to make the check pass. Resolve shared
+   declarations first; only then delegate disjoint modules against that contract.
+4. **Port coherent slices, then integrate a stable snapshot.** Preserve original
+   behavior while adapting complete call paths. Keep one integration owner and
+   avoid compiling files while other owners are changing them. A successful
+   sample module does not justify assuming every pointer, callback or record has
+   the same layout; migrate all callers and remove obsolete adaptations.
+5. **Verify the complete application, not just startup.** Build its independent
+   install bundle and exercise representative user operations through the actual
+   surface: rendering/navigation, editing/saving, or other advertised behavior.
+   Compare meaningful outputs with the baseline and assert intended effects
+   independently. Record compiled, packaged, launched and functionally tested
+   status separately, along with remaining verification limits.
+
 ### Checklist for the next application
 
 1. Read its PRJ, startup source and actual dependencies before choosing flags.
