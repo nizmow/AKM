@@ -48,10 +48,10 @@ See [PORTING_NOTES.md](PORTING_NOTES.md) for the workflow and known pitfalls.
 | B / builds, MagiC-tested | `MGVIEW.APP` | `MagiC/APPS/MGVIEW` | `mise run apps -- mgview` builds the self-contained text viewer with public MiNTLib/GEMlib and a bounded C replacement for its Pure C register-ABI delimiter scanner. Six archived/rebuilt NeoST/MagiC scenarios (LF, CRLF, Mac CR, quoted spaced path, true ARGV, empty file) exited successfully with unchanged fixtures and 42 matching content-region screenshots across rendering/navigation/tab/scroll states. Spaced paths require VFAT enabled on the fixture drive. Other display modes, window resize/full, multiple-window cycling and IPC remain untested. Archived `VIEW.PRG` is a separate historical binary, not this output. |
 | B / builds, MagiC-tested | `MGEDIT.APP` | `MagiC/APPS/MGEDIT` | `mise run apps -- mgedit` builds the editor, unchanged German `mgedit.rsc` and independently rebuilt `EDITOBJC.SLB`. Public SDK bindings replace archived SLB/GEM utility objects. Six archived/rebuilt NeoST/MagiC cases cover edit/save, selection/clipboard cut/paste, options persistence, New/Save As, quoted spaced paths and true ARGV; file effects match and 14 full UI states are pixel-identical. Other display modes, font/colour selection and IPC remain untested. |
 | B / builds, MagiC-tested | `MGNOTICE.APP` version 2 | `MagiC/APPS/MGNOTICE.2` | Newer notes application. `mise run apps -- mgnotice` builds `MGNOTICE.APP`, the German `mgnotice.rsc` and a copy of the independently built `EDITOBJC.SLB`. The shared `MagiC/APPS/GEMUT_MT_SDK.H` and `GEMUT_MT.C` helper replace the archived GEM utility objects. Under NeoST/MagiC, archived and rebuilt binaries produced identical initial/new/typed/escaped/quit screens, byte-identical 75-byte `.NOT` files containing `hello`, and identical reopened-note screens with the note window visible. Delete, font/colour/options, multiple-window and alternate-resource paths remain untested. |
-| B | `MGSEARCH.APP` | `MagiC/APPS/MGSEARCH` | Background file search. C; project references historical desktop pattern code, window helpers and GEM utilities through absolute paths. Resolve those inputs explicitly. |
+| B | `MGSEARCH.APP` | `MagiC/APPS/MGSEARCH` | Background file search. C; project references historical desktop pattern code, window helpers and GEM utilities through absolute paths. Use `MAGXDESK.5/PATTERN.C` (version 4 is semantically identical), compile the `GEMUTILS`/`WINDOWS` variant locally, and test modern GEMlib against the old `MAGXLIB.LIB` calls before porting that assembly library. |
 | C | `MGCOPY.APP` | `MagiC/APPS/MGCOPY` | Desktop copy/move/delete helper. C; background/thread behavior and dialog libraries. Test nested trees, cancellation and error paths on scratch data. |
 | C | `MGFORMAT.PRG` | `MagiC/APPS/MGFORMAT` | Floppy format/copy helper. C; threaded operations and low-level disk access. Use disposable floppy images only. |
-| C | `VT52.PRG` | `MagiC/APPS/VT52` | Terminal emulator. C/assembly, AES/VDI/BIOS glue and `DRAGDROP.LIB`; the drag/drop library has its own project under `SRC/LIB/QUELLEN/DRAGDROP`. |
+| C | `VT52.PRG` | `MagiC/APPS/VT52` | Terminal emulator. C/assembly, AES/VDI/BIOS glue and `DRAGDROP.LIB`; the drag/drop library has its own project under `SRC/LIB/QUELLEN/DRAGDROP` and is a consumer-driven prerequisite. |
 | C | `MAGXDESK.APP` version 5 | `MagiC/APPS/MAGICDESK/MAGXDESK.5` | Main desktop. C plus custom assembly startup and helper objects. Keep its helper programs independently buildable; package them together later. |
 | H | `MAGXDESK.APP` version 4 | `MagiC/APPS/MAGICDESK/MAGXDESK.4` | Older desktop source tree with a separate project. Do not overwrite the version-5 output. |
 | H | `MGNOTICE.APP` version 1 | `MagiC/APPS/MGNOTICE` | Older notes implementation. C; preserve as an explicit historical variant, not the default. |
@@ -78,7 +78,7 @@ These are standalone builds too, even though some do not involve GCC at all.
 | C | `COPS.APP` / accessory form | `MagiC/APPS/COPS` | Source control-panel host. C/assembly, CPX callbacks/resources and `EMUDBG.LIB`; PRJ selects `cops.app` with an accessory output commented out. Establish the desired mode rather than renaming an unverified build. |
 | C | `MAGXCONF.CPX`, `TSLICE.CPX` | `MagiC/APPS/CPX` | Two distinct C modules with `.HDR`, `.RSC`, `.RSH` inputs. Need CPX entry/callback conventions and packaging, not just a normal PRG link. Source requires saved settings first in DATA. |
 | Binary package | `COPS.ACC`, `WDIALOG.PRG`, `CLOCK.CPX` | `MagiC/APPS/COPS108.GER` | Distributed COPS 1.08 package, no C/assembly source found in this directory. Source COPS above is a separate tree; do not assume exact binary/source correspondence or turn bundled components into fake source targets. |
-| Dependency | `EMU_DBG.LIB` (legacy name) | `MagiC/APPS/EMUDBG.LIB` | C/assembly debug-output library with MagicOnLinux support and stdout fallback. Rebuild a compatible library for its consumers, not an application. |
+| Dependency | `EMU_DBG.LIB` (legacy name) | `MagiC/APPS/EMUDBG.LIB` | C/assembly debug-output library with MagicOnLinux support and stdout fallback. Rebuild a compatible library for its consumers, not an application. COPS is the first consumer; defer until its port. |
 
 ## 2. System components outside the application tree
 
@@ -172,19 +172,21 @@ output, not a complete modern recipe.
 
 ## 6. Reusable library/startup projects
 
-These deserve independent prerequisite targets, but not application launch tests.
-Rebuild or replace them with an explicitly compatible implementation; do not
-silently reuse proprietary-toolchain objects in a GCC application.
+These deserve prerequisite targets only when a concrete consumer needs them;
+they are not a batch to rebuild. Start from the consumer's compile/link errors,
+prefer modern MiNTLib/GEMlib where it satisfies the contract, and add a runtime
+scenario where behavior is observable. Do not silently reuse proprietary-
+toolchain objects in a GCC application.
 
 | Legacy output / family | Source root | Role and porting boundary |
 |---|---|---|
-| `MT_AES.LIB` | `MagiC/LIB/MT_AES` | Multitasking AES bindings and related editor support. Check initialization, parameter blocks and callback conventions against the chosen application ABI. |
-| `MT_AES_I.LIB` | `MagiC/LIB/MT_AES_I` | Internal flavor; project references another tree's object through a stale path. Not automatically required by ordinary applications. |
-| `MT_DOS.LIB` | `MagiC/LIB/MT_DOS` | Additional MagiC DOS wrappers. |
-| `MAGXLIB.LIB` | `MagiC/LIB/MAGIXLIB` | Older assembly AES/GEM extensions missing from the original compiler libraries. Evaluate overlap with modern GEMlib before carrying everything forward. |
-| `GEMUTILS`, `GEMUT_MT`, `GEMUT_M2`, `WINDOWS`, `WDIALOG`, `LL` objects | `MagiC/LIB/MYLIBS` | Distinct reusable helper implementations, not one monolithic application or interchangeable variants. Several application PRJs refer to these through absolute paths. |
-| `PCMXSTRT.O` | `MagiC/LIB/PCMXSTRT` | Pure C-specific startup with ARGV/quoting behavior. Port required behavior to compatible application startup rather than linking it blindly. |
-| `MAC_API.O` | `MagiC/LIB/MAC_API` | Host-Mac call glue; needs host cookie/API initialization. Relevant to MGEDIT7, native-menu/navigation demos, not standard Atari applications. |
+| `MT_AES.LIB` | `MagiC/LIB/MT_AES` | Multitasking AES bindings and related editor support. Check initialization, parameter blocks and callback conventions against the chosen application ABI. No current consumer; defer until a link proves a missing binding. |
+| `MT_AES_I.LIB` | `MagiC/LIB/MT_AES_I` | Internal flavor; project references another tree's object through a stale path. Not automatically required by ordinary applications. No current consumer. |
+| `MT_DOS.LIB` | `MagiC/LIB/MT_DOS` | Additional MagiC DOS wrappers. No current consumer. |
+| `MAGXLIB.LIB` | `MagiC/LIB/MAGIXLIB` | Older assembly AES/GEM extensions missing from the original compiler libraries. MGSEARCH's PRJ names it, but modern GEMlib supplies `form_xdo`, `form_xdial` and `objc_sysvar`; `wind_find` is also available. Link-test those replacements before porting the assembly library. |
+| `GEMUTILS`, `GEMUT_MT`, `GEMUT_M2`, `WINDOWS`, `WDIALOG`, `LL` objects | `MagiC/LIB/MYLIBS` | Distinct reusable helper implementations, not one monolithic application or interchangeable variants. MGSEARCH is the first current consumer of `GEMUTILS`/`WINDOWS`; its older `Rgetstring(WORD)` and `WINDOW` layout differ from the `GEMUT_MT`/APPLICAT variants. Compile only the variant a consumer uses; do not unify signatures. |
+| `PCMXSTRT.O` | `MagiC/LIB/PCMXSTRT` | Pure C-specific startup with ARGV/quoting behavior. The required behavior is already covered by `MagiC/APPS/TOS_ARGS.H`; do not link the archived startup object. |
+| `MAC_API.O` | `MagiC/LIB/MAC_API` | Host-Mac call glue; needs host cookie/API initialization. Relevant to MGEDIT7, native-menu/navigation demos, not standard Atari applications. No current Atari consumer. |
 
 Also account for the application-local `EMUDBG.LIB`, VT52's `DRAGDROP.LIB`,
 the SLB example's bindings and imported utility code. Similar filenames do not

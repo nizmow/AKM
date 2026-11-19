@@ -96,6 +96,11 @@ application/tool/extension families, 9 shared library/startup families and 7
 system-component families. Historical, test-only, blocked, binary-only and KAOS
 entries are outside that count.
 
+Shared families are consumer-driven, not a library-first batch. Each enters with
+its first concrete consumer and a runtime check; the first-consumer boundaries
+are recorded in [APPLICATION_BUILDS.md](APPLICATION_BUILDS.md) §6. Do not build
+all nine ahead of their consumers.
+
 - [x] **VFATCONF** — add `vfatconf` producing `VFATCONF.PRG` plus its required
   resource; launch reaches the dialog under MagiC, but configuration changes
   remain untested.
@@ -112,7 +117,9 @@ entries are outside that count.
 - [x] **MGNOTICE version 2** — add `mgnotice` producing the application, German
   resource and rebuilt `EDITOBJC.SLB`; archived/rebuilt create, edit, save and
   reopen states match on a cloned MagiC image.
-- [ ] Desktop helpers: MGSEARCH.
+- [ ] Desktop helpers: MGSEARCH. Use `MAGXDESK.5/PATTERN.C`; compile the older
+  `GEMUTILS`/`WINDOWS` contract it needs into the target; test modern GEMlib
+  before considering `MAGIXLIB`.
 - [ ] Larger/threaded programs: MGCOPY, MGFORMAT, VT52, MAGXDESK version 5.
 - [ ] Separate assembly builds: MCMD, MAGXCONF and appropriate utilities;
   FLP_PAR is a C pair, not an assembly family.

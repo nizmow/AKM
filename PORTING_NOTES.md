@@ -542,6 +542,23 @@ Use these gates in order; the checklist below supplies the boundary details.
    independently. Record compiled, packaged, launched and functionally tested
    status separately, along with remaining verification limits.
 
+### Shared libraries and loadable components
+
+Treat a legacy `.LIB`/`.O` or SLB source as a consumer-driven prerequisite, not
+a separate porting batch. Start from the consumer's actual compile/link failures
+and prefer modern MiNTLib/GEMlib where it supplies the same call; a successful
+library build without a caller proves no useful contract.
+
+Do not merge similar `MYLIBS` variants. `GEMUTILS` exposes
+`Rgetstring(WORD)`, while `GEMUT_MT` requires `Rgetstring(WORD, WORD *)`; the
+application-local `WINDOWS.H` copies also differ in callback and message types.
+Build only the variant a consumer uses. MGSEARCH is the first current
+`GEMUTILS`/`WINDOWS` consumer; link-test GEMlib's equivalents (`form_xdo`,
+`form_xdial`, `objc_sysvar`, `wind_find`) against its PRJ's `MAGXLIB.LIB`
+dependency before rebuilding the assembly library. For a runtime SLB, also
+verify binding, relocation packaging and the client/library pair; a link-time
+`.LIB` needs a real caller and a runtime check.
+
 ### Checklist for the next application
 
 1. Read its PRJ, startup source and actual dependencies before choosing flags.
