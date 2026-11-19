@@ -103,11 +103,25 @@ layout from `PATH`; a separate downloaded AppImage is no longer required when
 using mise. Other platforms are not covered by this NeoST pin; provide an
 emulator and ROM explicitly using the runner's options.
 
+
 Use `mise exec -- <command>` without shell activation, or activate mise to get
 the selected versions automatically. `mise run test:encoding` runs the text
 converter regression checks. Host Python pinning does not change the Python
 installed inside the toolchain container. Proprietary TOS ROMs and writable
 MagiC disk images are supplied separately, never installed by mise.
+
+
+### NeoST regression scenarios
+
+Use `scripts/neost_server.py` as the canonical reusable client for scripted
+NeoST 0.6.5 scenarios. It handles the server protocol and process lifecycle;
+scenario scripts should use `scripts/neost_common.py` for emulator discovery
+and fresh artifact directories, then supply task-specific setup and checks.
+Machine options, ROM choice, writable fixtures, input timing, and expected
+application behavior stay with each scenario rather than becoming generic
+client policy. The NeoST skill at `.agents/skills/neost/SKILL.md` documents this
+workflow. Run `mise run test:neost-server` for focused client regression
+coverage.
 
 After authenticating with `glab`, configure its credential helper for Docker-compatible
 registry clients such as Podman, then build and push:

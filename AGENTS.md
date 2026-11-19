@@ -35,9 +35,11 @@
 
 - Reuse `MagiC/APPS/TOS_ARGS.H` for the established PCMXSTRT-style raw-tail
   quoting contract, retaining MiNTLib's extended ARGV vector.
-- Reuse `scripts/neost_common.py` for emulator discovery, ROM lookup, bounded
-  execution/logging and fresh artifact directories. Keep fixtures, launch
-  profiles, input timing and success assertions application-specific.
+- Reuse `scripts/neost_common.py` for emulator discovery, ROM lookup and fresh
+  artifact directories. Use `scripts/neost_server.py` as the canonical reusable
+  NeoST server client; keep scenario machine profiles, fixtures, input timing
+  and success assertions application-specific. See
+  `.agents/skills/neost/SKILL.md` for the scenario workflow.
 - Reuse only helpers whose contracts match the new consumer. Do not copy another
   application's compatibility header wholesale or build a universal AES shim
   merely because legacy symbols have similar names.

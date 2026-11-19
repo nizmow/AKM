@@ -91,8 +91,31 @@ Then narrow the trace to the failure window:
 - `--watch ADDRESS` breaks after reads or writes to a memory address.
 - Use `--dump-at` or `--probe` to inspect a narrow memory location before
   collecting a large trace.
-- `--server` provides an interactive command loop for run/play/save/load/peek/
-  observe workflows; see NeoST's `docs/OPENDST.md`.
+- For scripted regression scenarios, use `scripts/neost_server.py` as the
+  canonical reusable client for NeoST 0.6.5's line-oriented server protocol.
+  It owns process startup, protocol framing, bounded I/O, typed commands,
+  observations and cleanup. Keep protocol-level behavior there; do not build
+  another server wrapper or issue undocumented commands.
+
+## NeoST regression scenarios
+
+Use `scripts/neost_common.py` for emulator/ROM discovery and a fresh artifact
+directory, then use `NeoSTServer` from `scripts/neost_server.py` as a context
+manager. Supply the executable, ROM, output directory, and explicit machine
+options; the client appends the ROM as NeoST's final argument. Capture artifacts
+in that output directory and keep `protocol.log` separate from
+`diagnostics.log`.
+
+New task scenarios should compose the shared client with the task's own
+preconditions, fixtures and checks. Keep machine profile, writable guest data,
+input timing, expected screen/RAM values, and success assertions local to the
+application scenario: those contracts vary by program and are not generic
+client behavior. Use the focused `mise run test:neost-server` task for the
+client's protocol regression tests.
+
+For scenarios, issue explicit bounded runs and observe guest effects rather
+than treating process exit as success. Pin the ROM and relevant machine options
+when relying on frame timing. Do not reuse writable fixtures across runs.
 
 ## Application checks
 

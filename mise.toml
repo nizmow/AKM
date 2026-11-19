@@ -60,6 +60,11 @@ description = "Verify MGClock move and close-box behavior under NeoST"
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-mgclock-smoke.py"
 
+[tasks."test:neost-server"]
+description = "Run NeoST server client protocol regression tests"
+dir = "{{ config_root }}"
+run = "python3 scripts/test_neost_server.py"
+
 [tasks."test:encoding"]
 description = "Verify strict Atari ST text conversion and C literal escapes"
 dir = "{{ config_root }}"
