@@ -3,9 +3,10 @@
 A porting catalogue, not a claim that these programs already build with GCC.
 The modern `Makefile.atari` currently builds the kernel. The applications used
 in the successful Hatari kernel tests were the existing release binaries.
-`Makefile.apps` now independently builds MOD_APP with GCC/MiNTLib and it has
-passed the documented Hatari comparison. Other entries are planning items unless
-explicitly marked verified; source presence alone is not a completed port.
+`Makefile.apps` independently builds the 14 application/helper/library targets
+marked as builds or verified in the status tables below. Other entries are
+planning items unless explicitly marked; source presence alone is not a
+completed port.
 
 **Recommendation:** build programs independently, with shared library/resource
 prerequisites, then assemble an installation from selected outputs. Do not make
@@ -92,7 +93,7 @@ not belong in an application link or automatically in `MAGIC.RAM`.
 | `WINFRAME.SLB` demo variant | `MagiC/KERNEL/WINFRAME.DEM` | Separate source/project producing the same filename. Use a distinct output directory and select at install time. |
 | `MFA2.SYS`, `MFA4.SYS`, `MFA16.SYS`, `MFA256.SYS`, `MFA32K.SYS` | `MagiC/KERNEL/VDI/SRC/MAGIC.DRV/MFA` | Five independent screen-driver outputs, one family of recipes. Test suitable hardware/video configurations. |
 | `MFM2.SYS`, `MFM16.SYS`, `MFM16IP.SYS`, `MFM16M.SYS`, `MFM256.SYS`, `MFM32K.SYS`, `MFM4IP.SYS` | `MagiC/KERNEL/VDI/SRC/MAGIC.DRV/MFM` | Seven driver projects; `ORIG/` contains another historical MFM4IP project, not a new product. |
-| `OFF002.OSD`, `OFF004IP.OSD`, `OFF016IP.OSD`, `OFF016PK.OSD`, `OFF16MOV.OSD`, `OFF256IP.OSD`, `OFF256PK.OSD`, `OFF32KFL.OSD`, `OFF32KPK.OSD` | `MagiC/KERNEL/VDI/SRC/MAGIC.DRV/OSD` | Nine offscreen-driver outputs. Preserve the driver file format and dispatch interface. |
+| `OFF002.OSD`, `OFF004IP.OSD`, `OFF016IP.OSD`, `OFF016PK.OSD`, `OFF16MOV.OSD`, `OFF256IP.OSD`, `OFF256PK.OSD`, `OFF32KFL.OSD`, `OFF32KPK.OSD` | `MagiC/KERNEL/VDI/SRC/MAGIC.DRV/OSD` | Nine offscreen-driver outputs. Preserve the driver file format and dispatch interface. `OFF65KPK.S` exists without a project file; treat it as an unclassified source-only orphan, not an agreed tenth target. |
 
 ## 3. Build rules for humans and agents
 

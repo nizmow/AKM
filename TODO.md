@@ -68,7 +68,7 @@ framework or shared-library rewrite is required before these are attempted.
 - [x] Define resource/data inputs and working-directory requirements for
   APPLICAT's executable/RSC/starter-INF bundle. Keep existing translations and
   binary resource encodings unchanged; translation repair remains a later phase.
-- [ ] Build selected targets in fresh output directories and record prerequisites
+- [x] Build selected targets in fresh output directories and record prerequisites
   that were previously supplied only by a developer's machine.
 
 ## Repeatable runtime verification
@@ -82,12 +82,19 @@ framework or shared-library rewrite is required before these are attempted.
   comparison in the runner, separate from MOD_APP itself.
 - [x] Cover application, file-type and special-object registration, duplicate
   and missing-app errors, quoted/empty/long paths, and output-file parity.
-- [ ] Keep crash probes, installers, header patchers and formatters out of the
-  default smoke set. Give them disposable fixtures and explicit test targets.
-- [ ] Record compiled, linked, packaged, launched and functionally tested status
-  separately in the catalogue as each port advances.
+- [x] Keep crash probes, installers, header patchers and formatters out of the
+  default smoke set.
+- [ ] Give crash probes, installers and formatters disposable fixtures and
+  explicit test targets when they are ported.
+- [ ] Split the catalogue's combined status labels into compiled, linked,
+  packaged, launched and functionally tested for the next batch.
 
 ## Following batches
+
+After MGSEARCH, the core source-backed remainder is 40 build families: 24
+application/tool/extension families, 9 shared library/startup families and 7
+system-component families. Historical, test-only, blocked, binary-only and KAOS
+entries are outside that count.
 
 - [x] **VFATCONF** — add `vfatconf` producing `VFATCONF.PRG` plus its required
   resource; launch reaches the dialog under MagiC, but configuration changes
@@ -107,10 +114,11 @@ framework or shared-library rewrite is required before these are attempted.
   reopen states match on a cloned MagiC image.
 - [ ] Desktop helpers: MGSEARCH.
 - [ ] Larger/threaded programs: MGCOPY, MGFORMAT, VT52, MAGXDESK version 5.
-- [ ] Separate assembly builds: MCMD, MAGXCONF, FLP_PAR and appropriate utilities.
+- [ ] Separate assembly builds: MCMD, MAGXCONF and appropriate utilities;
+  FLP_PAR is a C pair, not an assembly family.
 - [ ] Loadable components: image/window-frame SLBs, CPXs and drivers.
-- [ ] Account explicitly for remaining diagnostic, historical, host-specific,
-  missing-source and external-dependency entries from the catalogue.
+- [x] Account explicitly in the catalogue for remaining diagnostic, historical,
+  host-specific, missing-source and external-dependency entries.
 
 Keep compiler options and the known-working kernel steady during these ports.
 MOD_APP's first MiNTLib binary is substantially larger than the Pure C original;
