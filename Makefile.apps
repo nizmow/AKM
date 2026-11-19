@@ -22,7 +22,7 @@ MGNOTICE_SOURCES := $(addprefix $(MGNOTICE_DIR)/,MGNOTICE.C MGNWIND.C \
 MGNOTICE_OBJECTS := $(patsubst $(MGNOTICE_DIR)/%.C,$(BUILD_DIR)/mgnotice/%.o,$(MGNOTICE_SOURCES))
 
 
-.PHONY: all applicat mod-app cmdline showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver
+.PHONY: all applicat mod-app cmdline showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver abi-check console-test-driver
 all: mod-app
 applicat: $(BUILD_DIR)/applicat/APPLICAT.APP $(BUILD_DIR)/applicat/applicat.rsc \
   $(BUILD_DIR)/applicat/applicat.inf
@@ -60,6 +60,20 @@ $(BUILD_DIR)/mgview/%.o: $(MGVIEW_DIR)/%.C Makefile.apps
 
 $(BUILD_DIR)/mgview/MGVIEW.APP: $(MGVIEW_OBJECTS) Makefile.apps
 	$(CC) $(APP_FLAGS) $(MGVIEW_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+abi-check: $(BUILD_DIR)/abi-check/ABI_CHECK.o
+
+$(BUILD_DIR)/abi-check/ABI_CHECK.o: MagiC/APPS/ABI_CHECK.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"MagiC/APPS/MGVIEW/SRC" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+console-test-driver: $(BUILD_DIR)/console/RUNARG.PRG
+
+$(BUILD_DIR)/console/RUNARG.PRG: scripts/testdata/RUNARG.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
 $(BUILD_DIR)/mgnotice/%.o: $(MGNOTICE_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
@@ -241,3 +255,5 @@ $(BUILD_DIR)/mgedit/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 -include $(MGNOTICE_OBJECTS:.o=.d)
 -include $(BUILD_DIR)/mgnotice/GEMUT_MT.d
 -include $(BUILD_DIR)/mgnotice/NEOSTART.d
+-include $(BUILD_DIR)/abi-check/ABI_CHECK.d
+-include $(BUILD_DIR)/console/RUNARG.d

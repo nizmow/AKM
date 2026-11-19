@@ -75,6 +75,16 @@ description = "Verify strict Atari ST text conversion and C literal escapes"
 dir = "{{ config_root }}"
 run = "python3 -m unittest discover -s NON-TOS/atari-utf8-conversion -p 'test_*.py'"
 
+[tasks."test:abi"]
+description = "Compile the application ABI layout checks"
+dir = "{{ config_root }}"
+run = "scripts/atari-container run make -f Makefile.apps abi-check"
+
+[tasks."verify:apps"]
+description = "Check expected application outputs; pass -- --build for a fresh build"
+dir = "{{ config_root }}"
+run = "python3 scripts/verify_builds.py"
+
 [tasks."ports:scan"]
 description = "Scan the port catalogue for remaining sources and legacy paths"
 dir = "{{ config_root }}"
@@ -84,3 +94,18 @@ run = "python3 scripts/port_scan.py"
 description = "Resolve legacy PRJ module and header references"
 dir = "{{ config_root }}"
 run = "python3 scripts/port_deps.py"
+
+[tasks."ports:brief"]
+description = "Build a porting brief for one component"
+dir = "{{ config_root }}"
+run = "python3 scripts/port_brief.py"
+
+[tasks."ports:compile"]
+description = "Run syntax-only probes over remaining sources"
+dir = "{{ config_root }}"
+run = "python3 scripts/compile_probe.py"
+
+[tasks."test:console-driver"]
+description = "Build the generic Pexec driver for console comparisons"
+dir = "{{ config_root }}"
+run = "scripts/atari-container run make -f Makefile.apps console-test-driver"
