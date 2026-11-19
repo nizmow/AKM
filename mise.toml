@@ -56,7 +56,7 @@ dir = "{{ config_root }}"
 run = "python3 scripts/neost-mod-app-smoke.py"
 
 [tasks."test:mgclock-neost"]
-description = "Verify MGClock move and close-box behavior under NeoST"
+description = "Verify MGCLOCK desktop timer and MagiC coexistence under NeoST"
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-mgclock-smoke.py"
 

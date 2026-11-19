@@ -42,10 +42,10 @@ framework or shared-library rewrite is required before these are attempted.
   in [porting notes](PORTING_NOTES.md).
 - [x] **MGCLOCK** — add `mgclock` producing `MGCLOCK.PRG` with MiNTLib GEMlib
   AES/VDI bindings.
-- [ ] Verify the restored desktop-drawing clock and timer behavior under NeoST;
-  the earlier window-event smoke no longer describes this source.
-- [ ] Verify coexistence with other applications under the MagiC kernel; NeoST
-  runtime behavior has not yet been checked for the restored source.
+- [x] Verify the restored desktop-drawing clock and timer behavior under NeoST;
+  the window-event smoke was replaced by desktop-pixel checks.
+- [x] Verify coexistence with other applications under the MagiC kernel;
+  MGCLOCK and APPLICAT were booted together on a cloned image.
 
 - [x] **WBDAEMON** — add independent `wbdaemon` target, launch it from MagiC's
   `#_APP` startup folder, and verify `AP_TERM` exit under NeoST. Periodic

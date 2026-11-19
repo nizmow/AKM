@@ -15,7 +15,7 @@
 * zeile := TERMINATE <app-name>
 *    oder	 IGNORE <app-name>
 *
-* <app-name> in Gro×buchstaben, ohne Extension und ohne
+* <app-name> in Großbuchstaben, ohne Extension und ohne
 * trailing blanks
 *
 * Shutdown-Reihenfolge:
@@ -478,8 +478,8 @@ void get_all_apps(void)
 *
 * Entfernt eine Applikation
 *
-* Das Problem ist, da× das Terminieren über Fdelete() der
-* Proze×datei zunächst nur eine Nachricht an den SCRENMGR
+* Das Problem ist, daß das Terminieren über Fdelete() der
+* Prozeßdatei zunächst nur eine Nachricht an den SCRENMGR
 * verschickt, d.h. das eigentliche Löschen der Applikation
 * kann noch etwas dauern. Daher wird gewartet, bis die
 * Applikation über appl_find() nicht mehr sichtbar ist.
@@ -709,14 +709,14 @@ int main(int argc, char *argv[])
 			if (language == COUNTRY_DE)
 			{
 				t = "[3][SHUTDOWN:| |"
-						"Proze× ist gesperrt.]"
+						"Proze\236 ist gesperrt.]"
 						"[Abbruch]";
 			}
 			else
 			if (language == COUNTRY_FR)
 			{
 				t = "[3][SHUTDOWN:| |"
-						"Processus bloqué.]"
+						"Processus bloqu\202.]"
 						"[Abandon]";
 			}
 			else
@@ -764,14 +764,14 @@ int main(int argc, char *argv[])
 				if (language == COUNTRY_DE)
 				{
 					t = "[3][SHUTDOWN:| |"
-							"Zeitüberschreitung.]"
+							"Zeit\201berschreitung.]"
 							"[Abbruch]";
 				}
 				else
 				if (language == COUNTRY_FR)
 				{
 					t = "[3][SHUTDOWN:| |"
-							 "Débordement temps.]"
+							 "D\202bordement temps.]"
 							 "[Abandon]";
 				}
 				else
@@ -802,7 +802,7 @@ int main(int argc, char *argv[])
 		{
 			char *template;
 
-			/* Eine Applikation hat den Proze× per AP_TFAIL   */
+			/* Eine Applikation hat den Prozeß per AP_TFAIL   */
 			/* verweigert.								*/
 			/* Namen der App zur ap_id <buf[4]> ermitteln	*/
 			/* ---------------------------------------------- */
@@ -818,7 +818,7 @@ int main(int argc, char *argv[])
 			if (language == COUNTRY_DE)
 			{
 				template = "[3][SHUTDOWN:| |"
-					"Shutdown- Proze× nicht möglich.|"
+					"Shutdown- Proze\236 nicht m\224glich.|"
 					"%s lieferte Fehlercode %d.]"
 					"[Abbruch]";
 			}
@@ -846,7 +846,7 @@ int main(int argc, char *argv[])
 		}
 
 		/*
-		Cconws("Shutdown- Proze× ist OK.\r\n");
+		Cconws("Shutdown- Prozeß ist OK.\r\n");
 		Cconws("Alle Programme, die AP_TERM verstehen, sind weg.\r\n");
 		Cconws("Suche nach weiteren Programmen...\r\n");
 		*/
@@ -911,7 +911,7 @@ int main(int argc, char *argv[])
 		}
 
 		/* Wenn noch Programme laufen, die nicht ignoriert	*/
-		/* werden dürfen, wird der Shutdown-Proze× hier		*/
+		/* werden dürfen, wird der Shutdown-Prozeß hier		*/
 		/* abgebrochen.								*/
 		/* --------------------------------------------------- */
 
@@ -928,7 +928,7 @@ int main(int argc, char *argv[])
 		}
 
 		/* Wenn nur noch Programme laufen, die ignoriert       */
-		/* werden dürfen, hat das AES aber den Shutdown-Proze× */
+		/* werden dürfen, hat das AES aber den Shutdown-Prozeß */
 		/* schon abgebrochen. D.h. wir müssen diese Programme  */
 		/* entfernen und starten einen zweiten Versuch.        */
 		/* --------------------------------------------------- */
@@ -943,7 +943,7 @@ int main(int argc, char *argv[])
 		}
 
 #if DEBUG
-		Cconws("SHUTDOWN wird ausgeführt.\r\n");
+		Cconws("SHUTDOWN wird ausgef\201hrt.\r\n");
 #endif
 
 		/* buf[3] war 1, d.h. das System ist im Shutdown-		*/
@@ -990,9 +990,9 @@ int main(int argc, char *argv[])
 				if (language == COUNTRY_FR)
 				{
 					t = "[3][SHUTDOWN:| |"
-							"Shutdown réussi.|"
+							"Shutdown r\202ussi.|"
 							"Eteignez l'ordinateur!]"
-							"[Redémarrer|Reset à froid]";
+							"[Red\202marrer|Reset \205 froid]";
 				}
 				else
 				{

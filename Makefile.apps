@@ -25,6 +25,7 @@ mgview: $(BUILD_DIR)/mgview/MGVIEW.APP
 
 cmdline: $(BUILD_DIR)/cmdline/CMDLINE.PRG
 showfile: $(BUILD_DIR)/showfile/SHOWFILE.TTP
+shutdown: $(BUILD_DIR)/shutdown/SHUTDOWN.PRG
 limitmem: $(BUILD_DIR)/limitmem/LIMITMEM.TTP
 limitmem-test-driver: $(BUILD_DIR)/limitmem/NEOSTEST.PRG
 mgclock: $(BUILD_DIR)/mgclock/MGCLOCK.PRG
@@ -116,7 +117,7 @@ $(BUILD_DIR)/vfatconf/vfatconf.rsc: MagiC/APPS/VFATCONF/SRC/VFATCONF.RSC
 
 $(BUILD_DIR)/shutdown/SHUTDOWN.PRG: MagiC/APPS/SHUTDOWN/SRC/SHUTDOWN.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -finput-charset=UTF-8 -fexec-charset=CP850 \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) \
 	  -MMD -MP -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/wbdaemon/WBDAEMON.PRG: MagiC/APPS/WBDAEMON/SRC/WBDAEMON.C Makefile.apps

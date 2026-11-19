@@ -1,5 +1,44 @@
 # Testing
 
+## NeoST: MGCLOCK desktop clock and MagiC coexistence
+
+`scripts/neost-mgclock-smoke.py` builds `MGCLOCK.PRG` and `APPLICAT.APP`, then
+runs four bounded scenarios:
+
+1. EmuTOS with `MGCLOCK.PRG` as the autostart application. The desktop clock
+   area must change after initialization, proving the VDI timer loop runs.
+2. MagiC with only `MGCLOCK.PRG` in `C:\GEMSYS\MAGIC\START\`.
+3. MagiC with only the APPLICAT bundle in that startup folder. The same desktop
+   area must stay pixel-identical across frames; this is the timer control.
+4. MagiC with both applications. The clock must keep updating, while APPLICAT's
+   windows remain pixel-identical to the control run.
+
+The runner clones the supplied MagiC image for every scenario and installs files
+with `mcopy`; the source image is never written. It rejects an image whose
+tested partition offset does not contain `MAGX.INF`.
+
+Required for the MagiC scenarios:
+
+- A known-bootable MagiC ACSI image with `C:\AUTO\MAGXBOOT.TOS`.
+- A TOS 2.06 ROM accepted by NeoST.
+- `mtools` on the host.
+
+Run with a fresh output directory:
+
+```sh
+MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
+  python3 scripts/neost-mgclock-smoke.py --output build/atari/neost-mgclock-check
+```
+
+Use `--partition-offset` if the MagiC `C:` partition does not start at byte
+1024 (`@@1024` in mtools syntax). `--skip-emutos` or `--skip-magic` isolates one
+half of the check. Screenshots and headless logs stay in the output directory.
+
+The test compares pixels, not process exit status. It establishes the restored
+desktop drawing, one-second timer updates and coexistence with APPLICAT under
+the tested MagiC kernel; it does not measure CPU load, long-term stability or
+behavior under a different desktop/OS version.
+
 ## NeoST: MagiC SHUTDOWN smoke
 
 This is a manual, opt-in smoke test. NeoST's default EmuTOS ROM cannot verify

@@ -186,6 +186,11 @@ Runner options and outputs: `python3 scripts/neost-mod-app-smoke.py --help`.
 This tests MOD_APP under NeoST/EmuTOS; the MagiC kernel boot check remains under
 Hatari.
 
+Run `mise run test:mgclock-neost` (or `python3 scripts/neost-mgclock-smoke.py`)
+to verify the restored desktop clock and its coexistence with APPLICAT. The
+MagiC half needs `MAGIC_IMAGE`, `TOS206_ROM` and host `mtools`; see
+[TESTING.md](TESTING.md).
+
 The three `scripts/neost-*-smoke.py` runners use `scripts/neost_common.py` for
 executable/AppImage discovery, ROM selection, bounded subprocess execution,
 host-log capture, fresh output directories and streaming file hashes.

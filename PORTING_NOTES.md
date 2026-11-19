@@ -193,17 +193,41 @@ replacement was established. Non-English runtime selection remains unverified.
 `mise run apps -- mgclock` builds `MagiC/APPS/MGCLOCK/SRC/MGCLOCK.C` as
 `build/atari/apps/mgclock/MGCLOCK.PRG`. The port uses MiNTLib's public
 `<gem.h>` AES/VDI bindings and `<mint/osbind.h>` date/time calls, linked with
-`-lgem`; it needs no resource file. It owns a normal movable, sizeable GEM
-window, updates visible work areas on timer/redraw events, and exits through
-the close box. The original packed DOS date/time formatting and display cycle
-are retained; the port confines new behavior to the AES window/event lifecycle.
+`-lgem`; it needs no resource file. The restored source is the original
+desktop-drawing clock, not a windowed application: it computes a top-right
+position from `WF_WORKXYWH` and font metrics, alternates an 18-character
+date/time layout with an 8-character time layout, and redraws after a 1000 ms
+`evnt_timer` delay. It has no close box or termination protocol. The original
+packed DOS date/time formatting and display cycle are retained.
 
-`mise run test:mgclock-neost` runs the application in an isolated ST/4 MiB
-NeoST guest with bundled EmuTOS, captures the open window after a move, clicks
-its close box and checks that the desktop returns. Screenshots and the headless
-log remain in the output directory. This checks the AES/VDI window lifecycle
-under EmuTOS; it does not establish multi-process behavior under the MagiC kernel.
+`mise run test:mgclock-neost` runs the rebuilt binary under EmuTOS, then boots
+three clones of the supplied MagiC 6.20/TOS 2.06 image: MGCLOCK only, APPLICAT
+only and both. It asserts that MGCLOCK's desktop area changes between successive
+frames, that APPLICAT alone leaves that area static, and that the combined run
+differs from the APPLICAT control only inside the clock rectangle. The verified
+MagiC runs produced six clock-update frame pairs per MGCLOCK scenario; the
+combined overlay changed `(489,2)-(630,14)`, while APPLICAT differed by 67,991
+pixels outside the clock area. Evidence is under
+`build/atari/neost-mgclock-verify2/`.
 
+Inputs are `MAGIC_IMAGE`, `TOS206_ROM` and host `mtools`; the runner clones the
+image for every scenario and assumes its C: partition starts at `@@1024` unless
+`--partition-offset` is supplied. The check does not measure CPU load,
+long-term stability, other desktops/OS versions or MagiC process termination.
+
+
+### SHUTDOWN
+
+`mise run apps -- shutdown` builds
+`MagiC/APPS/SHUTDOWN/SRC/SHUTDOWN.C` as
+`build/atari/apps/shutdown/SHUTDOWN.PRG` with MiNTLib/GEMlib and the default
+application ABI. The German and French alert strings are ASCII C literals with
+explicit Atari ST byte escapes (`\236` sharp S, `\202` e-acute, `\201`
+u-umlaut, `\224` o-umlaut, `\205` a-grave). Do not reintroduce
+`-fexec-charset=CP850`: CP850 byte `0x9e` is the multiplication sign, not sharp
+S, so that flag hides the intended source character even when the emitted byte
+happens to match. The non-debug localized literals were checked in the built
+PRG.
 
 ### WBDAEMON
 
