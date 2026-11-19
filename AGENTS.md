@@ -1,10 +1,20 @@
 # Repository working guide
 
+## Execution requirements
+
+- Use the todo tool for multi-step implementation tasks.
+- Keep the todo list updated throughout execution.
+- Prefer dedicated tools over shell equivalents.
+- Discover relevant tools before implementing workarounds.
+- Delegate independent investigations where appropriate.
+
 ## Start here
 
-- Before choosing work, read `TODO.md` and the relevant row in `APPLICATION_BUILDS.md`.
-  Distinguish compiled, launched and functionally tested; an unchecked runtime path
-  is not evidence of a missing implementation.
+- Read `README.md` for commands and tooling, `ROADMAP.md` for phase boundaries
+  and `TESTING.md` for verification limits. Before choosing work, read `TODO.md`
+  and the relevant row in `APPLICATION_BUILDS.md`; distinguish compiled,
+  launched and functionally tested. An unchecked runtime path is not evidence
+  of a missing implementation.
 - Before porting an application, follow “Application porting workflow” in
   `PORTING_NOTES.md`, then its encoding guidance and boundary checklist.
   Map contracts and capture a baseline before broad edits; prove a representative
@@ -39,13 +49,18 @@
 
 ## Reuse and verification
 
+- Run `mise tasks` before adding tooling. Reuse `scripts/port_scan.py` and
+  `scripts/port_deps.py` for inventory and legacy PRJ resolution,
+  `scripts/elf_to_slb.py` for SLB packaging, and `scripts/atari-container` for
+  container commands.
 - Reuse `MagiC/APPS/TOS_ARGS.H` for the established PCMXSTRT-style raw-tail
   quoting contract, retaining MiNTLib's extended ARGV vector.
 - Reuse `scripts/neost_common.py` for emulator discovery, ROM lookup and fresh
   artifact directories. Use `scripts/neost_server.py` as the canonical reusable
   NeoST server client; keep scenario machine profiles, fixtures, input timing
-  and success assertions application-specific. See
-  `.agents/skills/neost/SKILL.md` for the scenario workflow.
+  and success assertions application-specific. Scenario runners are
+  `scripts/neost-*-smoke.py`, their regressions are `scripts/test_*.py`, and
+  `.agents/skills/neost/SKILL.md` documents the workflow.
 - Reuse only helpers whose contracts match the new consumer. Do not copy another
   application's compatibility header wholesale or build a universal AES shim
   merely because legacy symbols have similar names.
