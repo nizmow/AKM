@@ -74,3 +74,8 @@ run = "python3 scripts/test_neost_server.py"
 description = "Verify strict Atari ST text conversion and C literal escapes"
 dir = "{{ config_root }}"
 run = "python3 -m unittest discover -s NON-TOS/atari-utf8-conversion -p 'test_*.py'"
+
+[tasks."ports:scan"]
+description = "Scan the port catalogue for remaining sources and legacy paths"
+dir = "{{ config_root }}"
+run = "python3 scripts/port_scan.py"
