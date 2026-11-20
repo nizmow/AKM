@@ -560,6 +560,33 @@ Evidence is under `build/atari/neost-mgsearch-refactor/`. Drive/path forms,
 size/date filters, file-open messages, font variants and long-term operation
 remain unverified.
 
+### MGCOPY
+
+`mise run apps -- mgcopy` builds `MGCOPY.APP` and copies the German
+`MGCOPY.RSC` into `build/atari/apps/mgcopy/`. The four C modules use the shared
+`GEMUT_MT.C` implementation and public MiNTLib/GEMlib bindings; no archived
+`MT_AES.LIB`, `MT_DOS.LIB`, `PCTOSLIB.LIB` or Pure C startup object is linked.
+
+The port adds `MGCOPY_GEM.H` for the records and constants absent from the
+current public headers: the 44-byte GEMDOS `DTA`, the 52-byte MiNT `XATTR`,
+`DISKINFO`, `DOSTIME`, `mutimbuf` and the MagiX `XTED` extension. It keeps
+short-word AES/VDI outputs, uses GEMlib's `EVNT_multi` interface, and adapts the
+three MagiC dialog callbacks to the SDK's by-value `HNDL_OBJ_args` record.
+`MT_appl_init` becomes GEMlib's `mt_appl_init`. The shared `copy_mode` is the
+application global rather than an accidental file-static duplicate.
+
+`python3 scripts/neost-mgcopy-smoke.py` builds the application and delayed
+`NEOSTART.PRG` driver, then boots archived and rebuilt bundles in separate
+MagiC 6.20/TOS 2.06 clones. The driver waits for the desktop, invokes MGCOPY
+through `Pexec` with `-q`, and records child statuses. Cases copy, move, alias
+and delete disposable files in `C:\DEST\`; the rebuilt and archived runs
+produced the same four zero statuses and identical source/destination hashes:
+the copy and alias remain, the moved source and deleted source are gone, and
+the destination files match. Evidence is under
+`build/atari/neost-mgcopy-final/`. Confirm-dialog interaction, cancellation,
+nested trees, cross-drive moves, long paths, read-only/error paths and
+alternate resources remain untested.
+
 ## Application porting workflow
 
 Use these gates in order; the checklist below supplies the boundary details.

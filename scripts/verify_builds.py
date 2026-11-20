@@ -28,6 +28,7 @@ TARGETS = {
     "mgview": ("mgview", ["MGVIEW.APP"]),
     "mgnotice": ("mgnotice", ["MGNOTICE.APP", "mgnotice.rsc", "EDITOBJC.SLB"]),
     "mgsearch": ("mgsearch", ["MGSEARCH.APP", "MGSEARCH.RSC"]),
+    "mgcopy": ("mgcopy", ["MGCOPY.APP", "MGCOPY.RSC"]),
     "edit-slb": ("edit-slb", ["EDITOBJC.SLB"]),
     "mgedit": ("mgedit", ["MGEDIT.APP", "mgedit.rsc", "EDITOBJC.SLB"]),
     "abi-check": ("abi-check", ["ABI_CHECK.o"]),

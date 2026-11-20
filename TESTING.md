@@ -114,6 +114,34 @@ Use `--partition-offset` for a different MagiC partition offset. The source
 image is cloned for each binary. Drive/path forms, size/date filters, file-open
 messages, font variants and long-term operation are outside this scenario.
 
+## NeoST: MGCOPY file operations
+
+`mise run test:mgcopy-neost` builds `MGCOPY.APP`, its German `MGCOPY.RSC` and
+`NEOSTART.PRG`, then runs the archived and rebuilt bundles in separate clones
+of the same MagiC image. The delayed driver invokes MGCOPY through `Pexec`
+with `-q` and records the four child statuses in `C:\MGCOPY.RES`.
+
+The scenario copies `SRC.TXT`, moves `MOVE.TXT`, aliases `ALIAS.TXT` and
+deletes `DEL.TXT` into/from `C:\DEST\`. It requires:
+
+- Copy: `DEST\SRC.TXT` exists and matches the source.
+- Move: `DEST\MOVE.TXT` exists and the source is gone.
+- Alias: `DEST\ALIAS.TXT` exists and the source remains.
+- Delete: `DEL.TXT` is gone.
+- Archived and rebuilt statuses and guest-file hashes are identical.
+
+Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
+`mtools`. Run with fresh output:
+
+```sh
+MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
+  python3 scripts/neost-mgcopy-smoke.py --output build/atari/neost-mgcopy-check
+```
+
+Use `--partition-offset` for a different MagiC partition offset. The source
+image is cloned for each binary. Confirm-dialog interaction, cancellation,
+nested trees, cross-drive moves and error paths are outside this scenario.
+
 ## Shared host-side helpers
 
 `scripts/neost_image.py` wraps disposable image cloning, `MAGX.INF`

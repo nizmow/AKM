@@ -211,6 +211,10 @@ and `MGSEARCH.RSC`. The target compiles the consumer-specific `GEMUTILS`/
 `WINDOWS` variant and an app-local copy of `MAGXDESK.5/PATTERN.C` against public
 GEMlib; the older `MAGXLIB.LIB` dependency is not linked.
 
+`mise run apps -- mgcopy` builds `build/atari/apps/mgcopy/`: `MGCOPY.APP` and
+its German `MGCOPY.RSC`. The port uses the shared `GEMUT_MT.C` helper, public
+MiNTLib/GEMlib dialog calls and an app-local DOS compatibility layer.
+
 Repeatable emulator checks use explicit, subsystem-scoped tasks. Run
 `mise run test:mod-app-neost` (or `python3 scripts/neost-mod-app-smoke.py`).
 Runner options and outputs: `python3 scripts/neost-mod-app-smoke.py --help`.
@@ -229,6 +233,9 @@ MagiC image, TOS 2.06 and `mtools` inputs.
 Run `mise run test:mgsearch-neost` (or `python3 scripts/neost-mgsearch-smoke.py`)
 to compare the archived and rebuilt MGSEARCH dialog and `*.ZZZ` search-result
 screens on identical cloned images.
+
+Run `mise run test:mgcopy-neost` (or `python3 scripts/neost-mgcopy-smoke.py`)
+to compare MGCOPY copy, move, alias and delete effects on cloned MagiC images.
 
 The `scripts/neost-*-smoke.py` runners use `scripts/neost_common.py` for
 executable/AppImage discovery, ROM selection, bounded subprocess execution,

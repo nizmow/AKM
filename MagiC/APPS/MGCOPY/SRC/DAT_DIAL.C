@@ -1,18 +1,16 @@
 /*
 *
-* EnthÑlt die spezifischen Routinen fÅr den Dialog
+* Enth√§lt die spezifischen Routinen f√ºr den Dialog
 * "Datei existiert schon"
 *
 */
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
+#include "MGCOPY_GEM.H"
 #include <string.h>
 #include <stdlib.h>
-#include "gemut_mt.h"
-#include "mgcopy.h"
-#include "dat_dial.h"
-#include "globals.h"
+#include "MGCOPY.H"
+#include "DAT_DIAL.H"
+#include "GLOBALS.H"
 
 
 #define TRUE   1
@@ -53,7 +51,7 @@ void dat_dial_init_rsc( void )
 
 /*********************************************************************
 *
-* Dialog schlieûen
+* Dialog schlie√üen
 *
 *********************************************************************/
 
@@ -71,28 +69,31 @@ void close_dat_dialog( void )
 /*********************************************************************
 *
 * Behandelt die Exit- Objekte des Dialogs
-* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angewÑhlt.
+* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angew√§hlt.
 *
 * objnr = -1:	Initialisierung.
 *			d->user_data und d->dialog_tree initialisieren!
-*		-2:	Nachricht int data[8] wurde Åbergeben
+*		-2:	Nachricht int data[8] wurde √ºbergeben
 * 		-3:	Fenster wurde durch Closebutton geschlossen.
 *		-4:	Programm wurde beendet.
 *
-* RÅckgabe:	0	Dialog schlieûen
+* R√ºckgabe:	0	Dialog schlie√üen
 *			< 0	Fehlercode
 *
 *********************************************************************/
 
 #pragma warn -par
-WORD cdecl hdl_dat( DIALOG *d, EVNT *events, WORD exitbutton, WORD clicks, void *data )
+WORD cdecl hdl_dat( struct HNDL_OBJ_args args )
 {
+	DIALOG *d = args.dialog;
+	WORD exitbutton = args.obj;
+	WORD clicks = args.clicks;
 	static int is_8_3;
 	OBJECT *tree;
 	FILEDESCR *fd;
 
 
-	/* 1. Fall: Dialog soll geîffnet werden */
+	/* 1. Fall: Dialog soll ge√∂ffnet werden */
 	/* ------------------------------------ */
 
 	tree = adr_dat;
@@ -105,7 +106,7 @@ WORD cdecl hdl_dat( DIALOG *d, EVNT *events, WORD exitbutton, WORD clicks, void 
 		char *name;
 
 
-		if	(d_dat)			/* Dialog ist schon geîffnet ! */
+		if	(d_dat)			/* Dialog ist schon ge√∂ffnet ! */
 			return(0);
 
 		fd -> answ = WAITING;
@@ -191,13 +192,13 @@ WORD cdecl hdl_dat( DIALOG *d, EVNT *events, WORD exitbutton, WORD clicks, void 
 		{
 		fd -> answ = CANCEL;
 		close_dialog:
-		return(0);		/* ...dann schlieûen wir ihn auch */
+		return(0);		/* ...dann schlie√üen wir ihn auch */
 		}
 
 	if	(exitbutton < 0)	/* unbekannte Unterfunktion */
 		return(1);
 
-	/* 4. Fall: Exitbutton wurde betÑtigt */
+	/* 4. Fall: Exitbutton wurde bet√§tigt */
 	/* ---------------------------------- */
 
 	if	(clicks != 1)
@@ -212,7 +213,7 @@ WORD cdecl hdl_dat( DIALOG *d, EVNT *events, WORD exitbutton, WORD clicks, void 
 	if	(exitbutton == EX_OK)			/* OK */
 		{
 		if	(!*neu)
-			goto ende;			/* Name ungÅltig */
+			goto ende;			/* Name ung√ºltig */
 		fd -> answ = OK;
 		if	(is_8_3)
 			fname_ext(neu, fd -> fname);
@@ -221,7 +222,7 @@ WORD cdecl hdl_dat( DIALOG *d, EVNT *events, WORD exitbutton, WORD clicks, void 
 		}
 
 	if	((exitbutton == EX_SKIP) ||
-		 (exitbutton == EX_USE))			/* öberspringen */
+		 (exitbutton == EX_USE))			/* √úberspringen */
 		{
 		fd -> answ = SKIP;
 		goto close_dialog;

@@ -1,7 +1,7 @@
 struct prefs {
 	GRECT main_win;
 	GRECT progr_win;
-	int work_expanded;		/* ausfÅhrlicher Status */
+	int work_expanded;		/* ausf√ºhrlicher Status */
 	int dirty;
 };
 
@@ -35,7 +35,7 @@ extern OBJECT *adr_dat;
 
 extern int working_is_expanded;
 extern int copy_id;
-extern int is_3d;
+extern short is_3d;
 extern int run_status;
 extern int action,confirm,tst_free,copy_mode,abbruch;
 extern int  nargs;

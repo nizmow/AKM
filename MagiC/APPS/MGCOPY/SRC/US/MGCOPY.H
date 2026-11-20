@@ -1,4 +1,4 @@
-/* Resource Datei Indizes fÅr MGCOPY */
+/* Resource Datei Indizes f√ºr MGCOPY */
 
 #define T_ICONIF         0   /* Formular/Dialog */
 

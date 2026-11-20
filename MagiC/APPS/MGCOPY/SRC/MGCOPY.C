@@ -2,28 +2,28 @@
 *
 *             MGCOPY.APP                             14.04.95
 *             ==========
-*                                 letzte énderung:
+*                                 letzte √Ñnderung:
 *
 * geschrieben mit Pure C V1.1
 * Projektdatei: MGCOPY.PRJ
 *
-* Modul zum Kopieren/Verschieben/Lîschen/Aliasen von Dateien
+* Modul zum Kopieren/Verschieben/L√∂schen/Aliasen von Dateien
 * Parameter:
 *
 * -W									- auf Nachricht warten
 * -C src1 src2 src3 ... dest				- kopieren
 * -M src1 src2 src3 ... dest				- verschieben
 * -A src1 src2 src3 ... dest				- Aliase erstellen
-* -D src1 src2 src3 ...					- lîschen
+* -D src1 src2 src3 ...					- l√∂schen
 *
-* scr<n> immer 2 Argumente, Pfad und LÑnge, dabei:
-*		LÑnge -1:		Ordner
-*		LÑnge -2:		Alias
-*		LÑnge -3:		Device
-*		LÑnge -4:		unbekanntes Objekt
+* scr<n> immer 2 Argumente, Pfad und L√§nge, dabei:
+*		L√§nge -1:		Ordner
+*		L√§nge -2:		Alias
+*		L√§nge -3:		Device
+*		L√§nge -4:		unbekanntes Objekt
 *
 * Schalter (hinter dem Kommando):
-*	c		BestÑtigen (d.h. mit Dialogbox kopieren)
+*	c		Best√§tigen (d.h. mit Dialogbox kopieren)
 *	u		Update-Modus
 *	o		Overwrite-Modus
 *	f		freien Speicher abtesten
@@ -31,25 +31,23 @@
 *
 ****************************************************************/
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
+#include "MGCOPY_GEM.H"
 #include <string.h>
 #include <stdlib.h>
-#include "mgcopy.h"
-#include "gemut_mt.h"
-#include "beg_dial.h"
-#include "dat_dial.h"
-#include "globals.h"
+#include "MGCOPY.H"
+#include "BEG_DIAL.H"
+#include "DAT_DIAL.H"
+#include "GLOBALS.H"
 
 #define MAX_PENDING_TASKS	10
 #define DEBUG 0
 
 
 struct prefs prefs;
-int	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
+short	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
 int	ap_id;
-int	scrx,scry,scrw,scrh;
-int	is_3d;
+short	scrx,scry,scrw,scrh;
+short	is_3d;
 void close_work     (void);
 
 /* Dialoge */
@@ -65,7 +63,7 @@ OBJECT *adr_dat;
 int copy_id = -1;			/* ap_id des threads */
 						/* Wenn > 0, ist eine Aktion aktiv */
 int run_status;			/* Kopieraktion aktiv */
-int abbruch;				/* Button "Abbruch" betÑtigt */
+int abbruch;				/* Button "Abbruch" bet√§tigt */
 static int quit = FALSE;		/* nicht resident */
 int exit_immed = FALSE;
 
@@ -87,9 +85,9 @@ char *pending_tasks[MAX_PENDING_TASKS];
 
 /************************************************************
 *
-* Wird regelmÑûig aufgerufen.
+* Wird regelm√§√üig aufgerufen.
 *
-* Röckgabe > 0:	Vorgang abbrechen.
+* R√úckgabe > 0:	Vorgang abbrechen.
 *
 ************************************************************/
 
@@ -97,18 +95,13 @@ int callback_ever( void )
 {
 	EVNT w_ev;
 
-	w_ev.mwhich = evnt_multi(MU_KEYBD+MU_BUTTON+MU_MESAG,
-			  2,			/* Doppelklicks erkennen 	*/
-			  1,			/* nur linke Maustaste		*/
-			  1,			/* linke Maustaste gedrÅckt	*/
-			  0,NULL,		/* kein 1. Rechteck			*/
-			  0,NULL,		/* kein 2. Rechteck			*/
-			  w_ev.msg,
-			  0L,	/* ms */
-			  (EVNTDATA*) &(w_ev.mx),
-			  &w_ev.key,
-			  &w_ev.mclicks
-			  );
+	EVNT_multi(MU_KEYBD+MU_BUTTON+MU_MESAG,
+		  2,			/* Doppelklicks erkennen 	*/
+		  1,			/* nur linke Maustaste		*/
+		  1,			/* linke Maustaste gedr√ºckt	*/
+		  NULL, NULL,		/* keine Rechtecke			*/
+		  0L,			/* ms */
+		  &w_ev);
 
 	if	(w_ev.mwhich & MU_MESAG)
 		{
@@ -135,7 +128,7 @@ int callback_ever( void )
 			s = *((char **)(w_ev.msg+3));
 			if	(!s)	/* erweitertes VA_START */
 				{
-				if	(w_ev.msg[5] == 'XA')
+				if	(w_ev.msg[5] == 0x5841)	/* 'XA' */
 					s = *((char **)(w_ev.msg+6));
 				}
 
@@ -150,7 +143,7 @@ int callback_ever( void )
 						goto weiter;
 						}
 					}
-				Mfree(s);		/* weg mit der Nachricht */
+				Mfree((long) s);	/* weg mit der Nachricht */
 				Rform_alert(1, ALRT_TOOBUSY, NULL);
 				}
 			weiter:
@@ -178,12 +171,12 @@ int callback_ever( void )
 /****************************************************************
 *
 * Rechnet Koordinaten linear um. Der Wert <wert> wurde bei
-* Bildschirmgrîûe <old> abgespeichert, jetzt ist die
-* Bildschirmgrîûe <new>.
+* Bildschirmgr√∂√üe <old> abgespeichert, jetzt ist die
+* Bildschirmgr√∂√üe <new>.
 *
 ****************************************************************/
 
-static void recalc(int *wert, int old, int new)
+static void recalc(short *wert, short old, short new)
 {
 	unsigned long tmp;
 
@@ -248,7 +241,7 @@ void read_inf( char *fname )
 			return;
 		buf[len] = EOS;
 
-		/* erste Zeile Åberlesen */
+		/* erste Zeile √ºberlesen */
 
 		for	(s = buf; (*s) && (*s != '\n'); s++)
 			;
@@ -315,7 +308,7 @@ void read_inf( char *fname )
 		prefs.progr_win.g_y += scry;
 		}
 
-	/* keine INF-Datei. Merke Pfad fÅr spÑteres Create */
+	/* keine INF-Datei. Merke Pfad f√ºr sp√§teres Create */
 	/* ----------------------------------------------- */
 
 	else	{
@@ -333,7 +326,7 @@ void read_inf( char *fname )
 
 /****************************************************************
 *
-* Schreibe Fensterposition auflîsungsunabhÑngig in
+* Schreibe Fensterposition aufl√∂sungsunabh√§ngig in
 * Zeichenkette.
 *
 ****************************************************************/
@@ -404,7 +397,7 @@ static void next_args( void )
 
 	if	(xargs)
 		{
-		Mfree(xargs);
+		Mfree((long) xargs);
 		xargs = NULL;
 		}
 	if	(exit_immed || (quit && !n_pending_tasks))
@@ -439,13 +432,13 @@ long do_args( void )
 	char *args;
 
 
-	args = xargs + strlen(xargs)+1;	/* "ARGV=" Åberspringen */
+	args = xargs + strlen(xargs)+1;	/* "ARGV=" √ºberspringen */
 	for	(nargs = 0,s=args; *s; nargs++)
 		{
 		s += strlen(s) + 1;
 		}
 
-	xargv = Malloc(nargs * sizeof(char *));
+	xargv = (char **) Malloc(nargs * sizeof(char *));
 	if	(!xargv)
 		return((int) ENSMEM);
 
@@ -477,7 +470,7 @@ int main( int argc, char *argv[] )
 	char *s;
 	char *args;
 	char argbuf[200];	/* falls kein ARGV da ist */
-	int dummy;
+	short dummy;
 
 
 
@@ -524,7 +517,7 @@ int main( int argc, char *argv[] )
 
 	for	(; !exit_immed && (!quit || xargs); next_args())
 		{
-		run_status = DLG_WAITING;	/* warte auf DrÅcken von OK */
+		run_status = DLG_WAITING;	/* warte auf Dr√ºcken von OK */
 		abbruch = FALSE;
 
 		if	(!xargs)
@@ -534,7 +527,7 @@ int main( int argc, char *argv[] )
 		if	(err)
 			return((int) err);
 		if	(nargs == 1)
-			continue;		/* nix Åbergeben */
+			continue;		/* nix √ºbergeben */
 		if	(nargs < 3)
 			{
 			par_err:
@@ -569,7 +562,7 @@ int main( int argc, char *argv[] )
 			dst_path = xargv[nargs - 1];	/* Zielpfad */
 			nargs--;
 			}
-		else	dst_path = NULL;	/* Lîschen: Kein Zielpfad */
+		else	dst_path = NULL;	/* L√∂schen: Kein Zielpfad */
 
 
 		/* alles ausrechnen	*/
@@ -579,7 +572,7 @@ int main( int argc, char *argv[] )
 		if	(err)
 			continue;
 
-		/* in jedem Fall den Dialog îffnen	*/
+		/* in jedem Fall den Dialog √∂ffnen	*/
 		/* -------------------------------	*/
 
 		set_dialog_title( action );
@@ -611,7 +604,7 @@ int main( int argc, char *argv[] )
 				}
 			}
 
-		/* Wenn nicht BestÑtigen: Taste [Return] schicken.	*/
+		/* Wenn nicht Best√§tigen: Taste [Return] schicken.	*/
 		/* ---------------------------------------------------	*/
 
 		else	{
@@ -626,7 +619,7 @@ int main( int argc, char *argv[] )
 			}
 */
 
-		/* Jetzt warten wir auf das DrÅcken von "OK"  */
+		/* Jetzt warten wir auf das Dr√ºcken von "OK"  */
 		/* ------------------------------------------ */
 
 		while(!exit_immed && (run_status == DLG_WAITING))
@@ -653,7 +646,7 @@ int main( int argc, char *argv[] )
 
 /****************************************************************
 *
-* Schlieût ein Dialogfenster
+* Schlie√üt ein Dialogfenster
 *
 ****************************************************************/
 
@@ -662,7 +655,7 @@ void terminate_dialog( void **dialog, GRECT *pref_g )
 	GRECT g;
 	OBJECT *tree;
 	int whandle;
-	int iconified,dummy;
+	short iconified,dummy;
 
 
 	wdlg_get_tree( *dialog, &tree, &g);

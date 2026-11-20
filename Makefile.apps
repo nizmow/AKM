@@ -29,9 +29,15 @@ MGSEARCH_SOURCES := $(addprefix $(MGSEARCH_DIR)/,MGSEARCH.C SEARCH.C SRCH_WIN.C)
 MGSEARCH_OBJECTS := $(patsubst $(MGSEARCH_DIR)/%.C,$(BUILD_DIR)/mgsearch/%.o,$(MGSEARCH_SOURCES)) \
   $(BUILD_DIR)/mgsearch/GEMUTILS.o $(BUILD_DIR)/mgsearch/WINDOWS.o \
   $(BUILD_DIR)/mgsearch/PATTERN.o
+MGCOPY_DIR := MagiC/APPS/MGCOPY/SRC
+MGCOPY_GEMUT_DIR := MagiC/APPS/APPLICAT/SRC/IMPORT
+MGCOPY_INCLUDES := -I"$(MGCOPY_DIR)" -I"$(MGCOPY_GEMUT_DIR)"
+MGCOPY_SOURCES := $(addprefix $(MGCOPY_DIR)/,MGCOPY.C CPFILES.C BEG_DIAL.C DAT_DIAL.C)
+MGCOPY_OBJECTS := $(patsubst $(MGCOPY_DIR)/%.C,$(BUILD_DIR)/mgcopy/%.o,$(MGCOPY_SOURCES)) \
+  $(BUILD_DIR)/mgcopy/GEMUT_MT.o
 
 
-.PHONY: all applicat mod-app cmdline mac2st dump fc split showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver abi-check console-test-driver
+.PHONY: all applicat mod-app cmdline mac2st dump fc split showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver abi-check console-test-driver
 all: mod-app
 applicat: $(BUILD_DIR)/applicat/APPLICAT.APP $(BUILD_DIR)/applicat/applicat.rsc \
   $(BUILD_DIR)/applicat/applicat.inf
@@ -42,6 +48,8 @@ mgnotice: $(BUILD_DIR)/mgnotice/MGNOTICE.APP $(BUILD_DIR)/mgnotice/mgnotice.rsc 
 mgnotice-test-driver: $(BUILD_DIR)/mgnotice/NEOSTART.PRG
 mgsearch: $(BUILD_DIR)/mgsearch/MGSEARCH.APP $(BUILD_DIR)/mgsearch/MGSEARCH.RSC
 mgsearch-test-driver: $(BUILD_DIR)/mgsearch/NEOSTART.PRG
+mgcopy: $(BUILD_DIR)/mgcopy/MGCOPY.APP $(BUILD_DIR)/mgcopy/MGCOPY.RSC
+mgcopy-test-driver: $(BUILD_DIR)/mgcopy/NEOSTART.PRG
 
 cmdline: $(BUILD_DIR)/cmdline/CMDLINE.PRG
 mac2st: $(BUILD_DIR)/mac2st/MAC2ST.TTP
@@ -89,6 +97,28 @@ $(BUILD_DIR)/console/RUNARG.PRG: scripts/testdata/RUNARG.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/mgcopy/%.o: $(MGCOPY_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(MGCOPY_INCLUDES) \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgcopy/GEMUT_MT.o: $(MGCOPY_GEMUT_DIR)/GEMUT_MT.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGCOPY_GEMUT_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgcopy/MGCOPY.APP: $(MGCOPY_OBJECTS) Makefile.apps
+	$(CC) $(APP_FLAGS) $(MGCOPY_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mgcopy/MGCOPY.RSC: $(MGCOPY_DIR)/MGCOPY.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/mgcopy/NEOSTART.PRG: MagiC/APPS/MGCOPY/TESTDATA/NEOSTART.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/mgsearch/%.o: $(MGSEARCH_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
@@ -321,6 +351,8 @@ $(BUILD_DIR)/mgedit/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 -include $(MGEDIT_OBJECTS:.o=.d)
 -include $(MGSEARCH_OBJECTS:.o=.d)
 -include $(BUILD_DIR)/mgsearch/NEOSTART.d
+-include $(MGCOPY_OBJECTS:.o=.d)
+-include $(BUILD_DIR)/mgcopy/NEOSTART.d
 -include $(MGNOTICE_OBJECTS:.o=.d)
 -include $(BUILD_DIR)/mgnotice/GEMUT_MT.d
 -include $(BUILD_DIR)/mgnotice/NEOSTART.d
