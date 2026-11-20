@@ -132,9 +132,9 @@ MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
 ```
 
 Physical formatting and disk-copy effects are outside this scenario: NeoST
-reports a write fault when MGFORMAT starts a format operation. Those paths
-require manual hardware or a different FDC implementation; cancellation,
-alternate resources and long-term threading remain unverified.
+reports a write fault when MGFORMAT starts a format operation. Those paths are
+covered by the real-hardware matrix in [MANUAL_TESTING.md](MANUAL_TESTING.md);
+cancellation, alternate resources and long-term threading remain unverified.
 
 ## NeoST: MGCOPY file operations
 

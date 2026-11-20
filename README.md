@@ -243,7 +243,8 @@ to compare MGCOPY copy, move, alias and delete effects on cloned MagiC images.
 
 Run `mise run test:mgformat-neost` (or `python3 scripts/neost-mgformat-smoke.py`)
 to compare the archived and rebuilt MGFORMAT format dialog on cloned MagiC
-images. Physical floppy formatting remains a manual-hardware test.
+images. Physical floppy formatting and disk copy are covered by
+[MANUAL_TESTING.md](MANUAL_TESTING.md).
 
 The `scripts/neost-*-smoke.py` runners use `scripts/neost_common.py` for
 executable/AppImage discovery, ROM selection, bounded subprocess execution,

@@ -1,6 +1,7 @@
 CROSS_COMPILE ?= m68k-atari-mintelf-
 CC := $(CROSS_COMPILE)gcc
 VASM ?= vasmm68k_mot
+STRIP ?= $(CROSS_COMPILE)strip
 BUILD_DIR ?= build/atari/apps
 CFLAGS ?= -O2 -g -Wall -Wextra
 # Applications use the supplied MiNTLib's default stack ABI and 32-bit int.
@@ -43,7 +44,7 @@ MGFORMAT_OBJECTS := $(patsubst $(MGFORMAT_DIR)/%.C,$(BUILD_DIR)/mgformat/%.o,$(M
   $(BUILD_DIR)/mgformat/GEMUT_MT.o
 
 
-.PHONY: all applicat mod-app cmdline mac2st dump fc split showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver abi-check console-test-driver
+.PHONY: all applicat mod-app cmdline mac2st dump fc split showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit abi-check console-test-driver
 all: mod-app
 applicat: $(BUILD_DIR)/applicat/APPLICAT.APP $(BUILD_DIR)/applicat/applicat.rsc \
   $(BUILD_DIR)/applicat/applicat.inf
@@ -58,6 +59,21 @@ mgcopy: $(BUILD_DIR)/mgcopy/MGCOPY.APP $(BUILD_DIR)/mgcopy/MGCOPY.RSC
 mgcopy-test-driver: $(BUILD_DIR)/mgcopy/NEOSTART.PRG
 mgformat: $(BUILD_DIR)/mgformat/MGFORMAT.PRG $(BUILD_DIR)/mgformat/MGFORMAT.RSC
 mgformat-test-driver: $(BUILD_DIR)/mgformat/NEOSTART.PRG
+mgformat-hardware-kit: mgformat
+	rm -rf "$(BUILD_DIR)/mgformat-hardware"
+	mkdir -p "$(BUILD_DIR)/mgformat-hardware/ARCHIVE" \
+	  "$(BUILD_DIR)/mgformat-hardware/REBUILT"
+	cp "$(MGFORMAT_DIR)/../BIN/MGFORMAT.PRG" \
+	  "$(BUILD_DIR)/mgformat-hardware/ARCHIVE/MGFORMAT.PRG"
+	cp "$(MGFORMAT_DIR)/MGFORMAT.RSC" \
+	  "$(BUILD_DIR)/mgformat-hardware/ARCHIVE/MGFORMAT.RSC"
+	cp "$(BUILD_DIR)/mgformat/MGFORMAT.PRG" \
+	  "$(BUILD_DIR)/mgformat-hardware/REBUILT/MGFORMAT.PRG"
+	cp "$(BUILD_DIR)/mgformat/MGFORMAT.RSC" \
+	  "$(BUILD_DIR)/mgformat-hardware/REBUILT/MGFORMAT.RSC"
+	$(STRIP) -s "$(BUILD_DIR)/mgformat-hardware/REBUILT/MGFORMAT.PRG"
+	tar -czf "$(BUILD_DIR)/mgformat-hardware-kit.tar.gz" \
+	  -C "$(BUILD_DIR)/mgformat-hardware" .
 
 cmdline: $(BUILD_DIR)/cmdline/CMDLINE.PRG
 mac2st: $(BUILD_DIR)/mac2st/MAC2ST.TTP
