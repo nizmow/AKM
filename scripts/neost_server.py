@@ -240,10 +240,50 @@ class NeoSTServer:
                         raise
 
     def mouse(self, dx: int, dy: int, button: int) -> None:
+        """Send one raw relative IKBD mouse event.
+
+        ``button`` is a state mask: bit 0 left, bit 1 right.  This command does
+        not synthesize a click; use :meth:`click` for press/release.
+        """
         if (any(not isinstance(x, int) or isinstance(x, bool) for x in (dx, dy, button)) or
                 not -32768 <= dx <= 32767 or not -32768 <= dy <= 32767 or not 0 <= button <= 3):
             raise ValueError("invalid mouse arguments")
         self._request(f"mouse {dx} {dy} {button}")
+
+    def move(self, dx: int, dy: int, *, step: int = 8, frames: int = 1) -> None:
+        """Move by ``dx``/``dy`` in small relative steps.
+
+        A single large relative event can exceed the IKBD packet range or TOS's
+        per-event clamping.  Splitting keeps the motion in the same range as
+        NeoST's ``--mouse-at`` ``L/R/U/D`` tokens.  ``frames`` advances the
+        machine after each step; keep it at 1 unless deliberately batching.
+        """
+        if (any(not isinstance(x, int) or isinstance(x, bool) for x in (dx, dy, step, frames)) or
+                not -32768 <= dx <= 32767 or not -32768 <= dy <= 32767 or
+                not 1 <= step <= 127 or frames < 0):
+            raise ValueError("invalid move arguments")
+        while dx or dy:
+            sx = max(-step, min(step, dx))
+            sy = max(-step, min(step, dy))
+            self.mouse(sx, sy, 0)
+            dx -= sx
+            dy -= sy
+            if frames:
+                self.run_frames(frames)
+
+    def click(self, button: int = 1, *, frames: int = 1) -> Observation:
+        """Click the current mouse position with a held-then-released button.
+
+        ``frames`` must span at least one frame so the guest sees the press and
+        release as separate events, matching ``--mouse-at``'s ``1`` token.
+        """
+        if (not isinstance(button, int) or isinstance(button, bool) or button not in (1, 2, 3) or
+                not isinstance(frames, int) or isinstance(frames, bool) or frames < 1):
+            raise ValueError("invalid click arguments")
+        self.mouse(0, 0, button)
+        self.run_frames(frames)
+        self.mouse(0, 0, 0)
+        return self.run_frames(frames)
 
     def peek(self, address: int, length: int) -> bytes:
         if (not isinstance(address, int) or isinstance(address, bool) or not 0 <= address < 1 << 24 or

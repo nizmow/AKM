@@ -80,6 +80,16 @@ class NeoSTServerTests(unittest.TestCase):
         self.assertEqual(len(pixels), width * height * 3)
         self.assertTrue(any(pixels))
 
+    def test_mouse_move_and_click(self):
+        server = self.start()
+        server.move(16, -8, step=8, frames=1)
+        clicked = server.click(1, frames=1)
+        self.assertEqual(clicked.frame, 4)
+        with self.assertRaises(ValueError):
+            server.move(8, 0, step=0)
+        with self.assertRaises(ValueError):
+            server.click(0)
+
     def test_save_load_and_import_export_roundtrip(self):
         server = self.start()
         server.run_frames(3)

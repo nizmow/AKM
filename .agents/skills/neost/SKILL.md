@@ -62,6 +62,10 @@ Set machine, memory, ROM and frame count explicitly. Example:
 - `--mouse-at N SCRIPT`: `L/R/U/D` move by 8 pixels, lowercase variants drag,
   `1`/`2` click left/right, and `.` waits one frame. `--mouse-step N` changes the
   movement distance.
+- In server mode, `mouse DX DY BTN` is a raw relative IKBD event; `BTN` is a
+  held state bitmask, not a click. Use `NeoSTServer.move(dx, dy)` for small
+  relative steps and `NeoSTServer.click()` for a press/frame/release click.
+  Large single deltas can exceed the IKBD packet range or TOS clamping.
 - Use fixed frame input only with a pinned ROM, machine and boot sequence. If
   those change, inspect intermediate screenshots and re-establish the timing.
 
