@@ -12,10 +12,10 @@
 #define	TARGET_WINOS		0
 
 /*----------------------------------------------------------------------------------------*/
-/* Optionen fÅr die Kompilierung 																			*/
+/* Optionen f√ºr die Kompilierung 																			*/
 /*----------------------------------------------------------------------------------------*/
 
 #define	USE_OLD_TYPES		0											/* define old types (INT, LONG, ...) */
 #define	USE_INLINE			1											/* use inline assembler */
 #define	USE_ASSEMBLER_FN	0											/* 0: C-Funktionen aufrufen 1: alternative Assembler-Funktionen benutzen */
-#define	USE_TYPE_CHECKING	0											/* 1: Funktion are_types_ok() fÅr die öberprÅfung der Standardtypen deklarieren */
+#define	USE_TYPE_CHECKING	0											/* 1: Funktion are_types_ok() f√ºr die √úberpr√ºfung der Standardtypen deklarieren */

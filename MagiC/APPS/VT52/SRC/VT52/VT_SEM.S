@@ -1,6 +1,6 @@
-EXPORT inc_sem
+	xdef	inc_sem
 
-;Semaphore wenn m”glich setzen und ihren Status zurckgeben
+;Semaphore wenn mÃ¶glich setzen und ihren Status zurÃ¼ckgeben
 ;Funktionsresultat:	0: Semaphore ist bereits gesetzt gewesen
 ;							1: Semaphore wurde gesetzt
 ;

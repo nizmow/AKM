@@ -1,7 +1,7 @@
 #if  !defined( __VTSTRUCT__ )
 #define __VTSTRUCT__
 
-#define	TBUFSIZE	256			/* Grîûe des Tastaturbuffers	*/
+#define	TBUFSIZE	256			/* Gr√∂√üe des Tastaturbuffers	*/
 #define	MAX_COLUMNS 256		/* maximale Spaltenanzahl	*/
 #define	MIN_COLUMNS 40			/* minimale Spaltenanzahl	*/
 #define	MAX_ROWS 256			/* maximale Zeilenanzahl	*/
@@ -10,37 +10,37 @@
 #define	MIN_BUFFER 0			/* minimale Bufferzeilenanzahl	*/
 #define	MAX_TIMER 999			/* maximaler Redraw-Abstand	*/
 #define	MIN_TIMER 50			/* minimaler Redraw-Abstand	*/
-#define	MAX_POINT 100			/* maximale Zeichenhîhe	*/
-#define	MIN_POINT 1				/* minimale Zeichenhîhe	*/
+#define	MAX_POINT 100			/* maximale Zeichenh√∂he	*/
+#define	MIN_POINT 1				/* minimale Zeichenh√∂he	*/
 
 typedef struct
 {
-	WORD	head;						/* erstes auszugebendes Zeichen in der Zeile oder -1, wenn nichts ausgegeben werden muû	*/
-	WORD	tail;						/* letztes auszugebendes Zeichen in der Zeile oder -1, wenn nichts ausgegeben werden muû	*/
+	WORD	head;						/* erstes auszugebendes Zeichen in der Zeile oder -1, wenn nichts ausgegeben werden mu√ü	*/
+	WORD	tail;						/* letztes auszugebendes Zeichen in der Zeile oder -1, wenn nichts ausgegeben werden mu√ü	*/
 	ULONG *line;					/* Zeiger auf die langwortweisen Textdaten	*/
 }TPTR;
 
 
 /*
 * Zu einem Terminalfenster gibt es i.a. mehrere Clients, z.B. Threads oder
-* Signalhandler zu einem Prozeû.
-* FÅr jede App-ID wird eine VTCLIENT_INFO-Struktur angelegt.
+* Signalhandler zu einem Proze√ü.
+* F√ºr jede App-ID wird eine VTCLIENT_INFO-Struktur angelegt.
 */
 
 typedef struct
 {
-	WINDOW	*w;					/* zugehîriges Ausgabefenster */
-	WORD		par_apid;			/* Parent-apid (wenn Prozeû, sonst -1) */
+	WINDOW	*w;					/* zugeh√∂riges Ausgabefenster */
+	WORD		par_apid;			/* Parent-apid (wenn Proze√ü, sonst -1) */
 } VTCLIENT_INFO;
 
 
 /*
 *
 * Zu jedem Fenster WINDOW gibt es genau eine TSCREEN-Struktur.
-* Man kommt Åber den Zeiger <interior> in WINDOW dran.
+* Man kommt √ºber den Zeiger <interior> in WINDOW dran.
 *
 * Innerhalb dieser Struktur befindet sich eine VDIESC-Struktur,
-* die kompatibel zu der zugehîrigen Struktur in den LineA-Variablen
+* die kompatibel zu der zugeh√∂rigen Struktur in den LineA-Variablen
 * ist:
 *
 * Struktur "VDIESC" (relativ zu LINEA):
@@ -50,29 +50,29 @@ typedef struct
 * v_cur_cx	EQU -$1c
 * v_cur_cy	EQU -$1a
 *
-* Ans DOS wird ein Zeiger auf mx Åbergeben, die anderen Variablen
-* mÅssen im richtigen Abstand liegen.
+* Ans DOS wird ein Zeiger auf mx √ºbergeben, die anderen Variablen
+* m√ºssen im richtigen Abstand liegen.
 *
 */
 
 typedef struct
 {
-	WORD		refcnt;				/* ReferenzzÑhler (Tasks pro Terminalfenster) */
-	WORD		handle;				/* VDI-Handle fÅr die Workstation	*/
+	WORD		refcnt;				/* Referenzz√§hler (Tasks pro Terminalfenster) */
+	WORD		handle;				/* VDI-Handle f√ºr die Workstation	*/
 	WORD		child_id;			/* ID des TOS-Programmes	*/
 	WORD		parent_id;			/* ID der Parent-Applikation	*/
 
 	BYTE		name[256];			/* Pfad des Programms	*/
 
-	WORD		input;				/* Semaphore fÅr Eingaben	*/
-	WORD		output;				/* Semaphore fÅr Ausgaben	*/						
+	WORD		input;				/* Semaphore f√ºr Eingaben	*/
+	WORD		output;				/* Semaphore f√ºr Ausgaben	*/						
 	
-	WORD		term;					/* Flag fÅr Beendigung	*/
+	WORD		term;					/* Flag f√ºr Beendigung	*/
 	
 	WORD		font_id;				/* Nummer des Zeichensatzes	*/
-	WORD		point_size;			/* Hîhe in Punkten	*/
+	WORD		point_size;			/* H√∂he in Punkten	*/
 	WORD		char_width;			/* Zeichenbreite in Pixeln	*/
-	WORD		char_height;		/* Zeichenhîhe in Pixeln	*/
+	WORD		char_height;		/* Zeichenh√∂he in Pixeln	*/
 
 /* hier beginnt VDIESC */
 
@@ -88,7 +88,7 @@ typedef struct
 	WORD		save_y;				/* gespeicherte Cursorzeile oder -1	*/
 
 	WORD		x;						/* horizontale Cursorposition von 0 aus	*/
-	WORD		term_y;				/* vertikale Cursorposition fÅr BIOS */
+	WORD		term_y;				/* vertikale Cursorposition f√ºr BIOS */
 
 /* hier endet VDIESC */
 
@@ -103,7 +103,7 @@ typedef struct
 	void		(*vt_function)( struct _window *window, UWORD c );
 
 	WORD		tcnt;					/* Anzahl der im Puffer vorhandenen Zeichen	*/
-										/* von 0 aus gezÑhlt, bei -1 ist kein Zeichen im Buffer	*/
+										/* von 0 aus gez√§hlt, bei -1 ist kein Zeichen im Buffer	*/
 	ULONG		tbuf[TBUFSIZE];	/* Tastaturpuffer, Zeichenformat wie bei Bconin()	*/
 
 	TPTR		*first_line;		/*	Zeiger auf die erste Textzeile */

@@ -1,4 +1,4 @@
-EXPORT vt_vdi
+	xdef	vt_vdi
 
 ;void	vt_vdi( VDIPB *pb )
 vt_vdi:	move.l	a2,-(sp)

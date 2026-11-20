@@ -878,3 +878,32 @@ under identical emulator settings. Directory enumeration, file-selector sorting
 and dialog operations are useful C-heavy candidates. Record both size and timing;
 for cycle-sensitive conclusions, verify the emulator's timing model or use real
 hardware. A smaller ST build may also be faster, but measure it.
+
+## VT52
+
+`mise run apps -- vt52` builds `VT52.PRG` and its German `VT52.RSC` into
+`build/atari/apps/vt52/`. The target compiles the C modules and the eight
+assembly modules with VASM, and builds `DRAGDROP` from
+`SRC/LIB/QUELLEN/DRAGDROP/DRAGDROP.C` instead of linking the archived library.
+
+Porting changes:
+
+- The local compatibility header supplies the legacy `WORD`/`LONG` types,
+  `DTA` field aliases and `EVNTDATA`; it uses public MiNTLib/GEMlib headers.
+- Resource trees and strings are obtained with `rsrc_gaddr`, not by walking the
+  private AES global resource pointer.
+- Window/rectangle/mouse operations use public GEMlib calls. In particular,
+  `wind_update`, `wind_get(WF_FIRSTXYWH/WF_NEXTXYWH)`, `wind_calc_grect` and
+  `graf_mkstate` avoid the raw AESPB path, which produced
+  `AES call 24622 not implemented`.
+- VDI clipping, rectangle fill, colors and text use public GEMlib wrappers; the
+  wide text call is used because the byte-array conversion path is unsuitable
+  here.
+- Assembly exports/imports use VASM `xdef`/`xref`; external short branches are
+  long `jsr`/`jmp` because the linked PRG exceeds the 16-bit branch range.
+
+Current limitation: the rebuilt menu bar and terminal window reach the screen,
+but when the fixture child writes through the hooked BIOS console path MagiC
+reports `Program returned: 68000 Exception (Error #-69)`. The archived VT52
+captures the same child correctly. The BIOS/TOS output hook is therefore still
+the active blocker; do not claim VT52 terminal functionality until it is fixed.

@@ -1,5 +1,5 @@
-EXPORT	vt_aes
-EXPORT	appl_yield
+	xdef	vt_aes
+	xdef	appl_yield
 
 ;void	vt_aes( AESPB *pb )
 vt_aes:	move.l	a2,-(sp)

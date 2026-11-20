@@ -1,4 +1,4 @@
-EXPORT move_tbuf
+	xdef	move_tbuf
 
 ;void	move_tbuf( ULONG *tbuf, WORD cnt )
 ;cnt ist die Anzahl der zu kopierenden Zeichen

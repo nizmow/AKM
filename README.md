@@ -219,6 +219,12 @@ MiNTLib/GEMlib dialog calls and an app-local DOS compatibility layer.
 `MGFORMAT.PRG` and its German `MGFORMAT.RSC`. It uses native MagiC `wdlg`
 AES bindings; physical floppy operations are not covered by the NeoST test.
 
+`mise run apps -- vt52` builds `build/atari/apps/vt52/`: `VT52.PRG` and its
+German `VT52.RSC`, with `DRAGDROP` compiled from source. The port reaches the
+MagiC menu bar and terminal window. Capturing a child's BIOS console output
+still raises `68000 Exception (Error #-69)`; do not treat VT52 as functionally
+verified until that hook is fixed.
+
 Repeatable emulator checks use explicit, subsystem-scoped tasks. Run
 `mise run test:mod-app-neost` (or `python3 scripts/neost-mod-app-smoke.py`).
 Runner options and outputs: `python3 scripts/neost-mod-app-smoke.py --help`.

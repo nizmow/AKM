@@ -1,21 +1,21 @@
 /*
 *
-* Diese Datei beschreibt den Aufbau der šbergabestruktur,
-* mit der sich VT52.PRG ins System einh„ngt.
-* VT52 mu die Adresse 0x98c auf NULL lassen, damit es
-* keinen Konflikt mit der alten Version gibt. VT52 h„ngt seine
+* Diese Datei beschreibt den Aufbau der Ãœbergabestruktur,
+* mit der sich VT52.PRG ins System einhÃ¤ngt.
+* VT52 muÃŸ die Adresse 0x98c auf NULL lassen, damit es
+* keinen Konflikt mit der alten Version gibt. VT52 hÃ¤ngt seine
 * Struktur in Adresse 0x990 ein.
 *
 *	<sout_cooked> gibt eine Zeichenkette aus, unter
-*  Bercksichtigung von ^C.
+*  BerÃ¼cksichtigung von ^C.
 *
 *  <cin_cooked> liest ein Zeichen von der Tastatur ein, unter
-*  Bercksichtigung von ^C.
+*  BerÃ¼cksichtigung von ^C.
 *
 *  <inherit> vererbt ein Terminalfenster von einem Task an
-*  einen anderen (i.a. mehrere Threads und ein Proze).
+*  einen anderen (i.a. mehrere Threads und ein ProzeÃŸ).
 *
-*  <uninherit> meldet den Task fr sein Terminalfenster wieder
+*  <uninherit> meldet den Task fÃ¼r sein Terminalfenster wieder
 *  ab, wenn z.B. der Task bzw. der Signalhandler terminiert.
 *
 *  <bg> schickt einen Task in den Hintergrund, d.h. er bekommt

@@ -7,15 +7,9 @@
 /*----------------------------------------------------------------------------------------*/
 /* Globale Includes																								*/
 /*----------------------------------------------------------------------------------------*/
-#include <MGX_DOS.H>
-#include <VDI.H>
-#include	<MT_AES.H>
-#include	<STDIO.H>
-#include	<STDDEF.H>
-#include <STRING.H>
-#include	<STDLIB.H>
-#include	<SCANCODE.H>
-#include	<DRAGDROP.H>
+#include "VT52_GEM.H"
+#include "SCANCODE.H"
+#include "DRAGDROP.H"
 
 #include "WSTRUCT.H"
 #include "WLIB.H"
@@ -27,7 +21,7 @@ typedef struct {
 	WORD apid;
 } APPL;
 
-#include "vtsys.h"
+#include "VTSYS.H"
 
 #define	NAPPS 128
 
@@ -50,6 +44,7 @@ typedef struct
 /*----------------------------------------------------------------------------------------*/
 /* Lokale Includes																								*/
 /*----------------------------------------------------------------------------------------*/
+#undef TERM_OK
 #include "VT52.H"
 #include "VTSTRUCT.H"
 #include "VT_EMU.H"
@@ -125,13 +120,13 @@ extern	void	*old_xcostat_raw;
 
 typedef struct
 {
-	LONG	magic;                   /* muû $87654321 sein         */
+	LONG	magic;                   /* mu√ü $87654321 sein         */
 	void	*membot;                 /* Ende der AES- Variablen    */
 	void	*aes_start;              /* Startadresse               */
 	/* KAOS */
 	LONG	magic2;                  /* ist 'MAGX' oder 'KAOS'     */
 	LONG	date;                    /* Erstelldatum               */
-	void	(*chgres)(int res, int txt);  /* Auflîsung Ñndern      */
+	void	(*chgres)(int res, int txt);  /* Aufl√∂sung √§ndern      */
 	LONG	(**shel_vector)(void);   /* ROM- Desktop               */
 	BYTE	 *aes_bootdrv;            /* Hierhin kommt DESKTOP.INF  */
 	WORD	*vdi_device;             /* vom AES benutzter Treiber  */
@@ -165,9 +160,6 @@ WORD  	app_id,
 			aes_handle,
 			pwchar, phchar,
 			pwbox, phbox;
-WORD		*aes_global;
-
-RSHDR		*rsh;
 BYTE		**fstring_addr;
 OBJECT	**tree_addr;
 WORD		tree_count;
@@ -283,9 +275,9 @@ static LONG vt_app_Cconin( APPL *app);
 static LONG vt_getVDIESC( APPL *app);
 
 /*----------------------------------------------------------------------------------------*/
-/* Virtuelle Bildschirm-Workstation îffnen                                                */
+/* Virtuelle Bildschirm-Workstation √∂ffnen                                                */
 /* Funktionsresultat:  VDI-Handle oder 0 als Fehlernummer                                 */
-/* work_out:           GerÑteinformationen                                                */
+/* work_out:           Ger√§teinformationen                                                */
 /*----------------------------------------------------------------------------------------*/
 WORD open_screen_wk( WORD aes_handle, WORD *work_out )
 {
@@ -294,7 +286,7 @@ WORD open_screen_wk( WORD aes_handle, WORD *work_out )
          i;
 
    for( i = 1; i < 10 ; work_in[i++] = 1 );  /* work_in initialisieren */
-   work_in[0] = Getrez() + 2;                /* Auflîsung */
+   work_in[0] = Getrez() + 2;                /* Aufl√∂sung */
    work_in[10] = 2;                          /* Rasterkoordinaten benutzen */
    handle = aes_handle;
 
@@ -312,36 +304,36 @@ WORD	do_dialog( OBJECT *dialog )
 	GRECT		size;
 	WORD		selected;
 	void		*flyinf;
-	void		*scantab=0L;
-	int		lastcrsr;
+	XDO_INF		*scantab=0L;
+	short		lastcrsr;
 
 	wind_update( BEG_UPDATE );	/* Bildschirm sperren */
 	wind_update( BEG_MCTRL );	/* Mauskontrolle holen */
 	
 	/* Dialog zentrieren */
-	form_center( dialog, &size );
+	form_center_grect( dialog, &size );
 	
 	/* Bildbereich reservieren */
-	form_xdial( FMD_START, &size, &size, &flyinf );
+	form_xdial_grect( FMD_START, &size, &size, &flyinf );
 
 	/* Dialog zeichnen */
-	objc_draw( dialog, ROOT, MAX_DEPTH, &size );
+	objc_draw_grect( dialog, ROOT, MAX_DEPTH, &size );
 	
 	/* Dialog abarbeiten */
 	selected = form_xdo( dialog, ROOT, &lastcrsr, scantab, flyinf ) & 0x7fff;	/* Nummer des Ausgangsobjekts */
 	 
-	form_xdial( FMD_FINISH, &size, &size, &flyinf );
+	form_xdial_grect( FMD_FINISH, &size, &size, &flyinf );
 
 	wind_update( END_MCTRL );	/* Maus freigeben */
 	wind_update( END_UPDATE );	/* Bildschirm freigeben */
 	
 	dialog[selected].ob_state &= ( ~SELECTED );	/* Objekt deselektieren */
 					
-	return( selected );	/* Objektnummer zurÅckgeben */
+	return( selected );	/* Objektnummer zur√ºckgeben */
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Dialogbox "öber xxx..."																						*/
+/* Dialogbox "√úber xxx..."																						*/
 /*----------------------------------------------------------------------------------------*/
 void	menu_about( void )
 {
@@ -350,7 +342,7 @@ void	menu_about( void )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* MenÅpunkt "ôffnen"																							*/
+/* Men√ºpunkt "√ñffnen"																							*/
 /*----------------------------------------------------------------------------------------*/
 void	menu_open( void )
 {
@@ -380,7 +372,7 @@ void	menu_open( void )
 			{
 				strcpy( cmd + 1, tree_addr[CMDLINE][CLINE1].ob_spec.tedinfo->te_ptext );
 				strcat( cmd + 1, tree_addr[CMDLINE][CLINE2].ob_spec.tedinfo->te_ptext );
-				*cmd = (BYTE) strlen( cmd + 1 );	/* LÑnge der Kommandozeile	*/
+				*cmd = (BYTE) strlen( cmd + 1 );	/* L√§nge der Kommandozeile	*/
 				exec_tos( fname, fpath, cmd );
 			}
 		}
@@ -390,7 +382,7 @@ void	menu_open( void )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* MenÅpunkt "Schlieûen"																						*/
+/* Men√ºpunkt "Schlie√üen"																						*/
 /*----------------------------------------------------------------------------------------*/
 void	menu_close( void )
 {
@@ -401,7 +393,7 @@ void	menu_close( void )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* MenÅpunkt "Ende"																								*/
+/* Men√ºpunkt "Ende"																								*/
 /*----------------------------------------------------------------------------------------*/
 void	menu_quit( void )
 {
@@ -409,7 +401,7 @@ void	menu_quit( void )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* MenÅpunkt "EinfÅgen"																							*/
+/* Men√ºpunkt "Einf√ºgen"																							*/
 /*----------------------------------------------------------------------------------------*/
 void	menu_paste( void )
 {
@@ -445,7 +437,7 @@ void	menu_paste( void )
 
 /*----------------------------------------------------------------------------------------*/
 /* Daten in den Tastaturpuffer einer Applikation eintragen											*/
-/* Funktionsresultat:	Adresse des zu Ñndernden Vektors oder 0L									*/
+/* Funktionsresultat:	Adresse des zu √§ndernden Vektors oder 0L									*/
 /*	addr:						Aresse des Vektors, ab der gesucht wird									*/
 /*	vt_vec:					gesuchter Vektor-Inhalt															*/
 /*----------------------------------------------------------------------------------------*/
@@ -500,7 +492,7 @@ WORD	insert_data( WORD handle, WINDOW *window, LONG cnt )
 		
 			buf[0] = 1000;								/* Nachrichtennummer */
 			buf[1] = app_id;							/* Absender der Nachricht */
-			buf[2] = 0;									/* öberlÑnge in Bytes */
+			buf[2] = 0;									/* √úberl√§nge in Bytes */
 			buf[3] = window->handle;				/* Fensternummer */
 			buf[4] = 0;									/* Taste	*/
 			buf[5] = 0;
@@ -516,15 +508,15 @@ WORD	insert_data( WORD handle, WINDOW *window, LONG cnt )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* MenÅpunkt "Wechseln"																							*/
+/* Men√ºpunkt "Wechseln"																							*/
 /*----------------------------------------------------------------------------------------*/
 void	menu_changew( void )
 {
-	switch_window();	/* nÑchstes Fenster in den Vordergrund bringen	*/
+	switch_window();	/* n√§chstes Fenster in den Vordergrund bringen	*/
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* MenÅpunkt "Clipboard"																						*/
+/* Men√ºpunkt "Clipboard"																						*/
 /*----------------------------------------------------------------------------------------*/
 void	menu_clipboard( void )
 {
@@ -541,10 +533,10 @@ void	menu_clipboard( void )
 	dialog[CI_DEL].ob_state &= ~SELECTED;
 	dialog[CI_DONT].ob_state &= ~SELECTED;
 
-	/* Die Objekte CC_END, CCDEL und CC_DONT mÅssen direkt aufeinander folgen	*/
+	/* Die Objekte CC_END, CCDEL und CC_DONT m√ºssen direkt aufeinander folgen	*/
 	dialog[copy_opt + CC_END].ob_state |= SELECTED;
 
-	/* Die Objekte CI_CR, CI_LF, CI_DEL und CI_DONT mÅssen direkt aufeinander folgen	*/
+	/* Die Objekte CI_CR, CI_LF, CI_DEL und CI_DONT m√ºssen direkt aufeinander folgen	*/
 	dialog[paste_opt + CI_CR].ob_state |= SELECTED;
 
 	if ( do_dialog( dialog ) == CLP_OK )
@@ -568,7 +560,7 @@ void	menu_clipboard( void )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* MenÅpunkt "Terminal"																							*/
+/* Men√ºpunkt "Terminal"																							*/
 /*----------------------------------------------------------------------------------------*/
 void	menu_terminal( void )
 {
@@ -576,10 +568,10 @@ void	menu_terminal( void )
 	
 	dialog = tree_addr[TERMINAL];
 	
-	itoa( columns, dialog[TCOLUMNS].ob_spec.tedinfo->te_ptext, 10 );
-	itoa( rows, dialog[TROWS].ob_spec.tedinfo->te_ptext, 10 );
-	itoa( buffer_rows, dialog[TBUFFER].ob_spec.tedinfo->te_ptext, 10 );
-	itoa( utime, dialog[TREDRAW].ob_spec.tedinfo->te_ptext, 10 );
+	sprintf( dialog[TCOLUMNS].ob_spec.tedinfo->te_ptext, "%d", columns );
+	sprintf( dialog[TROWS].ob_spec.tedinfo->te_ptext, "%d", rows );
+	sprintf( dialog[TBUFFER].ob_spec.tedinfo->te_ptext, "%d", buffer_rows );
+	sprintf( dialog[TREDRAW].ob_spec.tedinfo->te_ptext, "%d", utime );
 	
 	if ( update_flag )
 		dialog[TUPDATE].ob_state |= SELECTED;
@@ -611,7 +603,7 @@ void	menu_terminal( void )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* MenÅpunkt "Zeichensatz"																						*/
+/* Men√ºpunkt "Zeichensatz"																						*/
 /*----------------------------------------------------------------------------------------*/
 void	menu_font( void )
 {
@@ -640,7 +632,7 @@ void	menu_font( void )
 		pt = cpoint;
 	}
 
-	vhandle = open_screen_wk( aes_handle, work_out );	/* Workstation îffnen */
+	vhandle = open_screen_wk( aes_handle, work_out );	/* Workstation √∂ffnen */
 
 	if( vhandle )
 	{
@@ -654,11 +646,11 @@ void	menu_font( void )
 			LONG	ratio;
 
 			pt <<= 16;
-			ratio = 1L << 16;											/* VerhÑltnis 1/1 (Bitmapfonts kînnen nicht gestaucht oder gedehnt werden) */
+			ratio = 1L << 16;											/* Verh√§ltnis 1/1 (Bitmapfonts k√∂nnen nicht gestaucht oder gedehnt werden) */
 
 			button = fnts_do( fnt_dialog, BUTTON_FLAGS, font_id, pt, ratio, &check_boxes, &id, &pt, &ratio );
 			
-			fnts_delete( fnt_dialog, vhandle );					/* Speicher fÅr Fontdialog freigeben */
+			fnts_delete( fnt_dialog, vhandle );					/* Speicher f√ºr Fontdialog freigeben */
 		}
 		v_clsvwk( vhandle );
 	}
@@ -685,32 +677,32 @@ void	menu_font( void )
 
 			vhandle = tscreen->handle;
 
-			vst_alignment( vhandle, 0, 5, &dummy, &dummy );	/* linksbÅndig an der Zeichenoberkante ausrichten	*/
+			vst_alignment( vhandle, 0, 5, &dummy, &dummy );	/* linksb√ºndig an der Zeichenoberkante ausrichten	*/
 			tscreen->font_id = vst_font( vhandle, font_id );	/* Nummer des Zeichensatzes	*/
 			tscreen->point_size = vst_point( vhandle, cpoint, &dummy, &dummy,
-														&tscreen->char_width, &tscreen->char_height );	/* Hîhe in Punkten	*/
-			vqt_width( vhandle, SPACE, &tscreen->char_width, &dummy, &dummy );		/* zusÑtzliche Abfrage fÅr FSM	*/
+														&tscreen->char_width, &tscreen->char_height );	/* H√∂he in Punkten	*/
+			vqt_width( vhandle, SPACE, &tscreen->char_width, &dummy, &dummy );		/* zus√§tzliche Abfrage f√ºr FSM	*/
 
 			WWORK.g_w *= tscreen->char_width;	/* sichtbare Breite	*/
-			WWORK.g_h *= tscreen->char_height;	/* sichtbare Hîhe	*/
+			WWORK.g_h *= tscreen->char_height;	/* sichtbare H√∂he	*/
 			window->x *= tscreen->char_width;	/* erste sichtbare x-Koordinate	*/
 			window->y *= tscreen->char_height;	/* erste sichtbare y-Koordinate	*/
 			window->w *= tscreen->char_width;	/* Breite	*/
-			window->h *= tscreen->char_height;	/* Hîhe	*/
+			window->h *= tscreen->char_height;	/* H√∂he	*/
 			window->dx = tscreen->char_width;	/* Breite einer Scrollspalte */
-			window->dy = tscreen->char_height;	/* Hîhe einer Scrollzeile */
+			window->dy = tscreen->char_height;	/* H√∂he einer Scrollzeile */
 			window->snap_dw = tscreen->char_width;
 			window->snap_dh = tscreen->char_height;
 			window->limit_w = ( tscreen->columns + 1 ) * tscreen->char_width;	/* maximal sichtbare Breite	*/
-			window->limit_h = ( tscreen->visible_rows + 1 ) * tscreen->char_height;	/* maximal sichtbare Hîhe	*/
+			window->limit_h = ( tscreen->visible_rows + 1 ) * tscreen->char_height;	/* maximal sichtbare H√∂he	*/
 
-			wind_calc( WC_BORDER, WELEMENTS, &WWORK, &WBORDER );
+			wind_calc_grect( WC_BORDER, WELEMENTS, &WWORK, &WBORDER );
 
-			size_window( window->handle, &WBORDER );	/* Fenster verschieben und Grîûe verÑndern	*/
+			size_window( window->handle, &WBORDER );	/* Fenster verschieben und Gr√∂√üe ver√§ndern	*/
 			
 			buf[0] = WM_REDRAW;						/* Nachrichtennummer */
 			buf[1] = app_id;							/* Absender der Nachricht */	
-			buf[2] = 0;									/* öberlÑnge in Bytes */
+			buf[2] = 0;									/* √úberl√§nge in Bytes */
 			buf[3] = whandle;							/* Fensternummer */
 			*(GRECT *)&buf[4] = window->workarea;				/* Fensterkoordinaten */
 			appl_write( app_id, 16, buf );		/* Redraw-Meldung an sich selber schicken */
@@ -722,7 +714,7 @@ void	menu_font( void )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* MenÅpunkt "Diverses"																						*/
+/* Men√ºpunkt "Diverses"																						*/
 /*----------------------------------------------------------------------------------------*/
 void	menu_tosende( void )
 {
@@ -740,7 +732,7 @@ void	menu_tosende( void )
 	else
 		dialog[TERM_CLOSE].ob_state &= ~SELECTED;
 
-	/* Die Objekte TERM_FG, TERM_BG und TERM_QUIT mÅssen direkt aufeinander folgen	*/
+	/* Die Objekte TERM_FG, TERM_BG und TERM_QUIT m√ºssen direkt aufeinander folgen	*/
 	dialog[term_opt + TERM_FG].ob_state |= SELECTED;
 
 	if ( do_dialog( dialog ) == TERM_OK )
@@ -760,7 +752,7 @@ void	menu_tosende( void )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* MenÅpunkt "Parameter sichern"																				*/
+/* Men√ºpunkt "Parameter sichern"																				*/
 /*----------------------------------------------------------------------------------------*/
 void	menu_save( void )
 {
@@ -795,7 +787,7 @@ void	receive_dragdrop( WORD *mbuf )
 		pipe[17] = *(((BYTE *) mbuf ) + 14 );			/* erstes Byte der Namensendung	*/
 		pipe[18] = *(((BYTE *) mbuf ) + 15 );			/* zweites Byte der Namensendung	*/
 		
-		handle = ddopen( pipe, data_types, &oldsig );	/* Pipe îffnen	*/
+		handle = ddopen( pipe, data_types, &oldsig );	/* Pipe √∂ffnen	*/
 		if ( handle >= 0 )
 		{
 			ULONG	ext;
@@ -812,10 +804,10 @@ void	receive_dragdrop( WORD *mbuf )
 					break;										/* die Schleife verlassen */
 				}
 				else
-					ddreply( handle, DD_EXT );				/* Datentyp wird nicht unterstÅtzt	*/
+					ddreply( handle, DD_EXT );				/* Datentyp wird nicht unterst√ºtzt	*/
 			}
 				
-			ddclose( handle, oldsig );						/* Pipe schlieûen	*/
+			ddclose( handle, oldsig );						/* Pipe schlie√üen	*/
 		}
 	}
 }
@@ -836,7 +828,7 @@ void	child_terminated( WORD *mbuf )
 
 
 	if	((UWORD) apid >= NAPPS)
-		return;											/* ungÅltige ap_id */
+		return;											/* ung√ºltige ap_id */
 
 	vti = vtclients + apid;
 	window = vti->w;
@@ -847,8 +839,8 @@ void	child_terminated( WORD *mbuf )
 	{
 		ts = WTSCREEN;
 
-		/* Wenn VT52 nicht "parent" ist, muû die CH_EXIT-Nachricht */
-		/* an den tatsÑchlichen "parent" weitergeleitet werden. */
+		/* Wenn VT52 nicht "parent" ist, mu√ü die CH_EXIT-Nachricht */
+		/* an den tats√§chlichen "parent" weitergeleitet werden. */
 		/* Das ist immer dann der Fall, wenn der Client vom AES */
 		/* gestartet wurde und VT52 sein Terminal ist. */
 
@@ -911,8 +903,8 @@ void	child_terminated( WORD *mbuf )
 			
 							buf[0] = SM_M_SPECIAL;					/* Nachricht an den SCRENMGR */
 							buf[1] = app_id;							/* Absender der Nachricht */
-							buf[2] = 0;									/* öberlÑnge in Bytes */
-							buf[3] = 0;									/* muû 0 sein */
+							buf[2] = 0;									/* √úberl√§nge in Bytes */
+							buf[3] = 0;									/* mu√ü 0 sein */
 							buf[4] = 'MA';								/* Magic	*/
 							buf[5] = 'GX';								/* Magic	*/
 							buf[6] = SMC_SWITCH;						/* Programm umschalten	*/
@@ -963,7 +955,7 @@ void	start_tos( BYTE *file )
 			}
 		}
 		else
-			exec_tos( aname, apath, "" );
+			exec_tos( aname, apath, 0L );
 	}
 	else
 	{
@@ -1012,7 +1004,7 @@ WORD	exec_tos( BYTE *fname, BYTE *fpath, BYTE *fcmd )
 		if (( child_id > 0 ) && ( child_id < 128 ))
 		{
 			strcpy( WTSCREEN->name, fpath );
-			WTSCREEN->refcnt = 1;		/* nur fÅr Haupt-Thread des Prozesses */
+			WTSCREEN->refcnt = 1;		/* nur f√ºr Haupt-Thread des Prozesses */
 			WTSCREEN->child_id = child_id;
 			WTSCREEN->parent_id = app_id;	/* VT52 ist Parent	*/
 
@@ -1036,13 +1028,13 @@ WORD	exec_tos( BYTE *fname, BYTE *fpath, BYTE *fcmd )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Fenster fÅr TOS-Programm îffnen und dem AES Bereitschaft signalisieren						*/
+/* Fenster f√ºr TOS-Programm √∂ffnen und dem AES Bereitschaft signalisieren						*/
 /* mbuf:						Zeiger auf den Message-Buffer													*/
 /*							   mbuf[0]:		Message																*/
 /*							   mbuf[1]:		Applikationsnummer des parent									*/
-/*							   mbuf[2]:		öberlÑnge (0)														*/
+/*							   mbuf[2]:		√úberl√§nge (0)														*/
 /*							   mbuf[3]:		Applikationsnummer des child									*/
-/*							   mbuf[4/5]:	BYTE *p ( *p muû zum Starten auf 0 gesetzt werden )	*/
+/*							   mbuf[4/5]:	BYTE *p ( *p mu√ü zum Starten auf 0 gesetzt werden )	*/
 /*							   mbuf[6/7]:  BYTE *cmd Zeiger auf den Pfad inklusive Namen			*/
 /*----------------------------------------------------------------------------------------*/
 void	run_tos( WORD *mbuf )
@@ -1058,7 +1050,7 @@ void	run_tos( WORD *mbuf )
 		{
 		error:
 	   **(BYTE **)&mbuf[4] = -1;			/* ein Fehler ist aufgetreten	*/
-		return;			/* ungÅltige apid */
+		return;			/* ung√ºltige apid */
 		}
 
 	pos = strrchr( *(BYTE **)&mbuf[6], '\\' );
@@ -1078,7 +1070,7 @@ void	run_tos( WORD *mbuf )
 	strcpy( WTSCREEN->name, *(BYTE **)&mbuf[6] );
 	WTSCREEN->child_id = child_id;
 	WTSCREEN->parent_id = mbuf[1];
-	WTSCREEN->refcnt = 1;		/* nur fÅr Haupt-Thread des Prozesses */
+	WTSCREEN->refcnt = 1;		/* nur f√ºr Haupt-Thread des Prozesses */
 
 	app_window[ child_id ] = window;
 
@@ -1089,7 +1081,7 @@ void	run_tos( WORD *mbuf )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Fenster fÅr ein TOS-Programm îffnen																		*/
+/* Fenster f√ºr ein TOS-Programm √∂ffnen																		*/
 /* Funktionsresultat:	Zeiger auf die Fensterstruktur oder 0L										*/
 /*	fname:					Zeiger auf den Programmnamen													*/
 /*----------------------------------------------------------------------------------------*/
@@ -1124,7 +1116,7 @@ WINDOW	*open_tos_window( BYTE *fname, TSCREEN *tscreen )
 		if ( win.g_h <= mborder.g_h )
 			mborder.g_h = win.g_h;
 
-		wind_calc( WC_WORK, WELEMENTS, &mborder, &mwork );
+		wind_calc_grect( WC_WORK, WELEMENTS, &mborder, &mwork );
 
 		if ( mwork.g_w > tscreen->char_width * columns )
 			mwork.g_w = tscreen->char_width * columns;
@@ -1136,7 +1128,7 @@ WINDOW	*open_tos_window( BYTE *fname, TSCREEN *tscreen )
 
 		mwork.g_h -= mwork.g_h % tscreen->char_height;
 
-		wind_calc( WC_BORDER, WELEMENTS, &mwork, &mborder );
+		wind_calc_grect( WC_BORDER, WELEMENTS, &mwork, &mborder );
 
 		strcpy( title, " " );
 		strcat( title, fname );
@@ -1150,20 +1142,20 @@ WINDOW	*open_tos_window( BYTE *fname, TSCREEN *tscreen )
 			window->redraw = redraw; 									/* Adresse der Redrawroutine */
 			window->interior_flags = TXT_SCRN;						/* Typ des Fensterinhalts */
 			window->interior = (void *) tscreen;					/* Zeiger auf Fensterobjekt */
-			window->w = columns * tscreen->char_width;			/* Breite der ArbeitsflÑche */
-			window->h = ( rows + buffer_rows ) * tscreen->char_height;	/* Hîhe der ArbeitsflÑche */
+			window->w = columns * tscreen->char_width;			/* Breite der Arbeitsfl√§che */
+			window->h = ( rows + buffer_rows ) * tscreen->char_height;	/* H√∂he der Arbeitsfl√§che */
 			window->dx = tscreen->char_width;						/* Breite einer Scrollspalte */
-			window->dy = tscreen->char_height;						/* Hîhe einer Scrollzeile */
+			window->dy = tscreen->char_height;						/* H√∂he einer Scrollzeile */
 			window->snap_dx = 1;											/* kein horizontales Snapping	*/
 			window->snap_dy = 1;											/* kein vertikales Snapping	*/
 			window->snap_dw = tscreen->char_width;					/* Breite ist immer Vielfaches der Zeichenbreite */
-			window->snap_dh = tscreen->char_height;				/* Hîhe ist immer Vielfaches der Zeichenhîhe */
+			window->snap_dh = tscreen->char_height;				/* H√∂he ist immer Vielfaches der Zeichenh√∂he */
 			window->limit_w = columns * tscreen->char_width;	/* maximale Breite */
-			window->limit_h = rows * tscreen->char_height;		/* maximale Hîhe */
-			window->wflags.smart_size = 1;							/* Smart Redraw beim Vergrîûern ausnutzen */
-			window->wflags.limit_wsize = 1;							/* maximale Grîûe begrenzen */
-			window->wflags.snap_width = 1;							/* Breite in Stufen Ñndern */
-			window->wflags.snap_height = 1;							/* Hîhe in Stufen Ñndern */
+			window->limit_h = rows * tscreen->char_height;		/* maximale H√∂he */
+			window->wflags.smart_size = 1;							/* Smart Redraw beim Vergr√∂√üern ausnutzen */
+			window->wflags.limit_wsize = 1;							/* maximale Gr√∂√üe begrenzen */
+			window->wflags.snap_width = 1;							/* Breite in Stufen √§ndern */
+			window->wflags.snap_height = 1;							/* H√∂he in Stufen √§ndern */
 			window->wflags.snap_x = 0;		
 			window->wflags.snap_y = 0;	
 	
@@ -1173,8 +1165,7 @@ WINDOW	*open_tos_window( BYTE *fname, TSCREEN *tscreen )
 			else
 				vslid_window( window->handle, 0 );
 	
-			set_slsize( window );					/* Slidergrîûen berechnen	*/
-			wind_open( handle, &WBORDER );
+			set_slsize( window );					/* Slidergr√∂√üen berechnen	*/
 		}
 		else
 			form_alert( 1, fstring_addr[NOWINDOWS] );
@@ -1184,7 +1175,7 @@ WINDOW	*open_tos_window( BYTE *fname, TSCREEN *tscreen )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Fenster schlieûen und Applikation nîtigenfalls beenden											*/
+/* Fenster schlie√üen und Applikation n√∂tigenfalls beenden											*/
 /*	handle:					Fensternummer																		*/
 /*----------------------------------------------------------------------------------------*/
 void	close_tos_window( WORD handle )
@@ -1200,7 +1191,7 @@ void	close_tos_window( WORD handle )
 	
 			dialog = tree_addr[TERMTOS];
 	
-			strcpy( dialog[TERMNAME].ob_spec.free_string, window->name );	/* Achtung, Fenstertitel enthÑlt links und rechts ein Leerzeichen! */
+			strcpy( dialog[TERMNAME].ob_spec.free_string, window->name );	/* Achtung, Fenstertitel enth√§lt links und rechts ein Leerzeichen! */
 			if ( do_dialog( dialog ) == TTOS )		/* Programm beenden?	*/
 			{
 				WORD	buf[8];
@@ -1209,8 +1200,8 @@ void	close_tos_window( WORD handle )
 				
 				buf[0] = SM_M_SPECIAL;					/* Nachricht an den SCRENMGR */
 				buf[1] = app_id;							/* Absender der Nachricht */
-				buf[2] = 0;									/* öberlÑnge in Bytes */
-				buf[3] = 0;									/* muû 0 sein */
+				buf[2] = 0;									/* √úberl√§nge in Bytes */
+				buf[3] = 0;									/* mu√ü 0 sein */
 				buf[4] = 'MA';								/* Magic	*/
 				buf[5] = 'GX';								/* Magic	*/
 				buf[6] = SMC_TERMINATE;					/* Programm terminieren	*/
@@ -1294,7 +1285,7 @@ void	hdle_keybd( WORD keycode, WORD key_state )
 						
 						buf[0] = 1000;								/* Nachrichtennummer */
 						buf[1] = app_id;							/* Absender der Nachricht */
-						buf[2] = 0;									/* öberlÑnge in Bytes */
+						buf[2] = 0;									/* √úberl√§nge in Bytes */
 						buf[3] = window->handle;				/* Fensternummer */
 						buf[4] = keycode;							/* Taste	*/
 						buf[5] = key_state;
@@ -1313,7 +1304,7 @@ void	hdle_keybd( WORD keycode, WORD key_state )
 /*	y:							y-Koordinate																		*/
 /*	button:					Maustasten																			*/
 /* key_state:				Tastaturzustand																	*/
-/* clicks:					Anzahl der TastendrÅcke															*/
+/* clicks:					Anzahl der Tastendr√ºcke															*/
 /*----------------------------------------------------------------------------------------*/
 #pragma warn -par
 void	hdle_button( WORD x, WORD y, WORD button, WORD key_state, WORD clicks )
@@ -1334,7 +1325,7 @@ void	hdle_button( WORD x, WORD y, WORD button, WORD key_state, WORD clicks )
 		
 			redraw_changed( window );
 			evnt_timer( 100 );
-			graf_mkstate( &mouse );
+			graf_mkstate( &mouse.x, &mouse.y, &mouse.bstate, &mouse.kstate );
 			new.x2 = mouse.x;
 			new.y2 = mouse.y;
 			button = mouse.bstate;
@@ -1350,7 +1341,7 @@ void	hdle_button( WORD x, WORD y, WORD button, WORD key_state, WORD clicks )
 	
 				while ( button &= 1 )
 				{
-					graf_mkstate( &mouse );
+					graf_mkstate( &mouse.x, &mouse.y, &mouse.bstate, &mouse.kstate );
 					new.x2 = mouse.x;
 					new.y2 = mouse.y;
 					button = mouse.bstate;
@@ -1456,7 +1447,7 @@ void	select_block( WINDOW *window, BLOCK *old, BLOCK *new, WORD select )
 		/* erstes Element der Rechteckliste erfragen */
 		wind_get( window->handle, WF_FIRSTXYWH, &box.g_x, &box.g_y, &box.g_w, &box.g_h );
 					
-		while( box.g_w && box.g_h )	/* noch gÅltige Rechtecke vorhanden? */
+		while( box.g_w && box.g_h )	/* noch g√ºltige Rechtecke vorhanden? */
 		{
 			if( rc_intersect( &WWORK, &box ) )	/* innerhalb des zu zeichnenden Bereichs? */
 			{
@@ -1466,7 +1457,7 @@ void	select_block( WINDOW *window, BLOCK *old, BLOCK *new, WORD select )
 	
 				draw_selected( window, &draw );
 			}
-			/* nÑchstes Element der Rechteckliste holen */
+			/* n√§chstes Element der Rechteckliste holen */
 			wind_get( window->handle, WF_NEXTXYWH, &box.g_x, &box.g_y, &box.g_w, &box.g_h );
 		}
 		graf_mouse( M_ON, 0L );
@@ -1474,7 +1465,7 @@ void	select_block( WINDOW *window, BLOCK *old, BLOCK *new, WORD select )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Textblîcke schneiden und einen neu zu zeichnenden Textblock berechnen						*/
+/* Textbl√∂cke schneiden und einen neu zu zeichnenden Textblock berechnen						*/
 /*	old:						Zeiger auf den letzten markierten Textblock								*/
 /*	new:						Zeiger auf den zu markierenden Textblock									*/
 /* draw:						Zeiger auf den zu zeichnenden Textblock									*/
@@ -1617,7 +1608,7 @@ void	save_block( TSCREEN *tscreen, BLOCK *area )
 		while ( line_cnt <= save.y2 )
 		{
 			opt = copy_opt;
-			cnt = tscreen->columns + 1;	/* ZeilenlÑnge	*/
+			cnt = tscreen->columns + 1;	/* Zeilenl√§nge	*/
 
 			src_line = line_ptr->line;
 			
@@ -1645,7 +1636,7 @@ void	save_block( TSCREEN *tscreen, BLOCK *area )
 /*	handle:					Handle der zu beschreibenden Datei											*/
 /* src:						Zeiger auf die Textbufferzeile												*/
 /* des:						Zeiger auf den Zielstring														*/
-/* src_len:					TextzeilenlÑnge																	*/
+/* src_len:					Textzeilenl√§nge																	*/
 /* opt:						Kopieroptionen 0 - 2 (copy_opt)												*/
 /*----------------------------------------------------------------------------------------*/
 void	save_line( WORD handle, ULONG *src, UBYTE *des, WORD src_len, WORD opt )
@@ -1673,7 +1664,7 @@ void	save_line( WORD handle, ULONG *src, UBYTE *des, WORD src_len, WORD opt )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Alle SCRAP-Dateien im Ordner CLIPBRD lîschen															*/
+/* Alle SCRAP-Dateien im Ordner CLIPBRD l√∂schen															*/
 /*----------------------------------------------------------------------------------------*/
 void	scrap_clear( void )
 {
@@ -1697,13 +1688,13 @@ void	scrap_clear( void )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Auf angeklickten MenÅeintrag reagieren																	*/
-/*	title:					Objektnummer des MenÅtitels													*/
-/*	entry:					Objektnummer des MenÅpunktes													*/
+/* Auf angeklickten Men√ºeintrag reagieren																	*/
+/*	title:					Objektnummer des Men√ºtitels													*/
+/*	entry:					Objektnummer des Men√ºpunktes													*/
 /*----------------------------------------------------------------------------------------*/
 void	menu_selected( WORD title, WORD entry )
 {
-	menu_tnormal( tree_addr[MENU], title, 0 );	/* MenÅtitel selektieren */
+	menu_tnormal( tree_addr[MENU], title, 0 );	/* Men√ºtitel selektieren */
 	
 	switch( entry )
 	{
@@ -1719,7 +1710,7 @@ void	menu_selected( WORD title, WORD entry )
 		case	OFONT:		menu_font();	break;
 		case	OSAVE:		menu_save();	break;
 	}
-	menu_tnormal( tree_addr[MENU], title, 1 );	/* MenÅtitel deselektieren */
+	menu_tnormal( tree_addr[MENU], title, 1 );	/* Men√ºtitel deselektieren */
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -1758,7 +1749,7 @@ void	hdle_mesag( WORD *mbuf )
 
 			start_tos( *(BYTE **)&mbuf[3] );
 				
-			mbuf[0] = AV_STARTED;										/* Message zurÅcksenden */
+			mbuf[0] = AV_STARTED;										/* Message zur√ºcksenden */
 			av_app = mbuf[1];
 			mbuf[1] = app_id;
 			appl_write( av_app, 16, mbuf );
@@ -1784,20 +1775,28 @@ void	hdle_mesag( WORD *mbuf )
 void	event_loop( void )
 {
 	WORD	evnt;
-	
+
 	while( quit == FALSE )
 	{
 		EVNTDATA	mouse;
+		short		button_state;
+		short		key_state;
+		short		key;
+		short		return_count;
 
 		evnt = evnt_multi( MU_KEYBD | MU_BUTTON | MU_MESAG | MU_TIMER,
 								 2, 1, 1,
-								 0, 0L,
-								 0, 0L,
+								 0, 0, 0, 0, 0,
+								 0, 0, 0, 0, 0,
 								 buf,
 								 utime,
-								 &mouse,
-								 &keycode, &mclicks );
+								 &mouse.x, &mouse.y,
+								 &button_state, &key_state, &key, &return_count );
 
+		mouse.bstate = button_state;
+		mouse.kstate = key_state;
+		keycode = key;
+		mclicks = return_count;
 		mousex = mouse.x;
 		mousey = mouse.y;
 		mbutton = mouse.bstate;
@@ -1813,28 +1812,36 @@ void	event_loop( void )
 
 		/* Mitteilungen des SCRENMGR? */
 		if( evnt & MU_MESAG )
+		{
 			hdle_mesag( buf );
+		}
 
 		if( evnt & MU_TIMER )
+		{
 			redraw_timer();
+		}
 	}
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Resource und dazugehîrige Strukturen initialisieren												*/
+/* Resource und dazugeh√∂rige Strukturen initialisieren												*/
 /*----------------------------------------------------------------------------------------*/
 void	init_rsrc( void )
 {
-	/* Adresse des Resource-Headers Åber global[7/8] holen */
-	rsh = *((RSHDR **)(&_GemParBlk.global[7]));
+	static OBJECT	*tree_table[12];
+	static BYTE	*string_table[3];
+	WORD		i;
 
-	/* Zeiger auf die Objektbaumtabelle holen */
-	tree_addr = (OBJECT **)(((UBYTE *)rsh) + rsh->rsh_trindex);
+	/* Use the public resource accessor instead of depending on the private
+	 * layout of the AES global resource pointer. */
+	for ( i = 0; i < 12; i++ )
+		rsrc_gaddr( R_TREE, i, &tree_table[i] );
+	for ( i = 0; i < 3; i++ )
+		rsrc_gaddr( R_STRING, i, &string_table[i] );
 
-	/* und Anzahl der ObjektbÑume (von 1 ab gezÑhlt) bestimmen */
-	tree_count = rsh->rsh_ntree;
-
-	fstring_addr = (BYTE **)((UBYTE *)rsh + rsh->rsh_frstr);
+	tree_addr = tree_table;
+	tree_count = 12;
+	fstring_addr = string_table;
 
 	rsrc_gaddr(R_TREE, T_ICONIFIED1, &iconified_tree1);
 	rsrc_gaddr(R_TREE, T_ICONIFIED2, &iconified_tree2);
@@ -1865,7 +1872,7 @@ void	set_vec( void )
 	vtsys.bg = 0;
 	vtsys.fg = 0;
 
-	xbios(39, 'AnKr', (WORD) 6, &vtsys);
+	vt_ankr_xbios(6, &vtsys);
 /*
 	p_vt52_winlst = &app_window[0];
 	p_vt_interior_off = (WORD) offsetof( WINDOW, interior );
@@ -1891,7 +1898,7 @@ void	set_vec( void )
 
 
 /*----------------------------------------------------------------------------------------*/
-/* Vektoren zurÅcksetzen																						*/
+/* Vektoren zur√ºcksetzen																						*/
 /*----------------------------------------------------------------------------------------*/
 LONG	reset_vec( void )
 {
@@ -1930,7 +1937,7 @@ LONG	reset_vec( void )
 /*
 		p_vt52_winlst = 0L;
 */
-		xbios(39, 'AnKr', (WORD) 6, NULL);
+		vt_ankr_xbios(6, NULL);
 		return( TRUE );
 	}
 	else
@@ -1938,8 +1945,8 @@ LONG	reset_vec( void )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Adresse des zu Ñndernden Vektors suchen																*/
-/* Funktionsresultat:	Adresse des zu Ñndernden Vektors oder 0L									*/
+/* Adresse des zu √§ndernden Vektors suchen																*/
+/* Funktionsresultat:	Adresse des zu √§ndernden Vektors oder 0L									*/
 /*	addr:						Aresse des Vektors, ab der gesucht wird									*/
 /*	vt_vec:					gesuchter Vektor-Inhalt															*/
 /*----------------------------------------------------------------------------------------*/
@@ -1957,7 +1964,7 @@ void	**search_vec( void **addr, void * vt_vec )
 	{	
 		xbra = ((ULONG *) old ) - 3;
 		vec = (void **) ( xbra + 2 );
-		old = *vec;							/* Zeiger auf nÑchste Routine	*/
+		old = *vec;							/* Zeiger auf n√§chste Routine	*/
 	
 		if ( *xbra == 'XBRA' )			/* XBRA-Verkettung?	*/
 		{
@@ -1973,7 +1980,7 @@ void	**search_vec( void **addr, void * vt_vec )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Vektor verÑndern																								*/
+/* Vektor ver√§ndern																								*/
 /* Funktionsresultat:	alter Vektor-Inhalt																*/
 /*	addr:						Adresse des Vektors oder 0L													*/
 /*	new:						neuer Vektor-Inhalt oder 0L													*/
@@ -2022,7 +2029,7 @@ LONG	get_act_appl( void )
 
 /*----------------------------------------------------------------------------------------*/
 /* Stack-Offset im Supervisor-Modus bestimmen															*/
-/* Funktionsresultat:	Stack-Offset fÅr BIOS und XBIOS												*/
+/* Funktionsresultat:	Stack-Offset f√ºr BIOS und XBIOS												*/
 /*----------------------------------------------------------------------------------------*/
 LONG	get_stack_frame( void )
 {
@@ -2038,7 +2045,9 @@ LONG	get_stack_frame( void )
 /*----------------------------------------------------------------------------------------*/
 LONG get_kbshift( void )
 {
-	return( (LONG)	( *(SYSHDR **) 0x4f2 )->kbshift );
+	OSHEADER *os = (OSHEADER *) *_sysbase;
+
+	return( (LONG) os->pkbshift );
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -2065,7 +2074,7 @@ void	std_settings( void )
 	utime = 200;
 	update_flag = 0x0100;
 	copy_opt = 0;	/* CR,LF am Zeilenende	*/
-	paste_opt = 0;	/* CR beim EinfÅgen statt CR, LF	*/
+	paste_opt = 0;	/* CR beim Einf√ºgen statt CR, LF	*/
 	close_term = 0;	/* Fenster nach Programmende offen lassen	*/
 	term_opt = 0;	/* VT52 bleibt im Vordergrund */
 	input_opt = 0;	/* nicht zur Eingabe scrollen	*/
@@ -2073,7 +2082,7 @@ void	std_settings( void )
 	stack_offset = (WORD) Supexec( get_stack_frame );
 	key_state = (UBYTE *) Supexec( get_kbshift );
 
-/* unnîtig
+/* unn√∂tig
 	for ( i = 0; i < 128; app_window[i++] = 0L );
 */
 	drive = Dgetdrv();
@@ -2090,7 +2099,7 @@ void	std_settings( void )
 		if ( strlen( home ) > 0 )
 		{
 			if ( home[strlen( home ) - 1] != '\\' )
-				strcat( home, "\\" );									/* Backslash anhÑngen */
+				strcat( home, "\\" );									/* Backslash anh√§ngen */
 		}
 	}
 	else																		/* aktuellen Pfad benutzen */
@@ -2163,7 +2172,7 @@ void	load_inf( void )
 		handle = Fopen( inf_name, FO_READ );
 		if ( handle > 0 )
 		{
-			inf = malloc( dta.d_length + 1 );	/* DateilÑnge + Null-Byte fÅr Stringende	*/
+			inf = malloc( dta.d_length + 1 );	/* Dateil√§nge + Null-Byte f√ºr Stringende	*/
 			if ( inf )
 			{
 				if ( Fread( (WORD) handle, dta.d_length, inf ) == dta.d_length )
@@ -2210,10 +2219,10 @@ void	load_inf( void )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* LÑnge einer mit CR,LF oder LF abgeschlossenen Zeile ermitteln									*/
-/* Funktionsresultat:	LÑnge der Zeile																	*/
+/* L√§nge einer mit CR,LF oder LF abgeschlossenen Zeile ermitteln									*/
+/* Funktionsresultat:	L√§nge der Zeile																	*/
 /* line:						Zeiger auf die Zeile																*/
-/* max_len:					Maximale LÑnge der Zeile														*/
+/* max_len:					Maximale L√§nge der Zeile														*/
 /*----------------------------------------------------------------------------------------*/
 LONG	get_len( BYTE *line, LONG max_len, LONG *parse_len )
 {
@@ -2254,7 +2263,7 @@ LONG	get_len( BYTE *line, LONG max_len, LONG *parse_len )
 /* Funktionsresultat:	0 bei einem Fehler, ansonsten 1												*/
 /* line:						Zeiger auf den String															*/
 /*	exp:						Zeiger auf den zu suchenden Ausdruck										*/
-/*	x:							Zeiger auf ein WORD fÅr die nach dem Ausdruck stehende Zahl			*/
+/*	x:							Zeiger auf ein WORD f√ºr die nach dem Ausdruck stehende Zahl			*/
 /* min:						untere Grenze der Zahl															*/
 /* max:						obere Grenze der Zahl															*/
 /*----------------------------------------------------------------------------------------*/
@@ -2274,8 +2283,8 @@ WORD	set_value( BYTE *line, BYTE *exp, WORD *x, WORD min, WORD max )
 
 
 /*----------------------------------------------------------------------------------------*/
-/* Standard- Fensterposition- und grîûe bestimmen														*/
-/* line:						Zeiger auf Fensterposition- und grîûe 										*/
+/* Standard- Fensterposition- und gr√∂√üe bestimmen														*/
+/* line:						Zeiger auf Fensterposition- und gr√∂√üe 										*/
 /*----------------------------------------------------------------------------------------*/
 void	get_std_win( BYTE *line )
 {
@@ -2286,16 +2295,16 @@ void	get_std_win( BYTE *line )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Programm mit zugehîriger Umgebung laden																*/
+/* Programm mit zugeh√∂riger Umgebung laden																*/
 /* line:						Zeiger auf die Parameterzeile	bestehend aus								*/
-/*								Pfad mit Programmnamen in AnfÅhrungszeichen								*/
-/*								Kommandozeile in AnfÅhrungszeichen											*/
-/*								Fensterposition und -grîûe in Promille										*/
+/*								Pfad mit Programmnamen in Anf√ºhrungszeichen								*/
+/*								Kommandozeile in Anf√ºhrungszeichen											*/
+/*								Fensterposition und -gr√∂√üe in Promille										*/
 /*								Spalten																				*/
 /*								Zeilen																				*/
 /*								Bufferzeilen																		*/
 /*								Zeichensatznummer																	*/
-/*								Hîhe in Punkten																	*/
+/*								H√∂he in Punkten																	*/
 /*----------------------------------------------------------------------------------------*/
 void	auto_exec( BYTE *line )
 {
@@ -2351,10 +2360,10 @@ void	auto_exec( BYTE *line )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Durch AnfÅhrungszeichen begrenzten String suchen und nach des kopieren						*/
+/* Durch Anf√ºhrungszeichen begrenzten String suchen und nach des kopieren						*/
 /* Funktionsresultat:	Zeiger hinter den String oder 0L												*/
 /*	pos:						Startadresse, ab der gesucht wird											*/
-/* des:						Zeiger auf Speicherplatz fÅr den gefundenen String						*/
+/* des:						Zeiger auf Speicherplatz f√ºr den gefundenen String						*/
 /*----------------------------------------------------------------------------------------*/
 BYTE	*get_string( BYTE *pos, BYTE *des )
 {
@@ -2481,12 +2490,12 @@ void	save_inf( void )
 							(WORD)(((LONG) WBORDER.g_x - desk.g_x ) * 10000 / desk.g_w ),	/* x-Koordinate in Promille	*/
 							(WORD)(((LONG) WBORDER.g_y - desk.g_y ) * 10000 / desk.g_h ),	/* y-Koordinate in Promille	*/
 							(WORD)(((LONG) WBORDER.g_w ) * 10000 / desk.g_w ),					/* Breite in Promille	*/
-							(WORD)(((LONG) WBORDER.g_h ) * 10000 / desk.g_h ),					/* Hîhe in Promille	*/
+							(WORD)(((LONG) WBORDER.g_h ) * 10000 / desk.g_h ),					/* H√∂he in Promille	*/
 							WTSCREEN->columns + 1,														/* Spalten	*/
 							WTSCREEN->visible_rows + 1,												/* Zeilen	*/
 							WTSCREEN->rows - WTSCREEN->visible_rows,								/* Bufferzeilen	*/
 							WTSCREEN->font_id,															/* Zeichensatz	*/
-							WTSCREEN->point_size );														/* Hîhe in Punkten	*/
+							WTSCREEN->point_size );														/* H√∂he in Punkten	*/
 			
 				Fwrite( (WORD) handle, strlen( line ), line );
 			
@@ -2500,7 +2509,7 @@ void	save_inf( void )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Bezeichner und zugehîrige Zahl speichern																*/
+/* Bezeichner und zugeh√∂rige Zahl speichern																*/
 /*	handle:					Datei-Handle																		*/
 /* exp:						Zeiger auf den Bezeichner														*/
 /* value:					Zahl																					*/
@@ -2514,7 +2523,7 @@ void	save_value( WORD handle, BYTE *exp, WORD value )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Alle Fenster schlieûen und die dazugehîrigen Programme terminieren							*/
+/* Alle Fenster schlie√üen und die dazugeh√∂rigen Programme terminieren							*/
 /* Funktionsresultat:	FALSE oder TRUE																	*/
 /*----------------------------------------------------------------------------------------*/
 WORD	close_all( void )
@@ -2550,8 +2559,8 @@ WORD	close_all( void )
 
 				buf[0] = SM_M_SPECIAL;					/* Nachricht an den SCRENMGR */
 				buf[1] = app_id;							/* Absender der Nachricht */
-				buf[2] = 0;									/* öberlÑnge in Bytes */
-				buf[3] = 0;									/* muû 0 sein */
+				buf[2] = 0;									/* √úberl√§nge in Bytes */
+				buf[3] = 0;									/* mu√ü 0 sein */
 				buf[4] = 'MA';								/* Magic	*/
 				buf[5] = 'GX';								/* Magic	*/
 				buf[6] = SMC_TERMINATE;					/* Programm terminieren	*/
@@ -2570,12 +2579,15 @@ WORD	close_all( void )
 /*----------------------------------------------------------------------------------------*/
 /* Hauptprogramm																									*/
 /*----------------------------------------------------------------------------------------*/
-main( WORD argc, BYTE *argv[] )
+int main( int argc, char *argv[] )
 {
-   WORD	ret_code = -1;
+   int	ret_code = -1;
 
    app_id = appl_init();
-	aes_global = _GemParBlk.global;
+   {
+       char dbg[64];
+       sprintf(dbg, "app_id %d", app_id);
+   }
    if( app_id != -1 )
    {
 		aes_handle = graf_handle( &pwchar, &phchar, &pwbox, &phbox );
@@ -2600,17 +2612,17 @@ main( WORD argc, BYTE *argv[] )
 				while ( argc > 1 )
 				{
 					argc--;
-					start_tos( argv[argc] );
+					start_tos( (BYTE *) argv[argc] );
 				}
 
 				quit = FALSE;
 				while ( quit == FALSE )
 				{
 					event_loop();
-					quit = close_all();	/* Fenster schlieûen	*/
+					quit = close_all();	/* Fenster schlie√üen	*/
 					if ( quit == TRUE	)	/* beenden?	*/
 					{
-						if ( Supexec( reset_vec ) == FALSE )	/* ausklinken nicht mîglich?	*/
+						if ( Supexec( reset_vec ) == FALSE )	/* ausklinken nicht m√∂glich?	*/
 						{
 							do_dialog( tree_addr[CANTTERM] );	/* Meldung ausgeben	*/
 							quit = FALSE;								/* nicht beenden	*/
@@ -2639,10 +2651,10 @@ main( WORD argc, BYTE *argv[] )
 * Gibt eine Zeichenkette in das Fenster der Applikation <app>
 * aus.
 *
-* RÅckgabe: -1L bei ^C. -2L bei ungÅltiger Applikation.
+* R√ºckgabe: -1L bei ^C. -2L bei ung√ºltiger Applikation.
 *           sonst Anzahl der ausgegebenen Zeichen
 * str:	Zeiger auf den _nicht_ nullterminierten String
-* cnt:	LÑnge des Strings
+* cnt:	L√§nge des Strings
 *
 * Wird direkt vom DOS-Kern aufgerufen.
 *
@@ -2659,10 +2671,10 @@ static LONG vt_app_Sconout( APPL *app, BYTE *str, LONG cnt )
 *
 * Liest ein Zeichen aus dem Fenster der Applikation <app>.
 *
-* RÅckgabe: -1L bei ^C. -2L bei ungÅltiger Applikation.
+* R√ºckgabe: -1L bei ^C. -2L bei ung√ºltiger Applikation.
 *           sonst Tastencode
 * str:	Zeiger auf den _nicht_ nullterminierten String
-* cnt:	LÑnge des Strings
+* cnt:	L√§nge des Strings
 *
 * Wird direkt vom DOS-Kern aufgerufen.
 *
@@ -2677,11 +2689,11 @@ static LONG vt_app_Cconin( APPL *app)
 
 /*******************************************************************
 *
-* Meldet einen neuen Thread <dst_apid> fÅr ein bereits geîffnetes
+* Meldet einen neuen Thread <dst_apid> f√ºr ein bereits ge√∂ffnetes
 * Terminalfenster <src_apid> an.
 *
-* Wenn fÅr <src_apid> kein Terminalfenster geîffnet wurde, wird
-* -1 zurÅckgegeben.
+* Wenn f√ºr <src_apid> kein Terminalfenster ge√∂ffnet wurde, wird
+* -1 zur√ºckgegeben.
 *
 * Wird direkt vom AES-Kern aufgerufen.
 *
@@ -2711,7 +2723,7 @@ static LONG inherit( WORD dst_apid, WORD src_apid)
 
 /*******************************************************************
 *
-* Meldet einen neuen Thread <dst_apid> fÅr ein bereits geîffnetes
+* Meldet einen neuen Thread <dst_apid> f√ºr ein bereits ge√∂ffnetes
 * Terminalfenster <src_apid> wieder ab.
 *
 * Wird direkt vom AES-Kern aufgerufen.
@@ -2740,8 +2752,8 @@ static LONG uninherit( WORD apid)
 
 /*******************************************************************
 *
-* Gibt einen Zeiger auf eine aktive VDIESC-Struktur fÅr eine
-* Applikation zurÅck.
+* Gibt einen Zeiger auf eine aktive VDIESC-Struktur f√ºr eine
+* Applikation zur√ºck.
 *
 * Wird direkt vom AES-Kern aufgerufen.
 *

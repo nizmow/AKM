@@ -10,12 +10,8 @@
 /*	30.08.95																											*/
 /*																														*/
 /*----------------------------------------------------------------------------------------*/
-#include	<Types2B.h>
-#include	<PORTAB.H>
-#include	<STDDEF.H>
-
-#include	<TOS.H>
-#include <LIST.H>
+#include "VT52_GEM.H"
+#include "LIST.H"
 
 #define	NEXT( ptr, offset )	( * (void **) ((uint8 *) ptr + offset ))
 
@@ -49,7 +45,7 @@ int16	list_remove( void **root, void *entry, int32 offset )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Eintrag als erstes Element in die verkettete Liste einf갾en										*/
+/* Eintrag als erstes Element in die verkettete Liste einf체gen										*/
 /* Funktionsresultat:	1: alles in Ordnung																*/
 /*	root:						Zeiger auf den Zeiger auf den ersten Eintrag								*/
 /* entry:					Zeiger auf den Eintrag															*/
@@ -61,7 +57,7 @@ void	list_insert( void **root, void *entry, int32 offset )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Eintrag and die verkettete Liste anh꼗gen																*/
+/* Eintrag and die verkettete Liste anh채ngen																*/
 /* Funktionsresultat:	1: alles in Ordnung																*/
 /*	root:						Zeiger auf den Zeiger auf den ersten Eintrag								*/
 /* entry:					Zeiger auf den Eintrag															*/
@@ -75,7 +71,7 @@ void	list_append( void **root, void *entry, int32 offset )
 	while ( NEXT( append, offset ))									/* Nachfolger vorhanden? */
 		append = NEXT( append, offset );								/* Zeiger auf den Nachfolger */
 
-	NEXT( append, offset ) = entry;									/* Eintrag anh꼗gen */
+	NEXT( append, offset ) = entry;									/* Eintrag anh채ngen */
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -145,8 +141,8 @@ int32	list_get_index( void *root, void *search, int32 offset )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Eintrage z꼑len																								*/
-/* Funktionsresultat:	Anzahl der Eintr꼏e																*/
+/* Eintrage z채hlen																								*/
+/* Funktionsresultat:	Anzahl der Eintr채ge																*/
 /*	root:						Zeiger auf den ersten Eintrag													*/
 /*----------------------------------------------------------------------------------------*/
 int32	list_count( void *root, int32 offset )

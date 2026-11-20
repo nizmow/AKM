@@ -3,22 +3,19 @@
 	Kommentare ab: Spalte 60											*Spalte 60*
 */
 
-#include	<PORTAB.H>
-#include	<TOS.H>
-#include	<AES.H>
-#include <string.h>
+#include "VT52_GEM.H"
 #include "DRAGDROP.H"
 
 /*----------------------------------------------------------------------------------------*/
-/* Drag & Drop - Pipe îffnen (fÅr den Sender)															*/
-/* Funktionsresultat:	Handle der Pipe, -1 fÅr Fehler oder -2 fÅr Fehler bei appl_write	*/
+/* Drag & Drop - Pipe √∂ffnen (f√ºr den Sender)															*/
+/* Funktionsresultat:	Handle der Pipe, -1 f√ºr Fehler oder -2 f√ºr Fehler bei appl_write	*/
 /*	app_id:					ID des Senders (der eigenen Applikation)									*/
-/*	rcvr_id:					ID des EmpfÑngers																	*/
-/*	window:					Handle des EmpfÑnger-Fensters													*/
+/*	rcvr_id:					ID des Empf√§ngers																	*/
+/*	window:					Handle des Empf√§nger-Fensters													*/
 /*	mx:						x-Koordinate der Maus beim Loslassen oder -1								*/
 /*	my:						y-Koordinate der Maus beim Loslassen oder -1								*/
 /*	kbstate:					Status der Kontrolltasten														*/
-/*	format:					Feld fÅr die max. 8 vom EmpfÑnger unterstÅtzten Formate				*/
+/*	format:					Feld f√ºr die max. 8 vom Empf√§nger unterst√ºtzten Formate				*/
 /*	oldpipesig:				Zeiger auf den alten Signal-Dispatcher										*/
 /*----------------------------------------------------------------------------------------*/
 WORD	ddcreate( WORD	app_id, WORD rcvr_id, WORD window, WORD mx, WORD my, WORD kbstate, ULONG format[8], void **oldpipesig )
@@ -36,16 +33,16 @@ WORD	ddcreate( WORD	app_id, WORD rcvr_id, WORD window, WORD mx, WORD my, WORD kb
 		pipe[18]++;															/* letzten Buchstaben weitersetzen */
 		if ( pipe[18] > 'Z' )											/* kein Buchstabe des Alphabets? */
 		{
-			pipe[17]++;														/* ersten Buchstaben der Extension Ñndern */
-			if ( pipe[17] > 'Z' )										/* lieû sich keine Pipe îffnen? */
+			pipe[17]++;														/* ersten Buchstaben der Extension √§ndern */
+			if ( pipe[17] > 'Z' )										/* lie√ü sich keine Pipe √∂ffnen? */
 				return( -1 );
 		}
 
-		handle = (WORD) Fcreate( pipe, 0x02 );						/* Pipe anlegen, 0x02 bedeutet, daû EOF zurÅckgeliefert wird, */
-																				/* wenn die Pipe von niemanden zum Lesen geîffnet wurde */
+		handle = (WORD) Fcreate( pipe, 0x02 );						/* Pipe anlegen, 0x02 bedeutet, da√ü EOF zur√ºckgeliefert wird, */
+																				/* wenn die Pipe von niemanden zum Lesen ge√∂ffnet wurde */
 	} while ( handle == EACCDN );
 
-	if ( handle < 0 )														/* lieû sich die Pipe nicht anlegen? */
+	if ( handle < 0 )														/* lie√ü sich die Pipe nicht anlegen? */
 		return( handle );
 
 	mbuf[0] = AP_DRAGDROP;												/* Drap&Drop-Message senden */
@@ -59,7 +56,7 @@ WORD	ddcreate( WORD	app_id, WORD rcvr_id, WORD window, WORD mx, WORD my, WORD kb
 
 	if ( appl_write( rcvr_id, 16, mbuf ) == 0 )					/* Fehler bei appl_write()? */
 	{
-		Fclose( handle );													/* Pipe schlieûen */
+		Fclose( handle );													/* Pipe schlie√üen */
 		return( -2 );
 	}
 
@@ -70,78 +67,78 @@ WORD	ddcreate( WORD	app_id, WORD rcvr_id, WORD window, WORD mx, WORD my, WORD kb
 	{
 		BYTE	reply;
 		
-		if ( Fread( handle, 1L, &reply ) == 1 )					/* Antwort vom EmpfÑnger lesen */
+		if ( Fread( handle, 1L, &reply ) == 1 )					/* Antwort vom Empf√§nger lesen */
 		{
 			if ( reply == DD_OK )										/* alles in Ordnung? */
 			{
-				if ( Fread( handle, DD_EXTSIZE, format ) == DD_EXTSIZE )	/* unterstÅtzte Formate lesen */
+				if ( Fread( handle, DD_EXTSIZE, format ) == DD_EXTSIZE )	/* unterst√ºtzte Formate lesen */
 				{
-					*oldpipesig = Psignal( SIGPIPE, (void *) SIG_IGN );	/* Dispatcher ausklinken */
+					*oldpipesig = (void *)(long) Psignal( SIGPIPE, (void *) SIG_IGN );	/* Dispatcher ausklinken */
 					return( handle );
 				}
 			}
 		}
 	}
 
-	Fclose( handle );														/* Pipe schlieûen */
+	Fclose( handle );														/* Pipe schlie√üen */
 	return( -1 );
 }
 
 
 /*----------------------------------------------------------------------------------------*/
-/* Drag & Drop - ÅberprÅfen ob der EmpfÑnger ein Format akzeptiert								*/
-/* Funktionsresultat:	DD_OK: EmpfÑnger untersÅtzt das Format										*/
-/*								DD_EXT: EmpfÑnger akzeptiert das Format nicht							*/
-/*								DD_LEN: Daten sind zu lang fÅr den EmpfÑnger								*/
+/* Drag & Drop - √ºberpr√ºfen ob der Empf√§nger ein Format akzeptiert								*/
+/* Funktionsresultat:	DD_OK: Empf√§nger unters√ºtzt das Format										*/
+/*								DD_EXT: Empf√§nger akzeptiert das Format nicht							*/
+/*								DD_LEN: Daten sind zu lang f√ºr den Empf√§nger								*/
 /*								DD_NAK: Fehler bei Kommunikation												*/								
 /*	handle:					Handle der Pipe																	*/
-/*	format:					KÅrzel fÅr das Format															*/
+/*	format:					K√ºrzel f√ºr das Format															*/
 /*	name:						Beschreibung des Formats als C-String										*/
-/*	size:						LÑnge der zu sendenen Daten													*/
+/*	size:						L√§nge der zu sendenen Daten													*/
 /*----------------------------------------------------------------------------------------*/
 WORD	ddstry( WORD handle, ULONG format, BYTE *name, LONG size )
 {
 	LONG	str_len;
 	WORD	hdr_len;
 	
-	str_len = strlen( name ) + 1;										/* LÑnge des Strings inklusive Nullbyte */
-	hdr_len = 4 + 4 + (WORD) str_len;								/* LÑnge des Headers */
+	str_len = strlen( name ) + 1;										/* L√§nge des Strings inklusive Nullbyte */
+	hdr_len = 4 + 4 + (WORD) str_len;								/* L√§nge des Headers */
 
-	if ( Fwrite( handle, 2, &hdr_len ) == 2 )						/* LÑnge des Headers senden */
+	if ( Fwrite( handle, 2, &hdr_len ) == 2 )						/* L√§nge des Headers senden */
 	{
 		LONG	written;
 		
-		written = Fwrite( handle, 4, &format );					/* FormatkÅrzel */
-		written += Fwrite( handle, 4, &size );						/* LÑnge der zu sendenden Daten */
+		written = Fwrite( handle, 4, &format );					/* Formatk√ºrzel */
+		written += Fwrite( handle, 4, &size );						/* L√§nge der zu sendenden Daten */
 		written += Fwrite( handle, str_len, name );				/* Beschreibung des Formats als C-String */
 
-		if ( written == hdr_len )										/* lieû sich der Header schreiben? */
+		if ( written == hdr_len )										/* lie√ü sich der Header schreiben? */
 		{
 			BYTE	reply;
 			
 			if ( Fread( handle, 1, &reply ) == 1 )
-				return( reply );											/* Antwort zurÅckliefern */
+				return( reply );											/* Antwort zur√ºckliefern */
 		}
 	}	
 	return( DD_NAK );
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Drag & Drop - Pipe schlieûen																				*/
+/* Drag & Drop - Pipe schlie√üen																				*/
 /*	handle:					Handle der Pipe																	*/
 /* oldpipesig:				Zeiger auf den alten Signalhandler											*/
 /*----------------------------------------------------------------------------------------*/
 void	ddclose( WORD handle, void *oldpipesig )
 {
 	Psignal( SIGPIPE, oldpipesig );									/* wieder alten Dispatcher eintragen */
-	Fclose( handle );														/* Pipe schlieûen */
+	Fclose( handle );														/* Pipe schlie√üen */
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Drag & Drop - Pipe îffnen (fÅr den EmpfÑnger)														*/
+/* Drag & Drop - Pipe √∂ffnen (f√ºr den Empf√§nger)														*/
 /* Funktionsresultat:	Handle der Pipe oder -1 (Fehler)												*/
 /* pipe:						Zeiger auf den Namen der Pipe ("DRAGDROP.??")							*/
-/* format:					Zeiger auf Array mit unterstÅtzten Datenformaten						*/
+/* format:					Zeiger auf Array mit unterst√ºtzten Datenformaten						*/
 /* oldpipesig:				Zeiger auf den Zeiger auf den alten Signalhandler						*/
 /*----------------------------------------------------------------------------------------*/
 WORD	ddopen( BYTE *pipe, ULONG format[8], void **oldpipesig )
@@ -153,9 +150,9 @@ WORD	ddopen( BYTE *pipe, ULONG format[8], void **oldpipesig )
 	if ( handle < 0 )
 		return( -1 );
 
-	reply = DD_OK;															/* Programm unterstÅtzt Drag & Drop	*/
+	reply = DD_OK;															/* Programm unterst√ºtzt Drag & Drop	*/
 
-	*oldpipesig = Psignal( SIGPIPE, (void *) SIG_IGN );		/* Signal ignorieren	*/
+	*oldpipesig = (void *)(long) Psignal( SIGPIPE, (void *) SIG_IGN );		/* Signal ignorieren	*/
 
 	if ( Fwrite( handle, 1, &reply ) == 1 )
 	{
@@ -163,33 +160,33 @@ WORD	ddopen( BYTE *pipe, ULONG format[8], void **oldpipesig )
 			return( handle );
 	}
 
-	ddclose( handle, *oldpipesig );									/* Pipe schlieûen */
+	ddclose( handle, *oldpipesig );									/* Pipe schlie√üen */
 	return( -1 );
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Header fÅr Drag & Drop einlesen																			*/
+/* Header f√ºr Drag & Drop einlesen																			*/
 /* Funktionsresultat:	0 Fehler 1: alles in Ordnung													*/
 /*	handle:					Handle der Pipe																	*/
-/* name:						Zeiger auf Array fÅr den Datennamen											*/
+/* name:						Zeiger auf Array f√ºr den Datennamen											*/
 /* format:					Zeiger auf ein Long, das das Datenformat anzeigt						*/
-/* size:						Zeiger auf ein Long fÅr die LÑnge der Daten								*/
+/* size:						Zeiger auf ein Long f√ºr die L√§nge der Daten								*/
 /*----------------------------------------------------------------------------------------*/
 WORD	ddrtry( WORD handle, BYTE *name, ULONG *format, LONG *size )
 {
 	WORD	hdr_len;
 
-	if ( Fread( handle, 2, &hdr_len ) == 2 )						/* HeaderlÑnge auslesen	*/
+	if ( Fread( handle, 2, &hdr_len ) == 2 )						/* Headerl√§nge auslesen	*/
 	{
 		if ( hdr_len >= 9 )												/* kompletter Header?	*/
 		{
 			if ( Fread( handle, 4, format ) == 4 )					/* Datentyp auslesen	*/
 			{
-				if ( Fread( handle, 4, size ) == 4 )				/* LÑnge der Daten in Bytes auslesen */
+				if ( Fread( handle, 4, size ) == 4 )				/* L√§nge der Daten in Bytes auslesen */
 				{	
 					WORD	name_len;
 					
-					name_len = hdr_len -= 8;							/* LÑnge des Namens inklusive Nullbyte */
+					name_len = hdr_len -= 8;							/* L√§nge des Namens inklusive Nullbyte */
 
 					if ( name_len > DD_NAMEMAX )				
 						name_len = DD_NAMEMAX;
@@ -228,7 +225,7 @@ WORD	ddreply( WORD handle, WORD msg )
 {
 	if ( Fwrite( handle, 1, ((BYTE *) &msg ) + 1 ) != 1 )		/* Fehler? */
 	{
-		Fclose( handle );													/* Pipe schlieûen */
+		Fclose( handle );													/* Pipe schlie√üen */
 		return( 0 );
 	}
 	return( 1 );

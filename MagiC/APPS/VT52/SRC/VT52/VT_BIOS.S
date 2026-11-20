@@ -1,12 +1,10 @@
-	SUPER
-
 CON					EQU	2
 RAW					EQU	5
 
-IMPORT	app_window, pact_appl, vt_jmp, rawcon_jmp, stack_offset, vt_Bconstat, vt_Bconin, vt_Kbshift
-EXPORT	bios_disp, old_bios_vec
-EXPORT	old_xconstat, old_xconin, old_xconout_con, old_xconout_raw, old_xcostat_con, old_xcostat_raw
-EXPORT	xconstat, xconin, xconout_con, xconout_raw, xcostat_con, xcostat_raw
+	xref	app_window, pact_appl, vt_jmp, rawcon_jmp, stack_offset, vt_Bconstat, vt_Bconin, vt_Kbshift
+	xdef	bios_disp, old_bios_vec
+	xdef	old_xconstat, old_xconin, old_xconout_con, old_xconout_raw, old_xcostat_con, old_xcostat_raw
+	xdef	xconstat, xconin, xconout_con, xconout_raw, xcostat_con, xcostat_raw
 
                   DC.L 'XBRA'
                   DC.L 'VT52'
@@ -50,11 +48,11 @@ Bconstat:			cmp.w		#CON,(a0)		;Tastatur?
 						add.w		d1,d1
 						add.w		d1,d1
 						lea		app_window,a0
-						move.l	0(a0,d1.w),d1	;Zeiger auf die Fensterstruktur fÅr den Prozeû oder NULL
+						move.l	0(a0,d1.w),d1	;Zeiger auf die Fensterstruktur f√ºr den Proze√ó oder NULL
 						beq.s		old_bios
 						move.l	d1,a0				;Zeiger auf die Fensterstruktur
 					
-						bsr		vt_Bconstat		;C-Routine aufrufen
+						jsr		vt_Bconstat		;C-Routine aufrufen
 						rte
 
 ;LONG	Bconin( WORD dev );
@@ -68,11 +66,11 @@ Bconin:				cmp.w		#CON,(a0)		;Tastatur?
 						add.w		d1,d1
 						add.w		d1,d1
 						lea		app_window,a0
-						move.l	0(a0,d1.w),d1	;Zeiger auf die Fensterstruktur fÅr den Prozeû oder NULL
+						move.l	0(a0,d1.w),d1	;Zeiger auf die Fensterstruktur f√ºr den Proze√ó oder NULL
 						beq.s		old_bios
 						move.l	d1,a0				;Zeiger auf die Fensterstruktur
 					
-						bsr		vt_Bconin		;C-Routine Aufrufen
+						jsr		vt_Bconin		;C-Routine Aufrufen
 						rte
 						
 ;void	Bconout( WORD dev, WORD c );
@@ -90,11 +88,11 @@ Bconout:				move.w	(a0)+,d1			;Bios-Device
 						add.w		d1,d1
 						add.w		d1,d1
 						lea		app_window,a0
-						move.l	0(a0,d1.w),d1	;Zeiger auf die Fensterstruktur fÅr den Prozeû oder NULL
+						move.l	0(a0,d1.w),d1	;Zeiger auf die Fensterstruktur f√ºr den Proze√ó oder NULL
 						beq		old_bios
 						move.l	d1,a0				;Zeiger auf die Fensterstruktur
 
-						bsr		vt_jmp
+						jsr		vt_jmp
 						rte
 
 Bconout_raw:		subq.w	#RAW-CON,d1
@@ -108,11 +106,11 @@ Bconout_raw:		subq.w	#RAW-CON,d1
 						add.w		d1,d1
 						add.w		d1,d1
 						lea		app_window,a0
-						move.l	0(a0,d1.w),d1	;Zeiger auf die Fensterstruktur fÅr den Prozeû oder NULL
+						move.l	0(a0,d1.w),d1	;Zeiger auf die Fensterstruktur f√ºr den Proze√ó oder NULL
 						beq		old_bios
 						move.l	d1,a0				;Zeiger auf die Fensterstruktur
 
-						bsr		rawcon_jmp
+						jsr		rawcon_jmp
 						rte
 
 ;LONG Bcostat( WORD dev );
@@ -133,11 +131,11 @@ Kbshift:				move.l	pact_appl,a0		;Adresse des des Zeigers auf die aktuelle Appli
 						add.w		d1,d1
 						add.w		d1,d1
 						lea		app_window,a0
-						move.l	0(a0,d1.w),d1	;Zeiger auf die Fensterstruktur fÅr den Prozeû oder NULL
+						move.l	0(a0,d1.w),d1	;Zeiger auf die Fensterstruktur f√ºr den Proze√ó oder NULL
 						beq		old_bios
 						move.l	d1,a0				;Zeiger auf die Fensterstruktur
 
-						bsr		vt_Kbshift
+						jsr		vt_Kbshift
 						rte
 
                   DC.L 'XBRA'
@@ -146,7 +144,7 @@ old_xconstat:		DC.L 0
 xconstat:			bsr		get_struct
 						move.l	a0,d0
 						beq.s		call_xconstat
-						bra		vt_Bconstat		;C-Routine aufrufen
+						jmp		vt_Bconstat		;C-Routine aufrufen
 call_xconstat:		move.l	old_xconstat(pc),a0
 						jmp		(a0)
                   
@@ -156,7 +154,7 @@ old_xconin:			DC.L 0
 xconin:				bsr		get_struct
 						move.l	a0,d0
 						beq.s		call_xconin
-						bra		vt_Bconin		;C-Routine Aufrufen
+						jmp		vt_Bconin		;C-Routine Aufrufen
 call_xconin:		move.l	old_xconin(pc),a0
 						jmp		(a0)
 						
@@ -168,7 +166,7 @@ xconout_con:		bsr		get_struct
 						beq.s		call_xconout_con
 						move.w	6(sp),d0
 						and.w		#$ff,d0
-						bra		vt_jmp
+						jmp		vt_jmp
 call_xconout_con:	move.l	old_xconout_con(pc),a0
 						jmp		(a0)
 
@@ -180,7 +178,7 @@ xconout_raw:		bsr		get_struct
 						beq.s		call_xconout_raw
 						move.w	6(sp),d0
 						and.w		#$ff,d0
-						bra		rawcon_jmp
+						jmp		rawcon_jmp
 call_xconout_raw:	move.l	old_xconout_raw(pc),a0
 						jmp		(a0)
 
@@ -206,9 +204,9 @@ xcostat_raw:		bsr		get_struct
 call_xcostat_raw:	move.l	old_xcostat_raw(pc),a0
 						jmp		(a0)
 
-;Zeiger auf die Fensterstruktur oder NULL zurÅckliefern
+;Zeiger auf die Fensterstruktur oder NULL zur√ºckliefern
 ;Vorgaben:
-;Register d0 und a0 werden verÑndert
+;Register d0 und a0 werden ver√§ndert
 ;Eingaben:
 ;-
 ;Ausgaben:
@@ -221,6 +219,6 @@ get_struct:			move.l	pact_appl,a0		;Adresse des des Zeigers auf die aktuelle App
 						add.w		d0,d0
 						add.w		d0,d0
 						lea		app_window,a0
-						move.l	0(a0,d0.w),a0	;Zeiger auf die Fensterstruktur fÅr den Prozeû oder NULL
+						move.l	0(a0,d0.w),a0	;Zeiger auf die Fensterstruktur f√ºr den Proze√ó oder NULL
 get_struct_exit:	rts
 
