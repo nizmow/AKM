@@ -135,9 +135,10 @@ all nine ahead of their consumers.
   because NeoST's floppy formatter reports a write fault.
 - [ ] **VT52** — independent `vt52` target builds `VT52.PRG` and the German
   resource, with source-built `DRAGDROP`. The MagiC menu bar and terminal window
-  are reached, but a child's BIOS console output still raises
-  `68000 Exception (Error #-69)`; fix the BIOS/TOS output hook before claiming
-  terminal functionality. Pending: `MAGXDESK` version 5.
+  are reached. The assembly/C BIOS hook now uses GCC's stack ABI, but the
+  child terminal window is not retained in the current NeoST scenario;
+  archived/rebuilt terminal output remains unverified. Pending: `MAGXDESK`
+  version 5.
 - [ ] Separate assembly builds: MCMD, MAGXCONF and appropriate utilities;
   FLP_PAR is a C pair, not an assembly family.
 - [ ] Loadable components: image/window-frame SLBs, CPXs and drivers.

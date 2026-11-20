@@ -221,9 +221,9 @@ AES bindings; physical floppy operations are not covered by the NeoST test.
 
 `mise run apps -- vt52` builds `build/atari/apps/vt52/`: `VT52.PRG` and its
 German `VT52.RSC`, with `DRAGDROP` compiled from source. The port reaches the
-MagiC menu bar and terminal window. Capturing a child's BIOS console output
-still raises `68000 Exception (Error #-69)`; do not treat VT52 as functionally
-verified until that hook is fixed.
+MagiC menu bar and terminal window. The assembly/C BIOS hook now uses GCC's
+stack ABI, but the child terminal window is not retained in the current NeoST
+scenario; do not treat VT52 as functionally verified.
 
 Repeatable emulator checks use explicit, subsystem-scoped tasks. Run
 `mise run test:mod-app-neost` (or `python3 scripts/neost-mod-app-smoke.py`).

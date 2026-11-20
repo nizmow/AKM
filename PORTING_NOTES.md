@@ -902,8 +902,9 @@ Porting changes:
 - Assembly exports/imports use VASM `xdef`/`xref`; external short branches are
   long `jsr`/`jmp` because the linked PRG exceeds the 16-bit branch range.
 
-Current limitation: the rebuilt menu bar and terminal window reach the screen,
-but when the fixture child writes through the hooked BIOS console path MagiC
-reports `Program returned: 68000 Exception (Error #-69)`. The archived VT52
-captures the same child correctly. The BIOS/TOS output hook is therefore still
-the active blocker; do not claim VT52 terminal functionality until it is fixed.
+The assembly-to-C call sites now follow GCC's stack argument ABI rather than
+Pure C's register convention, including the BIOS output hook. The rebuilt menu
+bar and terminal window still start, but the child terminal session does not
+remain visible in the current NeoST scenario; this remains the active runtime
+blocker. Do not claim VT52 terminal functionality until the child window and
+archived/rebuilt screens are verified.

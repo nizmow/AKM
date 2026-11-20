@@ -955,7 +955,10 @@ void	start_tos( BYTE *file )
 			}
 		}
 		else
-			exec_tos( aname, apath, 0L );
+		{
+			cmd[0] = 0;
+			exec_tos( aname, apath, cmd );
+		}
 	}
 	else
 	{

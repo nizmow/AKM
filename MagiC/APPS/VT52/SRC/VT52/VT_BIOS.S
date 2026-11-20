@@ -10,7 +10,7 @@ RAW					EQU	5
                   DC.L 'VT52'
 old_bios_vec:     DC.L 0
 bios_disp:        move     usp,a0
-                  btst     #5,(sp)        ;Usermode ?
+                  btst     #13,(sp)       ;Supervisor mode?
                   beq.s    bios_user
                   movea.l  sp,a0
                   adda.w   stack_offset,a0 ;Stack-Offset (6 bzw. 8 Bytes)
@@ -52,7 +52,9 @@ Bconstat:			cmp.w		#CON,(a0)		;Tastatur?
 						beq.s		old_bios
 						move.l	d1,a0				;Zeiger auf die Fensterstruktur
 					
+						move.l	a0,-(sp)
 						jsr		vt_Bconstat		;C-Routine aufrufen
+						addq.l	#4,sp
 						rte
 
 ;LONG	Bconin( WORD dev );
@@ -70,29 +72,37 @@ Bconin:				cmp.w		#CON,(a0)		;Tastatur?
 						beq.s		old_bios
 						move.l	d1,a0				;Zeiger auf die Fensterstruktur
 					
+						move.l	a0,-(sp)
 						jsr		vt_Bconin		;C-Routine Aufrufen
+						addq.l	#4,sp
 						rte
 						
 ;void	Bconout( WORD dev, WORD c );
 Bconout:				move.w	(a0)+,d1			;Bios-Device
 						move.w	(a0)+,d0			
-						and.w		#$ff,d0			;Zeichen
+						and.l		#$ff,d0			;Zeichen
 						subq.w	#CON,d1
 						bne.s		Bconout_raw
 
 						move.l	pact_appl,a0		;Adresse des des Zeigers auf die aktuelle Applikationsstruktur
 						move.l	(a0),d1			;Zeiger auf aktuelle Applikationsstruktur oder NULL
-						beq.s		old_bios			;NULL: keine Task aktiv
+						beq.s		bios_none			;NULL: keine Task aktiv
 						move.l	d1,a0
 						move.w	4(a0),d1			;AES-ID des aktuellen Prozesses
 						add.w		d1,d1
 						add.w		d1,d1
 						lea		app_window,a0
 						move.l	0(a0,d1.w),d1	;Zeiger auf die Fensterstruktur für den Proze× oder NULL
-						beq		old_bios
+						beq		bios_none
 						move.l	d1,a0				;Zeiger auf die Fensterstruktur
 
+												move.l	d0,-(sp)
+						move.l	a0,-(sp)
 						jsr		vt_jmp
+						addq.l	#8,sp
+						rte
+
+bios_none:			moveq	#0,d0
 						rte
 
 Bconout_raw:		subq.w	#RAW-CON,d1
@@ -100,17 +110,20 @@ Bconout_raw:		subq.w	#RAW-CON,d1
 
 						move.l	pact_appl,a0		;Adresse des des Zeigers auf die aktuelle Applikationsstruktur
 						move.l	(a0),d1			;Zeiger auf aktuelle Applikationsstruktur oder NULL
-						beq		old_bios			;NULL: keine Task aktiv
+						beq		bios_none			;NULL: keine Task aktiv
 						move.l	d1,a0
 						move.w	4(a0),d1			;AES-ID des aktuellen Prozesses
 						add.w		d1,d1
 						add.w		d1,d1
 						lea		app_window,a0
 						move.l	0(a0,d1.w),d1	;Zeiger auf die Fensterstruktur für den Proze× oder NULL
-						beq		old_bios
+						beq		bios_none
 						move.l	d1,a0				;Zeiger auf die Fensterstruktur
 
+												move.l	d0,-(sp)
+						move.l	a0,-(sp)
 						jsr		rawcon_jmp
+						addq.l	#8,sp
 						rte
 
 ;LONG Bcostat( WORD dev );
@@ -135,7 +148,9 @@ Kbshift:				move.l	pact_appl,a0		;Adresse des des Zeigers auf die aktuelle Appli
 						beq		old_bios
 						move.l	d1,a0				;Zeiger auf die Fensterstruktur
 
+						move.l	a0,-(sp)
 						jsr		vt_Kbshift
+						addq.l	#4,sp
 						rte
 
                   DC.L 'XBRA'
@@ -144,7 +159,10 @@ old_xconstat:		DC.L 0
 xconstat:			bsr		get_struct
 						move.l	a0,d0
 						beq.s		call_xconstat
-						jmp		vt_Bconstat		;C-Routine aufrufen
+						move.l	a0,-(sp)
+					jsr		vt_Bconstat		;C-Routine aufrufen
+					addq.l	#4,sp
+					rts
 call_xconstat:		move.l	old_xconstat(pc),a0
 						jmp		(a0)
                   
@@ -154,7 +172,10 @@ old_xconin:			DC.L 0
 xconin:				bsr		get_struct
 						move.l	a0,d0
 						beq.s		call_xconin
-						jmp		vt_Bconin		;C-Routine Aufrufen
+						move.l	a0,-(sp)
+					jsr		vt_Bconin		;C-Routine Aufrufen
+					addq.l	#4,sp
+					rts
 call_xconin:		move.l	old_xconin(pc),a0
 						jmp		(a0)
 						
@@ -164,9 +185,13 @@ old_xconout_con:	DC.L 0
 xconout_con:		bsr		get_struct
 						move.l	a0,d0
 						beq.s		call_xconout_con
-						move.w	6(sp),d0
-						and.w		#$ff,d0
-						jmp		vt_jmp
+						move.l	6(sp),d0
+						and.l		#$ff,d0
+						move.l	d0,-(sp)
+						move.l	a0,-(sp)
+						jsr		vt_jmp
+						addq.l	#8,sp
+						rts
 call_xconout_con:	move.l	old_xconout_con(pc),a0
 						jmp		(a0)
 
@@ -176,9 +201,13 @@ old_xconout_raw:	DC.L 0
 xconout_raw:		bsr		get_struct
 						move.l	a0,d0
 						beq.s		call_xconout_raw
-						move.w	6(sp),d0
-						and.w		#$ff,d0
-						jmp		rawcon_jmp
+						move.l	6(sp),d0
+						and.l		#$ff,d0
+						move.l	d0,-(sp)
+						move.l	a0,-(sp)
+						jsr		rawcon_jmp
+						addq.l	#8,sp
+						rts
 call_xconout_raw:	move.l	old_xconout_raw(pc),a0
 						jmp		(a0)
 

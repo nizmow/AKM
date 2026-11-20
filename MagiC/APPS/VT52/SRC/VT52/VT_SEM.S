@@ -5,7 +5,8 @@
 ;							1: Semaphore wurde gesetzt
 ;
 ;WORD	inc_sem( WORD *sem )
-inc_sem:		bset		#0,1(a0)
+inc_sem:		move.l	4(sp),a0
+				bset		#0,1(a0)
 				seq		d0
-				ext.w		d0
+				ext.l		d0
 				rts
