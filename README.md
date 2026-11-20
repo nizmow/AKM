@@ -215,6 +215,10 @@ GEMlib; the older `MAGXLIB.LIB` dependency is not linked.
 its German `MGCOPY.RSC`. The port uses the shared `GEMUT_MT.C` helper, public
 MiNTLib/GEMlib dialog calls and an app-local DOS compatibility layer.
 
+`mise run apps -- mgformat` builds `build/atari/apps/mgformat/`:
+`MGFORMAT.PRG` and its German `MGFORMAT.RSC`. It uses native MagiC `wdlg`
+AES bindings; physical floppy operations are not covered by the NeoST test.
+
 Repeatable emulator checks use explicit, subsystem-scoped tasks. Run
 `mise run test:mod-app-neost` (or `python3 scripts/neost-mod-app-smoke.py`).
 Runner options and outputs: `python3 scripts/neost-mod-app-smoke.py --help`.
@@ -236,6 +240,10 @@ screens on identical cloned images.
 
 Run `mise run test:mgcopy-neost` (or `python3 scripts/neost-mgcopy-smoke.py`)
 to compare MGCOPY copy, move, alias and delete effects on cloned MagiC images.
+
+Run `mise run test:mgformat-neost` (or `python3 scripts/neost-mgformat-smoke.py`)
+to compare the archived and rebuilt MGFORMAT format dialog on cloned MagiC
+images. Physical floppy formatting remains a manual-hardware test.
 
 The `scripts/neost-*-smoke.py` runners use `scripts/neost_common.py` for
 executable/AppImage discovery, ROM selection, bounded subprocess execution,

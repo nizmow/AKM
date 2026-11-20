@@ -588,6 +588,36 @@ Evidence is under `build/atari/neost-mgcopy-cross/`. Confirm-dialog interaction,
 cancellation, long paths, read-only/error paths and alternate resources remain
 untested.
 
+### MGFORMAT
+
+`mise run apps -- mgformat` builds `build/atari/apps/mgformat/MGFORMAT.PRG`
+and copies the German `MGFORMAT.RSC`. The four application modules use the
+shared `GEMUT_MT.C` helper and public MiNTLib/GEMlib calls; `MGFORMAT_GEM.H`
+holds only the app-local DOS records (`DTA`, `DOSVARS`, `XAESMSG`) and the
+MagiC DOS error aliases.
+
+Two ABI details matter. GEMlib's `wdlg_*` names are PDLG/XaAES entry points
+(AES 200-207), which try to load `PDLG.SLB`; MGFORMAT's source uses MagiC's
+native `wdlg` API (AES 160-167). `MGFORMAT_WDLG.C` supplies those bindings with
+the public `AESPB` and GEMlib `aes()` trap, and the dialog callbacks take the
+SDK's by-value `struct HNDL_OBJ_args`. The format thread also needs its own
+`mt_appl_init/myglobal`; `mt_appl_write`, `mt_appl_read` and `mt_appl_exit`
+use that thread global, while resource loading and alerts use the main global.
+
+The port replaces `Rwabs` with public `Lrwabs`, `ultoa` with `sprintf`, the
+legacy 13-argument `evnt_multi` with the public MT call, and the old GEMDOS
+`DTA`/`BPB` and `SConfig(SC_DOSVARS)` layouts with checked app-local records.
+`MGFORMAT.PRG` must be started after MAGXDESK owns the desktop; the test helper
+waits in `C:\GEMSYS\MAGIC\START`.
+
+`python3 scripts/neost-mgformat-smoke.py` builds the application and delayed
+helper, boots archived and rebuilt bundles from separate MagiC 6.20/TOS 2.06
+clones with `C:\AUTO\MAGXBOOT.TOS`, and compares the `-f A:` format dialog.
+The dialog screens differ only in the desktop free-bytes status line. NeoST's
+floppy implementation reports a write fault when the dialog starts a physical
+format, so successful formatting, disk copy and volume-label effects require
+manual hardware or a different FDC implementation and remain unverified.
+
 ## Application porting workflow
 
 Use these gates in order; the checklist below supplies the boundary details.

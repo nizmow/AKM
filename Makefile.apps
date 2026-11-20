@@ -35,9 +35,15 @@ MGCOPY_INCLUDES := -I"$(MGCOPY_DIR)" -I"$(MGCOPY_GEMUT_DIR)"
 MGCOPY_SOURCES := $(addprefix $(MGCOPY_DIR)/,MGCOPY.C CPFILES.C BEG_DIAL.C DAT_DIAL.C)
 MGCOPY_OBJECTS := $(patsubst $(MGCOPY_DIR)/%.C,$(BUILD_DIR)/mgcopy/%.o,$(MGCOPY_SOURCES)) \
   $(BUILD_DIR)/mgcopy/GEMUT_MT.o
+MGFORMAT_DIR := MagiC/APPS/MGFORMAT/SRC
+MGFORMAT_GEMUT_DIR := MagiC/APPS/APPLICAT/SRC/IMPORT
+MGFORMAT_INCLUDES := -I"$(MGFORMAT_DIR)" -I"$(MGFORMAT_GEMUT_DIR)"
+MGFORMAT_SOURCES := $(addprefix $(MGFORMAT_DIR)/,MGFORMAT.C FMT_DIAL.C CPY_DIAL.C FORMAT.C MGFORMAT_WDLG.C)
+MGFORMAT_OBJECTS := $(patsubst $(MGFORMAT_DIR)/%.C,$(BUILD_DIR)/mgformat/%.o,$(MGFORMAT_SOURCES)) \
+  $(BUILD_DIR)/mgformat/GEMUT_MT.o
 
 
-.PHONY: all applicat mod-app cmdline mac2st dump fc split showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver abi-check console-test-driver
+.PHONY: all applicat mod-app cmdline mac2st dump fc split showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver abi-check console-test-driver
 all: mod-app
 applicat: $(BUILD_DIR)/applicat/APPLICAT.APP $(BUILD_DIR)/applicat/applicat.rsc \
   $(BUILD_DIR)/applicat/applicat.inf
@@ -50,6 +56,8 @@ mgsearch: $(BUILD_DIR)/mgsearch/MGSEARCH.APP $(BUILD_DIR)/mgsearch/MGSEARCH.RSC
 mgsearch-test-driver: $(BUILD_DIR)/mgsearch/NEOSTART.PRG
 mgcopy: $(BUILD_DIR)/mgcopy/MGCOPY.APP $(BUILD_DIR)/mgcopy/MGCOPY.RSC
 mgcopy-test-driver: $(BUILD_DIR)/mgcopy/NEOSTART.PRG
+mgformat: $(BUILD_DIR)/mgformat/MGFORMAT.PRG $(BUILD_DIR)/mgformat/MGFORMAT.RSC
+mgformat-test-driver: $(BUILD_DIR)/mgformat/NEOSTART.PRG
 
 cmdline: $(BUILD_DIR)/cmdline/CMDLINE.PRG
 mac2st: $(BUILD_DIR)/mac2st/MAC2ST.TTP
@@ -114,6 +122,28 @@ $(BUILD_DIR)/mgcopy/MGCOPY.APP: $(MGCOPY_OBJECTS) Makefile.apps
 $(BUILD_DIR)/mgcopy/MGCOPY.RSC: $(MGCOPY_DIR)/MGCOPY.RSC
 	mkdir -p "$(@D)"
 	cp "$<" "$@"
+
+$(BUILD_DIR)/mgformat/%.o: $(MGFORMAT_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(MGFORMAT_INCLUDES) \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgformat/GEMUT_MT.o: $(MGFORMAT_GEMUT_DIR)/GEMUT_MT.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGFORMAT_GEMUT_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgformat/MGFORMAT.PRG: $(MGFORMAT_OBJECTS) Makefile.apps
+	$(CC) $(APP_FLAGS) $(MGFORMAT_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mgformat/MGFORMAT.RSC: $(MGFORMAT_DIR)/MGFORMAT.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/mgformat/NEOSTART.PRG: MagiC/APPS/MGFORMAT/TESTDATA/NEOSTART.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/mgcopy/NEOSTART.PRG: MagiC/APPS/MGCOPY/TESTDATA/NEOSTART.C Makefile.apps
 	mkdir -p "$(@D)"
@@ -353,6 +383,8 @@ $(BUILD_DIR)/mgedit/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 -include $(BUILD_DIR)/mgsearch/NEOSTART.d
 -include $(MGCOPY_OBJECTS:.o=.d)
 -include $(BUILD_DIR)/mgcopy/NEOSTART.d
+-include $(MGFORMAT_OBJECTS:.o=.d)
+-include $(BUILD_DIR)/mgformat/NEOSTART.d
 -include $(MGNOTICE_OBJECTS:.o=.d)
 -include $(BUILD_DIR)/mgnotice/GEMUT_MT.d
 -include $(BUILD_DIR)/mgnotice/NEOSTART.d

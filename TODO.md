@@ -91,7 +91,7 @@ framework or shared-library rewrite is required before these are attempted.
 
 ## Following batches
 
-The current core source-backed remainder is 34 build families: 18
+The current core source-backed remainder is 33 build families: 17
 application/tool/extension families, 9 shared library/startup families and 7
 system-component families. Historical, test-only, blocked, binary-only and KAOS
 entries are outside that count.
@@ -129,7 +129,11 @@ all nine ahead of their consumers.
   compare archived/rebuilt copy, move, alias and delete effects, nested-tree
   copy/move and a D:→C: cross-drive move on cloned MagiC images. Confirm dialog,
   cancellation, long-path and error paths remain untested.
-- [ ] Larger/threaded programs: MGFORMAT, VT52, MAGXDESK version 5.
+- [x] **MGFORMAT** — add `mgformat` producing the application and German
+  resource; native MagiC `wdlg` AES bindings and the format dialog are verified
+  on cloned MagiC images. Physical format/copy effects remain hardware tests
+  because NeoST's floppy formatter reports a write fault.
+- [ ] Larger/threaded programs: VT52, MAGXDESK version 5.
 - [ ] Separate assembly builds: MCMD, MAGXCONF and appropriate utilities;
   FLP_PAR is a C pair, not an assembly family.
 - [ ] Loadable components: image/window-frame SLBs, CPXs and drivers.

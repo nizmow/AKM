@@ -1,4 +1,4 @@
-/* Resource Datei Indizes fÅr MGFORMAT */
+/* Resource Datei Indizes f√ºr MGFORMAT */
 
 #define T_FORMAT         0   /* Formular/Dialog */
 #define FORMAT_T         2   /* FTEXT in Baum T_FORMAT */

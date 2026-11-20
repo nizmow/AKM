@@ -114,6 +114,28 @@ Use `--partition-offset` for a different MagiC partition offset. The source
 image is cloned for each binary. Drive/path forms, size/date filters, file-open
 messages, font variants and long-term operation are outside this scenario.
 
+## NeoST: MGFORMAT startup dialog
+
+`mise run test:mgformat-neost` builds `MGFORMAT.PRG`, its German resource and
+`NEOSTART.PRG`, then boots archived and rebuilt bundles in separate clones of
+the same MagiC image. The helper is installed in `GEMSYS\MAGIC\START` and
+invokes MGFORMAT with `-f A:` after the desktop is ready. The scenario compares
+the format dialogs; the only expected difference is the desktop free-bytes
+status line.
+
+Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
+`mtools`. Run with fresh output:
+
+```sh
+MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
+  python3 scripts/neost-mgformat-smoke.py --output build/atari/neost-mgformat-check
+```
+
+Physical formatting and disk-copy effects are outside this scenario: NeoST
+reports a write fault when MGFORMAT starts a format operation. Those paths
+require manual hardware or a different FDC implementation; cancellation,
+alternate resources and long-term threading remain unverified.
+
 ## NeoST: MGCOPY file operations
 
 `mise run test:mgcopy-neost` builds `MGCOPY.APP`, its German `MGCOPY.RSC` and

@@ -60,6 +60,11 @@ description = "Compare archived and rebuilt MGCOPY file operations under NeoST/M
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-mgcopy-smoke.py"
 
+[tasks."test:mgformat-neost"]
+description = "Compare archived and rebuilt MGFORMAT startup dialog under NeoST/MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-mgformat-smoke.py"
+
 [tasks."test:console-tools-neost"]
 description = "Compare archived and rebuilt MAC2ST, DUMP, FC and SPLIT under NeoST"
 dir = "{{ config_root }}"

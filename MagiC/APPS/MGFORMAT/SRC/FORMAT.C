@@ -4,11 +4,11 @@
 * ======
 *
 * Beginn der Programmierung:  01.08.93    (vorher: MAGXDESK)
-* letzte énderung:			01.10.95
+* letzte √Ñnderung:			01.10.95
 *
 * Modul zum Formatieren und Kopieren von Disketten.
 * Dieses Programm arbeitet nicht interaktiv, sondern quasi als
-* Thread fÅr MGFORMAT.
+* Thread f√ºr MGFORMAT.
 *
 * Kommandozeile: bisher keine
 *
@@ -16,7 +16,7 @@
 *    Die Nachrichten haben alle das 8-Wort-Format:
 *         Wort 0: Code
 *              1: ID des Absenders
-*              2: öberlÑnge (immer 0)
+*              2: √úberl√§nge (immer 0)
 *              3,4,5,6,7: Nachricht
 *
 *    MGFORMAT -> FORMAT
@@ -24,17 +24,17 @@
 *         Code 1032: Programm beenden
 *
 *    FORMAT -> MGFORMAT
-*         Code 1040: öbertragen von Statusmeldungen
+*         Code 1040: √úbertragen von Statusmeldungen
 *			Wort 3:		Fensterhandle des Dialogs
 *              Wort 4:        formatierte Spurnummer
 *			Wort 5:		action (0=les/1=schr/2=fmt)
 *			Wort 6:		0
 *				Diese Nachricht wird ab 1.10.95 mit Hilfe
 *				einer XAES-Message verschickt und ggf.
-*				vom AES verschmolzen, um einen öberlauf
+*				vom AES verschmolzen, um einen √úberlauf
 *				des Nachrichtenpuffers der Zielapplikation
 *				zu vermeiden.
-*         Code 1043: öbertragen von Statusmeldungen (Kopieren)
+*         Code 1043: √úbertragen von Statusmeldungen (Kopieren)
 *			Wort 3:		Fensterhandle des Dialogs
 *              Wort 4:        Anzahl Seiten
 *			Wort 5:		Anzahl Spuren
@@ -46,13 +46,13 @@
 *
 ****************************************************************/
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
+#include "MGFORMAT_GEM.H"
 #include <string.h>
 #include <stdlib.h>
-#include "mgformat.h"
-#include "gemut_mt.h"
-#include "globals.h"
+#include <stdio.h>
+#include "MGFORMAT.H"
+#include "GEMUT_MT.H"
+#include "GLOBALS.H"
 
 
 #define DEBUG 		0
@@ -72,7 +72,8 @@
 
 #pragma warn -stv
 
-static int  ap_id;
+static int  thread_ap_id;
+static WORD *thread_global;
 
 
 long format( int dst_apid, int whdl, int dev, int is_logic,
@@ -85,10 +86,11 @@ LONG cdecl format_thread( struct fmt_parameter *par )
 {
 	WORD myglobal[15];
 
-	/* wir braten das global-Feld der Haupt-APPL nicht Åber */
+	/* wir braten das global-Feld der Haupt-APPL nicht √ºber */
 
-     if   ((ap_id = MT_appl_init(myglobal)) < 0)
+     if   ((thread_ap_id = mt_appl_init(myglobal)) < 0)
           Pterm(-1);
+     thread_global = myglobal;
 
     	if	(par->action == action_format)	/* Formatieren */
     		{
@@ -116,7 +118,7 @@ LONG cdecl format_thread( struct fmt_parameter *par )
 			par->do_format);
 		}
 
-	appl_exit();
+	mt_appl_exit(thread_global);
      return(0);
 }
 
@@ -151,7 +153,7 @@ long read_dname(int lw, char *name)
      char path[10];
      long doserr;
 
-     olddta = Fgetdta();
+     olddta = (DTA *) Fgetdta();
      Fsetdta(&dta);
      path[0] = lw + 'A';
      strcpy(path+1, ":\\*.*");
@@ -166,11 +168,11 @@ long read_dname(int lw, char *name)
 
 /*********************************************************************
 *
-* Sperrt ein Laufwerk fÅrs Formatieren/Kopieren
-* Es wird die MiNT- Funktion Dlock verwendet, um ein Laufwerk fÅr
+* Sperrt ein Laufwerk f√ºrs Formatieren/Kopieren
+* Es wird die MiNT- Funktion Dlock verwendet, um ein Laufwerk f√ºr
 * DOS- Aufrufe zu sperren.
 *
-* RÅckgabe:	0	OK
+* R√ºckgabe:	0	OK
 *			1	Fehler
 *
 *********************************************************************/
@@ -183,7 +185,7 @@ int lock_drive( int dev )
      DTA *olddta;
 
 
-	if	(E_OK == (ret = Dlock(3, dev)))		/* Sperren, pid zurÅckgeben */
+	if	(E_OK == (ret = Dlock(3, dev)))		/* Sperren, pid zur√ºckgeben */
 		return(0);				/* OK */
 	if	(ret == EINVFN)
 		{
@@ -206,7 +208,7 @@ int lock_drive( int dev )
 	ret %= 100;
 	procname[11] = ret / 10 + '0';
 	procname[12] = ret % 10 + '0';
-	olddta = Fgetdta();
+	olddta = (DTA *) Fgetdta();
      Fsetdta(&dta);
 	ret = Fsfirst(procname, 0);
 	if	(ret)
@@ -228,21 +230,21 @@ void send_wdraw( int dev )
 {
 	int msg[8] = {SH_WDRAW, 0, 0};
 
-	msg[1] = ap_id;
+	msg[1] = thread_ap_id;
 	msg[3] = dev;
-	appl_write(0, 16, msg);	/* App #0 ist die Shell (?) */
+	mt_appl_write(0, 16, msg, thread_global);	/* App #0 ist die Shell (?) */
 }
 
 
 /*********************************************************************
 *
-* Eine Art "etv_critic" fÅr Xbios- Funktionen.
+* Eine Art "etv_critic" f√ºr Xbios- Funktionen.
 *
-* Folgende Mîglichkeiten hat man:
+* Folgende M√∂glichkeiten hat man:
 *
-* Abbruch:     RÅckgabe 0, doserr wird nicht verÑndert
-* Wiederholen: RÅckgabe 1, doserr wird nicht verÑndert
-* Ignorieren:  RÅckgabe 0, doserr wird auf E_OK gesetzt
+* Abbruch:     R√ºckgabe 0, doserr wird nicht ver√§ndert
+* Wiederholen: R√ºckgabe 1, doserr wird nicht ver√§ndert
+* Ignorieren:  R√ºckgabe 0, doserr wird auf E_OK gesetzt
 *
 *********************************************************************/
 
@@ -302,8 +304,8 @@ long M_Floprd (void *buf, void *filler, int devno, int sectno, int trackno,
 
 /*********************************************************************
 *
-* RÅckmeldung. Bei Empfang einer Abbruchnachricht
-*  wird EBREAK zurÅckgegeben
+* R√ºckmeldung. Bei Empfang einer Abbruchnachricht
+*  wird EBREAK zur√ºckgegeben
 * action == 0	Lese
 * action == 1  Schreibe
 * action == 2	Formatiere
@@ -317,7 +319,7 @@ long send_status(int whdl, int dst_apid, int msg4, int msg5, int msg6)
 
 
 	message[0] = (msg6) ? 1043 : 1040;
-	message[1] = ap_id;
+	message[1] = thread_ap_id;
 	message[2] = 0;
 	message[3] = whdl;
 	message[4] = msg4;		/* ctrack bzw. Anzahl Seiten*/
@@ -328,19 +330,19 @@ long send_status(int whdl, int dst_apid, int msg4, int msg5, int msg6)
 		xmsg.dst_apid = dst_apid;
 		xmsg.unique_flg = TRUE;		/* !!! */
 		xmsg.attached_mem = NULL;
-		xmsg.msgbuf = message;
-		appl_write(-2, 16, &xmsg);
+		xmsg.msgbuf = (WORD *) message;
+		mt_appl_write(-2, 16, &xmsg, thread_global);
 		}
-	else	appl_write(dst_apid, 16, message);
-	while(appl_read(-1, 16, message))
+	else	mt_appl_write(dst_apid, 16, message, thread_global);
+	while(mt_appl_read(-1, 16, message, thread_global))
 		{
 		if   (message[0] == 1031)
 			{
 			message[0] = 1042;  /* Aktion abgebrochen */
-			message[1] = ap_id;
+			message[1] = thread_ap_id;
 			message[2] = 0;
 			message[3] = whdl;
-			appl_write(dst_apid, 16, message);
+			mt_appl_write(dst_apid, 16, message, thread_global);
 			return(EBREAK);
 			}
 		}
@@ -359,11 +361,11 @@ void send_finish( int whdl, int dst_apid, long doserr )
 	int message[8];
 
 	message[0] = 1041;  /* Formatieren beendet */
-	message[1] = ap_id;
+	message[1] = thread_ap_id;
 	message[2] = 0;
 	message[3] = whdl;
 	message[4] = (int) doserr;
-	appl_write(dst_apid, 16, message);
+	mt_appl_write(dst_apid, 16, message, thread_global);
 }
 
 
@@ -377,7 +379,6 @@ long label(int lw, char *name)
 {
      static    char pfad[] = "A:\\*.*";
                long retcode;
-     extern char    *tmpnam( char *s );
      char diskname[40];
 
 
@@ -412,11 +413,11 @@ long read_bootsec(int lw, long *ser, int *bps, int *spc,
 	unsigned int  *sw;
 
 
-	if	(NULL == (s = Malloc(512L)))
+	if	(NULL == (s = (unsigned char *) Malloc(512L)))
 		return(ENSMEM);
 	if	(lw == 0 || lw == 1)
 		doserr = M_Floprd(s, NULL, lw, 1, 0, 0, 1);
-	else doserr = Rwabs(0, s, 1, 0, lw);
+	else doserr = Lrwabs(0, s, 1, 0, lw);
 	if	(doserr == E_OK)
 		{
 		*ser    = s[10] + 256 * s[ 9] + 65536L * s[8];
@@ -444,7 +445,7 @@ long read_bootsec(int lw, long *ser, int *bps, int *spc,
 /*********************************************************************
 *
 * Initialisiert ein Laufwerk
-* Das Laufwerk muû bereits ge-lock-t sein.
+* Das Laufwerk mu√ü bereits ge-lock-t sein.
 *
 *********************************************************************/
 
@@ -465,7 +466,7 @@ static long init_disk(int dev)
      fsizb = ((long) bpb->fsiz) * ((long) bpb->recsiz);
      rsizb = ((long) bpb->rdlen) * ((long) bpb->recsiz);
      buflen = fsizb+fsizb+rsizb;
-     buf = Malloc(buflen);
+     buf = (char *) Malloc(buflen);
      if   (!buf)
      	{
           doserr = ENSMEM;
@@ -478,11 +479,11 @@ static long init_disk(int dev)
      if   (bpb->bflags & 1)                                 /* 16bit FAT */
           buf[3] = buf[fsizb+3] = 0xff;
 
-     /* FATs und Root lîschen */
+     /* FATs und Root l√∂schen */
      /* --------------------- */
 
 /*	free_drive(dev);	*/
-     doserr = Rwabs(1, buf, 2*bpb->fsiz + bpb->rdlen, 1, dev);
+     doserr = Lrwabs(1, buf, 2*bpb->fsiz + bpb->rdlen, 1, dev);
 
      Mfree(buf);
      err:
@@ -494,7 +495,7 @@ static long init_disk(int dev)
 *
 * Formatiert eine Diskette
 *
-* whdl	- Fensterhandle fÅr RÅckmeldungsnachrichten
+* whdl	- Fensterhandle f√ºr R√ºckmeldungsnachrichten
 * dev     - Devicenummer (0 = A, 1 = B)
 * sid     - Anzahl Seiten (1 oder 2)
 * trk     - Anzahl Tracks (40..86)
@@ -505,8 +506,8 @@ static long init_disk(int dev)
 * vsid    - Seitenversatz
 * counter - Zeiger auf eine Funktion, die den gerade formatierten Track
 *            anzeigt
-* is_logic- nur logisch formatieren, d.h. FAT und DIR lîschen
-* dname   - Diskname oder Platz fÅr einen solchen
+* is_logic- nur logisch formatieren, d.h. FAT und DIR l√∂schen
+* dname   - Diskname oder Platz f√ºr einen solchen
 *
 *********************************************************************/
 
@@ -516,17 +517,17 @@ long format(int dst_apid, int whdl, int dev, int is_logic,
 {
 	unsigned int nsects,spf;
 	unsigned char media;
-	register ctrack,cside,i,j;
+	register int ctrack,cside,i,j;
 	int  interlv,versatz;
 	unsigned char *buf = NULL;
 /*	BPB *bpb;	*/
 	long doserr;
-	int  secnos[100];        /* Sektornummern fÅr Versatz */
+	int  secnos[100];        /* Sektornummern f√ºr Versatz */
 
 
 	if	((clu == 0) || (clu != 1 && clu & 1))
 		{
-		doserr = EMEDIA;          /* ungerade Clustergrîûe */
+		doserr = EMEDIA;          /* ungerade Clustergr√∂√üe */
 		goto err2;
 		}
 
@@ -573,7 +574,7 @@ long format(int dst_apid, int whdl, int dev, int is_logic,
 	/* -------------------------- */
 
 	doserr = (spt / 13 + 1) * 1500L + spt * 650L;
-	buf = Malloc(doserr);
+	buf = (unsigned char *) Malloc(doserr);
 	if	(!buf)
 		{
 		doserr = ENSMEM;
@@ -584,7 +585,7 @@ long format(int dst_apid, int whdl, int dev, int is_logic,
 	/* -------------------------------- */
 
 	for	(i = 0; i < spt; i++)
-		secnos[i] = 0;                /* erst alle ungÅltig */
+		secnos[i] = 0;                /* erst alle ung√ºltig */
 
 	i = 0;                             /* Beginne mit Sektor 1 */
 	for  (j = 1; j <= spt; j++)        /* diese Nummern werden vergeben */
@@ -596,7 +597,7 @@ long format(int dst_apid, int whdl, int dev, int is_logic,
 			}
 		secnos[i] = j;                /* neue Sektornummer eintragen */
 		i += inter;
-		i %= spt;                     /* nÑchster Sektor */
+		i %= spt;                     /* n√§chster Sektor */
 		}
 
      /* Disk formatieren */
@@ -668,7 +669,7 @@ long format(int dst_apid, int whdl, int dev, int is_logic,
 				"Kein System oder"
 				" Laufwerksfehler"
 				"\r\nWechseln und T"
-				"aste drÅcken\r\n\0I"
+				"aste dr\201cken\r\n\0I"
 				"O      SYSMSDOS "
 				"  SYS",
 				85);
@@ -683,7 +684,7 @@ long format(int dst_apid, int whdl, int dev, int is_logic,
 	buf[27] = sid / 256;
 	buf[26] = sid % 256;
 
-	Protobt(buf, -1L, -1, FALSE);      /* nicht ausfÅhrbar */
+	Protobt(buf, -1L, -1, FALSE);      /* nicht ausf√ºhrbar */
 	doserr = M_Flopwr(buf, NULL, dev, 1, 0, 0, 1);
 	if	(doserr)
 		goto err;
@@ -693,30 +694,13 @@ long format(int dst_apid, int whdl, int dev, int is_logic,
 
 	doserr = init_disk(dev);
 
-/*
-	Hier war vorher eine manuelle Initialisierung:
-
-	bpb = Getbpb(dev);
-	if	(bpb == NULL)
-		{
-		doserr = ERROR;
-		goto err;
-		}
-	for	(i = 3; i < 512; i++)
-		buf[i] = 0;
-	buf[0] = 0xf9;
-	buf[1] = buf[2] = 0xff;
-	doserr = Rwabs(3, buf, 1, 1, dev);      /* FAT 1 */
-	if	(doserr == E_OK)
-		doserr = Rwabs(3, buf, 1, bpb->fsiz + 1, dev);
-*/
 
 	err:
 
 	/* Speicher freigeben, Diskwechsel simulieren */
 	/* ------------------------------------------ */
 
-	Rwabs(0, NULL, 2, 0, dev);
+	Lrwabs(0, NULL, 2, 0, dev);
 
      /* Disknamen schreiben */
      /* ------------------- */
@@ -740,7 +724,7 @@ long format(int dst_apid, int whdl, int dev, int is_logic,
 /*********************************************************************
 *
 * Fordert per Alert einen Diskwechsel an.
-* RÅckgabe TRUE, wenn OK, sonst FALSE (bei Abbruch)
+* R√ºckgabe TRUE, wenn OK, sonst FALSE (bei Abbruch)
 *
 *********************************************************************/
 
@@ -767,7 +751,7 @@ int msg_chg( enum eingelegt_typ willhaben, int src_dev, int dst_dev )
 *
 * slw	- Quell- Laufwerk
 * dlw	- Ziel - Laufwerk
-* fmt	- Flag fÅr "Formatieren"
+* fmt	- Flag f√ºr "Formatieren"
 *
 *********************************************************************/
 
@@ -777,16 +761,16 @@ long diskcopy(int dst_apid, int whdl, int slw, int dlw, int tmp, int fmt)
 	char	tmpdatei[128];
 	int	gelesen;
 	int	handle = -1;
-	int	secnos[100];			/* Sektornummern fÅr Versatz */
+	int	secnos[100];			/* Sektornummern f√ºr Versatz */
 	int	interlv;
 	long	doserr;
 	long	ser;
 	int	trk;
 	int	bps,spc,res,nfats,ndirs,nsects,media,spf,spt,sid,nhid,exec;
-	long bufsiz_char;			/* Puffergrîûe in Zeichen */
-	unsigned long n_bytes;		/* gefÅllte Bytes */
-	unsigned int  bufsiz_trk;	/* Puffergrîûe in Spuren */
-	unsigned int  c_tracks;		/* gefÅllte Spuren */
+	long bufsiz_char;			/* Puffergr√∂√üe in Zeichen */
+	unsigned long n_bytes;		/* gef√ºllte Bytes */
+	unsigned int  bufsiz_trk;	/* Puffergr√∂√üe in Spuren */
+	unsigned int  c_tracks;		/* gef√ºllte Spuren */
 	register unsigned ltrack,ctrack,cside,i;
 	register unsigned char *cbuf;
 	unsigned char *buf = NULL, *fbuf = NULL;
@@ -824,7 +808,7 @@ long diskcopy(int dst_apid, int whdl, int slw, int dlw, int tmp, int fmt)
 	trk = nsects/(sid*spt);
 
 	/* Wenn die Laufwerke nicht A: oder B: sind oder wenn Quell- oder */
-	/* Ziellaufwerk mit dem temporÑren Laufwerk identisch sind, wird	 */
+	/* Ziellaufwerk mit dem tempor√§ren Laufwerk identisch sind, wird	 */
 	/* eine Fehlermeldung geliefert							 */
 	/* -------------------------------------------------------------- */
 
@@ -840,7 +824,7 @@ long diskcopy(int dst_apid, int whdl, int slw, int dlw, int tmp, int fmt)
 
 	interlv = -1;
 
-	/* Wenn ein temporÑres Laufwerk angegeben wurde, Pfad erstellen	*/
+	/* Wenn ein tempor√§res Laufwerk angegeben wurde, Pfad erstellen	*/
 	/* -------------------------------------------------------------	*/
 
 	if	(tmp >= 0)
@@ -852,7 +836,7 @@ long diskcopy(int dst_apid, int whdl, int slw, int dlw, int tmp, int fmt)
 		}
 
 	/* Wenn nicht formatiert werden soll, wird das Format der		*/
-	/* Zieldisk geprÅft, ob es mit dem der Quelldisk Åbereinstimmt.	*/
+	/* Zieldisk gepr√ºft, ob es mit dem der Quelldisk √ºbereinstimmt.	*/
 	/* ggf. wird trotzdem formatiert							*/
 	/* ------------------------------------------------------------- */
 
@@ -891,7 +875,7 @@ long diskcopy(int dst_apid, int whdl, int slw, int dlw, int tmp, int fmt)
 
 	if	(fmt)
 		{
-		fbuf = Malloc(20480L);	/* Formatierpuffer */
+		fbuf = (unsigned char *) Malloc(20480L);	/* Formatierpuffer */
 		if	(fbuf == NULL)
 			{
 			memerr:
@@ -903,7 +887,7 @@ long diskcopy(int dst_apid, int whdl, int slw, int dlw, int tmp, int fmt)
 
 	bufsiz_trk = trk;
 	bufsiz_char = (long) bufsiz_trk * (long) sid * (long) spt * 512L;
-	buf = Malloc(bufsiz_char);
+	buf = (unsigned char *) Malloc(bufsiz_char);
 	if	(!buf)
 		{
 		bufsiz_char = (long) Malloc(-1L) - 32768L;
@@ -911,12 +895,12 @@ long diskcopy(int dst_apid, int whdl, int slw, int dlw, int tmp, int fmt)
 			goto memerr;
 		bufsiz_char /= (sid * spt * 512);
 		bufsiz_char *= (sid * spt * 512);	/* In Spuren umrechnen */
-		buf = Malloc(bufsiz_char);
+		buf = (unsigned char *) Malloc(bufsiz_char);
 		if	(!buf)
 			goto memerr;
 		bufsiz_trk = (unsigned int) (bufsiz_char/(sid * spt * 512L));
 
-		if	(bufsiz_trk < trk && tmp >= 0)	/* Speicher reicht nicht fÅr ganze Disk */
+		if	(bufsiz_trk < trk && tmp >= 0)	/* Speicher reicht nicht f√ºr ganze Disk */
 			{
 			doserr = Fcreate(tmpdatei, 0);
 			if	(doserr < E_OK)
@@ -925,7 +909,7 @@ long diskcopy(int dst_apid, int whdl, int slw, int dlw, int tmp, int fmt)
 			}
 		}
 
-	/* Sektornummerliste initialisieren (fÅrs Formatieren) */
+	/* Sektornummerliste initialisieren (f√ºrs Formatieren) */
 	/* --------------------------------------------------- */
 
 	for	(i = 0; i < spt; i++)
@@ -1053,7 +1037,7 @@ long diskcopy(int dst_apid, int whdl, int slw, int dlw, int tmp, int fmt)
 		Fclose(handle);
 		Fdelete(tmpdatei);
 		}
-/*	Rwabs(0, NULL, 2, 0, dlw);	*/
+/*	Lrwabs(0, NULL, 2, 0, dlw);	*/
 	if	(to_finish)
 		send_finish( whdl, dst_apid, doserr );
 	if	(doserr != ELOCKED)
