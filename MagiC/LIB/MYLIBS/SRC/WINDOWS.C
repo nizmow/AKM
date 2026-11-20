@@ -1,17 +1,15 @@
 /*
 *
-* EnthÑlt die allgemeinen Routinen fÅr die
+* Enth√§lt die allgemeinen Routinen f√ºr die
 * Fensterverwaltung
 *
 */
 
+#include "GEMUTILS_SDK.H"
 #include <stdlib.h>
 #include <stddef.h>
-#include <vdi.h>
-#include <aes.h>
-#include <portab.h>
-#include "gemutils.h"
-#include "windows.h"
+#include "GEMUTILS.H"
+#include "WINDOWS.H"
 
 #ifndef WM_ICONIFY
 #define WM_ICONIFY       34                                 /* AES 4.1     */
@@ -91,7 +89,7 @@ WINDOW **find_slot_window( WINDOW *myw )
 *
 * Das Objekt mit der Objektnummer <index> wird neu gemalt.
 * (da es sich entweder verschoben hat oder der Status sich
-*  geÑndert hat).
+*  ge√§ndert hat).
 * Das Objekt liegt im Fenster mit Nummer <wnr> bzw. auf dem
 * Desktop, wenn <wnr> = 0;
 *
@@ -137,7 +135,7 @@ void redraw_window(WINDOW *w, GRECT *neu)
 			w->draw(w, &g);
 		wind_get(w->handle,WF_NEXTXYWH,&(g.g_x),&(g.g_y),&(g.g_w),&(g.g_h));
 		}
-	while(g.g_w > 0);					/* bis Rechteckliste vollstÑndig */
+	while(g.g_w > 0);					/* bis Rechteckliste vollst√§ndig */
 	graf_mouse(M_ON, NULL);
 	wind_update(END_UPDATE);
 }
@@ -153,7 +151,7 @@ int update_window(WINDOW *w)
 {
 	WMESAG mesag;
 
-	/* Der Redraw wird nicht direkt ausgefÅhrt, sondern schickt */
+	/* Der Redraw wird nicht direkt ausgef√ºhrt, sondern schickt */
 	/* eine Nachricht an die Applikation, um Kollisionen mit    */
 	/* von AES erzeugten Redraws zu vermeiden                   */
 	/* -------------------------------------------------------- */
@@ -169,7 +167,7 @@ int update_window(WINDOW *w)
 
 /****************************************************************
 *
-* Die Innenmaûe des Fensters werden berechnet.
+* Die Innenma√üe des Fensters werden berechnet.
 *
 ****************************************************************/
 
@@ -237,7 +235,7 @@ static void calc_collin(WINDOW *w)
 
 /****************************************************************
 *
-* Grîûe und Position des horizontalen Sliders werden
+* Gr√∂√üe und Position des horizontalen Sliders werden
 * berechnet.
 *
 ****************************************************************/
@@ -260,7 +258,7 @@ void window_calc_hslider(WINDOW *w)
 	else hsize = 1000L;
 	if	(hsize > 1000L)
 		hsize = 1000L;
-	wind_set(w->handle, WF_HSLSIZE, (int) hsize);
+	wind_set(w->handle, WF_HSLSIZE, (int) hsize, 0, 0, 0);
 
 	if	(w->max_hshift > 0)
 		hpos = (1000L * w->hshift) / w->max_hshift;
@@ -269,14 +267,14 @@ void window_calc_hslider(WINDOW *w)
 		hpos = 1000L;
 	if	(hpos < 1)
 		hpos = 1;
-	wind_set(w->handle, WF_HSLIDE, (int) hpos);
+	wind_set(w->handle, WF_HSLIDE, (int) hpos, 0, 0, 0);
 }
 
 
 /****************************************************************
 *
 * Erledigt die horizontale Positionierung der Objekte und
-* setzt die Sliderposition und -grîûe
+* setzt die Sliderposition und -gr√∂√üe
 *
 ****************************************************************/
 
@@ -287,7 +285,7 @@ static void arrange_window_horizontal( WINDOW *w )
 
 	o 			= w->tree;
 
-	calc_in(w);			/* Innenmaûe berechnen */
+	calc_in(w);			/* Innenma√üe berechnen */
 	w->vissteps_hshift = (w->in.g_w - w->xoffs) / w->step_hshift;
 
 	window_calc_hslider(w);
@@ -300,7 +298,7 @@ static void arrange_window_horizontal( WINDOW *w )
 
 /****************************************************************
 *
-* Grîûe und Position des vertikalen Sliders werden
+* Gr√∂√üe und Position des vertikalen Sliders werden
 * berechnet.
 *
 ****************************************************************/
@@ -323,7 +321,7 @@ void window_calc_vslider(WINDOW *w)
 	else vsize = 1000L;
 	if	(vsize > 1000L)
 		vsize = 1000L;
-	wind_set(w->handle, WF_VSLSIZE, (int) vsize);
+	wind_set(w->handle, WF_VSLSIZE, (int) vsize, 0, 0, 0);
 
 	if	(w->max_vshift > 0)
 		vpos = (1000L * w->vshift) / w->max_vshift;
@@ -332,15 +330,15 @@ void window_calc_vslider(WINDOW *w)
 		vpos = 1000L;
 	if	(vpos < 1)
 		vpos = 1;
-	wind_set(w->handle, WF_VSLIDE, (int) vpos);
+	wind_set(w->handle, WF_VSLIDE, (int) vpos, 0, 0, 0);
 }
 
 
 /****************************************************************
 *
 * Organisiert das Fenster neu, d.h. legt Position der Objekte fest.
-* gibt TRUE zurÅck, falls sich fenster.cols oder fenster.shift
-* geÑndert haben.
+* gibt TRUE zur√ºck, falls sich fenster.cols oder fenster.shift
+* ge√§ndert haben.
 *
 ****************************************************************/
 
@@ -361,7 +359,7 @@ static int arrange_window( WINDOW *w )
 	anzahl 		= w->shownum;
 	o 			= w->tree;
 
-	calc_in(w);			/* Innenmaûe berechnen */
+	calc_in(w);			/* Innenma√üe berechnen */
 	calc_collin(w);		/* Zeilen/Spalten berechnen */
 	cols = w->cols;
 
@@ -373,7 +371,7 @@ static int arrange_window( WINDOW *w )
 		o -> ob_width  = w->in.g_w + w->hshift * w->step_hshift;
 		}
 
-	/* Position und Hîhe ggf. korrigieren (von calc_in schon gesetzt) */
+	/* Position und H√∂he ggf. korrigieren (von calc_in schon gesetzt) */
 	o -> ob_y 	= w->in.g_y - w->vshift*(w->showh + w->ydist);
 	o -> ob_height = w->in.g_h + w->vshift*(w->showh + w->ydist);
 	for	(i = 0, y = w->yoffs, x = w->xoffs, j = anzahl;
@@ -412,7 +410,7 @@ static int arrange_window( WINDOW *w )
 
 /****************************************************************
 *
-* Das Fenster mit Nummer <wnr> wird auf Maximalgrîûe gebracht.
+* Das Fenster mit Nummer <wnr> wird auf Maximalgr√∂√üe gebracht.
 *
 ****************************************************************/
 
@@ -424,12 +422,12 @@ static void fulled(WINDOW *w)
 
 	if	(w->flags & WFLAG_ICONIFIED)
 		return;
-	out = &(w->out);				/* out = Auûenmaûe */
+	out = &(w->out);				/* out = Au√üenma√üe */
 	wind_get(w->handle, WF_PREVXYWH, &prev.g_x, &prev.g_y, &prev.g_w, &prev.g_h);
 	wind_get(w->handle, WF_FULLXYWH, &full.g_x, &full.g_y, &full.g_w, &full.g_h);
  
-	/* 1. Fall: Das Fenster hat bereits Maximalgrîûe	  */
-	/*		  Also muû das Fenster verkleinert werden */
+	/* 1. Fall: Das Fenster hat bereits Maximalgr√∂√üe	  */
+	/*		  Also mu√ü das Fenster verkleinert werden */
 	/* ------------------------------------------------ */
 
 	if	((out->g_x == full.g_x) && (out->g_y == full.g_y) &&
@@ -440,8 +438,8 @@ static void fulled(WINDOW *w)
 		out->g_w = prev.g_w; out->g_h = prev.g_h;
 		}
 
-	/* 2. Fall: Das Fenster hat nicht Maximalgrîûe	  */
-	/*		  Also Grîûe auf Maximum 			  */
+	/* 2. Fall: Das Fenster hat nicht Maximalgr√∂√üe	  */
+	/*		  Also Gr√∂√üe auf Maximum 			  */
 	/* ------------------------------------------------ */
 
 	else {
@@ -470,9 +468,9 @@ void hshift(WINDOW *w, int newshift)
 	register int diff;		/* um soviele Spalten scrollen */
 	register int xcopy;		/* soviele x-Pixel werden kopiert */
 	MFDB src_mfdb,dest_mfdb;
-	int  pxy[8];
+	short  pxy[8];
 	GRECT g,scr;
-	int clip_rect[4];
+	short clip_rect[4];
 
 
 
@@ -502,7 +500,7 @@ void hshift(WINDOW *w, int newshift)
 
 	diff *= w->step_hshift;
 
-	/* Fenster Åber Rechteckliste scrollen */
+	/* Fenster √ºber Rechteckliste scrollen */
 
 	graf_mouse(M_OFF, NULL);
 	scr.g_x = scrx;
@@ -536,7 +534,7 @@ void hshift(WINDOW *w, int newshift)
 				clip_rect[3] = scry+scrh-1;
 				vs_clip	(vdi_handle, TRUE, clip_rect);
 				vro_cpyfm(vdi_handle, S_ONLY, pxy, &src_mfdb, &dest_mfdb);
-				/* alles neu zeichnen, was nicht vom Zielraster Åberdeckt wurde */
+				/* alles neu zeichnen, was nicht vom Zielraster √ºberdeckt wurde */
 				g.g_w -= xcopy;
 				if	(diff > 0)
 					g.g_x += xcopy;
@@ -545,7 +543,7 @@ void hshift(WINDOW *w, int newshift)
 			}
 		wind_get(w->handle,WF_NEXTXYWH,&(g.g_x),&(g.g_y),&(g.g_w),&(g.g_h));
 		}
-	while(g.g_w > 0);					/* bis Rechteckliste vollstÑndig */
+	while(g.g_w > 0);					/* bis Rechteckliste vollst√§ndig */
 
 	graf_mouse(M_ON, NULL);
 }
@@ -563,9 +561,9 @@ static void vshift(WINDOW *w, int newshift)
 	register int diff;		/* um soviele Zeilen Scrollen */
 	register int ycopy;		/* soviele y-Pixel werden kopiert */
 	MFDB src_mfdb,dest_mfdb;
-	int  pxy[8];
+	short  pxy[8];
 	GRECT g,scr;
-	int clip_rect[4];
+	short clip_rect[4];
 
 
 
@@ -595,7 +593,7 @@ static void vshift(WINDOW *w, int newshift)
 
 	diff *= (w->showh + w->ydist);
 
-	/* Fenster Åber Rechteckliste scrollen */
+	/* Fenster √ºber Rechteckliste scrollen */
 
 	graf_mouse(M_OFF, NULL);
 	scr.g_x = scrx;
@@ -629,7 +627,7 @@ static void vshift(WINDOW *w, int newshift)
 				clip_rect[3] = scry+scrh-1;
 				vs_clip	(vdi_handle, TRUE, clip_rect);
 				vro_cpyfm(vdi_handle, S_ONLY, pxy, &src_mfdb, &dest_mfdb);
-				/* alles neu zeichnen, was nicht vom Zielraster Åberdeckt wurde */
+				/* alles neu zeichnen, was nicht vom Zielraster √ºberdeckt wurde */
 				g.g_h -= ycopy;
 				if	(diff > 0)
 					g.g_y += ycopy;
@@ -638,7 +636,7 @@ static void vshift(WINDOW *w, int newshift)
 			}
 		wind_get(w->handle,WF_NEXTXYWH,&(g.g_x),&(g.g_y),&(g.g_w),&(g.g_h));
 		}
-	while(g.g_w > 0);					/* bis Rechteckliste vollstÑndig */
+	while(g.g_w > 0);					/* bis Rechteckliste vollst√§ndig */
 
 	graf_mouse(M_ON, NULL);
 }
@@ -648,7 +646,7 @@ static void vshift(WINDOW *w, int newshift)
 *
 * Im Fenster mit Handle <whdl> ist einer der Scrollpfeile
 * angeklickt worden.
-* zusÑtzlich: Code -1 => Scrollbalken ganz nach oben
+* zus√§tzlich: Code -1 => Scrollbalken ganz nach oben
 *		    Code -2 => Scrollbalken ganz nach unten
 *
 ****************************************************************/
@@ -773,8 +771,8 @@ static void vslid(WINDOW *w, int newpos)
 
 /****************************************************************
 *
-* Das Fenster mit Handle <whdl> ist in seiner Grîûe
-* verÑndert worden.
+* Das Fenster mit Handle <whdl> ist in seiner Gr√∂√üe
+* ver√§ndert worden.
 *
 ****************************************************************/
 
@@ -810,7 +808,7 @@ static void moved(WINDOW *w, GRECT *g)
 
 /****************************************************************
 *
-* Das Fenster wird geîffnet.
+* Das Fenster wird ge√∂ffnet.
 *
 ****************************************************************/
 
@@ -839,7 +837,7 @@ static void _draw_obj_window(WINDOW *w, GRECT *g)
 }
 
 
-static void _message_obj_window(WINDOW *w, int kstate, int message[16])
+static void _message_obj_window(WINDOW *w, int kstate, short message[16])
 {
 	switch(message[0])
 		{
@@ -847,7 +845,7 @@ static void _message_obj_window(WINDOW *w, int kstate, int message[16])
 			redraw_window(w, (GRECT *) (message+4));
 			break;
 		case WM_TOPPED:
-			wind_set(w->handle, WF_TOP);
+			wind_set(w->handle, WF_TOP, 0, 0, 0, 0);
 			break;
 		case WM_CLOSED:
 			w->close(w, kstate);
@@ -887,9 +885,9 @@ static void _message_obj_window(WINDOW *w, int kstate, int message[16])
 *
 * Das Fenster wird mit Default-Funktionen initialisiert.
 * Da der PureC- Linker "intelligent" ist, wird hier nur die
-* Dummy-Funktion fÅr den horizontalen Slider eingetragen.
+* Dummy-Funktion f√ºr den horizontalen Slider eingetragen.
 *
-* Wenn das Programm den horizontalen Slider braucht, muû es
+* Wenn das Programm den horizontalen Slider braucht, mu√ü es
 * einfach w->hslid = hslid setzen.
 *
 ****************************************************************/

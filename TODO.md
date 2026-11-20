@@ -91,7 +91,7 @@ framework or shared-library rewrite is required before these are attempted.
 
 ## Following batches
 
-After MGSEARCH, the core source-backed remainder is 40 build families: 24
+After MGSEARCH, the core source-backed remainder is 39 build families: 23
 application/tool/extension families, 9 shared library/startup families and 7
 system-component families. Historical, test-only, blocked, binary-only and KAOS
 entries are outside that count.
@@ -117,9 +117,11 @@ all nine ahead of their consumers.
 - [x] **MGNOTICE version 2** — add `mgnotice` producing the application, German
   resource and rebuilt `EDITOBJC.SLB`; archived/rebuilt create, edit, save and
   reopen states match on a cloned MagiC image.
-- [ ] Desktop helpers: MGSEARCH. Use `MAGXDESK.5/PATTERN.C`; compile the older
-  `GEMUTILS`/`WINDOWS` contract it needs into the target; test modern GEMlib
-  before considering `MAGIXLIB`.
+- [x] **MGSEARCH** — add `mgsearch` producing `MGSEARCH.APP` and its German
+  resource; compile the older `GEMUTILS`/`WINDOWS` contract and an app-local
+  `MAGXDESK.5/PATTERN.C` copy, relying on modern GEMlib instead of `MAGIXLIB`.
+  Archived/rebuilt dialog and `*.ZZZ` result screens match on a cloned MagiC
+  image, including a nested fixture directory.
 - [ ] Larger/threaded programs: MGCOPY, MGFORMAT, VT52, MAGXDESK version 5.
 - [ ] Separate assembly builds: MCMD, MAGXCONF and appropriate utilities;
   FLP_PAR is a C pair, not an assembly family.

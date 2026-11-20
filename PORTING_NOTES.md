@@ -508,6 +508,33 @@ is under `build/atari/neost-mgnotice-verify2/`. Delete, font/colour/options,
 multiple-window operation, window resize and French/US resources remain
 unverified.
 
+### MGSEARCH
+
+`mise run apps -- mgsearch` builds `build/atari/apps/mgsearch/MGSEARCH.APP`
+and copies the default German `MGSEARCH.RSC`. It compiles the consumer-specific
+`GEMUTILS`/`WINDOWS` sources from `MagiC/LIB/MYLIBS/SRC` and an app-local copy
+of `MAGXDESK.5/PATTERN.C`; the pattern helper is `mg_toupper` because MiNTLib's
+libc already exports `toupper`. The old `MAGXLIB.LIB` is not linked: modern
+GEMlib supplies `form_xdo`, `form_xdial`, `objc_sysvar` and `wind_find`.
+
+The public-SDK bridge is `MagiC/LIB/MYLIBS/SRC/GEMUTILS_SDK.H`. It defines the
+16-bit `WORD`, the 52-byte MiNT `XATTR` record and the old GEM constants that
+MiNTLib no longer exports by default. `Dxreaddir` comes from `mintbind.h`.
+`GEMUTILS` remains the older variant: its `Rgetstring(WORD)` signature and
+`WINDOW` message type differ from `GEMUT_MT`; the two are not interchangeable.
+The legacy event call uses GEMlib's single 32-bit interval, and the short
+`wind_get`/`wind_set` calls are expanded to their four-value SDK forms.
+
+`python3 scripts/neost-mgsearch-smoke.py` builds the application and its delayed
+`NEOSTART.PRG`, then boots archived and rebuilt bundles in separate MagiC
+6.20/TOS 2.06 clones with the same German resource. It types `*.ZZZ` into the
+dialog, submits it, and compares the initial, typed and result screens. The
+fixture contains `C:\SEARCHFIX\ALPHA.ZZZ` and a nested
+`C:\SEARCHFIX\SUB\BETA.ZZZ`; both result screens matched pixel-for-pixel.
+Evidence is under `build/atari/neost-mgsearch-verify3/`. Drive/path forms,
+size/date filters, file-open messages, font variants and long-term operation
+remain unverified.
+
 ## Application porting workflow
 
 Use these gates in order; the checklist below supplies the boundary details.

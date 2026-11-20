@@ -3,21 +3,17 @@
 * GEMUTILS
 * ========
 *
-* Praktische Hilfsroutinen f걊 GEM
+* Praktische Hilfsroutinen f체r GEM
 *
 *******************************************************/
 
-#include <portab.h>
-#include <aes.h>
-#include <vdi.h>
-#include <tos.h>
-#include <tosdefs.h>
+#include "GEMUTILS_SDK.H"
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdarg.h>
-#include <magx.h>
-#include "gemutils.h"
+#include <stdio.h>
+#include "GEMUTILS.H"
 
 #define MIN(a,b) ((a < b) ? a : b)
 #define MAX(a,b) ((a > b) ? a : b)
@@ -33,21 +29,21 @@
 
 #endif
 
-int	vdi_handle;
-int	work_out[57], work_in[12];	 /* VDI- Felder f걊 v_opnvwk() */
+short	vdi_handle;
+short	work_out[57], work_in[12];	 /* VDI- Felder f"ur v_opnvwk() */
 
 
 /****************************************************************
 *
-* Gibt Fensterhandle des obersten Fensters zur갷k.
+* Gibt Fensterhandle des obersten Fensters zur체ck.
 *
 ****************************************************************/
 
 int top_whdl( void )
 {
-	int whdl;
+	short whdl;
 
-	if	(!wind_get(0, WF_TOP, &whdl))
+	if	(!wind_get_int(0, WF_TOP, &whdl))
 		return(-1);
 	if	(whdl < 0)
 		return(-1);
@@ -58,9 +54,9 @@ int top_whdl( void )
 /****************************************************************
 *
 * Rechnet Mausposition in Objektnummer um.
-* (꼑nlich objc_find, jedoch nur eine Ebene).
-* R갷kgabe  0, falls kein Objekt unter dem Mauszeiger,
-* R갷kgabe -1, falls inaktiver Hintergrund.
+* (채hnlich objc_find, jedoch nur eine Ebene).
+* R체ckgabe  0, falls kein Objekt unter dem Mauszeiger,
+* R체ckgabe -1, falls inaktiver Hintergrund.
 *
 ****************************************************************/
 
@@ -129,7 +125,7 @@ int find_obj(OBJECT *tree, int x, int y)
 void objc_grect(OBJECT *tree, int objn, GRECT *g)
 {
 	OBJECT *o;
-	int x,y,nx,ny;
+	short x,y,nx,ny;
 
 	o = tree + objn;
 	objc_offset(tree, objn, &(g -> g_x), &(g -> g_y));
@@ -161,28 +157,6 @@ void subobj_draw(OBJECT *tree, int obj, int start, int depth)
 
 	objc_grect(tree, obj, &g);
 	objc_draw (tree, start, depth, g.g_x, g.g_y, g.g_w, g.g_h);
-}
-
-
-/****************************************************************
-*
-* Bestimmt die Schnittmenge zwischen zwei Rechtecken
-*
-****************************************************************/
-
-int rc_intersect(GRECT *p1, GRECT *p2)
-{
-	int	tx, ty, tw, th;
-
-	tw = MIN(p2->g_x + p2->g_w, p1->g_x + p1->g_w);
-	th = MIN(p2->g_y + p2->g_h, p1->g_y + p1->g_h);
-	tx = MAX(p2->g_x, p1->g_x);
-	ty = MAX(p2->g_y, p1->g_y);
-	p2->g_x = tx;
-	p2->g_y = ty;
-	p2->g_w = tw - tx;
-	p2->g_h = th - ty;
-	return( (tw > tx) && (th > ty) );
 }
 
 
@@ -324,7 +298,7 @@ void objs_setradio(OBJECT *tree, int set, ...)
 	va_list argpoint;
 	int	objnr;
 
-	va_start(argpoint, tree);
+	va_start(argpoint, set);
 	do	{
 		objnr = va_arg(argpoint, int);
 		if	(objnr == 0)
@@ -342,8 +316,8 @@ void objs_getradio(OBJECT *tree, int *get, ...)
 	va_list argpoint;
 	int	objnr;
 
-	*get = 0;		/* keins ausgew꼑lt */
-	va_start(argpoint, tree);
+	*get = 0;		/* keins ausgew채hlt */
+	va_start(argpoint, get);
 	do	{
 		objnr = va_arg(argpoint, int);
 		if	(objnr == 0)
@@ -379,7 +353,7 @@ void open_work(void)
 
 /*********************************************************************
 *
-* L꼋t RSC-Datei, bricht ggf. das Programm ab.
+* L채dt RSC-Datei, bricht ggf. das Programm ab.
 *
 *********************************************************************/
 
@@ -396,31 +370,15 @@ void Mrsrc_load( char *fname )
 
 /*********************************************************************
 *
-* Dxreaddir()
-*
-* Beim Fxattr werden Symlinks nicht verfolgt.
-* <xr> enth꼕t nach dem Aufruf den Fehlercode von Fxattr.
-*
-*********************************************************************/
-
-long Dxreaddir(int len, long dirhandle,
-			char *buf, XATTR *xattr, long *xr)
-{
-	return(gemdos(0x142, len, dirhandle, buf, xattr, xr));
-}
-
-
-/*********************************************************************
-*
 * Liest Komma-getrennte Werte aus einer Zeichenkette, die mit
 * '\n' oder EOS beendet ist
 *
-*	R갷kgabe:	0		nichts gefunden
+*	R체ckgabe:	0		nichts gefunden
 *			sonst	Anzahl eingelesener Werte
 *
 *********************************************************************/
 
-int scan_values(char **s, int n, int values[])
+int scan_values(char **s, int n, short values[])
 {
 	register char *t = *s;
 	register int i;
@@ -442,7 +400,7 @@ int scan_values(char **s, int n, int values[])
 		val = strtol(t, s, 10);
 		if	(t == *s)
 			return(i);		/* Fehler beim Einlesen */
-		*values++ = (int) val;	/* ein Wert eingelesen */
+		*values++ = (short) val;	/* ein Wert eingelesen */
 		t = *s;
 		while(*t == ' ')
 			t++;
@@ -458,7 +416,7 @@ int scan_values(char **s, int n, int values[])
 *
 *********************************************************************/
 
-void print_values(char *s, int n, int values[])
+void print_values(char *s, int n, short values[])
 {
 	register int i;
 
@@ -466,8 +424,7 @@ void print_values(char *s, int n, int values[])
 		{
 		if	(i)
 			*s++ = ',';
-		itoa(*values++, s, 10);
-		s += strlen(s);
+		s += sprintf(s, "%d", *values++);
 		}
 }
 
@@ -496,7 +453,7 @@ char *get_name(char *path)
 
 /*********************************************************************
 *
-* Rechnet Dateinamen ins interne Format und zur갷k
+* Rechnet Dateinamen ins interne Format und zur체ck
 *
 *********************************************************************/
 
@@ -538,7 +495,7 @@ void fname_ext(char *s, char *d)
 
 /*********************************************************************
 *
-* Pr갽t, ob ein Pfad absolut ist.
+* Pr체ft, ob ein Pfad absolut ist.
 *
 *********************************************************************/
 
@@ -569,7 +526,7 @@ char *Rgetstring( WORD string_id )
 
 /*********************************************************************
 *
-* F갿rt einen Alert aus der RSC-Datei durch.
+* F체hrt einen Alert aus der RSC-Datei durch.
 *
 *********************************************************************/
 
@@ -581,8 +538,8 @@ WORD Rform_alert( WORD defbutton, WORD alert_id )
 
 /*********************************************************************
 *
-* F갿rt einen Alert aus der RSC-Datei durch.
-* Der Alertstring enth꼕t einen Dateinamen.
+* F체hrt einen Alert aus der RSC-Datei durch.
+* Der Alertstring enth채lt einen Dateinamen.
 *
 *********************************************************************/
 
@@ -625,14 +582,15 @@ WORD Rxform_alert( WORD defbutton, WORD alert_id,
 
 /*********************************************************************
 *
-* F갿rt einen Dialog durch.
+* F체hrt einen Dialog durch.
 *
 *********************************************************************/
 
 int do_dialog(OBJECT *dialog)
 {
-	int cx, cy, cw, ch;
-	int exitbutton, dummy;
+	short cx, cy, cw, ch;
+	int exitbutton;
+	short dummy;
 	void *flyinf;
 	void **p_flyinf;
 
@@ -652,8 +610,9 @@ int do_exdialog(OBJECT *dialog,
 			 int (*check)(OBJECT *dialog, int exitbutton),
 			 int *was_redraw)
 {
-	int cx, cy, cw, ch;
-	int exitbutton,dummy;
+	short cx, cy, cw, ch;
+	int exitbutton;
+	short dummy;
 	void *flyinf;
 	void **p_flyinf;
 
@@ -673,29 +632,8 @@ int do_exdialog(OBJECT *dialog,
 		}
 	form_xdial(FMD_FINISH, 0,0,0,0,cx, cy, cw, ch, p_flyinf);
 	if	(was_redraw != NULL)
-		*was_redraw = (flyinf == NULL);	/* R갷kgabe: Bildschirm zerst봱t */
+		*was_redraw = (flyinf == NULL);	/* R체ckgabe: Bildschirm zerst철rt */
 	return(exitbutton);
 }
 
 
-/****************************************************************
-*
-* Fehlende AES-Funktionen
-*
-****************************************************************/
-
-extern void _aes(int dummy, long code);
-
-WORD	objc_sysvar( WORD ob_smode, WORD ob_swhich,
-				WORD ob_sival1, WORD ob_sival2,
-				WORD *ob_soval1, WORD *ob_soval2 )
-{
-	_GemParBlk.intin[0] = ob_smode;
-	_GemParBlk.intin[1] = ob_swhich;
-	_GemParBlk.intin[2] = ob_sival1;
-	_GemParBlk.intin[3] = ob_sival2;
-	_aes(0, 0x30040000L);
-	*ob_soval1 = _GemParBlk.intout[1];
-	*ob_soval2 = _GemParBlk.intout[2];
-	return(_GemParBlk.intout[0]);
-}

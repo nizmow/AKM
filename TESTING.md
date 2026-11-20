@@ -68,6 +68,30 @@ Use `--partition-offset` for a different MagiC partition offset. The source
 image is cloned for each binary. Delete, font/colour/options, multiple windows,
 resize and alternate resources are outside this scenario.
 
+## NeoST: MGSEARCH archived/rebuilt dialog and search
+
+`scripts/neost-mgsearch-smoke.py` builds `MGSEARCH.APP`, its German resource and
+the delayed `NEOSTART.PRG` helper, then runs the archived and rebuilt bundles in
+separate clones of the same MagiC image:
+
+1. Start MagiC and let `NEOSTART.PRG` launch MGSEARCH from `GEMSYS\GEMDESK`.
+2. Type `*.ZZZ` into the search dialog and submit it with Enter.
+3. Compare the initial, typed and result screens.
+4. Repeat with `C:\SEARCHFIX\ALPHA.ZZZ` and nested
+   `C:\SEARCHFIX\SUB\BETA.ZZZ` installed in the image.
+
+Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
+`mtools`. Run with fresh output:
+
+```sh
+MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
+  python3 scripts/neost-mgsearch-smoke.py --output build/atari/neost-mgsearch-check
+```
+
+Use `--partition-offset` for a different MagiC partition offset. The source
+image is cloned for each binary. Drive/path forms, size/date filters, file-open
+messages, font variants and long-term operation are outside this scenario.
+
 ## NeoST: MagiC SHUTDOWN smoke
 
 This is a manual, opt-in smoke test. NeoST's default EmuTOS ROM cannot verify

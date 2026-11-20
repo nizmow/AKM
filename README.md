@@ -204,6 +204,11 @@ the German `mgnotice.rsc` and the rebuilt `EDITOBJC.SLB`. It reuses the shared
 NeoST/MagiC cases create, edit, save and reopen a note with identical screens
 and byte-identical `.NOT` output.
 
+`mise run apps -- mgsearch` builds `build/atari/apps/mgsearch/`: `MGSEARCH.APP`
+and `MGSEARCH.RSC`. The target compiles the consumer-specific `GEMUTILS`/
+`WINDOWS` variant and an app-local copy of `MAGXDESK.5/PATTERN.C` against public
+GEMlib; the older `MAGXLIB.LIB` dependency is not linked.
+
 Repeatable emulator checks use explicit, subsystem-scoped tasks. Run
 `mise run test:mod-app-neost` (or `python3 scripts/neost-mod-app-smoke.py`).
 Runner options and outputs: `python3 scripts/neost-mod-app-smoke.py --help`.
@@ -218,6 +223,10 @@ MagiC half needs `MAGIC_IMAGE`, `TOS206_ROM` and host `mtools`; see
 Run `mise run test:mgnotice-neost` (or `python3 scripts/neost-mgnotice-smoke.py`)
 to compare the archived and rebuilt MGNOTICE note lifecycle. It uses the same
 MagiC image, TOS 2.06 and `mtools` inputs.
+
+Run `mise run test:mgsearch-neost` (or `python3 scripts/neost-mgsearch-smoke.py`)
+to compare the archived and rebuilt MGSEARCH dialog and `*.ZZZ` search-result
+screens on identical cloned images.
 
 The `scripts/neost-*-smoke.py` runners use `scripts/neost_common.py` for
 executable/AppImage discovery, ROM selection, bounded subprocess execution,
