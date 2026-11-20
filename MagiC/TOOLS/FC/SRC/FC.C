@@ -3,9 +3,9 @@
 *  FC                     1.4.88
 *  ==
 *
-*  letzte énderung       28.10.89
+*  letzte √Ñnderung       28.10.89
 *
-*  Vergleichsprogramm fÅr Dateien
+*  Vergleichsprogramm f√ºr Dateien
 *
 * Eingabe: FC [-[s]hex1[-hex2]] datei1 datei2
 *
@@ -15,16 +15,19 @@
 *
 *********************************************************************/
 
-#include <tos.h>
+#include <mint/osbind.h>
 #include <string.h>
 #include <stdio.h>
-#include <tosdefs.h>
+#include <stdlib.h>
 #include <limits.h>
 
 #define TRUE   1
 #define FALSE  0
 #define EOS    '\0'
 #define BUFLEN 10240L
+#define STDIN  0
+#define HDL_CON (-1)
+#define RMODE_RD 0
 #define CRLF   "\15\12"
 #define toupper(c)	((c) & 0x5f)
 #define tohex(c)    (((c) < '\12')  ? ((c) + '0') : ((c) + ('A'-'\12')))
@@ -40,9 +43,7 @@ void write32x(unsigned long zahl);
 void screen(char *string);
 
 
-void main(argc,argv)
-int  argc;
-char *argv[];
+int main(int argc, char *argv[])
 {
 		    char fname1[200],fname2[200];
      register int  file1,file2;
@@ -121,7 +122,7 @@ char *argv[];
 
      if   (0L > (retcode = Fopen(fname1,RMODE_RD)))
      	{
-          screen("FC : Kann nicht îffnen : ");
+          screen("FC : Kann nicht \224ffnen : ");
           screen(fname1);
           newline: screen(CRLF);
           Pterm((int) retcode);
@@ -130,7 +131,7 @@ char *argv[];
 
      if   (0L > (retcode = Fopen(fname2,RMODE_RD))) {
           Fclose(file1);
-          screen("FC : Kann nicht îffnen : ");
+          screen("FC : Kann nicht \224ffnen : ");
           screen(fname2);
           goto newline;
           }
@@ -167,7 +168,7 @@ void setstart(char *s)
 
 	t = s;
 	if	(toupper(*t) == 'S')
-		t++;						/* 's' Åberspringen */
+		t++;						/* 's' √ºberspringen */
 	start = strtoul(t, &ends, 16);
 	if	(ends > t)
 		{
@@ -194,19 +195,19 @@ void setstart(char *s)
 /*************************************************************
 *
 *  Vergleicht die beiden Dateien.
-*  RÅckgabe : Fehlercode oder 0
+*  R√ºckgabe : Fehlercode oder 0
 *
 *************************************************************/
 
-int comp(datei1,datei2)
-int datei1,datei2;
+int comp(int datei1, int datei2)
 {
               int  eof;
      register unsigned char *p1,*p2,c1,c2;
      unsigned int w1,w2;
      unsigned long l1,l2;
      register long amnt1,amnt2;
-     unsigned long pos;
+     long pos;
+     unsigned char b1,b2,b3,b4;
 
 
 	if	(start)
@@ -229,7 +230,7 @@ int datei1,datei2;
                return((int) amnt2);
 
           if   (amnt1 != amnt2) {
-               Cconws("DateilÑnge unterschiedlich\15\12");
+               Cconws("Dateil\204nge unterschiedlich\15\12");
                return(0);
                }
           eof  = (amnt1 < BUFLEN);
@@ -265,19 +266,23 @@ int datei1,datei2;
 				case 2:
 					if	(amnt1 < 1)
 						goto byte;
+					b1 = *p1++;
+					b2 = *p1++;
+					b3 = *p2++;
+					b4 = *p2++;
 					if	(intel)
 						{
-						w1 = (*p1++) + (*p1++ << 8);
-						w2 = (*p2++) + (*p2++ << 8);
+						w1 = b1 | (b2 << 8);
+						w2 = b3 | (b4 << 8);
 						}
 					else	{
-						w1 = (*p1++ << 8) + (*p1++);
-						w2 = (*p2++ << 8) + (*p2++);
+						w1 = (b1 << 8) | b2;
+						w2 = (b3 << 8) | b4;
 						}
 					if	(w1 != w2)
 						{
 						printf("%06lx:  %04x  %04x\n",
-								pos, w1, w2);
+								(unsigned long) pos, w1, w2);
 						}
 					amnt1--;
 					pos++;
@@ -286,14 +291,24 @@ int datei1,datei2;
 				case 4:
 					if	(amnt1 < 3)
 						goto byte;
-					l1 = (*p1++ << 24L) + (*p1++ << 16L) +
-							(*p1++ << 8L) + (*p1++);
-					l2 = (*p2++ << 24L) + (*p2++ << 16L) +
-							(*p2++ << 8L) + (*p2++);
+					b1 = *p1++;
+					b2 = *p1++;
+					b3 = *p1++;
+					b4 = *p1++;
+					l1 = ((unsigned long) b1 << 24) |
+						((unsigned long) b2 << 16) |
+						((unsigned long) b3 << 8) | b4;
+					b1 = *p2++;
+					b2 = *p2++;
+					b3 = *p2++;
+					b4 = *p2++;
+					l2 = ((unsigned long) b1 << 24) |
+						((unsigned long) b2 << 16) |
+						((unsigned long) b3 << 8) | b4;
 					if	(l1 != l2)
 						{
 						printf("%06lx:  %08lx  %08lx\n",
-								pos, l1, l2);
+								(unsigned long) pos, l1, l2);
 						}
 					amnt1-=3;
 					pos+=3;
@@ -316,8 +331,7 @@ int datei1,datei2;
 *
 *********************************************************************/
 
-void write32x(zahl)
-unsigned long zahl;
+void write32x(unsigned long zahl)
 {
      register int i;
 
@@ -332,8 +346,7 @@ unsigned long zahl;
 *
 *********************************************************************/
 
-void screen(string)
-char *string;
+void screen(char *string)
 {
      Fwrite(HDL_CON,(long) strlen(string), string);
 }

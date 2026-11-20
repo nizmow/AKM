@@ -2,7 +2,7 @@
 *
 *		    DUMP.TTP							4.1.89
 *		    ========
-*						    letzte énderung:	28.4.90
+*						    letzte √Ñnderung:	28.4.90
 *
 * Allgemeine Dateien in HEX/ASCII ausgeben
 * (geht auch mit CON)
@@ -13,16 +13,19 @@
 *
 *******************************************************************/
 
-#include <tos.h>
-#include <tosdefs.h>
+#include <mint/osbind.h>
+#include <mint/ostruct.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdlib.h>
 #include <limits.h>
 
 
 #define EOS '\0'
 #define TRUE  1
 #define FALSE 0
+#define RMODE_RD 0
+#define ERROR (-1)
 #define toupper(c)	((c) & 0x5f)
 #define tolower(c)	((c) | 0x20)
 #define tohex(c)	(((c) < '\12')  ? ((c) + '0') : ((c) + ('a'-'\12')))
@@ -34,7 +37,7 @@ long buffersize;				/* 100 Zeilen puffern */
 long start = 0L;
 long end   = (LONG_MAX & ~1);
 char	isc   = FALSE;
-char isinf = FALSE;
+char withinfo = FALSE;
 char isbyt = FALSE;
 
 void cerrws	(char *string);
@@ -42,12 +45,12 @@ void setflags	(char *s);
 void dump		(char *s);
 void write32x	(unsigned long zahl);
 int	lies		(int handle, unsigned char s[16]);
-int	isprint	(unsigned char c);
+int	dump_isprint (unsigned char c);
 
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-	if	(argc < 2)		  /* nicht genÅgend Argumente */
+	if	(argc < 2)		  /* nicht gen√ºgend Argumente */
 		{
 		cerrws("Syntax: DUMP [-ci] [[-[s]hhhhhh[-hhhhhh]] datei] ...\r\n"
 		       " -s    Start- und Endadresse hexadezimal\r\n"
@@ -81,7 +84,7 @@ void setflags(char *s)
 	register char *t;
 
 
-	t = s + 1;					/* '-' Åberspringen */
+	t = s + 1;					/* '-' √ºberspringen */
 	while(*t)
 		{
 		if	(toupper(*t) == 'C')	/* 'C'- Modus		*/
@@ -92,7 +95,7 @@ void setflags(char *s)
 			}
 		if	(toupper(*t) == 'I')	/* kommentiert		*/
 			{
-			isinf = TRUE;
+			withinfo = TRUE;
 			t++;
 			continue;
 			}
@@ -136,25 +139,25 @@ void setflags(char *s)
 
 void dump(char *s)
 {
-	DTA	dta;
+	_DTA	dta;
 	int  handle;
 	long retcode;
 	unsigned char buf[16];
 	register int  amnt,i;
-	unsigned long pos;
+	long pos;
 
 
 
 	if	(!isc)
 		{
-		isinf = TRUE;
+		withinfo = TRUE;
 		isbyt = FALSE;
 		line  = 16;
 		}
 	else {
-		if	(isbyt && isinf)
+		if	(isbyt && withinfo)
 			line = 8;
-		else if	(!isbyt && !isinf)
+		else if	(!isbyt && !withinfo)
 			line = 16;
 		else line = 12;
 		}
@@ -168,15 +171,15 @@ void dump(char *s)
 		Pterm((int) ERROR);
 		}
 
-	/* Datei îffnen, Startadresse angehen und Titel drucken */
+	/* Datei √∂ffnen, Startadresse angehen und Titel drucken */
 	/* ---------------------------------------------------- */
 
 	Fsetdta(&dta);
-	if	((strlen(s) == 4) && (s[3] == ':'))		/* GerÑt ! */
+	if	((strlen(s) == 4) && (s[3] == ':'))		/* Ger√§t ! */
 		{
 		strupr(s);
-		strcpy(dta.d_fname, s);
-		dta.d_length = 0x7fffffffL;
+		strcpy(dta.dta_name, s);
+		dta.dta_size = 0x7fffffffL;
 		if	(!stricmp(s, "MEM:"))
 			{
 			retcode = -10;
@@ -193,7 +196,7 @@ void dump(char *s)
 		 (retcode = Fopen(s, RMODE_RD)) < 0)
 		{
 		erro:
-		cerrws("DUMP: Kann nicht îffnen: ");
+		cerrws("DUMP: Kann nicht \224ffnen: ");
 		cerrws(s);
 		cerrws("\r\n");
 		Pterm((int) retcode);
@@ -216,8 +219,8 @@ void dump(char *s)
 		{
 		Cconws((isbyt) ? "char " : "int  ");
 		i = 0;
-		while(dta.d_fname[i] && dta.d_fname[i] != '.')
-			Cconout(tolower(dta.d_fname[i++]));
+		while(dta.dta_name[i] && dta.dta_name[i] != '.')
+			Cconout(tolower(dta.dta_name[i++]));
 		Cconws("[] = {\r\n");
 		}
 	else	{
@@ -238,7 +241,7 @@ void dump(char *s)
 		if	(amnt > end - pos)
 			amnt = (int) (end - pos);
 
-		if	(isinf)
+		if	(withinfo)
 			{
 			if	(isc)
 				Cconws("/* ");
@@ -260,14 +263,14 @@ void dump(char *s)
 				write16x(buf[i]);
 				if	(isc && isbyt)
 					{
-					if	(pos < dta.d_length && pos < end)
+					if	(pos < dta.dta_size && pos < end)
 						Cconout(',');
-					else if	(isinf)
+					else if	(withinfo)
 							Cconout(' ');
-					}
+				}
 				}
 			else {
-				if	(isinf)
+				if	(withinfo)
 					{
 					if	(!isc)
 						Cconws("  ");
@@ -285,13 +288,13 @@ void dump(char *s)
 				if	(isc && isbyt)
 					Cconws("0x");
 				write16x(buf[i]);
-				if	(isc && pos < dta.d_length && pos < end)
+				if	(isc && pos < dta.dta_size && pos < end)
 					Cconout(',');
-				else if	(isinf)
+				else if	(withinfo)
 						Cconout(' ');
 				}
-			else {
-				if	(isinf)
+				else {
+				if	(withinfo)
 					{
 					if	(!isc)
 						Cconws("   ");
@@ -302,13 +305,13 @@ void dump(char *s)
 			}
 
 
-		if	(!isc || isinf)
+		if	(!isc || withinfo)
 			{
 			Cconws(" ");
 			if	(isc)
 				Cconws("/* ");
 			for	(i = 0; i < amnt; i++)
-				Cconout((isprint(buf[i])) ? buf[i] : '.');
+				Cconout((dump_isprint(buf[i])) ? buf[i] : '.');
 			if	(isc)
 				Cconws(" */");
 			}
@@ -324,8 +327,8 @@ void dump(char *s)
 /**************************************************************
 *
 * Liest maximal 16 Zeichen aus der Datei <handle> und gibt
-* die tatsÑchliche Anzahl zurÅck.
-* Wird NULL als RÅckgabepuffer Åbergeben, werden die statischen
+* die tats√§chliche Anzahl zur√ºck.
+* Wird NULL als R√ºckgabepuffer √ºbergeben, werden die statischen
 * Variablen neu initialisiert.
 *
 **************************************************************/
@@ -369,7 +372,7 @@ int lies(int handle, unsigned char s[16])
 			memp += buffersize;
 			Super((char *) oldssp);
 			}
-		p = inbuf;					/* Puffer neu gefÅllt */
+		p = inbuf;					/* Puffer neu gef√ºllt */
 		if	 (count < 0L)
 			 Pterm((int) count);
 		if	(count == 0L || ((handle < 0 && handle != -10) && *p == 0x1a))
@@ -387,11 +390,8 @@ int lies(int handle, unsigned char s[16])
 
 void cerrws(char *string)
 {
-	extern BASPAG *_BasPag;
-
-
-	Fwrite( (_BasPag->p_stdfh[STDERR]) ? STDERR : HDL_CON,
-		  strlen(string), string);
+	if (Fwrite(2, strlen(string), string) < 0)
+		Cconws(string);
 }
 
 
@@ -416,7 +416,7 @@ void write32x(unsigned long zahl)
 *
 *********************************************************************/
 
-int isprint(unsigned char c)
+int dump_isprint(unsigned char c)
 {
 	if	(c  < 0x20 ||				/* Steuerzeichen  */
 		 c == 0x7f ||				/* DELete		   */

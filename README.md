@@ -112,9 +112,11 @@ references to repository candidates. `mise run ports:brief -- MGSEARCH` combines
 both into one porting packet, and `mise run ports:compile` runs syntax-only
 probes. `mise run test:abi` compiles the ABI layout checks;
 `mise run verify:apps -- --build` does a fresh batch build. Use
-`scripts/atari_source.py check|convert` for Atari text. For console tools, run
-`mise run test:console-driver`, then
-`scripts/neost-console-compare.py --archived PATH --rebuilt PATH`.
+`scripts/atari_source.py check|convert` for Atari text. Build the small console
+tools with `mise run apps -- mac2st`, `-- dump`, `-- fc` or `-- split`. Run
+`mise run test:console-tools-neost`; it builds the tools and console driver,
+then compares archived/rebuilt status, output and file effects through
+`scripts/neost-console-tools-smoke.py`.
 Host Python pinning does not change the Python installed inside the toolchain
 container. Proprietary TOS ROMs and writable
 MagiC disk images are supplied separately, never installed by mise.

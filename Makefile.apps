@@ -31,7 +31,7 @@ MGSEARCH_OBJECTS := $(patsubst $(MGSEARCH_DIR)/%.C,$(BUILD_DIR)/mgsearch/%.o,$(M
   $(BUILD_DIR)/mgsearch/PATTERN.o
 
 
-.PHONY: all applicat mod-app cmdline showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver abi-check console-test-driver
+.PHONY: all applicat mod-app cmdline mac2st dump fc split showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver abi-check console-test-driver
 all: mod-app
 applicat: $(BUILD_DIR)/applicat/APPLICAT.APP $(BUILD_DIR)/applicat/applicat.rsc \
   $(BUILD_DIR)/applicat/applicat.inf
@@ -44,6 +44,10 @@ mgsearch: $(BUILD_DIR)/mgsearch/MGSEARCH.APP $(BUILD_DIR)/mgsearch/MGSEARCH.RSC
 mgsearch-test-driver: $(BUILD_DIR)/mgsearch/NEOSTART.PRG
 
 cmdline: $(BUILD_DIR)/cmdline/CMDLINE.PRG
+mac2st: $(BUILD_DIR)/mac2st/MAC2ST.TTP
+dump: $(BUILD_DIR)/dump/DUMP.TTP
+fc: $(BUILD_DIR)/fc/FC.TTP
+split: $(BUILD_DIR)/split/SPLIT.TTP
 showfile: $(BUILD_DIR)/showfile/SHOWFILE.TTP
 shutdown: $(BUILD_DIR)/shutdown/SHUTDOWN.PRG
 limitmem: $(BUILD_DIR)/limitmem/LIMITMEM.TTP
@@ -168,6 +172,26 @@ $(BUILD_DIR)/cmdline/CMDLINE.PRG: MagiC/TOOLS/CMDLINE/SRC/CMDLINE.C Makefile.app
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mac2st/MAC2ST.TTP: MagiC/TOOLS/MAC2ST/SRC/MAC2ST.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/dump/DUMP.TTP: MagiC/TOOLS/DUMP/SRC/DUMP.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/fc/FC.TTP: MagiC/TOOLS/FC/SRC/FC.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/split/SPLIT.TTP: MagiC/TOOLS/SPLIT/SRC/SPLIT.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
 $(BUILD_DIR)/showfile/SHOWFILE.TTP: MagiC/APPS/SHOWFILE/SRC/SHOWFILE.C Makefile.apps
 	mkdir -p "$(@D)"
@@ -302,3 +326,7 @@ $(BUILD_DIR)/mgedit/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 -include $(BUILD_DIR)/mgnotice/NEOSTART.d
 -include $(BUILD_DIR)/abi-check/ABI_CHECK.d
 -include $(BUILD_DIR)/console/RUNARG.d
+-include $(BUILD_DIR)/mac2st/MAC2ST.d
+-include $(BUILD_DIR)/dump/DUMP.d
+-include $(BUILD_DIR)/fc/FC.d
+-include $(BUILD_DIR)/split/SPLIT.d

@@ -91,7 +91,7 @@ framework or shared-library rewrite is required before these are attempted.
 
 ## Following batches
 
-After MGSEARCH, the core source-backed remainder is 39 build families: 23
+The current core source-backed remainder is 35 build families: 19
 application/tool/extension families, 9 shared library/startup families and 7
 system-component families. Historical, test-only, blocked, binary-only and KAOS
 entries are outside that count.
@@ -122,6 +122,9 @@ all nine ahead of their consumers.
   `MAGXDESK.5/PATTERN.C` copy, relying on modern GEMlib instead of `MAGIXLIB`.
   Archived/rebuilt dialog and `*.ZZZ` result screens match on a cloned MagiC
   image, including a nested fixture directory.
+- [x] **MAC2ST, DUMP, FC, SPLIT** — add independent console targets using
+  MiNTLib public GEMDOS calls; `mise run test:console-tools-neost` compares
+  archived/rebuilt status, console output and guest files through NeoST.
 - [ ] Larger/threaded programs: MGCOPY, MGFORMAT, VT52, MAGXDESK version 5.
 - [ ] Separate assembly builds: MCMD, MAGXCONF and appropriate utilities;
   FLP_PAR is a C pair, not an assembly family.

@@ -1,5 +1,27 @@
 # Testing
 
+## NeoST: console tools
+
+`mise run test:console-tools-neost` builds `MAC2ST.TTP`, `DUMP.TTP`, `FC.TTP`,
+`SPLIT.TTP` and the generic Pexec driver, then runs
+`scripts/neost-console-tools-smoke.py`. Every case gives the archived and rebuilt
+binary the same disposable `C:` fixture and compares child status, console
+output and guest file hashes.
+
+Cases cover:
+
+- MAC2ST CR-to-CRLF console filtering.
+- DUMP default and `-c` C-source output.
+- FC equal, differing, WORD (`-w`) and LONG (`-l`) comparisons.
+- SPLIT at an explicit hexadecimal boundary with two named output files.
+- Missing-file status and console behavior for all four tools.
+
+The runner uses NeoST's bundled EmuTOS by default and does not require `mtools`.
+It uses a fresh artifact directory, isolated guest trees, and the generic
+`scripts/neost-console-compare.py` case runner. It does not exercise interactive
+FC input, directory/case-insensitive variants, MagiC-kernel behavior or
+long-term stability.
+
 ## NeoST: MGCLOCK desktop clock and MagiC coexistence
 
 `scripts/neost-mgclock-smoke.py` builds `MGCLOCK.PRG` and `APPLICAT.APP`, then

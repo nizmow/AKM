@@ -13,6 +13,10 @@ DEFAULT_BUILD = ROOT / "build/atari/apps"
 TARGETS = {
     "mod-app": ("mod-app", ["MOD_APP.TTP"]),
     "cmdline": ("cmdline", ["CMDLINE.PRG"]),
+    "mac2st": ("mac2st", ["MAC2ST.TTP"]),
+    "dump": ("dump", ["DUMP.TTP"]),
+    "fc": ("fc", ["FC.TTP"]),
+    "split": ("split", ["SPLIT.TTP"]),
     "showfile": ("showfile", ["SHOWFILE.TTP"]),
     "limitmem": ("limitmem", ["LIMITMEM.TTP"]),
     "mgclock": ("mgclock", ["MGCLOCK.PRG"]),

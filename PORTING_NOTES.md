@@ -163,6 +163,31 @@ identically through the EOF prompt, and missing-file/no-argument launches
 returned matching zero child statuses. The driver and logs are disposable
 verification artifacts under `build/atari/showfile-runtime/`.
 
+### Small console tools: MAC2ST, DUMP, FC, SPLIT
+
+`make -f Makefile.apps mac2st`, `dump`, `fc` and `split` build
+`build/atari/apps/{mac2st/MAC2ST.TTP,dump/DUMP.TTP,fc/FC.TTP,split/SPLIT.TTP}`.
+The sources were converted with `scripts/atari_source.py`; runtime literals use
+explicit Atari octal bytes. All four use MiNTLib's public `mint/osbind.h`
+GEMDOS calls and the default application ABI.
+
+The legacy `<tos.h>`/`<tosdefs.h>`/`<structs.h>` expectations were replaced with
+public MiNTLib headers. DUMP's old `DTA` became `_DTA`, with `d_fname`/
+`d_length` mapped to `dta_name`/`dta_size`; its local `isinf`/`isprint` names
+were renamed to avoid built-in/libc collisions. FC's WORD and LONG paths had
+multiple `*p++` updates in one expression, which is undefined C; they now fetch
+bytes in sequence while preserving little-/big-endian ordering. DUMP writes
+diagnostics to descriptor 2 with a console fallback; FC and SPLIT retain the
+legacy `HDL_CON` (-1) handle so their observed missing-file output stays
+compatible.
+
+`mise run test:console-tools-neost` builds the tools and driver and compares
+archived/rebuilt status, console output and guest files under NeoST/EmuTOS.
+Cases cover MAC2ST filtering, DUMP default/`-c`, FC equal/differing/`-w`/`-l`,
+and SPLIT's named outputs. Evidence from the initial run is under
+`build/atari/neost-console-tools-final/`. Interactive FC input, MagiC-kernel behavior
+and unusual file/directory forms remain untested.
+
 ### LIMITMEM
 
 `make -f Makefile.apps limitmem` builds

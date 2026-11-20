@@ -3,7 +3,7 @@
 A porting catalogue, not a claim that these programs already build with GCC.
 The modern `Makefile.atari` currently builds the kernel. The applications used
 in the successful Hatari kernel tests were the existing release binaries.
-`Makefile.apps` independently builds the 15 application/helper/library targets
+`Makefile.apps` independently builds the 19 application/helper/library targets
 marked as builds or verified in the status tables below. Other entries are
 planning items unless explicitly marked; source presence alone is not a
 completed port.
@@ -134,10 +134,10 @@ output, not a complete modern recipe.
 
 | Priority / kind | Outputs | Source root | Purpose / constraints |
 | A / built, tested | `CMDLINE.PRG` | `MagiC/TOOLS/CMDLINE` | `make -f Makefile.apps cmdline` builds with GCC/MiNTLib. NeoST raw-tail/environment comparison passed. ARGV launch ran with status 0 and matching tail/path; MiNTLib consumes the reserved `ARGV=` marker before `main`, an expected startup difference rather than a failure. |
-| A | `DUMP.TTP` | `MagiC/TOOLS/DUMP` | C hex dump utility. |
-| A | `FC.TTP` | `MagiC/TOOLS/FC` | C file comparison utility with text/hex options. |
-| A | `MAC2ST.TTP` | `MagiC/TOOLS/MAC2ST` | C Mac-CR to Atari-CRLF filter; output goes to the console, not a newly created destination file. |
-| A | `SPLIT.TTP` | `MagiC/TOOLS/SPLIT` | C file splitter. Use disposable files to validate boundaries and output naming. |
+| A / builds, NeoST-tested | `DUMP.TTP` | `MagiC/TOOLS/DUMP` | C hex dump utility; `make -f Makefile.apps dump` builds it. `mise run test:console-tools-neost` checks default and C-source modes against the archive with unchanged fixtures. |
+| A / builds, NeoST-tested | `FC.TTP` | `MagiC/TOOLS/FC` | C file comparison utility with text/hex options; `make -f Makefile.apps fc` builds it. `mise run test:console-tools-neost` covers equal, differing, WORD and LONG modes; the port fixes undefined byte-fetch order without changing the observed output. |
+| A / builds, NeoST-tested | `MAC2ST.TTP` | `MagiC/TOOLS/MAC2ST` | C Mac-CR to Atari-CRLF filter; `make -f Makefile.apps mac2st` builds it. Output goes to the console, not a newly created destination file. `mise run test:console-tools-neost` compares archived/rebuilt status, console output and fixtures. |
+| A / builds, NeoST-tested | `SPLIT.TTP` | `MagiC/TOOLS/SPLIT` | C file splitter; `make -f Makefile.apps split` builds it. `mise run test:console-tools-neost` uses disposable fixtures to compare named output files and console behavior. |
 | B | `SHOWFREE.TOS` | `MagiC/TOOLS/SHOWFREE` | C MagiC internal-memory monitor; custom startup and internal Sconfig interface. |
 | B | `DIS1.TTP`, `DIS2.TTP` | `MagiC/TOOLS/DIS` | Two-pass C disassembler; separate projects/outputs, one user-facing workflow. `TST` contains a corpus and generated artifacts, not additional default products. |
 | B | `MAGXKERN.TTP` | `MagiC/TOOLS/MAGXKERN` | C kernel/AES/application diagnostic; structure-layout dependencies. |
