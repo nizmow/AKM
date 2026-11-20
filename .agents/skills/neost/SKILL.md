@@ -130,6 +130,9 @@ when relying on frame timing. Do not reuse writable fixtures across runs.
   reimplementing `cp`/`mdir`/`mmd`/`mcopy`.
 - Use `scripts/neost_screen.py` (`read_ppm`, `diff_stats`, `bbox_inside`) for
   screenshot parsing and pixel comparisons.
+- Use `scripts/neost_host.py` for one booted session's lifecycle and tracked
+  mouse coordinates. Prepare the image before `start()`; keep launch timing,
+  inputs and assertions in the scenario. See `NeoST_HOST.md`.
 - Use separate disposable guest trees and identical machine, ROM, frame and
   input settings when comparing binaries. Keep archived and rebuilt binaries
   under the same guest filename.

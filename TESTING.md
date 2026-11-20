@@ -97,8 +97,10 @@ messages, font variants and long-term operation are outside this scenario.
 `scripts/neost_image.py` wraps disposable image cloning, `MAGX.INF`
 verification, guest directory creation and `mcopy` in/out operations.
 `scripts/neost_screen.py` parses NeoST PPM screenshots and computes pixel diffs
-and bounding boxes. Scenario runners keep their own machine profile, input
-timing, fixtures and assertions.
+and bounding boxes. `scripts/neost_host.py` combines those helpers with
+`NeoSTServer` for one booted session; its API and limits are documented in
+[NeoST_HOST.md](NeoST_HOST.md). Scenario runners keep their own machine profile,
+input timing, fixtures and assertions.
 
 Run the helper regression checks with:
 

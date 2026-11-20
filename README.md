@@ -239,9 +239,11 @@ host log, with partial process output retained on timeout.
 `scripts/neost_image.py` owns disposable image cloning, `MAGX.INF`
 verification, guest directory creation and `mcopy` in/out operations.
 `scripts/neost_screen.py` owns PPM parsing, pixel-diff bounding boxes and
-region containment. Keep machine/ROM choices, frame budgets, mouse/key input,
-fixtures and application assertions in each runner; use the shared modules for
-the host mechanics. Shared-host-helper checks:
+region containment. `scripts/neost_host.py` is the optional session layer over
+those helpers and `NeoSTServer`; see [NeoST_HOST.md](NeoST_HOST.md). Keep
+machine/ROM choices, frame budgets, mouse/key input, fixtures and application
+assertions in each runner; use the shared modules for the host mechanics.
+Shared-host-helper checks:
 
 ```sh
 mise run test:neost-helpers
