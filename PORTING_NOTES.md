@@ -902,9 +902,12 @@ Porting changes:
 - Assembly exports/imports use VASM `xdef`/`xref`; external short branches are
   long `jsr`/`jmp` because the linked PRG exceeds the 16-bit branch range.
 
-The assembly-to-C call sites now follow GCC's stack argument ABI rather than
-Pure C's register convention, including the BIOS output hook. The rebuilt menu
-bar and terminal window still start, but the child terminal session does not
-remain visible in the current NeoST scenario; this remains the active runtime
-blocker. Do not claim VT52 terminal functionality until the child window and
-archived/rebuilt screens are verified.
+The assembly-to-C call sites follow GCC's stack argument ABI rather than Pure
+C's register convention, including the BIOS output and XBIOS hooks. The
+terminal window is reopened and raised after `shel_write`; the public
+`shel_write` path leaves it below the desktop otherwise.
+
+`mise run test:vt52-neost` runs archived and rebuilt VT52 with the same German
+resource and a delayed TOS child. The child writes through the hooked BIOS
+console path, and the final terminal screens match pixel-for-pixel. Interactive
+keyboard/mouse terminal operations remain untested.

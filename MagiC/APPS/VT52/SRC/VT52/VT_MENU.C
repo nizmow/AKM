@@ -1006,6 +1006,9 @@ WORD	exec_tos( BYTE *fname, BYTE *fpath, BYTE *fcmd )
 
 		if (( child_id > 0 ) && ( child_id < 128 ))
 		{
+			wind_open_grect( window->handle, &window->border );
+			wind_set( window->handle, WF_TOP, 0, 0, 0, 0 );
+			menu_bar( tree_addr[MENU], 1 );
 			strcpy( WTSCREEN->name, fpath );
 			WTSCREEN->refcnt = 1;		/* nur für Haupt-Thread des Prozesses */
 			WTSCREEN->child_id = child_id;

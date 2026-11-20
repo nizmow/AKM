@@ -65,6 +65,11 @@ description = "Compare archived and rebuilt MGFORMAT startup dialog under NeoST/
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-mgformat-smoke.py"
 
+[tasks."test:vt52-neost"]
+description = "Compare archived and rebuilt VT52 terminal session under NeoST/MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-vt52-smoke.py"
+
 [tasks."test:console-tools-neost"]
 description = "Compare archived and rebuilt MAC2ST, DUMP, FC and SPLIT under NeoST"
 dir = "{{ config_root }}"

@@ -133,12 +133,11 @@ all nine ahead of their consumers.
   resource; native MagiC `wdlg` AES bindings and the format dialog are verified
   on cloned MagiC images. Physical format/copy effects remain hardware tests
   because NeoST's floppy formatter reports a write fault.
-- [ ] **VT52** — independent `vt52` target builds `VT52.PRG` and the German
-  resource, with source-built `DRAGDROP`. The MagiC menu bar and terminal window
-  are reached. The assembly/C BIOS hook now uses GCC's stack ABI, but the
-  child terminal window is not retained in the current NeoST scenario;
-  archived/rebuilt terminal output remains unverified. Pending: `MAGXDESK`
-  version 5.
+- [x] **VT52** — independent `vt52` target builds `VT52.PRG` and the German
+  resource, with source-built `DRAGDROP`. The assembly/C hooks use GCC's stack
+  ABI. `mise run test:vt52-neost` launches a delayed TOS child and compares the
+  archived/rebuilt terminal screens pixel-for-pixel. Interactive input remains
+  untested. Next: `MAGXDESK` version 5.
 - [ ] Separate assembly builds: MCMD, MAGXCONF and appropriate utilities;
   FLP_PAR is a C pair, not an assembly family.
 - [ ] Loadable components: image/window-frame SLBs, CPXs and drivers.

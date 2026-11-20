@@ -220,10 +220,10 @@ MiNTLib/GEMlib dialog calls and an app-local DOS compatibility layer.
 AES bindings; physical floppy operations are not covered by the NeoST test.
 
 `mise run apps -- vt52` builds `build/atari/apps/vt52/`: `VT52.PRG` and its
-German `VT52.RSC`, with `DRAGDROP` compiled from source. The port reaches the
-MagiC menu bar and terminal window. The assembly/C BIOS hook now uses GCC's
-stack ABI, but the child terminal window is not retained in the current NeoST
-scenario; do not treat VT52 as functionally verified.
+German `VT52.RSC`, with `DRAGDROP` compiled from source. The BIOS/XBIOS hooks
+use GCC's stack ABI. `mise run test:vt52-neost` compares an archived/rebuilt
+terminal session with a delayed TOS child; the final screens match
+pixel-for-pixel.
 
 Repeatable emulator checks use explicit, subsystem-scoped tasks. Run
 `mise run test:mod-app-neost` (or `python3 scripts/neost-mod-app-smoke.py`).
@@ -246,6 +246,11 @@ screens on identical cloned images.
 
 Run `mise run test:mgcopy-neost` (or `python3 scripts/neost-mgcopy-smoke.py`)
 to compare MGCOPY copy, move, alias and delete effects on cloned MagiC images.
+
+Run `mise run test:vt52-neost` (or `python3 scripts/neost-vt52-smoke.py`)
+to compare archived and rebuilt VT52 terminal sessions on cloned MagiC images.
+The scenario launches a delayed TOS child and compares the final terminal
+screen pixel-for-pixel.
 
 Run `mise run test:mgformat-neost` (or `python3 scripts/neost-mgformat-smoke.py`)
 to compare the archived and rebuilt MGFORMAT format dialog on cloned MagiC

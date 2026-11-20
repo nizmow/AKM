@@ -55,7 +55,7 @@ VT52_OBJECTS := $(patsubst $(VT52_DIR)/%.C,$(BUILD_DIR)/vt52/%.o,$(VT52_SOURCES)
   $(BUILD_DIR)/vt52/DRAGDROP.o
 
 
-.PHONY: all applicat mod-app cmdline mac2st dump fc split showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 abi-check console-test-driver
+.PHONY: all applicat mod-app cmdline mac2st dump fc split showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 vt52-test-driver abi-check console-test-driver
 all: mod-app
 applicat: $(BUILD_DIR)/applicat/APPLICAT.APP $(BUILD_DIR)/applicat/applicat.rsc \
   $(BUILD_DIR)/applicat/applicat.inf
@@ -71,6 +71,7 @@ mgcopy-test-driver: $(BUILD_DIR)/mgcopy/NEOSTART.PRG
 mgformat: $(BUILD_DIR)/mgformat/MGFORMAT.PRG $(BUILD_DIR)/mgformat/MGFORMAT.RSC
 mgformat-test-driver: $(BUILD_DIR)/mgformat/NEOSTART.PRG
 vt52: $(BUILD_DIR)/vt52/VT52.PRG $(BUILD_DIR)/vt52/VT52.RSC
+vt52-test-driver: $(BUILD_DIR)/vt52/NEOSTART.PRG $(BUILD_DIR)/vt52/VT52DEMO.TOS
 mgformat-hardware-kit: mgformat
 	rm -rf "$(BUILD_DIR)/mgformat-hardware"
 	mkdir -p "$(BUILD_DIR)/mgformat-hardware/ARCHIVE" \
@@ -193,6 +194,16 @@ $(BUILD_DIR)/vt52/VT52.PRG: $(VT52_OBJECTS) Makefile.apps
 $(BUILD_DIR)/vt52/VT52.RSC: $(VT52_RESOURCE_DIR)/VT52.RSC
 	mkdir -p "$(@D)"
 	cp "$<" "$@"
+
+$(BUILD_DIR)/vt52/VT52DEMO.TOS: MagiC/APPS/VT52/TESTDATA/VT52DEMO.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.TOS=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/vt52/NEOSTART.PRG: MagiC/APPS/VT52/TESTDATA/NEOSTART.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/mgcopy/NEOSTART.PRG: MagiC/APPS/MGCOPY/TESTDATA/NEOSTART.C Makefile.apps
 	mkdir -p "$(@D)"
