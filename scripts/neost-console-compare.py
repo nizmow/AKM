@@ -8,7 +8,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-from neost_common import acquire_headless, create_output, resolve_rom, run_logged, sha256
+from neost_common import acquire_headless, create_output, resolve_rom, sha256
+from neost_server import NeoSTServer
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
@@ -48,15 +49,18 @@ def prepare(guest, executable, tail, driver):
 
 def invoke(headless, rom, guest, output, label, frames, timeout):
     console = output / f"{label}.console.log"
-    host = output / f"{label}.host.log"
     screenshot = output / f"{label}.ppm"
-    run_logged([str(headless), "--machine", "st", "--mem", "4m", "--no-disk",
-                "--frames", str(frames), "--gemdos", str(guest),
-                "--auto", r"C:\RUNARG.PRG", "--console-log", str(console),
-                "--screenshot", str(screenshot), str(rom)],
-               host, cwd=ROOT, timeout=timeout)
+    options = ["--machine", "st", "--mem", "4m", "--no-disk",
+               "--gemdos", str(guest), "--auto", r"C:\RUNARG.PRG",
+               "--console-log", str(console)]
+    server_dir = output / f"{label}-server"
+    server_dir.mkdir()
+    with NeoSTServer(headless, rom, server_dir, options=options,
+                     timeout=timeout) as server:
+        server.run_frames(frames)
+        server.screenshot(screenshot)
     if not console.is_file():
-        raise RuntimeError(f"NeoST did not create {console}; see {host}")
+        raise RuntimeError(f"NeoST did not create {console}")
     text = console.read_text(encoding="latin-1")
     match = STATUS_RE.search(text)
     if not match:

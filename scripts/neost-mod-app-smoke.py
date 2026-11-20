@@ -8,11 +8,11 @@ import json
 from pathlib import Path
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
 
-from neost_common import acquire_headless, create_output, resolve_rom, run, run_logged, sha256
+from neost_common import acquire_headless, create_output, resolve_rom, run, sha256
+from neost_server import NeoSTServer
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
@@ -38,15 +38,18 @@ def prepare_case(root: Path, executable: Path) -> None:
 def invoke(headless: Path, rom: Path, root: Path, output: Path, label: str, frames: int) -> tuple[list[int], dict[str, str]]:
     gemdos = root / "C"
     console = output / f"{label}.console.log"
-    hostlog = output / f"{label}.host.log"
     screenshot = output / f"{label}.ppm"
-    command = [str(headless), "--machine", "st", "--mem", "4m", "--no-disk",
-               "--frames", str(frames), "--gemdos", str(gemdos),
-               "--auto", r"C:\NEOSTEST.PRG", "--console-log", str(console),
-               "--screenshot", str(screenshot), str(rom)]
-    run_logged(command, hostlog, cwd=ROOT, timeout=240)
+    options = ["--machine", "st", "--mem", "4m", "--no-disk",
+               "--gemdos", str(gemdos), "--auto", r"C:\NEOSTEST.PRG",
+               "--console-log", str(console)]
+    server_dir = output / f"{label}-server"
+    server_dir.mkdir()
+    with NeoSTServer(headless, rom, server_dir, options=options,
+                     timeout=240) as server:
+        server.run_frames(frames)
+        server.screenshot(screenshot)
     if not console.is_file():
-        raise RuntimeError(f"NeoST did not create {console}; see {hostlog}")
+        raise RuntimeError(f"NeoST did not create {console}")
 
     text = console.read_text(encoding="latin-1")
     cases = [(int(number), int(status) & 0xFFFF)
@@ -122,7 +125,7 @@ def main() -> int:
                 raise RuntimeError("original/GCC APPLICAT files differ; see report.json")
             print(f"NeoST MOD_APP smoke passed: {len(EXPECTED)} cases per binary; "
                   f"INF/BAK/DAT snapshots match. Results: {output}")
-    except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
+    except (OSError, RuntimeError) as error:
         print(f"NeoST MOD_APP smoke failed: {error}\nArtifacts: {output}", file=sys.stderr)
         return 1
     return 0

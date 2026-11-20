@@ -11,7 +11,8 @@ import shutil
 import struct
 import tempfile
 
-from neost_common import acquire_headless, create_output, resolve_rom, run_logged, sha256
+from neost_common import acquire_headless, create_output, resolve_rom, sha256
+from neost_server import NeoSTServer
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
@@ -46,14 +47,18 @@ def fixtures(gemdos: Path) -> dict[str, bytes]:
 def invoke(headless: Path, rom: Path, gemdos: Path, out: Path, label: str) -> tuple[list[int], dict[str, str], str]:
     shutil.copy2(DRIVER, gemdos / "NEOSTEST.PRG")
     console = out / f"{label}.console.log"
-    host = out / f"{label}.host.log"
     screenshot = out / f"{label}.ppm"
-    run_logged([str(headless), "--machine", "st", "--mem", "4m", "--no-disk",
-                "--frames", "1800", "--gemdos", str(gemdos), "--auto",
-                r"C:\NEOSTEST.PRG", "--console-log", str(console),
-                "--screenshot", str(screenshot), str(rom)], host, cwd=ROOT)
+    options = ["--machine", "st", "--mem", "4m", "--no-disk",
+               "--gemdos", str(gemdos), "--auto", r"C:\NEOSTEST.PRG",
+               "--console-log", str(console)]
+    server_dir = out / f"{label}-server"
+    server_dir.mkdir()
+    with NeoSTServer(headless, rom, server_dir, options=options,
+                     timeout=240) as server:
+        server.run_frames(1800)
+        server.screenshot(screenshot)
     if not console.is_file():
-        raise RuntimeError(f"NeoST did not create {console}; see {host}")
+        raise RuntimeError(f"NeoST did not create {console}")
     text = console.read_text(encoding="latin-1")
     cases = [(int(number), int(status) & 0xFFFF) for number, status in CASE_LINE.findall(text)]
     if [case for case, _ in cases] != list(range(1, 9)) or "DONE 8" not in text:
@@ -116,8 +121,10 @@ def main() -> int:
                 encoding="utf-8")
             print(f"LIMITMEM comparison passed: statuses {a_status}; disposable PRG copies only")
             print(f"Evidence: {output}")
-    finally:
-        pass
+    except (OSError, RuntimeError) as error:
+        print(f"NeoST LIMITMEM smoke failed: {error}\nArtifacts: {output}",
+              file=sys.stderr)
+        return 1
     return 0
 
 

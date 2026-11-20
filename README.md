@@ -129,8 +129,8 @@ and fresh artifact directories, then supply task-specific setup and checks.
 Machine options, ROM choice, writable fixtures, input timing, and expected
 application behavior stay with each scenario rather than becoming generic
 client policy. The NeoST skill at `.agents/skills/neost/SKILL.md` documents this
-workflow. Run `mise run test:neost-server` for focused client regression
-coverage.
+workflow. Run `mise run test:neost-server` for protocol-client coverage and
+`mise run test:neost-helpers` for image, screen and session helpers.
 
 After authenticating with `glab`, configure its credential helper for Docker-compatible
 registry clients such as Podman, then build and push:

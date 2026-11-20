@@ -208,7 +208,7 @@ differs from the APPLICAT control only inside the clock rectangle. The verified
 MagiC runs produced six clock-update frame pairs per MGCLOCK scenario; the
 combined overlay changed `(489,2)-(630,14)`, while APPLICAT differed by 67,991
 pixels outside the clock area. Evidence is under
-`build/atari/neost-mgclock-server/`. The runner drives every scenario through
+`build/atari/neost-mgclock-refactor/`. The runner drives every scenario through
 `scripts/neost_server.py`, NeoST's canonical server client, and keeps
 `protocol.log`/`diagnostics.log` with each scenario's screenshots.
 
@@ -504,7 +504,7 @@ MGNOTICE needs foreground windows for input.
 Verified results: initial, new, typed, escaped and quit screens are pixel-identical;
 the 75-byte `0.NOT` files are byte-identical and contain `hello`; the reopened
 screens are identical and the note window occupies `(98,98)-(141,117)`. Evidence
-is under `build/atari/neost-mgnotice-verify2/`. Delete, font/colour/options,
+is under `build/atari/neost-mgnotice-refactor/`. Delete, font/colour/options,
 multiple-window operation, window resize and French/US resources remain
 unverified.
 
@@ -531,7 +531,7 @@ The legacy event call uses GEMlib's single 32-bit interval, and the short
 dialog, submits it, and compares the initial, typed and result screens. The
 fixture contains `C:\SEARCHFIX\ALPHA.ZZZ` and a nested
 `C:\SEARCHFIX\SUB\BETA.ZZZ`; both result screens matched pixel-for-pixel.
-Evidence is under `build/atari/neost-mgsearch-verify3/`. Drive/path forms,
+Evidence is under `build/atari/neost-mgsearch-refactor/`. Drive/path forms,
 size/date filters, file-open messages, font variants and long-term operation
 remain unverified.
 
