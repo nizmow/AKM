@@ -92,6 +92,20 @@ Use `--partition-offset` for a different MagiC partition offset. The source
 image is cloned for each binary. Drive/path forms, size/date filters, file-open
 messages, font variants and long-term operation are outside this scenario.
 
+## Shared host-side helpers
+
+`scripts/neost_image.py` wraps disposable image cloning, `MAGX.INF`
+verification, guest directory creation and `mcopy` in/out operations.
+`scripts/neost_screen.py` parses NeoST PPM screenshots and computes pixel diffs
+and bounding boxes. Scenario runners keep their own machine profile, input
+timing, fixtures and assertions.
+
+Run the helper regression checks with:
+
+```sh
+mise run test:neost-helpers
+```
+
 ## NeoST: MagiC SHUTDOWN smoke
 
 This is a manual, opt-in smoke test. NeoST's default EmuTOS ROM cannot verify

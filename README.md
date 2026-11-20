@@ -236,16 +236,20 @@ temporary storage. `--rom` overrides the bundled EmuTOS ROM. Existing artifact
 directories are never reused; nonzero emulator exits and timeouts identify the
 host log, with partial process output retained on timeout.
 
-Keep machine/ROM choices, frame budgets, mouse/key input, guest fixtures,
-completion markers and application assertions in each runner. Screenshot
-parsing remains local to the clock harness. Shared-host-helper checks:
+`scripts/neost_image.py` owns disposable image cloning, `MAGX.INF`
+verification, guest directory creation and `mcopy` in/out operations.
+`scripts/neost_screen.py` owns PPM parsing, pixel-diff bounding boxes and
+region containment. Keep machine/ROM choices, frame budgets, mouse/key input,
+fixtures and application assertions in each runner; use the shared modules for
+the host mechanics. Shared-host-helper checks:
 
 ```sh
-mise exec -- python3 -m unittest discover -s scripts -p 'test_neost_common.py'
+mise run test:neost-helpers
 ```
 
-These checks cover output-directory safety, ROM override behavior, failure logs
-and timeout output retention; they do not replace the application smoke runs.
+These checks cover output-directory safety, ROM override behavior, failure logs,
+timeout output retention and image/screenshot helpers; they do not replace the
+application smoke runs.
 
 ## Direct build commands
 

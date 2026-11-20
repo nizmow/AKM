@@ -34,6 +34,12 @@ def run_logged(command: list[str], log: Path, *, cwd: Path | None = None,
         raise RuntimeError(f"NeoST exited {result.returncode}; see {log}")
 
 
+def require(condition: bool, message: str) -> None:
+    """Raise a scenario failure when an assertion fails."""
+    if not condition:
+        raise RuntimeError(message)
+
+
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:

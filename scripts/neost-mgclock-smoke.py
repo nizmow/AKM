@@ -27,7 +27,9 @@ import shutil
 import sys
 import tempfile
 
-from neost_common import acquire_headless, create_output, resolve_rom, run
+from neost_common import acquire_headless, create_output, require, resolve_rom, run
+from neost_image import MagiCImage
+from neost_screen import bbox_inside, diff_stats
 from neost_server import NeoSTServer
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -53,76 +55,6 @@ MAGIC_STABLE_FRAME = 8000
 MAGIC_CLOCK_REGION = (480, 0, 640, 24)
 
 
-def read_ppm(path: Path) -> tuple[int, int, bytes]:
-    data = path.read_bytes()
-    position = 0
-
-    def token() -> bytes:
-        nonlocal position
-        while position < len(data) and data[position] in b" \t\r\n":
-            position += 1
-        if position < len(data) and data[position] == ord("#"):
-            while position < len(data) and data[position] not in b"\r\n":
-                position += 1
-            return token()
-        start = position
-        while position < len(data) and data[position] not in b" \t\r\n#":
-            position += 1
-        return data[start:position]
-
-    magic, width, height, maximum = token(), int(token()), int(token()), int(token())
-    if magic != b"P6" or maximum != 255:
-        raise RuntimeError(f"unsupported NeoST screenshot format: {path}")
-    while position < len(data) and data[position] in b" \t\r\n":
-        position += 1
-    pixels = data[position:]
-    if len(pixels) != width * height * 3:
-        raise RuntimeError(f"truncated NeoST screenshot: {path}")
-    return width, height, pixels
-
-
-def diff_stats(first: Path, second: Path, *,
-               region: tuple[int, int, int, int] | None = None
-               ) -> tuple[int, tuple[int, int, int, int] | None]:
-    """Count differing pixels and return their inclusive bounding box."""
-    first_width, first_height, first_pixels = read_ppm(first)
-    second_width, second_height, second_pixels = read_ppm(second)
-    if (first_width, first_height) != (second_width, second_height):
-        raise RuntimeError(f"screenshot sizes differ: {first} and {second}")
-
-    left, top, right, bottom = region or (0, 0, first_width, first_height)
-    left = max(0, left)
-    top = max(0, top)
-    right = min(first_width, right)
-    bottom = min(first_height, bottom)
-
-    count = 0
-    minimum_x = first_width
-    minimum_y = first_height
-    maximum_x = -1
-    maximum_y = -1
-    for y in range(top, bottom):
-        row = y * first_width
-        for x in range(left, right):
-            offset = (row + x) * 3
-            if first_pixels[offset:offset + 3] != second_pixels[offset:offset + 3]:
-                count += 1
-                minimum_x = min(minimum_x, x)
-                minimum_y = min(minimum_y, y)
-                maximum_x = max(maximum_x, x)
-                maximum_y = max(maximum_y, y)
-    if not count:
-        return 0, None
-    return count, (minimum_x, minimum_y, maximum_x, maximum_y)
-
-
-def bbox_inside(bbox: tuple[int, int, int, int],
-                region: tuple[int, int, int, int]) -> bool:
-    left, top, right, bottom = region
-    return (left <= bbox[0] <= bbox[2] < right and
-            top <= bbox[1] <= bbox[3] < bottom)
-
-
 def capture_frames(headless: Path, rom: Path, output: Path, options: list[str],
                    start: int, stop: int, interval: int) -> list[Path]:
     """Run an empty server artifact directory and capture clock samples."""
@@ -140,11 +72,6 @@ def capture_frames(headless: Path, rom: Path, output: Path, options: list[str],
     if missing:
         raise RuntimeError(f"NeoST did not produce expected screenshots: {missing}")
     return frames
-
-
-def require(condition: bool, message: str) -> None:
-    if not condition:
-        raise RuntimeError(message)
 
 
 def check_clock_updates(frames: list[Path], region: tuple[int, int, int, int],
@@ -194,36 +121,6 @@ def check_coexistence(clock_only: Path, control: Path, both: Path,
     require(count - clock_only_count == 0,
             "MGCLOCK changed pixels outside the clock area while APPLICAT ran")
     print(f"coexistence: MGCLOCK added {count} pixels, all within {bbox}")
-
-
-def copy_reflink(source: Path, destination: Path) -> None:
-    result = run(["cp", "--reflink=auto", str(source), str(destination)], timeout=120)
-    if result.returncode:
-        raise RuntimeError(f"could not clone {source}: {result.stdout}")
-
-
-def verify_magic_image(image: Path, partition_offset: int) -> None:
-    result = run(["mdir", "-i", f"{image}@@{partition_offset}",
-                  "::/MAGX.INF"], timeout=30)
-    if result.returncode:
-        raise RuntimeError(f"{image} does not contain a MagiC MAGX.INF: "
-                           f"{result.stdout}")
-
-
-def install(image: Path, partition_offset: int, source: Path, guest: str) -> None:
-    result = run(["mcopy", "-o", "-i", f"{image}@@{partition_offset}",
-                  str(source), guest], timeout=60)
-    if result.returncode:
-        raise RuntimeError(f"could not install {source.name}: {result.stdout}")
-
-
-def prepare_magic(image: Path, source: Path, partition_offset: int,
-                  files: list[tuple[Path, str]]) -> None:
-    copy_reflink(source, image)
-    verify_magic_image(image, partition_offset)
-    for local, guest in files:
-        require(local.is_file(), f"missing build output: {local}")
-        install(image, partition_offset, local, guest)
 
 
 def run_emutos(headless: Path, rom: Path, output: Path) -> list[Path]:
@@ -334,9 +231,11 @@ def main() -> int:
                 for name, files in scenarios.items():
                     directory = output / name
                     directory.mkdir()
-                    image = directory / "magic.img"
-                    prepare_magic(image, source, args.partition_offset, files)
-                    results[name] = run_magic(headless, magic_rom, image, directory)
+                    image = MagiCImage.clone(source, directory / "magic.img",
+                                             partition_offset=args.partition_offset)
+                    image.verify_magic()
+                    image.install(files)
+                    results[name] = run_magic(headless, magic_rom, image.path, directory)
                     print(f"MagiC {name}: {len(results[name])} screenshots")
 
                 check_clock_updates(results["clock-only"], MAGIC_CLOCK_REGION,

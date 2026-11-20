@@ -125,6 +125,11 @@ when relying on frame timing. Do not reuse writable fixtures across runs.
 
 - Inspect `mise tasks`, `mise.toml` and `scripts/` before adding a test runner.
   Prefer a focused existing test task and its fixture/assertion contract.
+- Use `scripts/neost_image.py` (`MagiCImage.clone`, `verify_magic`, `mkdir`,
+  `copy_in`, `copy_out`, `install`) for disposable image setup instead of
+  reimplementing `cp`/`mdir`/`mmd`/`mcopy`.
+- Use `scripts/neost_screen.py` (`read_ppm`, `diff_stats`, `bbox_inside`) for
+  screenshot parsing and pixel comparisons.
 - Use separate disposable guest trees and identical machine, ROM, frame and
   input settings when comparing binaries. Keep archived and rebuilt binaries
   under the same guest filename.

@@ -19,7 +19,9 @@ from pathlib import Path
 import sys
 import tempfile
 
-from neost_common import acquire_headless, create_output, resolve_rom, run
+from neost_common import acquire_headless, create_output, require, resolve_rom, run
+from neost_image import MagiCImage
+from neost_screen import diff_stats
 from neost_server import NeoSTServer
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -37,100 +39,6 @@ BOOT_FRAMES = 15000
 NOTE_DIR = r"::/GEMSYS/GEMDESK/NOTICE"
 START_DIR = r"::/GEMSYS/MAGIC/START"
 STATES = ("initial", "new", "typed", "escaped", "quit")
-
-
-def read_ppm(path: Path) -> tuple[int, int, bytes]:
-    data = path.read_bytes()
-    position = 0
-
-    def token() -> bytes:
-        nonlocal position
-        while position < len(data) and data[position] in b" \t\r\n":
-            position += 1
-        start = position
-        while position < len(data) and data[position] not in b" \t\r\n#":
-            position += 1
-        return data[start:position]
-
-    magic, width, height, maximum = token(), int(token()), int(token()), int(token())
-    if magic != b"P6" or maximum != 255:
-        raise RuntimeError(f"unsupported NeoST screenshot format: {path}")
-    while position < len(data) and data[position] in b" \t\r\n":
-        position += 1
-    pixels = data[position:]
-    if len(pixels) != width * height * 3:
-        raise RuntimeError(f"truncated NeoST screenshot: {path}")
-    return width, height, pixels
-
-
-def diff_stats(first: Path, second: Path) -> tuple[int, tuple[int, int, int, int] | None]:
-    first_width, first_height, first_pixels = read_ppm(first)
-    second_width, second_height, second_pixels = read_ppm(second)
-    if (first_width, first_height) != (second_width, second_height):
-        raise RuntimeError(f"screenshot sizes differ: {first} and {second}")
-    count = 0
-    minimum_x = first_width
-    minimum_y = first_height
-    maximum_x = -1
-    maximum_y = -1
-    for y in range(first_height):
-        row = y * first_width
-        for x in range(first_width):
-            offset = (row + x) * 3
-            if first_pixels[offset:offset + 3] != second_pixels[offset:offset + 3]:
-                count += 1
-                minimum_x = min(minimum_x, x)
-                minimum_y = min(minimum_y, y)
-                maximum_x = max(maximum_x, x)
-                maximum_y = max(maximum_y, y)
-    if not count:
-        return 0, None
-    return count, (minimum_x, minimum_y, maximum_x, maximum_y)
-
-
-def require(condition: bool, message: str) -> None:
-    if not condition:
-        raise RuntimeError(message)
-
-
-def clone_image(source: Path, destination: Path) -> None:
-    result = run(["cp", "--reflink=auto", str(source), str(destination)], timeout=120)
-    if result.returncode:
-        raise RuntimeError(f"could not clone {source}: {result.stdout}")
-
-
-def verify_magic_image(image: Path, partition_offset: int) -> None:
-    result = run(["mdir", "-i", f"{image}@@{partition_offset}",
-                  "::/MAGX.INF"], timeout=30)
-    if result.returncode:
-        raise RuntimeError(f"{image} does not contain a MagiC MAGX.INF: "
-                           f"{result.stdout}")
-
-
-def mcopy(image: Path, partition_offset: int, source: Path, guest: str) -> None:
-    result = run(["mcopy", "-o", "-i", f"{image}@@{partition_offset}",
-                  str(source), guest], timeout=60)
-    if result.returncode:
-        raise RuntimeError(f"could not install {source.name}: {result.stdout}")
-
-
-def mmd(image: Path, partition_offset: int, guest: str) -> None:
-    result = run(["mmd", "-i", f"{image}@@{partition_offset}", guest], timeout=30)
-    if result.returncode:
-        raise RuntimeError(f"could not create {guest}: {result.stdout}")
-
-
-def prepare(image: Path, source: Path, partition_offset: int,
-            app: Path, rsc: Path, slb: Path) -> None:
-    clone_image(source, image)
-    verify_magic_image(image, partition_offset)
-    for local, name in ((app, "MGNOTICE.APP"), (rsc, "mgnotice.rsc"),
-                        (slb, "EDITOBJC.SLB"), (DRIVER, "NEOSTART.PRG")):
-        require(local.is_file(), f"missing build input: {local}")
-        mcopy(image, partition_offset, local, f"{START_DIR}/{name}")
-    result = run(["mmd", "-i", f"{image}@@{partition_offset}", NOTE_DIR], timeout=30)
-    if result.returncode and "exists" not in result.stdout.lower():
-        raise RuntimeError(f"could not create {NOTE_DIR}: {result.stdout}")
 
 
 def start_server(headless: Path, rom: Path, image: Path, output: Path,
@@ -179,11 +87,8 @@ def run_reopen(headless: Path, rom: Path, image: Path,
     return shot
 
 
-def extract_note(image: Path, destination: Path, partition_offset: int) -> None:
-    result = run(["mcopy", "-o", "-i", f"{image}@@{partition_offset}",
-                  f"{NOTE_DIR}/0.NOT", str(destination)], timeout=30)
-    if result.returncode:
-        raise RuntimeError(f"could not extract 0.NOT: {result.stdout}")
+def extract_note(image: MagiCImage, destination: Path) -> None:
+    image.copy_out(f"{NOTE_DIR}/0.NOT", destination)
 
 
 def compare_states(archive: dict[str, Path], rebuilt: dict[str, Path]) -> None:
@@ -250,13 +155,19 @@ def main() -> int:
             ):
                 directory = output / name
                 directory.mkdir()
-                image = directory / "magic.img"
-                prepare(image, source, args.partition_offset, app, rsc, slb)
-                shots[name] = run_lifecycle(headless, rom, image,
+                image = MagiCImage.clone(source, directory / "magic.img",
+                                         partition_offset=args.partition_offset)
+                image.verify_magic()
+                image.install(((app, f"{START_DIR}/MGNOTICE.APP"),
+                               (rsc, f"{START_DIR}/mgnotice.rsc"),
+                               (slb, f"{START_DIR}/EDITOBJC.SLB"),
+                               (DRIVER, f"{START_DIR}/NEOSTART.PRG")))
+                image.mkdir(NOTE_DIR)
+                shots[name] = run_lifecycle(headless, rom, image.path,
                                             directory / "lifecycle")
                 notes[name] = directory / "0.NOT"
-                extract_note(image, notes[name], args.partition_offset)
-                reopen = run_reopen(headless, rom, image, directory / "reopen")
+                extract_note(image, notes[name])
+                reopen = run_reopen(headless, rom, image.path, directory / "reopen")
                 shots[name]["reopen"] = reopen
                 print(f"{name}: lifecycle and reopen captured")
 

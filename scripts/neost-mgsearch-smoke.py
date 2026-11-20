@@ -16,7 +16,9 @@ from pathlib import Path
 import sys
 import tempfile
 
-from neost_common import acquire_headless, create_output, resolve_rom, run
+from neost_common import acquire_headless, create_output, require, resolve_rom, run
+from neost_image import MagiCImage
+from neost_screen import diff_stats
 from neost_server import NeoSTServer
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -31,91 +33,6 @@ GEMDESK_DIR = r"::/GEMSYS/GEMDESK"
 FIXTURE_DIR = r"::/SEARCHFIX"
 BOOT_FRAMES = 15000
 SEARCH_FRAMES = 3000
-
-
-def read_ppm(path: Path) -> tuple[int, int, bytes]:
-    data = path.read_bytes()
-    position = 0
-
-    def token() -> bytes:
-        nonlocal position
-        while position < len(data) and data[position] in b" \t\r\n":
-            position += 1
-        start = position
-        while position < len(data) and data[position] not in b" \t\r\n#":
-            position += 1
-        return data[start:position]
-
-    magic, width, height, maximum = token(), int(token()), int(token()), int(token())
-    if magic != b"P6" or maximum != 255:
-        raise RuntimeError(f"unsupported NeoST screenshot format: {path}")
-    while position < len(data) and data[position] in b" \t\r\n":
-        position += 1
-    pixels = data[position:]
-    if len(pixels) != width * height * 3:
-        raise RuntimeError(f"truncated NeoST screenshot: {path}")
-    return width, height, pixels
-
-
-def diff_stats(first: Path, second: Path) -> int:
-    first_width, first_height, first_pixels = read_ppm(first)
-    second_width, second_height, second_pixels = read_ppm(second)
-    if (first_width, first_height) != (second_width, second_height):
-        raise RuntimeError(f"screenshot sizes differ: {first} and {second}")
-    return sum(first_pixels[index:index + 3] != second_pixels[index:index + 3]
-               for index in range(0, len(first_pixels), 3))
-
-
-def require(condition: bool, message: str) -> None:
-    if not condition:
-        raise RuntimeError(message)
-
-
-def clone_image(source: Path, destination: Path) -> None:
-    result = run(["cp", "--reflink=auto", str(source), str(destination)], timeout=120)
-    if result.returncode:
-        raise RuntimeError(f"could not clone {source}: {result.stdout}")
-
-
-def verify_magic_image(image: Path, partition_offset: int) -> None:
-    result = run(["mdir", "-i", f"{image}@@{partition_offset}",
-                  "::/MAGX.INF"], timeout=30)
-    if result.returncode:
-        raise RuntimeError(f"{image} does not contain a MagiC MAGX.INF: "
-                           f"{result.stdout}")
-
-
-def mcopy(image: Path, partition_offset: int, source: Path, guest: str) -> None:
-    result = run(["mcopy", "-o", "-i", f"{image}@@{partition_offset}",
-                  str(source), guest], timeout=60)
-    if result.returncode:
-        raise RuntimeError(f"could not install {source.name}: {result.stdout}")
-
-
-def mmd(image: Path, partition_offset: int, guest: str) -> None:
-    result = run(["mmd", "-i", f"{image}@@{partition_offset}", guest], timeout=30)
-    if result.returncode and "exists" not in result.stdout.lower():
-        raise RuntimeError(f"could not create {guest}: {result.stdout}")
-
-
-def prepare(image: Path, source: Path, partition_offset: int, app: Path,
-            scratch: Path) -> None:
-    clone_image(source, image)
-    verify_magic_image(image, partition_offset)
-    for local, name in ((app, "MGSEARCH.APP"), (RESOURCE, "MGSEARCH.RSC"),
-                        (DRIVER, "NEOSTART.PRG")):
-        require(local.is_file(), f"missing build input: {local}")
-        mcopy(image, partition_offset, local, f"{GEMDESK_DIR}/{name}")
-    mcopy(image, partition_offset, DRIVER, f"{START_DIR}/NEOSTART.PRG")
-
-    mmd(image, partition_offset, FIXTURE_DIR)
-    mmd(image, partition_offset, f"{FIXTURE_DIR}/SUB")
-    alpha = scratch / "ALPHA.ZZZ"
-    beta = scratch / "BETA.ZZZ"
-    alpha.write_text("alpha\n", encoding="ascii")
-    beta.write_text("beta\n", encoding="ascii")
-    mcopy(image, partition_offset, alpha, f"{FIXTURE_DIR}/ALPHA.ZZZ")
-    mcopy(image, partition_offset, beta, f"{FIXTURE_DIR}/SUB/BETA.ZZZ")
 
 
 def start_server(headless: Path, rom: Path, image: Path, output: Path,
@@ -200,20 +117,32 @@ def main() -> int:
             for name, app in (("archive", ARCHIVE_APP), ("rebuilt", REBUILT_APP)):
                 directory = output / name
                 directory.mkdir()
-                image = directory / "magic.img"
-                prepare(image, source, args.partition_offset, app, scratch)
-                screenshots[name] = run_search(headless, rom, image,
+                image = MagiCImage.clone(source, directory / "magic.img",
+                                         partition_offset=args.partition_offset)
+                image.verify_magic()
+                image.install(((app, f"{GEMDESK_DIR}/MGSEARCH.APP"),
+                               (RESOURCE, f"{GEMDESK_DIR}/MGSEARCH.RSC"),
+                               (DRIVER, f"{START_DIR}/NEOSTART.PRG")))
+                image.mkdir(FIXTURE_DIR)
+                image.mkdir(f"{FIXTURE_DIR}/SUB")
+                alpha = scratch / "ALPHA.ZZZ"
+                beta = scratch / "BETA.ZZZ"
+                alpha.write_text("alpha\n", encoding="ascii")
+                beta.write_text("beta\n", encoding="ascii")
+                image.copy_in(alpha, f"{FIXTURE_DIR}/ALPHA.ZZZ")
+                image.copy_in(beta, f"{FIXTURE_DIR}/SUB/BETA.ZZZ")
+                screenshots[name] = run_search(headless, rom, image.path,
                                                directory / "search")
         for state in ("initial", "typed", "result"):
             count = diff_stats(screenshots["archive"][state],
-                               screenshots["rebuilt"][state])
+                               screenshots["rebuilt"][state])[0]
             require(count == 0, f"{state}: archived/rebuilt screens differ "
                                 f"in {count} pixels")
             print(f"{state}: screens identical")
         dialog = diff_stats(screenshots["rebuilt"]["initial"],
-                            screenshots["rebuilt"]["typed"])
+                            screenshots["rebuilt"]["typed"])[0]
         result = diff_stats(screenshots["rebuilt"]["typed"],
-                            screenshots["rebuilt"]["result"])
+                            screenshots["rebuilt"]["result"])[0]
         require(dialog > 0, "typing did not change the search dialog")
         require(result > 0, "submitting did not open the result window")
         print(f"state changes: typed={dialog} pixels, result={result} pixels")
