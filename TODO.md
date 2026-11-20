@@ -126,9 +126,9 @@ all nine ahead of their consumers.
   MiNTLib public GEMDOS calls; `mise run test:console-tools-neost` compares
   archived/rebuilt status, console output and guest files through NeoST.
 - [x] **MGCOPY** — add `mgcopy` producing the application and German resource;
-  compare archived/rebuilt copy, move, alias and delete effects on cloned MagiC
-  images. Confirm dialog, cancellation, nested trees and error paths remain
-  untested.
+  compare archived/rebuilt copy, move, alias and delete effects, nested-tree
+  copy/move and a D:→C: cross-drive move on cloned MagiC images. Confirm dialog,
+  cancellation, long-path and error paths remain untested.
 - [ ] Larger/threaded programs: MGFORMAT, VT52, MAGXDESK version 5.
 - [ ] Separate assembly builds: MCMD, MAGXCONF and appropriate utilities;
   FLP_PAR is a C pair, not an assembly family.

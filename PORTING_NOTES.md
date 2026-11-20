@@ -579,13 +579,14 @@ application global rather than an accidental file-static duplicate.
 `NEOSTART.PRG` driver, then boots archived and rebuilt bundles in separate
 MagiC 6.20/TOS 2.06 clones. The driver waits for the desktop, invokes MGCOPY
 through `Pexec` with `-q`, and records child statuses. Cases copy, move, alias
-and delete disposable files in `C:\DEST\`; the rebuilt and archived runs
-produced the same four zero statuses and identical source/destination hashes:
-the copy and alias remain, the moved source and deleted source are gone, and
-the destination files match. Evidence is under
-`build/atari/neost-mgcopy-final/`. Confirm-dialog interaction, cancellation,
-nested trees, cross-drive moves, long paths, read-only/error paths and
-alternate resources remain untested.
+and delete top-level files; copy and move nested trees; and move a file from
+`D:` to `C:` to exercise the cross-drive `ENSAME` fallback. The rebuilt and
+archived runs produced the same seven zero statuses and identical source/
+destination hashes. Nested copy leaves the source tree intact; nested move
+removes it; the cross-drive source is removed and its destination is created.
+Evidence is under `build/atari/neost-mgcopy-cross/`. Confirm-dialog interaction,
+cancellation, long paths, read-only/error paths and alternate resources remain
+untested.
 
 ## Application porting workflow
 

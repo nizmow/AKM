@@ -128,6 +128,10 @@ deletes `DEL.TXT` into/from `C:\DEST\`. It requires:
 - Move: `DEST\MOVE.TXT` exists and the source is gone.
 - Alias: `DEST\ALIAS.TXT` exists and the source remains.
 - Delete: `DEL.TXT` is gone.
+- Nested copy/move: `TREE` and `MTREE` contents and subdirectories match;
+  the move removes the source tree, while the copy leaves it.
+- Cross-drive move: `D:\XMOVE.TXT` is copied to `C:\DEST\XMOVE.TXT` and
+  removed from D:.
 - Archived and rebuilt statuses and guest-file hashes are identical.
 
 Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
@@ -138,9 +142,10 @@ MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
   python3 scripts/neost-mgcopy-smoke.py --output build/atari/neost-mgcopy-check
 ```
 
-Use `--partition-offset` for a different MagiC partition offset. The source
-image is cloned for each binary. Confirm-dialog interaction, cancellation,
-nested trees, cross-drive moves and error paths are outside this scenario.
+Use `--partition-offset` for a different MagiC C: partition offset and
+`--d-partition-offset` for D: (default `34200576`, matching the test image).
+The source image is cloned for each binary. Confirm-dialog interaction,
+cancellation, long paths and general error paths are outside this scenario.
 
 ## Shared host-side helpers
 

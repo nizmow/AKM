@@ -10,12 +10,18 @@
 #define APP "C:\\MGCOPY.APP"
 #define RESULT "C:\\MGCOPY.RES"
 
-static int result_handle;
-
 static void record(const char *line)
 {
 	long len = strlen(line);
-	Fwrite(result_handle, len, (void *) line);
+	int handle = (int) Fopen(RESULT, 2);
+
+	if (handle < 0)
+		handle = (int) Fcreate(RESULT, 0);
+	if (handle < 0)
+		return;
+	Fseek(0L, handle, 2);
+	Fwrite(handle, len, (void *) line);
+	Fclose(handle);
 }
 
 static void run_case(int number, const char *tail)
@@ -45,19 +51,15 @@ int main(void)
 	evnt_timer(8000);
 	Dsetpath("C:\\");
 
-	result_handle = (int) Fcreate(RESULT, 0);
-	if (result_handle < 0)
-	{
-		appl_exit();
-		return 1;
-	}
-
+	Fdelete(RESULT);
 	run_case(1, "-Cq C:\\SRC.TXT -4 C:\\DEST\\");
 	run_case(2, "-Mq C:\\MOVE.TXT -4 C:\\DEST\\");
 	run_case(3, "-Aq C:\\ALIAS.TXT -4 C:\\DEST\\");
 	run_case(4, "-Dq C:\\DEL.TXT -4");
+	run_case(5, "-Cq C:\\TREE\\ -1 C:\\DEST\\");
+	run_case(6, "-Mq C:\\MTREE\\ -1 C:\\DEST\\");
+	run_case(7, "-Mq D:\\XMOVE.TXT -4 C:\\DEST\\");
 
-	Fclose(result_handle);
 	appl_exit();
 	return 0;
 }
