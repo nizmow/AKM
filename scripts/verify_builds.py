@@ -31,6 +31,7 @@ TARGETS = {
     "mgcopy": ("mgcopy", ["MGCOPY.APP", "MGCOPY.RSC"]),
     "mgformat": ("mgformat", ["MGFORMAT.PRG", "MGFORMAT.RSC"]),
     "vt52": ("vt52", ["VT52.PRG", "VT52.RSC"]),
+    "mcmd-languages": ("mcmd", ["de/MCMD.TOS", "en/MCMD.TOS", "fr/MCMD.TOS"]),
     "edit-slb": ("edit-slb", ["EDITOBJC.SLB"]),
     "mgedit": ("mgedit", ["MGEDIT.APP", "mgedit.rsc", "EDITOBJC.SLB"]),
     "abi-check": ("abi-check", ["ABI_CHECK.o"]),

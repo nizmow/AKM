@@ -246,3 +246,29 @@ confirmation. Do not activate Restart or Cold Boot: SHUTDOWN is in the startup
 folder, so rebooting the test image can relaunch it. Preserve the screenshot and
 headless log as run evidence. This verifies the shutdown request through the
 confirmation dialog, not the final reboot/cold-boot path.
+
+## NeoST: localized MCMD batch execution
+
+`mise run test:mcmd-neost` builds the DE/EN/FR interpreters and guest drivers,
+then compares each archive with its rebuilt counterpart on separate clones
+of the supplied MagiC image:
+
+```sh
+MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
+  python3 scripts/neost-mcmd-smoke.py
+```
+
+Host `mtools` is required. `--partition-offset` changes the default C: offset
+of 1024 bytes; `--languages en` restricts the run. The machine profile is
+MegaSTE/4 MiB/monochrome, with a delayed launcher installed in the image's
+`GEMSYS\MAGIC\START` folder. Results, console logs and screenshots remain in a
+fresh `build/atari/neost-mcmd-*` directory.
+
+Checks cover batch argument/variable substitution, internal quoting, output
+and append redirection, an external child's stdin/stdout/environment and raw
+tail interpretation, copy/rename/delete and directory effects, conditionals,
+GOTO, missing commands, and return to the launcher. Guest contents are checked
+independently and compared byte-for-byte between archived and rebuilt runs.
+`PORTING_NOTES.md` records the retained external-quote and trailing-directory
+behaviors. Interactive editing, pipes, long filenames and AUTOEXEC/BOOT startup
+remain untested.

@@ -231,6 +231,13 @@ ABI; it does not use archived Pure C objects. `mise run test:magxdesk-neost`
 compares the rebuilt and archived desktops on separate cloned MagiC images;
 the desktop content matches pixel-for-pixel. Version 4 remains separate.
 
+`mise run apps -- mcmd` builds the German command interpreter as
+`build/atari/apps/mcmd/de/MCMD.TOS`. Select `MCMD_LANG=en` or `MCMD_LANG=fr`,
+or build all three with `mise run apps -- mcmd-languages`. VASM emits the TOS
+executable directly from normalized assembly; no archived MAS/ALN tools or
+objects are used. `mise run test:mcmd-neost` compares batch execution and guest
+file effects against the localized archives on cloned MagiC images.
+
 Repeatable emulator checks use explicit, subsystem-scoped tasks. Run
 `mise run test:mod-app-neost` (or `python3 scripts/neost-mod-app-smoke.py`).
 Runner options and outputs: `python3 scripts/neost-mod-app-smoke.py --help`.

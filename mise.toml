@@ -95,6 +95,11 @@ description = "Compare archived and rebuilt MAGXDESK v5 startup under NeoST"
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-magxdesk-smoke.py"
 
+[tasks."test:mcmd-neost"]
+description = "Compare localized MCMD command execution under NeoST/MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-mcmd-smoke.py"
+
 [tasks."test:neost-server"]
 description = "Run NeoST server client protocol regression tests"
 dir = "{{ config_root }}"

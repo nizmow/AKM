@@ -3,7 +3,7 @@
 A porting catalogue, not a claim that these programs already build with GCC.
 The modern `Makefile.atari` currently builds the kernel. The applications used
 in the successful Hatari kernel tests were the existing release binaries.
-`Makefile.apps` independently builds the 21 application/helper/library targets
+`Makefile.apps` independently builds the application/helper/library targets
 marked as builds or verified in the status tables below. Other entries are
 planning items unless explicitly marked; source presence alone is not a
 completed port.
@@ -71,7 +71,7 @@ These are standalone builds too, even though some do not involve GCC at all.
 
 | Priority | Outputs | Source root | Variants / special handling |
 |---|---|---|---|
-| B | `MCMD.TOS` | `MagiC/APPS/CMD` | MagiC command interpreter, assembly with DE/EN/FR includes. README identifies the recent localized MCMD as the built/tested variant. Package language selection explicitly. |
+| B / builds, MagiC-tested | `MCMD.TOS` (DE/EN/FR) | `MagiC/APPS/CMD` | `make -f Makefile.apps mcmd` builds German; `MCMD_LANG=en`/`fr` selects isolated outputs and `mcmd-languages` builds all three. VASM emits native TOS executables from normalized sources without archived MAS/ALN tools or objects. All three localized builds launched under NeoST/MagiC; archived/rebuilt batch runs matched child status and 16 guest files per language, with independent quoting/expansion, redirection, file/directory and child-execution assertions. Interactive editing, pipes, long filenames and AUTOEXEC/BOOT startup remain untested. |
 | H | `KCMD.TOS`, `CMD.TOS`, accessory mode | `MagiC/APPS/CMD` | Same assembly family can target KAOS/TOS or an accessory by source switches. These are distinct variants; do not infer that all are validated because MCMD works. Bundled `MAS.TTP`/`ALN.TTP` are old build tools, not outputs of this project. |
 | B | `MAGXCONF.ACC` / `MAGXCONF.PRG` | `MagiC/APPS/MAGXCONF` | Assembly configuration accessory/program, including KAOS support and language variants. Distinct from the CPX below; archived output extension varies by language. |
 | B | `FLP_PAR0.PRG`, `FLP_PAR1.PRG` | `MagiC/APPS/FLP_PAR` | Separate C sources to turn parallel floppy access off/on. One build family, two executables. |

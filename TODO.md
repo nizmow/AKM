@@ -138,7 +138,8 @@ all nine ahead of their consumers.
   ABI. `mise run test:vt52-neost` launches a delayed TOS child and compares the
   archived/rebuilt terminal screens pixel-for-pixel. Interactive input remains untested.
 - [x] **MAGXDESK version 5** — source-built `magxdesk` target; `mise run test:magxdesk-neost` reaches the desktop on cloned MagiC images and compares the desktop content pixel-for-pixel. Corrected the 18-byte APPLICAT record layout and retained relocated icon-cache pointers by removing an unsafe post-relocation `realloc`. Version 4 is out of scope.
-- [ ] Separate assembly builds: MCMD, MAGXCONF and appropriate utilities;
+- [x] **MCMD** — independent VASM `mcmd`/`mcmd-languages` targets produce DE/EN/FR `MCMD.TOS` outputs. `test:mcmd-neost` verifies batch execution on cloned MagiC images: child statuses and 16 captured guest files per language match the archives. Retained legacy quoting/directory behavior and remaining paths are documented in porting notes.
+- [ ] Separate assembly builds: MAGXCONF and appropriate utilities;
   FLP_PAR is a C pair, not an assembly family.
 - [ ] Loadable components: image/window-frame SLBs, CPXs and drivers.
 - [x] Account explicitly in the catalogue for remaining diagnostic, historical,

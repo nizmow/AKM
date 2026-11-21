@@ -7,6 +7,7 @@ CFLAGS ?= -O2 -g -Wall -Wextra
 # Applications use the supplied MiNTLib's default stack ABI and 32-bit int.
 # Do not inherit the kernel's -mshort/-mfastcall flags or Pure C libraries.
 APP_FLAGS := -std=gnu11 -m68000
+.DEFAULT_GOAL := all
 
 APPLICAT_DIR := MagiC/APPS/APPLICAT/SRC
 APPLICAT_SOURCES := $(addprefix $(APPLICAT_DIR)/,APPLICAT.C ICONSEL.C ICA_DIAL.C \
@@ -59,6 +60,40 @@ VT52_ASM_SOURCES := $(addprefix $(VT52_DIR)/,VT_AES.S VT_VDI.S VT_BIOS.S \
 VT52_OBJECTS := $(patsubst $(VT52_DIR)/%.C,$(BUILD_DIR)/vt52/%.o,$(VT52_SOURCES)) \
   $(patsubst $(VT52_DIR)/%.S,$(BUILD_DIR)/vt52/%.o,$(VT52_ASM_SOURCES)) \
   $(BUILD_DIR)/vt52/DRAGDROP.o
+
+MCMD_DIR := MagiC/APPS/CMD/SRC
+MCMD_LANG ?= de
+MCMD_NORMALIZER := MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py
+MCMD_SOURCES := $(wildcard $(MCMD_DIR)/*.S $(MCMD_DIR)/*.INC $(MCMD_DIR)/INTERN/*.S)
+MCMD_NORMALIZED := $(addprefix $(BUILD_DIR)/mcmd/src/,$(notdir $(MCMD_SOURCES)))
+
+.PHONY: mcmd mcmd-languages mcmd-test-driver
+mcmd: $(BUILD_DIR)/mcmd/$(MCMD_LANG)/MCMD.TOS
+mcmd-languages: $(foreach lang,de en fr,$(BUILD_DIR)/mcmd/$(lang)/MCMD.TOS)
+mcmd-test-driver: $(BUILD_DIR)/mcmd/NEOSTART.PRG $(BUILD_DIR)/mcmd/CHILD.TTP
+
+$(BUILD_DIR)/mcmd/src/%: $(MCMD_DIR)/% $(MCMD_NORMALIZER) Makefile.apps
+	python3 $(MCMD_NORMALIZER) "$<" "$@"
+
+$(BUILD_DIR)/mcmd/src/%: $(MCMD_DIR)/INTERN/% $(MCMD_NORMALIZER) Makefile.apps
+	python3 $(MCMD_NORMALIZER) "$<" "$@"
+
+$(BUILD_DIR)/mcmd/%/MCMD.TOS: $(MCMD_NORMALIZED) Makefile.apps
+	mkdir -p "$(@D)"
+	case "$*" in de) country=1;; fr) country=2;; en) country=3;; \
+	  *) echo "Unsupported MCMD language: $* (use de, en or fr)" >&2; exit 1;; esac; \
+	$(VASM) -Ftos -m68000 -noesc -DCOUNTRY=$$country \
+	  -I"$(BUILD_DIR)/mcmd/src/" -o "$@" "$(BUILD_DIR)/mcmd/src/CMD.S"
+
+$(BUILD_DIR)/mcmd/NEOSTART.PRG: MagiC/APPS/CMD/TESTDATA/NEOSTART.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mcmd/CHILD.TTP: MagiC/APPS/CMD/TESTDATA/CHILD.C MagiC/APPS/TOS_ARGS.H Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.TTP=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
 
 .PHONY: all applicat mod-app cmdline mac2st dump fc split showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 vt52-test-driver magxdesk abi-check console-test-driver

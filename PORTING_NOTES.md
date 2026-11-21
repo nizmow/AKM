@@ -970,3 +970,44 @@ guards, and `tile_init` loaded the matching 32×1 color IMG successfully.
 Evidence: `build/atari/neost-magxdesk-raster-20261121-102022/RASTER.TXT`.
 This checks raster conversion and tile loading, not desktop background painting
 or other color depths.
+
+## MCMD
+
+`make -f Makefile.apps mcmd` builds German
+`build/atari/apps/mcmd/de/MCMD.TOS`. `MCMD_LANG=en` and `MCMD_LANG=fr`
+select isolated English/French outputs; `mcmd-languages` builds all three.
+The existing `CONFIG.INC` selects only the MagiC program variant
+(`KAOS=1`, `BOOT=1`, `MAGIX=1`, `ACC=0`). Historical TOS/KAOS/accessory builds
+are not implied by this target.
+
+The target normalizes the source/includes with the existing `mas_to_vasm.py`
+and invokes VASM's native `-Ftos` writer, including BSS and TOS relocations.
+No legacy MAS/ALN executables, startup objects or libraries are used.
+MAS `IFF` maps to VASM `IFEQ`. Do not add `-spaces`: MCMD uses operand-column
+comments that would otherwise be parsed as multiplication. `-noesc` preserves
+literal Atari backslashes, and the unchanged legacy assembly bytes retain the
+localized runtime encoding. Generated includes are flattened into the isolated
+build directory; the canonical assembly sources are not rewritten.
+
+`mise run test:mcmd-neost` uses a delayed Pexec driver, a batch fixture and a
+source-built child program on separate MagiC image clones for each language
+and executable. It asserts quoting/expansion, input/output and append
+redirection, copy/rename/delete/mkdir/rmdir effects, conditional/GOTO execution,
+child environment/stdin/stdout, an errorlevel branch, and shell return status.
+It also compares all captured result files byte-for-byte against the archive.
+The original image is never modified.
+
+Preserve these observed legacy behaviors rather than quietly modernizing them
+as part of the assembler port: grouping quotes are removed before forming an
+external child's raw TOS tail, and `IF EXIST C:\WORK\` did not take its branch
+on the test image, although `IF EXIST C:\WORK` did. The fixture retains both
+directory forms. Conditional redirection creates an empty output file even
+when its branch is not taken.
+
+Interactive line editing, pipes, long filenames, startup AUTOEXEC/BOOT files,
+disk errors and other machine/video configurations are outside this scenario.
+
+The DE/EN/FR comparisons passed under NeoST 0.6.5/MagiC 6.20/TOS 2.06:
+both programs returned status 0, and all 16 captured guest files per language
+matched (48 byte-identical pairs). Evidence:
+`build/atari/neost-mcmd-20261121-103027/`.
