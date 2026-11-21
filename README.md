@@ -246,6 +246,15 @@ Save modifies the executable itself, so install writable copies and test on
 cloned images. `mise run test:magxconf-neost` exercises Cancel/OK/Save and
 accessory boot persistence. This is not the separate MAGXCONF CPX.
 
+`mise run apps -- flp-par` builds `FLP_PAR0.PRG` and `FLP_PAR1.PRG` in
+`build/atari/apps/flp-par/`. The individual `flp-par0` and `flp-par1`
+targets disable and enable MagiC's parallel floppy-access flag respectively.
+Archived and rebuilt executables were run through the same NeoST Pexec probe on
+cloned MagiC 6.20/TOS 2.06 images: each began with `SCB_FLPAR` unset, then
+recorded `00000000 → 00000800 → 00000000` after FLP_PAR1/FLP_PAR0, zero child
+statuses, and no other config-bit changes. Parallel floppy hardware operation
+remains untested.
+
 Repeatable emulator checks use explicit, subsystem-scoped tasks. Run
 `mise run test:mod-app-neost` (or `python3 scripts/neost-mod-app-smoke.py`).
 Runner options and outputs: `python3 scripts/neost-mod-app-smoke.py --help`.

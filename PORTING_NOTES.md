@@ -283,6 +283,25 @@ disk, the probe passed all four checks. Evidence is under
 `build/atari/neost-wbdaemon-registration-20261118-221705/`. Periodic disk-flush
 timing and data durability remain unmeasured.
 
+### FLP_PAR0 / FLP_PAR1
+
+`mise run apps -- flp-par` builds `FLP_PAR0.PRG` and `FLP_PAR1.PRG` from the
+original sources in `MagiC/APPS/FLP_PAR/SRC/`. The Atari-encoded files were
+decoded to canonical UTF-8 and adapted in place: legacy `<tos.h>`/`<magx.h>`
+became MiNTLib's public `<mint/sysbind.h>`, with local `SCB_FLPAR` value
+`0x800L`. Separate `flp-par0`/`flp-par1` targets use `Sconfig(mode, bitset)`,
+a 16-bit subfunction and 32-bit bitset passed through GEMDOS function `0x33`.
+
+The port preserves the original query/update sequence and zero exit status; it
+does not check `Sconfig` errors, matching the archived sources. On cloned
+MagiC 6.20/TOS 2.06 images under NeoST 0.6.5 (with the competing MAGXCONF CPX
+disabled), archived and rebuilt binaries were each run through the same `Pexec`
+probe. Both began with `SCB_FLPAR` unset and recorded
+`00000000 → 00000800 → 00000000`, child statuses `0, 0`, and no changes to other
+configuration bits. Evidence: `build/atari/neost-flp-par-clear-runtime/` and
+`build/atari/neost-flp-par-archive-baseline/`. Physical parallel-floppy transfer
+remains untested.
+
 ### VFATCONF
 
 `make -f Makefile.apps vfatconf` builds

@@ -140,8 +140,11 @@ all nine ahead of their consumers.
 - [x] **MAGXDESK version 5** — source-built `magxdesk` target; `mise run test:magxdesk-neost` reaches the desktop on cloned MagiC images and compares the desktop content pixel-for-pixel. Corrected the 18-byte APPLICAT record layout and retained relocated icon-cache pointers by removing an unsafe post-relocation `realloc`. Version 4 is out of scope.
 - [x] **MCMD** — independent VASM `mcmd`/`mcmd-languages` targets produce DE/EN/FR `MCMD.TOS` outputs. `test:mcmd-neost` verifies batch execution on cloned MagiC images: child statuses and 16 captured guest files per language match the archives. Retained legacy quoting/directory behavior and remaining paths are documented in porting notes.
 - [x] **MAGXCONF program/accessory** — native VASM builds produce DE/EN/FR PRG/ACC pairs. `test:magxconf-neost` verifies Cancel/OK/Save, exact four-byte self-save, version/date display and accessory reboot persistence across all languages on cloned MagiC images. The competing configuration CPX is disabled only in the fixtures; remaining limits are in porting notes.
-- [ ] **FLP_PAR0/1** and appropriate standalone utilities; FLP_PAR is a C pair,
-  not an assembly family.
+- [x] **FLP_PAR0/1** — ported the existing sources in place to MiNTLib's public
+  `Sconfig` binding; archived and rebuilt binaries both passed the NeoST probe
+  on cloned MagiC images: `00000000 → 00000800 → 00000000`, zero child statuses
+  and no other bits changed. Physical parallel-floppy operation remains
+  untested.
 - [ ] Loadable components: image/window-frame SLBs, CPXs and drivers.
 - [x] Account explicitly in the catalogue for remaining diagnostic, historical,
   host-specific, missing-source and external-dependency entries.

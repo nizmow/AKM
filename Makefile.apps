@@ -131,7 +131,7 @@ $(BUILD_DIR)/magxconf/NEOSTART.PRG: MagiC/APPS/MAGXCONF/TESTDATA/NEOSTART.C Make
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 
-.PHONY: all applicat mod-app cmdline mac2st dump fc split showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 vt52-test-driver magxdesk abi-check console-test-driver
+.PHONY: all applicat mod-app cmdline mac2st dump fc split showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver flp-par flp-par0 flp-par1 mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 vt52-test-driver magxdesk abi-check console-test-driver
 all: mod-app
 applicat: $(BUILD_DIR)/applicat/APPLICAT.APP $(BUILD_DIR)/applicat/applicat.rsc \
   $(BUILD_DIR)/applicat/applicat.inf
@@ -181,6 +181,9 @@ mgxclock: $(BUILD_DIR)/mgxclock/MGXCLOCK.PRG
 mgxclock-test-driver: $(BUILD_DIR)/mgxclock/NEOSTEST.PRG
 vfatconf: $(BUILD_DIR)/vfatconf/VFATCONF.PRG $(BUILD_DIR)/vfatconf/vfatconf.rsc
 wbdaemon: $(BUILD_DIR)/wbdaemon/WBDAEMON.PRG
+flp-par: flp-par0 flp-par1
+flp-par0: $(BUILD_DIR)/flp-par/FLP_PAR0.PRG
+flp-par1: $(BUILD_DIR)/flp-par/FLP_PAR1.PRG
 wbdaemon-test-driver: $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG
 mod-app-test-driver: $(BUILD_DIR)/mod-app/NEOSTEST.PRG
 
@@ -457,6 +460,16 @@ $(BUILD_DIR)/wbdaemon/WBDAEMON.PRG: MagiC/APPS/WBDAEMON/SRC/WBDAEMON.C Makefile.
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
+$(BUILD_DIR)/flp-par/FLP_PAR0.PRG: MagiC/APPS/FLP_PAR/SRC/FLP_PAR0.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/flp-par/FLP_PAR1.PRG: MagiC/APPS/FLP_PAR/SRC/FLP_PAR1.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
 $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG: MagiC/APPS/WBDAEMON/TESTDATA/NEOSTEST.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
@@ -473,6 +486,8 @@ $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG: MagiC/APPS/WBDAEMON/TESTDATA/NEOSTEST.C Make
 -include $(BUILD_DIR)/shutdown/SHUTDOWN.d
 -include $(BUILD_DIR)/wbdaemon/WBDAEMON.d
 -include $(BUILD_DIR)/wbdaemon/NEOSTEST.d
+-include $(BUILD_DIR)/flp-par/FLP_PAR0.d
+-include $(BUILD_DIR)/flp-par/FLP_PAR1.d
 -include $(APPLICAT_OBJECTS:.o=.d)
 -include $(MGVIEW_OBJECTS:.o=.d)
 EDIT_SLB_DIR := MagiC/EXTENSIO/EDIT_SLB/SRC
