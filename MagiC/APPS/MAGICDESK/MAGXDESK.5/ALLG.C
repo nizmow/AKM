@@ -1,23 +1,44 @@
 /*********************************************************************
 *
-* Dieses Modul enthÑlt allgemeine Routinen.
+* Dieses Modul enth√§lt allgemeine Routinen.
 *
 *********************************************************************/
 
-#include <mgx_dos.h>
+#include "MAGXDESK_GEM.H"
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
 #include <stdarg.h>
-#include <vdi.h>
-#include "k.h"
-#include "pattern.h"
+#include "K.H"
+#include "PATTERN.H"
 
+
+#ifndef FL3DMASK
+#define FL3DMASK 0x0600
+#endif
 /* #include <stdio.h> */
 
 static char timesep = ':';	/* FRG => ':' */
 static char kilosep;
-static void (*date2str)(char *s, unsigned int date);
+static void *date2str;
+
+static char *uint_to_dec(unsigned long value, char *buffer)
+{
+	char digits[10];
+	int count = 0;
+
+	do
+	{
+		digits[count++] = (char) ('0' + value % 10);
+		value /= 10;
+	}
+	while (value);
+
+	while (count)
+		*buffer++ = digits[--count];
+	*buffer = '\0';
+	return buffer;
+}
 
 /****************************************************************
 *
@@ -29,7 +50,7 @@ static void (*date2str)(char *s, unsigned int date);
 
 void allg_init(void)
 {
-	date2str = ((void *) xbios(39, 'AnKr', 5));
+	date2str = (void *) (uintptr_t) trap_14_wlwl(39, 0x416e4b72L, 5, 0L);
 	kilosep = tree_datinf[FI_SIZE].ob_spec.free_string[1];
 }
 
@@ -37,7 +58,7 @@ void allg_init(void)
 /****************************************************************
 *
 * Bringt alle eigenen Fenster nach vorn, die von anderen
-* Åberdeckt sind.
+* √ºberdeckt sind.
 *
 ****************************************************************/
 
@@ -51,31 +72,47 @@ void top_all_my_windows(void)
 
 /****************************************************************
 *
-* AES-Funktion fÅr die erweiterte Rubberbox
+* AES-Funktion f√ºr die erweiterte Rubberbox
 *
 ****************************************************************/
 
 void xgrf_rbox(GRECT *clip, GRECT *box)
 {
-	PARMDATA d;
-	static WORD	c[] = { 132, 8, 0, 0 };
+	AESPB pb;
+	short control[5] = { 132, 8, 0, 0, 0 };
+	short intin[8];
+	short intout[1];
+	long addrin[1];
+	long addrout[1];
 
-	*((GRECT *) (d.intin)) = *clip;
-	*((GRECT *) (d.intin+4)) = *box;
+	intin[0] = clip->g_x;
+	intin[1] = clip->g_y;
+	intin[2] = clip->g_w;
+	intin[3] = clip->g_h;
+	intin[4] = box->g_x;
+	intin[5] = box->g_y;
+	intin[6] = box->g_w;
+	intin[7] = box->g_h;
 
-	_mt_aes(&d, c, NULL);
+	pb.control = control;
+	pb.global = aes_global;
+	pb.intin = intin;
+	pb.intout = intout;
+	pb.addrin = addrin;
+	pb.addrout = addrout;
+	aes(&pb);
 }
 
 
 /****************************************************************
 *
-* Gibt Fensterhandle des obersten Fensters zurÅck.
+* Gibt Fensterhandle des obersten Fensters zur√ºck.
 *
 ****************************************************************/
 
 int top_whdl(void)
 {
-	int whdl;
+	short whdl;
 
 	if (!wind_get_int(0, WF_TOP, &whdl))
 		return -1;
@@ -91,20 +128,7 @@ int top_whdl(void)
 *
 ****************************************************************/
 
-int rc_intersect(GRECT *p1, GRECT *p2)
-{
-	int tx, ty, tw, th;
 
-	tw = MIN(p2->g_x + p2->g_w, p1->g_x + p1->g_w);
-	th = MIN(p2->g_y + p2->g_h, p1->g_y + p1->g_h);
-	tx = MAX(p2->g_x, p1->g_x);
-	ty = MAX(p2->g_y, p1->g_y);
-	p2->g_x = tx;
-	p2->g_y = ty;
-	p2->g_w = tw - tx;
-	p2->g_h = th - ty;
-	return (tw > tx) && (th > ty);
-}
 
 
 /****************************************************************
@@ -147,7 +171,8 @@ void objc_grect(OBJECT *tree, int objn, GRECT *g)
 void objc_visgrect(OBJECT *tree, int objn, GRECT *g)
 {
 	OBJECT *o;
-	int x,y,nx,ny;
+	int x, y;
+	short nx, ny;
 
 	o = tree + objn;
 	objc_offset(tree, objn, &nx, &ny);
@@ -156,7 +181,7 @@ void objc_visgrect(OBJECT *tree, int objn, GRECT *g)
 	{
 		x = o->ob_x;
 		y = o->ob_y;
-		form_center(o, g);
+		form_center_grect(o, g);
 		g->g_x += nx - o->ob_x;
 		g->g_y += ny - o->ob_y;
 		o->ob_x = x;
@@ -221,18 +246,18 @@ void subobj_draw(OBJECT *tree, int obj, int n, char *s)
 		strcpy(z,s);
 	else
 	if (n >= 0)
-		ultoa(n, z, 10);
+		uint_to_dec((unsigned long) n, z);
 	objc_grect(tree, obj, &g);
-	objc_draw(tree, 0, MAX_DEPTH, &g);
+	objc_draw_grect(tree, 0, MAX_DEPTH, &g);
 }
 
 
 /****************************************************************
 *
 * Rechnet Mausposition in Objektnummer um.
-* (Ñhnlich objc_find, jedoch nur eine Ebene).
-* RÅckgabe  0, falls kein Objekt unter dem Mauszeiger,
-* RÅckgabe -1, falls inaktiver Hintergrund.
+* (√§hnlich objc_find, jedoch nur eine Ebene).
+* R√ºckgabe  0, falls kein Objekt unter dem Mauszeiger,
+* R√ºckgabe -1, falls inaktiver Hintergrund.
 *
 ****************************************************************/
 
@@ -368,7 +393,7 @@ void objs_disable(OBJECT *tree, ...)
 	register OBJECT *t;
 	va_list argpoint;
 	int objnr;
-	bfcolspec *bft;
+	unsigned short color;
 
 	va_start(argpoint, tree);
 	for	(;;)
@@ -380,10 +405,10 @@ void objs_disable(OBJECT *tree, ...)
 		/* mind. 16 Farben: G_TEXT Dunkelgrau auf Hellgrau */
 		if ((t->ob_type == G_FTEXT) && (aes_global[10] >= 4))
 		{
-			bft = &(t->ob_spec.tedinfo->te_ucolor.te_colspec);
-			bft->textcol = LBLACK;
-			bft->interiorcol = LWHITE;
-			bft->textmode = TEXT_TRANSPARENT;
+			color = t->ob_spec.tedinfo->te_color;
+			color &= (unsigned short) ~((0x0f << 8) | (1 << 7) | 0x0f);
+			color |= (unsigned short) ((LBLACK << 8) | LWHITE);
+			t->ob_spec.tedinfo->te_color = color;
 		}
 		else
 			t->ob_state |= DISABLED;
@@ -427,7 +452,8 @@ void ob_sel(OBJECT *tree, int which)
 int do_dialog(OBJECT *dialog)
 {
 	GRECT cg;
-	int exitbutton, dummy;
+	short exitbutton;
+	short dummy;
 	void *flyinf;
 	void **p_flyinf;
 
@@ -435,11 +461,11 @@ int do_dialog(OBJECT *dialog)
 	flyinf = NULL;
 /*	p_flyinf = (status.use_fldl) ? &flyinf : NULL;	*/
 	p_flyinf = &flyinf;
-	form_center(dialog, &cg);
-	form_xdial(FMD_START, NULL, &cg, p_flyinf);
-	objc_draw(dialog, ROOT, MAX_DEPTH, &cg);
+	form_center_grect(dialog, &cg);
+	form_xdial_grect(FMD_START, NULL, &cg, p_flyinf);
+	objc_draw_grect(dialog, ROOT, MAX_DEPTH, &cg);
 	exitbutton = 0x7f & form_xdo(dialog, 0, &dummy, NULL, flyinf);
-	form_xdial(FMD_FINISH, NULL, &cg, p_flyinf);
+	form_xdial_grect(FMD_FINISH, NULL, &cg, p_flyinf);
 	ob_dsel(dialog, exitbutton);
 
 	return exitbutton;
@@ -450,7 +476,8 @@ int do_exdialog(OBJECT *dialog,
 			 int *was_redraw)
 {
 	GRECT cg;
-	int exitbutton,dummy;
+	short exitbutton;
+	short dummy;
 	void *flyinf;
 	void **p_flyinf;
 
@@ -458,21 +485,21 @@ int do_exdialog(OBJECT *dialog,
 	flyinf = NULL;
 /*	p_flyinf = (status.use_fldl) ? &flyinf : NULL;	*/
 	p_flyinf = &flyinf;
-	form_center(dialog, &cg);
-	form_xdial(FMD_START, NULL, &cg, p_flyinf);
-	objc_draw(dialog, ROOT, MAX_DEPTH, &cg);
+	form_center_grect(dialog, &cg);
+	form_xdial_grect(FMD_START, NULL, &cg, p_flyinf);
+	objc_draw_grect(dialog, ROOT, MAX_DEPTH, &cg);
 	for	(;;)
 	{
 		exitbutton = 0x7f & form_xdo(dialog, 0, &dummy, NULL, flyinf);
 		ob_dsel(dialog, exitbutton);
 		if ((*check)(dialog, exitbutton))
 			break;
-		objc_draw(dialog, exitbutton, 1, &cg);
+		objc_draw_grect(dialog, exitbutton, 1, &cg);
 	}
 
-	form_xdial(FMD_FINISH, NULL, &cg, p_flyinf);
+	form_xdial_grect(FMD_FINISH, NULL, &cg, p_flyinf);
 	if (was_redraw != NULL)
-		*was_redraw = (flyinf == NULL);	/* RÅckgabe: Bildschirm zerstîrt */
+		*was_redraw = (flyinf == NULL);	/* R√ºckgabe: Bildschirm zerst√∂rt */
 
 	return exitbutton;
 }
@@ -511,7 +538,7 @@ char *Rgetstring(WORD string_id)
 
 /*********************************************************************
 *
-* FÅhrt einen Alert aus der RSC-Datei durch.
+* F√ºhrt einen Alert aus der RSC-Datei durch.
 *
 *********************************************************************/
 
@@ -523,8 +550,8 @@ WORD Rform_alert(WORD defbutton, WORD alert_id)
 
 /*********************************************************************
 *
-* FÅhrt einen Alert aus der RSC-Datei durch.
-* Der Alertstring enthÑlt einen Dateinamen.
+* F√ºhrt einen Alert aus der RSC-Datei durch.
+* Der Alertstring enth√§lt einen Dateinamen.
 *
 *********************************************************************/
 
@@ -570,7 +597,7 @@ WORD Rxform_alert(WORD defbutton, WORD alert_id,
 * Dxreaddir()
 *
 * Beim Fxattr werden Symlinks nicht verfolgt.
-* <xr> enthÑlt nach dem Aufruf den Fehlercode von Fxattr.
+* <xr> enth√§lt nach dem Aufruf den Fehlercode von Fxattr.
 *
 *********************************************************************/
 
@@ -623,7 +650,7 @@ char *get_name(char *path)
 
 /*********************************************************************
 *
-* Ermittelt zu einem vollen Pfadnamen den zugehîrigen
+* Ermittelt zu einem vollen Pfadnamen den zugeh√∂rigen
 * Applikationsnamen (8 Zeichen, rechts Leerstellen).
 *
 *********************************************************************/
@@ -640,7 +667,7 @@ void get_app_name(char *path, char apname[9])
 		if (*name == '.' || *name == EOS)
 			*apnamp++ = ' ';
 		else
-			*apnamp++ = toupper(*name++);
+			*apnamp++ = mgx_toupper((unsigned char) *name++);
 	}
 	*apnamp = EOS;
 }
@@ -648,13 +675,13 @@ void get_app_name(char *path, char apname[9])
 
 /*********************************************************************
 *
-* KÅrzt einen Pfadnamen sinnvoll ab.
-* Der Pfad muû mit X:\ beginnen.
+* K√ºrzt einen Pfadnamen sinnvoll ab.
+* Der Pfad mu√ü mit X:\ beginnen.
 * Er wird, wenn er zu lang ist, auf
 *
 *	X:\...\lastdirs
 *
-* gekÅrzt.
+* gek√ºrzt.
 *
 *********************************************************************/
 
@@ -711,7 +738,16 @@ void Mgraf_mouse(int type)
 
 void date_to_str(char *s, unsigned int date)
 {
-	date2str(s, date);
+	/* Kernel Pure C ABI: A0/D0 in; D0-D2/A0-A1 destroyed.
+	 * Declaring D2 clobbered makes GCC preserve its callee-saved value. */
+	register char *buffer __asm__("a0") = s;
+	register unsigned long value __asm__("d0") = (unsigned short) date;
+	register void *routine __asm__("a1") = date2str;
+
+	__asm__ volatile ("jsr (%2)"
+		: "+a" (buffer), "+d" (value), "+a" (routine)
+		:
+		: "d1", "d2", "cc", "memory");
 }
 
 
@@ -751,7 +787,7 @@ void drv_to_str(char *s, char c)
 {
 	while (*s)
 	{
-		if (s[1] == ':')		/* nÑchstes Zeichen ist ':' */
+		if (s[1] == ':')		/* n√§chstes Zeichen ist ':' */
 		{
 			*s = c;
 			break;
@@ -775,7 +811,7 @@ char *print_ul(unsigned long z, char *p)
 	char hilfs[20];
 
 
-	ultoa(z, hilfs, 10);
+	uint_to_dec(z, hilfs);
 	s = hilfs;
 	*p++ = *s++;
 	len = (int) strlen(s);
@@ -795,8 +831,8 @@ char *print_ul(unsigned long z, char *p)
 /*********************************************************************
 *
 * Wandelt 64-bit unsigned dezimal in Text mit Tausender-Trenner.
-* FÅgt ggf. ein "k" dahinter, d.h. geht bis 4096 GB.
-* '#' bei öberlauf.
+* F√ºgt ggf. ein "k" dahinter, d.h. geht bis 4096 GB.
+* '#' bei √úberlauf.
 *
 *********************************************************************/
 
@@ -812,7 +848,7 @@ char *print_ull(unsigned long z[2], char *p)
 	{
 		if (z[0] >= 1024L)
 		{
-			c = '#';		/* öberlauf */
+			c = '#';		/* √úberlauf */
 			goto err;
 		}
 
@@ -840,8 +876,8 @@ char *print_ull(unsigned long z[2], char *p)
 
 /*********************************************************************
 *
-* Wandelt "64-bit unsigned" dezimal in Text, und zwar fÅr groûe
-* Festplatten-KapazitÑten.
+* Wandelt "64-bit unsigned" dezimal in Text, und zwar f√ºr gro√üe
+* Festplatten-Kapazit√§ten.
 *
 * z >= 1 G	=> n,m G
 * 
@@ -852,8 +888,8 @@ char *print_ull(unsigned long z[2], char *p)
 char *print_big_bytes(unsigned long z[2], char *p)
 {
 	/*
-	 * z[1] ist ausreichend fÅr 4 Gbyte, bei grîûeren
-	 * Zahlen wird z[0] benîtigt
+	 * z[1] ist ausreichend f√ºr 4 Gbyte, bei gr√∂√üeren
+	 * Zahlen wird z[0] ben√∂tigt
 	 */
 
 	register long zh = z[0];
@@ -872,7 +908,7 @@ char *print_big_bytes(unsigned long z[2], char *p)
 		/* one petabyte or more, 2^50  */
 		/* get terabytes, i.e. 2^40 bits */
 		zl = zh >> 8;
-		ultoa(zl >> 10, p, 10);
+		uint_to_dec((unsigned long) (zl >> 10), p);
 		zl &= 0x3ff;     /* remove P */
 		suffix = 'P';
 	}
@@ -882,7 +918,7 @@ char *print_big_bytes(unsigned long z[2], char *p)
 		/* one terabyte or more, 2^40  */
 		/* get gigabytes, i.e. 2^30 bits */
 		zl >>= 30;
-		ultoa(zh >> 8, p, 10);
+		uint_to_dec((unsigned long) (zh >> 8), p);
 		zh &= 0xff;     /* remove T */
 		zl |= (zh << 2);
 		suffix = 'T';
@@ -894,7 +930,7 @@ char *print_big_bytes(unsigned long z[2], char *p)
 		/* get megabytes, i.e. 2^20 bits */
 		zl >>= 20;
 		zl |= (zh << 12);
-		ultoa(zl >> 10, p, 10);
+		uint_to_dec((unsigned long) (zl >> 10), p);
 		zl &= 0x3ff;     /* remove G */
 		suffix = 'G';
 	}
@@ -904,7 +940,7 @@ char *print_big_bytes(unsigned long z[2], char *p)
 		/* one megabyte or more, 2^20  */
 		/* get kilobytes, i.e. 2^10 bits */
 		zl >>= 10;
-		ultoa(zl >> 10, p, 10);
+		uint_to_dec((unsigned long) (zl >> 10), p);
 		zl &= 0x3ff;     /* remove M */
 		suffix = 'M';
 	}
@@ -913,13 +949,13 @@ char *print_big_bytes(unsigned long z[2], char *p)
 	{
 		/* one kilobyte or more, 2^10  */
 		/* get bytes, i.e. 2^0 bits */
-		ultoa(zl >> 10, p, 10);
+		uint_to_dec((unsigned long) (zl >> 10), p);
 		zl &= 0x3ff;     /* remove k */
 		suffix = 'k';
 	}
 	else
 	{
-		ultoa(zl, p, 10);
+		uint_to_dec((unsigned long) zl, p);
 		suffix = 'B';
 	}
 	
@@ -927,7 +963,7 @@ char *print_big_bytes(unsigned long z[2], char *p)
 	if (zl >= 102)
 	{
 		*p++ = ',';
-		ultoa((zl * 10) >> 10, p, 10);
+		uint_to_dec((unsigned long) ((zl * 10) >> 10), p);
 		STR_END(p);
 	}
 	*p++ = suffix;
@@ -939,7 +975,7 @@ char *print_big_bytes(unsigned long z[2], char *p)
 
 /*********************************************************************
 *
-* Rechnet Dateinamen ins interne Format und zurÅck
+* Rechnet Dateinamen ins interne Format und zur√ºck
 *
 *********************************************************************/
 
@@ -989,7 +1025,7 @@ void fname_ext(char *s, char *d)
 * Endung BAT,BTP		: Batchdatei
 * sonst				: Textdatei
 *
-* vorbereitet fÅr lange Dateinamen: Die Extension darf groû oder
+* vorbereitet f√ºr lange Dateinamen: Die Extension darf gro√ü oder
 * klein geschrieben werden.
 *
 *********************************************************************/
@@ -1025,8 +1061,8 @@ int suffixtyp(char *s)
 
 /*********************************************************************
 *
-* gibt != 0 bei passenden Namen zurÅck.
-* MÅûte fÅr lange Dateinamen geÑndert werden.
+* gibt != 0 bei passenden Namen zur√ºck.
+* M√º√üte f√ºr lange Dateinamen ge√§ndert werden.
 *
 *********************************************************************/
 /*

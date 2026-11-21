@@ -6,15 +6,15 @@
 #define KOBOLD_ANSWER 0x2F12       /* Antwort vom KOBOLD mit Status in Wort 3  */
                                    /* und Zeile in Wort 4                      */
 
-#define KOBOLD_CONFIG 0x2F13       /* Konfiguration erfragen. Dazu muû in Wort */
+#define KOBOLD_CONFIG 0x2F13       /* Konfiguration erfragen. Dazu mu√ü in Wort */
                                    /* 3 & 4 ein Zeiger auf eine KOBOLD_CONFIGU-*/
-                                   /* RATION Struktur Åbergeben werden.        */
+                                   /* RATION Struktur √ºbergeben werden.        */
 
 #define KOBOLD_FIRST_SLCT 0x2F14   /* Erfragt die aktuelle Selektion im Quell- */
-#define KOBOLD_NEXT_SLCT 0x2F15    /* fenster. Mit ..FIRST.. erhÑlt man das    */
+#define KOBOLD_NEXT_SLCT 0x2F15    /* fenster. Mit ..FIRST.. erh√§lt man das    */
                                    /* erste Objekt, mit ..NEXT.. alle weiteren.*/
-                                   /* In Wort 3 & 4 muû ein Zeiger auf einen   */
-                                   /* 128 Bytes langen Speicherbereich Åber-   */
+                                   /* In Wort 3 & 4 mu√ü ein Zeiger auf einen   */
+                                   /* 128 Bytes langen Speicherbereich √ºber-   */
                                    /* geben werden (unter MultiTos als 'global'*/
                                    /* alloziert!), in den der komplette Pfad   */
                                    /* geschrieben wird. In der KOBOLD_ANSWER   */
@@ -23,23 +23,23 @@
                                    /*       0: Objekt ist eine Datei           */
                                    /*       1: Objekt ist ein Ordner           */
 
-#define KOBOLD_CLOSE 0x2F16        /* Dient zum expliziten Schlieûen des       */
+#define KOBOLD_CLOSE 0x2F16        /* Dient zum expliziten Schlie√üen des       */
                                    /* KOBOLD, falls Antwortstatus != FINISHED  */
 
 #define KOBOLD_FREE_DRIVES 0x2F17   /* Gibt evt. belegte Laufwerke frei und     */
-                                    /* lîscht eingelesene Verzeichnisse         */
+                                    /* l√∂scht eingelesene Verzeichnisse         */
 
 /*-----------------------------------------------------------------------------*/
-/* Ein Zeiger auf die folgende Struktur muû dem Kobold in Wort 3+4 des
-Message-Puffers fÅr den Code KOBOLD_CONFIG Åbergeben werden. Die entsprechende
-Speicherstruktur muû unter MultiTos fÅr andere Prozesse als beschreibbar
-('global') alloziert werden (Mxalloc(size,0x1mode)). Kobold fÅllt dann die
+/* Ein Zeiger auf die folgende Struktur mu√ü dem Kobold in Wort 3+4 des
+Message-Puffers f√ºr den Code KOBOLD_CONFIG √ºbergeben werden. Die entsprechende
+Speicherstruktur mu√ü unter MultiTos f√ºr andere Prozesse als beschreibbar
+('global') alloziert werden (Mxalloc(size,0x1mode)). Kobold f√ºllt dann die
 Daten auf und teilt mit einer KOBOLD_ANSWER Message die Beendigung mit.      */
 
 typedef struct
 {
     unsigned int 
-        version,                    /* Version, z.B. 0x205 fÅr version 2.05     */
+        version,                    /* Version, z.B. 0x205 f√ºr version 2.05     */
         reserved[8],                /* Reserviert                               */
                         
         buffer,         /* Freier Dateipuffer zum Zeitpunkt der Abfrage         */

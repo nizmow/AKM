@@ -1,4 +1,4 @@
-/* Resource Datei Indizes fÅr MAGXDESL */
+/* Resource Datei Indizes f√ºr MAGXDESL */
 
 #define HAUPTMEN         0   /* Menuebaum */
 #define MM_DESK          3   /* TITLE in Baum HAUPTMEN */

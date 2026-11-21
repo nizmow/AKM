@@ -179,7 +179,7 @@
 #define PDOM_TOS         0
 #define PDOM_MINT        1
 
-/* Modi und Codes fÅr Dpathconf() (-> MiNT) */
+/* Modi und Codes f√ºr Dpathconf() (-> MiNT) */
 
 #define   DP_MAXREQ      -1
 #define   DP_IOPEN       0
@@ -236,7 +236,7 @@
 
 struct ploadinfo
      {
-     WORD fnamelen;			/* LÑnge von <fname> inkl. EOS */
+     WORD fnamelen;			/* L√§nge von <fname> inkl. EOS */
      char *cmdlin;			/* Zeiger auf 128 Bytes Platz */
      char *fname;			/* Zeiger auf <fnamelen> Bytes Platz */
      };
@@ -247,7 +247,7 @@ struct mutimbuf
      {
      unsigned int actime;          /* Zugriffszeit */
      unsigned int acdate;
-     unsigned int modtime;         /* letzte énderung */
+     unsigned int modtime;         /* letzte √Ñnderung */
      unsigned int moddate;
      };
 
@@ -504,12 +504,12 @@ typedef struct
 
 typedef struct
      {
-     long magic;                   /* muû $87654321 sein              */
+     long magic;                   /* mu√ü $87654321 sein              */
      void *membot;                 /* Ende der AES- Variablen         */
      void *aes_start;              /* Startadresse                    */
      long magic2;                  /* ist 'MAGX'                      */
      long date;                    /* Erstelldatum ttmmjjjj           */
-     void (*chgres)(int res, int txt);  /* Auflîsung Ñndern           */
+     void (*chgres)(int res, int txt);  /* Aufl√∂sung √§ndern           */
      long (**shel_vector)(void);   /* residentes Desktop              */
      char *aes_bootdrv;            /* von hieraus wurde gebootet      */
      int  *vdi_device;             /* vom AES benutzter VDI-Treiber   */
@@ -631,7 +631,7 @@ int     Fdatime( DOSTIME *timeptr, int handle, int wflag );
 #define SC_DOSVARS   2                                      /* KAOS 1.4 */
 #define SC_MOWNER	 3		/* reserviert */			/* MagiC 3.00 */
 #define SC_WBACK	 4								/* MagiC 4.01 */
-#define  SCWB_GET	 0		/* (fÅr WBDAEMON) */		/* MagiC 4.01 */
+#define  SCWB_GET	 0		/* (f√ºr WBDAEMON) */		/* MagiC 4.01 */
 #define  SCWB_SET    1								/* MagiC 4.01 */
 #define  SCWB_RESET  2								/* MagiC 4.01 */
 #define SC_INTMAVAIL 5        /* reserviert */			/* MagiC 4.01 */
@@ -657,7 +657,7 @@ int     Fdatime( DOSTIME *timeptr, int handle, int wflag );
 typedef struct
      {
      long mcb_magic;                    /* 'ANDR' oder 'KROM' (letzter)    */
-     long mcb_len;                      /* NettolÑnge                      */
+     long mcb_len;                      /* Nettol√§nge                      */
      long mcb_owner;                    /* PD *                            */
      long mcb_prev;                     /* vorh. Block oder NULL           */
      char mcb_data[0];

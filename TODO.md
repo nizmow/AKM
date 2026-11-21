@@ -136,8 +136,8 @@ all nine ahead of their consumers.
 - [x] **VT52** — independent `vt52` target builds `VT52.PRG` and the German
   resource, with source-built `DRAGDROP`. The assembly/C hooks use GCC's stack
   ABI. `mise run test:vt52-neost` launches a delayed TOS child and compares the
-  archived/rebuilt terminal screens pixel-for-pixel. Interactive input remains
-  untested. Next: `MAGXDESK` version 5.
+  archived/rebuilt terminal screens pixel-for-pixel. Interactive input remains untested.
+- [x] **MAGXDESK version 5** — source-built `magxdesk` target; `mise run test:magxdesk-neost` reaches the desktop on cloned MagiC images and compares the desktop content pixel-for-pixel. Corrected the 18-byte APPLICAT record layout and retained relocated icon-cache pointers by removing an unsafe post-relocation `realloc`. Version 4 is out of scope.
 - [ ] Separate assembly builds: MCMD, MAGXCONF and appropriate utilities;
   FLP_PAR is a C pair, not an assembly family.
 - [ ] Loadable components: image/window-frame SLBs, CPXs and drivers.

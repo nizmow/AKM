@@ -911,3 +911,62 @@ terminal window is reopened and raised after `shel_write`; the public
 resource and a delayed TOS child. The child writes through the hooked BIOS
 console path, and the final terminal screens match pixel-for-pixel. Interactive
 keyboard/mouse terminal operations remain untested.
+
+## MAGXDESK version 5
+
+`make -f Makefile.apps magxdesk` builds the version-5 C sources with MiNTLib and
+GEMlib, using the default application ABI. It omits the legacy `MAIN.C` and
+`MINSTART.S` startup and links no archived Pure C objects or libraries. The
+unchanged German resource files are copied into the output bundle. Version 4 is
+a separate source tree and was not part of this target.
+
+`MAGXDESK_GEM.H` adapts legacy names to public SDK types and keeps MagiC-specific
+structures explicit. The `APPLICAT.DAT` cache uses packed 18-byte application
+records; `config`, `memlimit` and icon offsets are asserted because the older
+v5 import header incorrectly inserted a reserved word. That mismatch caused
+later cache entries to be read at the wrong offsets.
+
+After `rsrc_rcfix` relocates cached icon pointers into the cache allocation,
+do not shrink that allocation with `realloc`: if it moves the buffer, the
+embedded pointers become stale. Keeping the loaded cache allocation intact
+restores the lower file icons and preserves a pixel-identical startup desktop.
+
+`mise run test:magxdesk-neost` clones the supplied MagiC image separately for
+the archived and rebuilt executables, installs the same resources and compares
+the desktop content region. The final run matched pixel-for-pixel; evidence is
+under `build/atari/neost-magxdesk-20261121-093550`. This covers only the
+initial desktop state, not the complete interaction surface.
+
+Additional ABI boundaries:
+
+- The kernel date formatter takes the output buffer in A0 and the DOS date in
+  D0, and destroys D2 as well as caller-saved registers. `date_to_str` uses an
+  inline-assembly bridge with an explicit D2 clobber so GCC preserves it across
+  the public stack-ABI call.
+- Puntaes keyboard conversion consumes a word-sized keycode after its word
+  subfunction. Its binding pushes exactly ten bytes including the XBIOS opcode.
+- The desktop tile raster request uses word-sized subfunction/mode fields;
+  size and all field offsets after the magic are asserted.
+- The returned `xp_rasterC` callback also uses Pure C's stack ABI: long
+  word-count/plane-length, word plane-count, then two pointers (18 argument
+  bytes). `expand_raster` builds that stack explicitly and declares D2
+  clobbered so GCC preserves it; an ordinary GCC function-pointer call is
+  incompatible even when its plane-count parameter is declared `WORD`.
+- Trap comparisons use `GEMDOS_ELOCKED` and `GEMDOS_ERANGE`, never libc's
+  positive errno names. TEDINFO disabled-field colors change bits 8–11, bit 7
+  and bits 0–3, leaving frame color and fill pattern intact.
+
+A focused NeoST/MagiC guest probe verified leap-day formatting against `_IDT`,
+buffer guards, D2 preservation, Alt-A/Alt-1 conversion, monochrome IMG tile
+loading and TEDINFO field preservation. Evidence:
+`build/atari/neost-magxdesk-abi-20261121-095927/ABIPROBE.TXT`.
+Locked-drive/overlong-name error scenarios and rendered alias-field colors
+were not exercised by that probe.
+
+A separate NeoST/MagiC color probe used ST low resolution (`#_DEV 2 0` on the
+cloned image). The real kernel callback converted a four-plane, two-word raster
+to the expected interleaved bytes, preserved a D2 sentinel and destination
+guards, and `tile_init` loaded the matching 32×1 color IMG successfully.
+Evidence: `build/atari/neost-magxdesk-raster-20261121-102022/RASTER.TXT`.
+This checks raster conversion and tile loading, not desktop background painting
+or other color depths.

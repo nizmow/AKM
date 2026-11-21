@@ -30,6 +30,12 @@ MGSEARCH_SOURCES := $(addprefix $(MGSEARCH_DIR)/,MGSEARCH.C SEARCH.C SRCH_WIN.C)
 MGSEARCH_OBJECTS := $(patsubst $(MGSEARCH_DIR)/%.C,$(BUILD_DIR)/mgsearch/%.o,$(MGSEARCH_SOURCES)) \
   $(BUILD_DIR)/mgsearch/GEMUTILS.o $(BUILD_DIR)/mgsearch/WINDOWS.o \
   $(BUILD_DIR)/mgsearch/PATTERN.o
+
+MAGXDESK_DIR := MagiC/APPS/MAGICDESK/MAGXDESK.5
+MAGXDESK_SOURCES := $(addprefix $(MAGXDESK_DIR)/,MAGXDESK.C SPEC.C \
+  DEFAULTS.C DIALOGS.C DLG_INFO.C DWINDOWS.C FILES.C IMGLOAD.C KACHEL.C \
+  KLICK.C ALLG.C DMENU.C DKLICK.C PATTERN.C LL.C SHELSORT.C)
+MAGXDESK_OBJECTS := $(patsubst $(MAGXDESK_DIR)/%.C,$(BUILD_DIR)/magxdesk/%.o,$(MAGXDESK_SOURCES))
 MGCOPY_DIR := MagiC/APPS/MGCOPY/SRC
 MGCOPY_GEMUT_DIR := MagiC/APPS/APPLICAT/SRC/IMPORT
 MGCOPY_INCLUDES := -I"$(MGCOPY_DIR)" -I"$(MGCOPY_GEMUT_DIR)"
@@ -55,7 +61,7 @@ VT52_OBJECTS := $(patsubst $(VT52_DIR)/%.C,$(BUILD_DIR)/vt52/%.o,$(VT52_SOURCES)
   $(BUILD_DIR)/vt52/DRAGDROP.o
 
 
-.PHONY: all applicat mod-app cmdline mac2st dump fc split showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 vt52-test-driver abi-check console-test-driver
+.PHONY: all applicat mod-app cmdline mac2st dump fc split showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 vt52-test-driver magxdesk abi-check console-test-driver
 all: mod-app
 applicat: $(BUILD_DIR)/applicat/APPLICAT.APP $(BUILD_DIR)/applicat/applicat.rsc \
   $(BUILD_DIR)/applicat/applicat.inf
@@ -71,6 +77,9 @@ mgcopy-test-driver: $(BUILD_DIR)/mgcopy/NEOSTART.PRG
 mgformat: $(BUILD_DIR)/mgformat/MGFORMAT.PRG $(BUILD_DIR)/mgformat/MGFORMAT.RSC
 mgformat-test-driver: $(BUILD_DIR)/mgformat/NEOSTART.PRG
 vt52: $(BUILD_DIR)/vt52/VT52.PRG $(BUILD_DIR)/vt52/VT52.RSC
+magxdesk: $(BUILD_DIR)/magxdesk/MAGXDESK.APP \
+  $(BUILD_DIR)/magxdesk/MAGXDESK.RSC $(BUILD_DIR)/magxdesk/MAGXDESL.RSC
+
 vt52-test-driver: $(BUILD_DIR)/vt52/NEOSTART.PRG $(BUILD_DIR)/vt52/VT52DEMO.TOS
 mgformat-hardware-kit: mgformat
 	rm -rf "$(BUILD_DIR)/mgformat-hardware"
@@ -121,6 +130,21 @@ $(BUILD_DIR)/mgview/%.o: $(MGVIEW_DIR)/%.C Makefile.apps
 $(BUILD_DIR)/mgview/MGVIEW.APP: $(MGVIEW_OBJECTS) Makefile.apps
 	$(CC) $(APP_FLAGS) $(MGVIEW_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
+$(BUILD_DIR)/magxdesk/%.o: $(MAGXDESK_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MAGXDESK_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/magxdesk/MAGXDESK.APP: $(MAGXDESK_OBJECTS) Makefile.apps
+	$(CC) $(APP_FLAGS) $(MAGXDESK_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/magxdesk/MAGXDESK.RSC: $(MAGXDESK_DIR)/MAGXDESK.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/magxdesk/MAGXDESL.RSC: $(MAGXDESK_DIR)/MAGXDESL.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
 abi-check: $(BUILD_DIR)/abi-check/ABI_CHECK.o
 
 $(BUILD_DIR)/abi-check/ABI_CHECK.o: MagiC/APPS/ABI_CHECK.C Makefile.apps
@@ -440,6 +464,7 @@ $(BUILD_DIR)/mgedit/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 
 -include $(MGEDIT_OBJECTS:.o=.d)
 -include $(MGSEARCH_OBJECTS:.o=.d)
+-include $(MAGXDESK_OBJECTS:.o=.d)
 -include $(BUILD_DIR)/mgsearch/NEOSTART.d
 -include $(MGCOPY_OBJECTS:.o=.d)
 -include $(BUILD_DIR)/mgcopy/NEOSTART.d

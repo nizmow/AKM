@@ -1,12 +1,12 @@
 /*********************************************************************
 *
-* Dieses Modul enthÑlt die Bearbeitung aller Dateioperationen, also
+* Dieses Modul enth√§lt die Bearbeitung aller Dateioperationen, also
 * Info Anzeigen und Umbenennen.
 *
 *********************************************************************/
 
-#include <mgx_dos.h>
-#include "k.h"
+#include <sys/stat.h>
+#include "K.H"
 #include <string.h>
 #include <stdlib.h>
 
@@ -34,7 +34,7 @@ long eject_medium(char *path)
 
 /*********************************************************************
 *
-* Ermittelt das tatsÑchliche Laufwerk eines Pfads
+* Ermittelt das tats√§chliche Laufwerk eines Pfads
 *
 *********************************************************************/
 
@@ -47,7 +47,7 @@ long get_real_drive(char *path)
 
 
 	p = get_name(path);
-	if (*p)				/* Dateiname muû abgespalten werden */
+	if (*p)				/* Dateiname mu√ü abgespalten werden */
 	{
 		drv = (int) (p-path);
 		memcpy(buf, path, drv);
@@ -127,10 +127,10 @@ void set_dirty(long err, char *path, int drv, char val)
 
 /*********************************************************************
 *
-* DurchlÑuft einen Pfad und fÅhrt bei jeder gefundenen Datei
+* Durchl√§uft einen Pfad und f√ºhrt bei jeder gefundenen Datei
 * vorher ein Programm <before>, hinterher <after> aus.
 * Sind <before> und <after> == NULL, werden nur Informationen gesammelt.
-* gibt ggf. DOS- Fehlercode zurÅck.
+* gibt ggf. DOS- Fehlercode zur√ºck.
 *
 *********************************************************************/
 
@@ -143,7 +143,7 @@ static char *_path;
 static long _walk_path(void)
 {
 	long dir;
-	int	dirlen;			/* Anzahl EintrÑge in diesem Verzeichnis */
+	int	dirlen;			/* Anzahl Eintr√§ge in diesem Verzeichnis */
 	long errcode;
 	char *endp;
 	char name[MAX_NAMELEN + 1 + 4];
@@ -165,7 +165,7 @@ static long _walk_path(void)
 		return EBREAK;
 	dirlen = 0;
 
-	errcode = Dopendir(_path, DOPEN_NORMAL);
+	errcode = Dopendir(_path, 0);
 	if (errcode < E_OK)
 		goto err2;
 

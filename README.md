@@ -225,6 +225,12 @@ use GCC's stack ABI. `mise run test:vt52-neost` compares an archived/rebuilt
 terminal session with a delayed TOS child; the final screens match
 pixel-for-pixel.
 
+`mise run apps -- magxdesk` builds `build/atari/apps/magxdesk/MAGXDESK.APP`
+from the version-5 C sources using MiNTLib/GEMlib and the default application
+ABI; it does not use archived Pure C objects. `mise run test:magxdesk-neost`
+compares the rebuilt and archived desktops on separate cloned MagiC images;
+the desktop content matches pixel-for-pixel. Version 4 remains separate.
+
 Repeatable emulator checks use explicit, subsystem-scoped tasks. Run
 `mise run test:mod-app-neost` (or `python3 scripts/neost-mod-app-smoke.py`).
 Runner options and outputs: `python3 scripts/neost-mod-app-smoke.py --help`.

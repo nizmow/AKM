@@ -90,6 +90,11 @@ description = "Compare archived and rebuilt MGSEARCH dialogs and results under N
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-mgsearch-smoke.py"
 
+[tasks."test:magxdesk-neost"]
+description = "Compare archived and rebuilt MAGXDESK v5 startup under NeoST"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-magxdesk-smoke.py"
+
 [tasks."test:neost-server"]
 description = "Run NeoST server client protocol regression tests"
 dir = "{{ config_root }}"

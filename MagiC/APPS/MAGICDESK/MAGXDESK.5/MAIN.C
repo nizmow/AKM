@@ -101,7 +101,7 @@ _main()
 				t = 0;
 				if (id > 0)
 				{                         // da ist eines
-					winx_get(id, WF_OWNER, &rv);    // Eigentmer finden
+					winx_get(id, WF_OWNER, &rv);    // EigentÃ¼mer finden
 					id = rv.g_x;                    // merken
 					t = 7;                          // Typ ist Fenster
 				}

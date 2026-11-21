@@ -6,10 +6,10 @@
 
 #define DEBUG 0
 
-#include <mt_aes.h>
-#include "magxdesk.h"
-#include "appldata.h"
-#include "av.h"
+#include "MAGXDESK_GEM.H"
+#include "MAGXDESK.H"
+#include "IMPORT/APPLDATA.H"
+#include "IMPORT/AV.H"
 
 #define TRUE   1
 #define FALSE  0
@@ -23,11 +23,11 @@
 
 #define MIN_FNAMLEN 8
 
-/* FÅr Kommandozeilen */
+/* F√ºr Kommandozeilen */
 
 #define MAX_PARAMLEN 10240L
 
-/* fÅr D&D: */
+/* f√ºr D&D: */
 
 /*
 #define DD_TRASH     4
@@ -58,13 +58,13 @@
 extern char *gmemptr;
 extern int n_deskicons;
 
-extern long n_apps;				/* TabellenlÑnge */
+extern long n_apps;				/* Tabellenl√§nge */
 extern APPLICATION *apps;		/* Tabelle */
-extern long n_dfiles;			/* TabellenlÑnge */
+extern long n_dfiles;			/* Tabellenl√§nge */
 extern DATAFILE *dfiles;		/* Tabelle */
-extern long n_paths;			/* TabellenlÑnge */
+extern long n_paths;			/* Tabellenl√§nge */
 extern PATHNAME *paths;			/* Tabelle */
-extern long n_specs;			/* TabellenlÑnge */
+extern long n_specs;			/* Tabellenl√§nge */
 extern SPECIALOBJECT *specs;	/* Tabelle */
 extern CICONBLK **icons;
 
@@ -75,7 +75,7 @@ extern CICONBLK **icons;
 *
 **************************************************/
 
-#define ENOWND -100				/* kein Fenster verfÅgbar */
+#define ENOWND -100				/* kein Fenster verf√ºgbar */
 
 
 /**************************************************
@@ -93,14 +93,14 @@ extern CICONBLK **icons;
 #define PLUSICONS	10			/* Anzahl freier Desktop- Icons */
 #define MAX_ICONTXT	80
 #define TTPLEN 63
-#define AUTOUPDATE_MS 2000L		/* fÅr Fenster-Auto-Update */
+#define AUTOUPDATE_MS 2000L		/* f√ºr Fenster-Auto-Update */
 
 #define MOUSE_DRAG_DETECT_MS 200	/* gib dem Anwender 200 ms zum Loslassen der Maustaste */
 
-#define FIRSTMAXMEMBLK 0x40000L		/* fÅr Fenster: Beginne mit 256k */
-#define NEXTMEMBLK     0x40000L		/* fÅr Fenster: Steigere 256k */
-#define LASTMAXMEMBLK  0x200000L	/* fÅr Fenster: Ende mit 2M */
-#define MINFREEBLK     32768L		/* soviel muû noch frei sein */
+#define FIRSTMAXMEMBLK 0x40000L		/* f√ºr Fenster: Beginne mit 256k */
+#define NEXTMEMBLK     0x40000L		/* f√ºr Fenster: Steigere 256k */
+#define LASTMAXMEMBLK  0x200000L	/* f√ºr Fenster: Ende mit 2M */
+#define MINFREEBLK     32768L		/* soviel mu√ü noch frei sein */
 
 /* Angemeldete Programme */
 /* --------------------- */
@@ -133,8 +133,8 @@ extern char ext_btp[4];				/* Dateityp .BTP */
 
 typedef struct
 {
-	int icon_type;				/* Bildtyp I_FLPDSK...	*/
-	unsigned char isdisk;		/* Buchstabe fÅr Disk-Icon oder 0 */
+	WORD icon_type;				/* Bildtyp I_FLPDSK...	*/
+	unsigned char isdisk;		/* Buchstabe f√ºr Disk-Icon oder 0 */
 	unsigned char is_alias;		/* Alias ? */
 	char text[MAX_ICONTXT];		/* Text (Diskname, Pfad) */
 	CICONBLK data;
@@ -149,13 +149,13 @@ extern int dirty_applicat_dat;
 
 typedef struct
 {
-	int number;						/* Eingangsreihenfolge */
-	unsigned char flags;			/* Bit 0: "paût zu Muster" */
+	WORD number;						/* Eingangsreihenfolge */
+	unsigned char flags;			/* Bit 0: "pa√üt zu Muster" */
 									/* Bit 1: versch (selected) */
 									/* Bit 2: ist Programm */
 	unsigned char icon_type;
-	unsigned int time;
-	unsigned int date;
+	unsigned short time;
+	unsigned short date;
 	unsigned long filesize;
 	unsigned char attrib;			/* eigentlich redundant */
 	unsigned char is_alias;			/* 1:Alias 2:badAlias */
@@ -169,7 +169,7 @@ typedef struct
 #define WFLAG_ICONIFIED    1
 #define WFLAG_ALLICONIFIED 2
 
-/* Modi fÅr w->iconified:
+/* Modi f√ºr w->iconified:
    NORMAL: Fenster soll auf <g> ikonifiziert werden
    HIDE:   anderes Fenster wurde mit Ctrl ikonifiziert
    ALL:    Fenster wurde mit Ctrl ikonifiziert
@@ -181,12 +181,12 @@ typedef struct
 
 typedef struct _window
 {
-	int    wnr;				/* 0..NUM_WINDOWS-1 */
-	int    handle;			/* Handle oder 0 				*/
-	int    flags;			/* Bit 0: Ikonifiziert			*/
-	int    kind;
+	WORD   wnr;				/* 0..NUM_WINDOWS-1 */
+	WORD   handle;			/* Handle oder 0 				*/
+	WORD   flags;			/* Bit 0: Ikonifiziert			*/
+	WORD   kind;
 	void   (*key)			(struct _window *w, int kstate, int key);
-	void   (*message)		(struct _window *w, int kstate, int message[16]);
+	void   (*message)		(struct _window *w, int kstate, short message[16]);
 	void   (*closed)		(struct _window *w, int kstate);
 	void   (*topped)		(struct _window *w);
 	void   (*iconified)		(struct _window *w, GRECT *g, int mode);
@@ -198,44 +198,44 @@ typedef struct _window
 	void   (*sized)			(struct _window *w, GRECT *g);
 	void   (*moved)			(struct _window *w, GRECT *g);
 	void   (*draw)			(struct _window *w, GRECT *g);
-	char   path[128];		/* "", wenn nicht geîffnet */
-	int    real_drive;		/* tatsÑchl. Laufwerk oder -1 */
+	char   path[128];		/* "", wenn nicht ge√∂ffnet */
+	WORD   real_drive;		/* tats√§chl. Laufwerk oder -1 */
 	WORD   mdate;			/* Modifikationsdatum */
 	WORD   mtime;			/* Modifikationszeit */
 	char   dos_mode;		/* Dateien 8+3 (DOS) */
 	char   maske[13];		/* etwa "*.*" */
-	char   sel_maske[MAX_SELMASK+1];	/* FÅr Objektselektion */
+	char   sel_maske[MAX_SELMASK+1];	/* F√ºr Objektselektion */
 	char   info[60+MAX_SELMASK];		/* Infozeile */
 	char   title[128];		/* Titelzeile */
-	GRECT  out;				/* Fenster-Gesamtmaûe */
-	GRECT  in;				/* Fenster-Innenmaûe */
-	int    showw;			/* Breite eines Objekts */
-	int    showh;			/* Hîhe eines Objekts */
-	int    max_hicon;		/* grîûte Iconhîhe */
-	int    max_wicnobj;		/* grîûte Iconbreite inkl. Text */
-	int    max_fname;		/* LÑnge des lÑngsten Dateinamens */
-	int    max_is_alias;	/* LÑngster Dateiname ist Alias */
-	int    xtab_namelen;	/* Breite der Namensspalte bei VektorzeichensÑtzen */
-	int    xtab_typelen;	/* Breite der Typspalte bei VektorzeichensÑtzen und 8+3-Modus */
-	int    xtab_sizelen;	/* Breite der Grîûenspalte bei VektorzeichensÑtzen */
-	int    xtab_datelen;	/* Breite der Datumsspalte bei VektorzeichensÑtzen */
-	int    xtab_timelen;	/* Breite der Zeitspalte bei VektorzeichensÑtzen */
-	int    xdist;			/* x-Abstand der Objekte */
-	int    ydist;			/* y-Abstand der Objekte */
-	int    xoffs;			/* x-Rand des ersten Objekts */
-	int    yoffs;			/* y-Rand des ersten Objekts */
-	int    realnum;			/* tatsÑchliche Anzahl Dateien */
-	int    shownum;			/* mit Maske angezeigte Anzahl */
-	int    too_much;		/* Flag fÅr "zuviele Dateien" */
-	int    cols;			/* Objekte/Zeile */
-	int    wlins;			/* Anzahl ganz sichtbarer Zeilen */
-	int    lins;			/* Anzahl Zeilen */
-	int    xscroll;			/* FÅr Textausgabe */
-	int    max_xscroll;		/*  " */
-	int    yscroll;			/* Nr. der obersten Zeile */
-	int    maxshift;		/* Maximales <shift> */
+	GRECT  out;				/* Fenster-Gesamtma√üe */
+	GRECT  in;				/* Fenster-Innenma√üe */
+	WORD   showw;			/* Breite eines Objekts */
+	WORD   showh;			/* H√∂he eines Objekts */
+	WORD   max_hicon;		/* gr√∂√üte Iconh√∂he */
+	WORD   max_wicnobj;		/* gr√∂√üte Iconbreite inkl. Text */
+	WORD   max_fname;		/* L√§nge des l√§ngsten Dateinamens */
+	WORD   max_is_alias;	/* L√§ngster Dateiname ist Alias */
+	WORD   xtab_namelen;	/* Breite der Namensspalte bei Vektorzeichens√§tzen */
+	WORD   xtab_typelen;	/* Breite der Typspalte bei Vektorzeichens√§tzen und 8+3-Modus */
+	WORD   xtab_sizelen;	/* Breite der Gr√∂√üenspalte bei Vektorzeichens√§tzen */
+	WORD   xtab_datelen;	/* Breite der Datumsspalte bei Vektorzeichens√§tzen */
+	WORD   xtab_timelen;	/* Breite der Zeitspalte bei Vektorzeichens√§tzen */
+	WORD   xdist;			/* x-Abstand der Objekte */
+	WORD   ydist;			/* y-Abstand der Objekte */
+	WORD   xoffs;			/* x-Rand des ersten Objekts */
+	WORD   yoffs;			/* y-Rand des ersten Objekts */
+	WORD   realnum;			/* tats√§chliche Anzahl Dateien */
+	WORD   shownum;			/* mit Maske angezeigte Anzahl */
+	WORD   too_much;		/* Flag f√ºr "zuviele Dateien" */
+	WORD   cols;			/* Objekte/Zeile */
+	WORD   wlins;			/* Anzahl ganz sichtbarer Zeilen */
+	WORD   lins;			/* Anzahl Zeilen */
+	WORD   xscroll;			/* F√ºr Textausgabe */
+	WORD   max_xscroll;		/*  " */
+	WORD   yscroll;			/* Nr. der obersten Zeile */
+	WORD   maxshift;		/* Maximales <shift> */
 	char   *memblk;			/* Speicherblock */
-	long   memblksize;		/* Grîûe Speicherblocks */
+	long   memblksize;		/* Gr√∂√üe Speicherblocks */
 	MYDTA  **pmydta;		/* Daten */
 	OBJECT *pobj;			/* Zeiger auf dargestellte Objekte */
 } WINDOW;
@@ -244,27 +244,27 @@ extern WINDOW *windows[NUM_WINDOWS + 1];	/* Zeiger auf Fenster */
 extern GRECT windows_g[NUM_WINDOWS + 1];	/* gespeicherte Positionen */
 
 extern int dirty_win,dirty_pgm;
-extern char dirty_drives[NUM_DRIVES];	/* 0 = Inhalt unverÑndert */
-								/* 1 = Inh.+fr.Sp. geÑndert */
-								/* 2 = nur Inh. geÑndert */
+extern char dirty_drives[NUM_DRIVES];	/* 0 = Inhalt unver√§ndert */
+								/* 1 = Inh.+fr.Sp. ge√§ndert */
+								/* 2 = nur Inh. ge√§ndert */
 extern DISKINFO dinfo[NUM_DRIVES];
 
 enum { OVERWRITE, BACKUP, CONFIRM };
 
 typedef struct
 {
-	char sort_mode;		/* sortiere nach Namen, Datum, Grîûe, Typ oder gar nicht */ 
+	char sort_mode;		/* sortiere nach Namen, Datum, Gr√∂√üe, Typ oder gar nicht */ 
 	char show_mode;		/* Flag: Icons oder Text */
 
 	char show_single_col;	/* Flag: einspaltige Text-Ansicht */
-	char show_file_size;	/* Flag: Zeige Dateigrîûe in der Text-Ansicht */
-	char show_file_date;	/* Flag: Zeige DateiÑnderungsdatum in der Text-Ansicht */
-	char show_file_time;	/* Flag: Zeige DateiÑnderungszeitpunkt in der Text-Ansicht */
+	char show_file_size;	/* Flag: Zeige Dateigr√∂√üe in der Text-Ansicht */
+	char show_file_date;	/* Flag: Zeige Datei√§nderungsdatum in der Text-Ansicht */
+	char show_file_time;	/* Flag: Zeige Datei√§nderungszeitpunkt in der Text-Ansicht */
 
-	char cnfm_del;			/* Flag: Lîschen bestÑtigen */
-	char cnfm_copy;			/* Flag: Kop./Versch. bestÑtigen */
-	char mode_ovwr;			/* Modus (0=öb,1=Backup,2=Best.) */
-	char check_free;		/* Freien Speicher auf Ziellaufwerk prÅfen */
+	char cnfm_del;			/* Flag: L√∂schen best√§tigen */
+	char cnfm_copy;			/* Flag: Kop./Versch. best√§tigen */
+	char mode_ovwr;			/* Modus (0=√úb,1=Backup,2=Best.) */
+	char check_free;		/* Freien Speicher auf Ziellaufwerk pr√ºfen */
 	char use_pp;			/* ".."-Eintrag verwenden */
 	char resident;			/* Magxdesk resident */
 	char show_all;			/* versteckte Dateien zeigen */
@@ -275,19 +275,21 @@ typedef struct
 	char rtbutt_dclick;		/* Rechte Maustaste = Doppelklick */
 	char disk_extinfo;		/* erweiterte Disk-Informationen */
 	char show_8p3;			/* TOS-Dateisystem als 8+3 */
-	char auto_reload_off;	/* Verzeichnis-énderungen regelmÑûig prÅfen */
+	char auto_reload_off;	/* Verzeichnis-√Ñnderungen regelm√§√üig pr√ºfen */
 	char show_prticon;		/* Druckericon anzeigen */
 	char h_icon_dist;		/* horiz. Icon-Abstand */
 	char v_icon_dist;		/* vertik. Icon-Abstand */
-	char desk_col_1;		/* Farbe fÅr Desktop-Hintergr. bei < 16 Farben */
-	char desk_patt_1;		/* Muster fÅr Desktop-Hinterg. bei < 16 Farben */
-	char desk_col_4;		/* Farbe fÅr Desktop-Hintergr. bei >= 16 Farben */
-	char desk_patt_4;		/* Muster fÅr Desktop-Hinterg. bei >= 16 Farben */
-	char desk_raster;		/* Iconraster fÅr Desktop */
-	int  fontID;			/* Zeichensatz fÅr Fenster */
-	int  fontH;				/* Zeichenhîhe fÅr Fenster */
-	int  font_is_prop;		/* Flag fÅr Proportional-Zeichensatz */
+	char desk_col_1;		/* Farbe f√ºr Desktop-Hintergr. bei < 16 Farben */
+	char desk_patt_1;		/* Muster f√ºr Desktop-Hinterg. bei < 16 Farben */
+	char desk_col_4;		/* Farbe f√ºr Desktop-Hintergr. bei >= 16 Farben */
+	char desk_patt_4;		/* Muster f√ºr Desktop-Hinterg. bei >= 16 Farben */
+	char desk_raster;		/* Iconraster f√ºr Desktop */
+	WORD fontID;			/* Zeichensatz f√ºr Fenster */
+	WORD fontH;				/* Zeichenh√∂he f√ºr Fenster */
+	WORD font_is_prop;		/* Flag f√ºr Proportional-Zeichensatz */
 } DEFAULTS;
+
+_Static_assert(sizeof(DEFAULTS) == 36, "MAGXDESK v5 defaults ABI");
 
 extern DEFAULTS settings;
 extern char *desk_col;
@@ -317,7 +319,7 @@ extern int do_exdialog(OBJECT *dialog,
 			 int (*check)(OBJECT *dialog, int exitbutton),
 			 int *was_redraw);
 extern int find_obj(OBJECT *tree, int x, int y);
-extern int rc_intersect(GRECT *p1, GRECT *p2);
+/* rc_intersect is supplied by public GEMlib. */
 extern int in_grect(int x, int y, GRECT *g);
 extern int selected(OBJECT *tree, int which);
 extern void subobj_draw(OBJECT *tree, int obj, int n, char *s);
@@ -333,6 +335,9 @@ extern int fname_match(char *fname, char *fmask);
 extern void Mgraf_mouse(int type);
 extern char *print_ul(unsigned long z, char *p);
 extern char *print_ull(unsigned long z[2], char *p);
+extern void ullmul(unsigned long m1, unsigned long m2, unsigned long result[2]);
+extern void shelsort(void *base, size_t count, size_t size,
+					 int (*compare)(const void *, const void *));
 extern char *print_big_bytes(unsigned long z[2], char *p);
 extern int suffixtyp(char *s);
 extern void time_to_str(char *s, unsigned int time);
@@ -363,11 +368,11 @@ extern int  drag_and_drop(int whdl, int kbsh, int mx, int my);
 
 /* DIALOGS.C */
 
-#include "dialogs.h"
+#include "DIALOGS.H"
 
 /* DLG_INFO.C */
 
-#include "dlg_info.h"
+#include "DLG_INFO.H"
 
 /* MAGXDESK.C */
 
@@ -392,15 +397,15 @@ extern OBJECT *tree_settings;
 extern OBJECT *tree_ttppar;
 extern OBJECT *tree_about;
 extern OBJECT *tree_datinf;
-extern int aes_handle,vdi_handle,vdi_device,char_w,char_h;
-extern int gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
+extern short aes_handle, vdi_handle, vdi_device, char_w, char_h;
+extern short gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
 extern GRECT desk_g,screen_g;
 extern USERBLK userblk;
 extern const char *pgm_ver;
-extern int *aes_global;
-extern int ap_id;
+/* aes_global is owned and initialized by GEMlib. */
+extern short ap_id;
 extern int folder_w;
-extern int text_column_dist;		/* FÅr Textausgabe */
+extern int text_column_dist;		/* F√ºr Textausgabe */
 extern int ismagic622;		/* Fast Click Support */
 
 /* Externals aus KLICK.C */
@@ -471,8 +476,8 @@ extern CICONBLK * foldername_to_iconblk(char *path, char *just_name);
 extern CICONBLK * parentname_to_iconblk(char *path, char *just_name);
 extern CICONBLK * diskname_to_iconblk(int diskname, char **name);
 extern CICONBLK * specialkey_to_iconblk(long key);
-extern CICONBLK *std_prt_icon;	/* fÅr Drucker */
-extern CICONBLK *std_tra_icon;	/* fÅr Papierkorb */
+extern CICONBLK *std_prt_icon;	/* f√ºr Drucker */
+extern CICONBLK *std_tra_icon;	/* f√ºr Papierkorb */
 extern CICONBLK * batchname_to_iconblk(char *fname);
 extern CICONBLK * devicename_to_iconblk(char *fname);
 extern CICONBLK * alias_to_iconblk(char *fname);
@@ -495,11 +500,11 @@ extern void upperstring(char *s);
 extern int  alt_keycode_2_ascii(int keycode);
 extern COOKIE *getcookie(long key);
 extern long read_bootsec(
-	int lw, long *ser, int *bps, int *spc,
-	int *res, int *nfats, int *ndirs, int *nsects,
-	int *media, int *spf, int *spt, int *nsides,
-	int *nhid, int *exec);
-extern char *os_ver_s;
+	int lw, long *ser, short *bps, short *spc,
+	short *res, short *nfats, short *ndirs, short *nsects,
+	short *media, short *spf, short *spt, short *nsides,
+	short *nhid, short *exec);
+extern char os_ver_s[];
 extern void set_parent_paths(void);
 extern void res_exec(void);
 extern void get_syshdr(void);

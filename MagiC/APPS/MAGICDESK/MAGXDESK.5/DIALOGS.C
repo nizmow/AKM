@@ -1,15 +1,14 @@
 /*********************************************************************
 *
-* Dieses Modul enthÑlt alle Bearbeitung von Dialogen
+* Dieses Modul enth√§lt alle Bearbeitung von Dialogen
 *
 *********************************************************************/
 
-#include <mgx_dos.h>
-#include "k.h"
+#include "K.H"
 #include <stdlib.h>
 #include <string.h>
-#include <vdi.h>
-#include "pattern.h"
+#include <sys/stat.h>
+#include "PATTERN.H"
 
 
 static POPINFO pop_kategorie;
@@ -46,12 +45,12 @@ void dialogs_init(void)
 
 /****************************************************************
 *
-* Initialisiert ein scrollbares Eingabefeld fÅr den Namen
+* Initialisiert ein scrollbares Eingabefeld f√ºr den Namen
 * einer Datei oder eines Ordners.
 *
 * ob		Das Objekt
-* path	Der Pfad fÅr den Dateinamen
-* txt	der eigentliche Textpuffer (groû genug!)
+* path	Der Pfad f√ºr den Dateinamen
+* txt	der eigentliche Textpuffer (gro√ü genug!)
 * vislen	Anzahl sichtbarer Zeichen bzw. Ressource-x-Einheiten
 *
 *
@@ -116,8 +115,8 @@ long init_xted(OBJECT *ob, char *path, XTED *xted,
 
 /****************************************************************
 *
-* Der Dialog "Neues Programm in MenÅleiste eintragen".
-* oder "IMG fÅr Kachel anwÑhlen"
+* Der Dialog "Neues Programm in Men√ºleiste eintragen".
+* oder "IMG f√ºr Kachel anw√§hlen"
 *
 ****************************************************************/
 
@@ -127,7 +126,7 @@ int new_program(MENUPROGRAM *mp, char *type, int ispgm)
 	char c;
 	char path[128];
 	char fname[64 + 2];	/* ggf. lange Namen! */
-	int ret;
+	WORD ret;
 	char *title;
 
 
@@ -150,6 +149,7 @@ int new_program(MENUPROGRAM *mp, char *type, int ispgm)
 
 	title = Rgetstring((ispgm) ? STR_INST_NEW_PGM : STR_CHOOSE_PATTN);
 	if (!fsel_exinput(path, fname, &ret, title))
+
 		return -1;	/* Fehler */
 
 	if (!ret)
@@ -184,7 +184,7 @@ void dial_save_settings(void)
 
 /****************************************************************
 *
-* Der Eintrag "Åber MagiC..." ist angewÑhlt worden.
+* Der Eintrag "√ºber MagiC..." ist angew√§hlt worden.
 *
 ****************************************************************/
 
@@ -196,7 +196,7 @@ void dial_about(void)
 
 /****************************************************************
 *
-* Hilfsfunktion fÅr dial_info()
+* Hilfsfunktion f√ºr dial_info()
 *
 ****************************************************************/
 
@@ -227,15 +227,15 @@ static int info_spec(int type, int further)
 
 /****************************************************************
 *
-* Der Eintrag "Informationen..." ist angewÑhlt worden,
-* und zwar fÅr Papierkorb oder Drucker
+* Der Eintrag "Informationen..." ist angew√§hlt worden,
+* und zwar f√ºr Papierkorb oder Drucker
 *
 * is_further ist ein Zeiger auf int und zeigt auf
 * die Anzahl der selektierten Objekte. dial_info()
 * dekrementiert diese Zahl bei jedem Aufruf und
-* weiû daher, wann das letzte Objekt kommt.
+* wei√ü daher, wann das letzte Objekt kommt.
 *
-* RÅckgabe:	< 0		abbrechen
+* R√ºckgabe:	< 0		abbrechen
 *
 ****************************************************************/
 
@@ -270,7 +270,7 @@ int dial_info(WINDOW *w, int obj, void *is_further)
 	ret = get_obj_type(w, obj, path, &file, &type, &config, NULL);
 
 	/* ret: 0 = Datei, 1 = Pfad, -1 = sonstiges */
-	/* tatsÑchliches Laufwerk bestimmen fÅr korrektes set_dirty */
+	/* tats√§chliches Laufwerk bestimmen f√ºr korrektes set_dirty */
 	drv = (w->handle) ? w->real_drive : -1;
 
 	/* spezielles Objekt: Papierkorb oder Drucker */
@@ -302,7 +302,7 @@ int dial_info(WINDOW *w, int obj, void *is_further)
 	if ((file == NULL) && !isdrive &&
 				((type & 0xff) == 'O' || (ret == 0)))
 	{
-		file = Malloc(sizeof(MYDTA) + strlen(path) + 2);
+		file = malloc(sizeof(MYDTA) + strlen(path) + 2);
 		if (!file)
 		{
 			err_alert(ENSMEM);
@@ -331,7 +331,7 @@ int dial_info(WINDOW *w, int obj, void *is_further)
 		Mgraf_mouse(ARROW);
 		if (err != E_OK)
 		{
-			Mfree(file);
+			free(file);
 			err_alert(err);
 			return 0;
 		}
@@ -358,7 +358,7 @@ int dial_info(WINDOW *w, int obj, void *is_further)
 	ret = info_file(path, drv, file, isfolder, isdrive,
 					isdeskalias, further, number);
 	if (mal)
-		Mfree(file);
+		free(file);
 
 	return ret;
 }
@@ -366,7 +366,7 @@ int dial_info(WINDOW *w, int obj, void *is_further)
 
 /****************************************************************
 *
-* Der Eintrag "Maske setzen..." ist angewÑhlt worden.
+* Der Eintrag "Maske setzen..." ist angew√§hlt worden.
 *
 ****************************************************************/
 
@@ -403,7 +403,7 @@ void dial_file_pattern(void)
 
 /****************************************************************
 *
-* Der Eintrag "Neuer Ordner..." ist angewÑhlt worden.
+* Der Eintrag "Neuer Ordner..." ist angew√§hlt worden.
 *
 ****************************************************************/
 
@@ -448,7 +448,7 @@ void dial_create_folder(void)
 
 	if (doserr == EPTHNF)
 	{
-		w->path[3] = EOS;	/* zurÅck zur Root */
+		w->path[3] = EOS;	/* zur√ºck zur Root */
 		upd_path(w, FALSE);
 	}
 }
@@ -495,7 +495,7 @@ void dial_deskfmt(int is_fmt)
 			arg1 = "-fh";		/* Harddisks mit Flag "-fh" formatieren */
 
 		arg2 = "X:";
-		arg2[0] = path2[0];	/* "pgmname -f[H] X:" fÅr Laufwerk X: */
+		arg2[0] = path2[0];	/* "pgmname -f[H] X:" f√ºr Laufwerk X: */
 		arg3 = NULL;
 	}
 	else
@@ -532,7 +532,7 @@ void dial_deskfmt(int is_fmt)
 * Der Dialog "Suchen".
 *
 * Es wird ein externes Programm gestartet, das unter dem Namen
-* MGSEARCH.APP im GEMDESK-Ordner liegen muû.
+* MGSEARCH.APP im GEMDESK-Ordner liegen mu√ü.
 *
 * Parameter:
 *
@@ -639,7 +639,7 @@ void dial_register_drv(void)
 		if (ic->icon_type == ITYP_DISK)
 		{
 			dev = ic->isdisk - 'A';
-			drvs &= ~(1L << dev);	/* entspr. Bit lîschen */
+			drvs &= ~(1L << dev);	/* entspr. Bit l√∂schen */
 		}
 	}
 
@@ -676,11 +676,11 @@ void dial_register_drv(void)
 *	-aa	appath		; Applikation anmelden
 *	-ad	appath dat	; angemeldete Datei modifizieren
 *
-*	-ia	appath		; Icon fÅr Programm anmelden
-*	-id	apname dat	; Icon fÅr Datei anmelden
+*	-ia	appath		; Icon f√ºr Programm anmelden
+*	-id	apname dat	; Icon f√ºr Datei anmelden
 *					; <app> ist ggf. "<>"
-*	-io	opath		; Icon fÅr Ordner/Disk anmelden
-*	-is	key[4]		; Icon fÅr "special object" anmelden
+*	-io	opath		; Icon f√ºr Ordner/Disk anmelden
+*	-is	key[4]		; Icon f√ºr "special object" anmelden
 *
 ****************************************************************/
 
@@ -737,11 +737,11 @@ void dial_register_app(void)
 *	-aa	appath		; Applikation anmelden
 *	-ad	appath dat	; angemeldete Datei modifizieren
 *
-*	-ia	appath		; Icon fÅr Programm anmelden
-*	-id	apname dat	; Icon fÅr Datei anmelden
+*	-ia	appath		; Icon f√ºr Programm anmelden
+*	-id	apname dat	; Icon f√ºr Datei anmelden
 *					; <app> ist ggf. "<>"
-*	-io	opath		; Icon fÅr Ordner/Disk anmelden
-*	-is	key[4]		; Icon fÅr "special object" anmelden
+*	-io	opath		; Icon f√ºr Ordner/Disk anmelden
+*	-is	key[4]		; Icon f√ºr "special object" anmelden
 *
 ****************************************************************/
 
@@ -800,7 +800,7 @@ void dial_assign_icon(void)
 					arg3 = get_name(path);
 				break;
 
-			/* unaufgelîster Alias (symbolischer Link) */
+			/* unaufgel√∂ster Alias (symbolischer Link) */
 			case 'AT':
 				arg2 = "ALIS";
 				goto spec;
@@ -834,7 +834,7 @@ void dial_assign_icon(void)
 
 /****************************************************************
 *
-* Der Dialog "Einstellungen Ñndern".
+* Der Dialog "Einstellungen √§ndern".
 *
 ****************************************************************/
 
@@ -889,8 +889,8 @@ static int chk_settings(OBJECT *tree, int exitbutton)
 		exitbutton = EIN_COL;
 		tree[exitbutton].ob_spec.obspec.interiorcol--;
 		draw_wait:
-		graf_mkstate(&ev);
-		if (ev.bstate & 1)	/* Maustaste noch gedrÅckt */
+		graf_mkstate(&ev.x, &ev.y, &ev.bstate, &ev.kstate);
+		if (ev.bstate & 1)	/* Maustaste noch gedr√ºckt */
 			evnt_timer(100L);		/* 100 ms warten */
 		goto draw;
 	}
@@ -985,7 +985,7 @@ static int chk_settings(OBJECT *tree, int exitbutton)
 void dial_settings(void)
 {
 	int ret;
-	int dummy;
+	short dummy;
 	TEDINFO *ted;
 	char txt[5][128];
 	char *p;
@@ -1055,7 +1055,7 @@ void dial_settings(void)
 	{
 		char path[256 + 2];
 		char fname[64 + 2];	/* ggf. lange Namen! */
-		int ret;
+		short ret;
 
 		strcpy(fname, inf_name + 3);
 		strcpy(path, inf_name);
@@ -1094,12 +1094,12 @@ void dial_settings(void)
 		{
 			if (oldex)				/* alte freigeben */
 			{
-				Mfree(*bg_tile_path);
+				free(*bg_tile_path);
 				*bg_tile_path = NULL;
 			}
 			if (_new_bg_tile.path[0])		/* neue allozieren */
 			{
-				*bg_tile_path = Malloc(strlen(_new_bg_tile.path) + 1);
+				*bg_tile_path = malloc(strlen(_new_bg_tile.path) + 1);
 				strcpy((*bg_tile_path)->path, new_bg_tile->path);
 			}
 			set_desktop();
@@ -1193,41 +1193,41 @@ int dial_ttppar(char *pgm, char *par)
 
 /****************************************************************
 *
-* Der Dialog "Zeichensatz auswÑhlen".
+* Der Dialog "Zeichensatz ausw√§hlen".
 *
 ****************************************************************/
 
-/* Definitionen fÅr <font_flags> bei fnts_create() */
+/* Definitionen f√ºr <font_flags> bei fnts_create() */
 
 #define	FNTS_BTMP	1					/* Bitmapfonts anzeigen */
 #define	FNTS_OUTL	2					/* Vektorfonts anzeigen */
-#define	FNTS_MONO	4					/* Ñquidistante Fonts anzeigen */
+#define	FNTS_MONO	4					/* √§quidistante Fonts anzeigen */
 #define	FNTS_PROP	8					/* proportionale Fonts anzeigen */
 
-/* Definitionen fÅr <dialog_flags> bei fnts_create() */
+/* Definitionen f√ºr <dialog_flags> bei fnts_create() */
 #define	FNTS_3D		1		/* 3D-Design benutzen */
 
-/* Definitionen fÅr <button_flags> bei fnts_open() */
-#define	FNTS_SNAME	0x01		/* Checkbox fÅr die Namen selektieren */
-#define	FNTS_SSTYLE	0x02		/* Checkbox fÅr die Stile selektieren */
-#define	FNTS_SSIZE	0x04		/* Checkbox fÅr die Hîhe selektieren */
-#define	FNTS_SRATIO	0x08		/* Checkbox fÅr das VerhÑltnis Breite/Hîhe selektieren */
+/* Definitionen f√ºr <button_flags> bei fnts_open() */
+#define	FNTS_SNAME	0x01		/* Checkbox f√ºr die Namen selektieren */
+#define	FNTS_SSTYLE	0x02		/* Checkbox f√ºr die Stile selektieren */
+#define	FNTS_SSIZE	0x04		/* Checkbox f√ºr die H√∂he selektieren */
+#define	FNTS_SRATIO	0x08		/* Checkbox f√ºr das Verh√§ltnis Breite/H√∂he selektieren */
 
-#define	FNTS_CHNAME	 0x0100	/* Checkbox fÅr die Namen anzeigen */
-#define	FNTS_CHSTYLE 0x0200	/* Checkbox fÅr die Stile anzeigen */
-#define	FNTS_CHSIZE  0x0400	/* Checkbox fÅr die Hîhe anzeigen */
-#define	FNTS_CHRATIO 0x0800	/* Checkbox fÅr das VerhÑltnis Breite/Hîhe anzeigen */
-#define	FNTS_RATIO   0x1000	/* VerhÑltnis Breite/Hîhe einstellbar */
-#define	FNTS_BSET    0x2000	/* Button "setzen" anwÑhlbar */
-#define	FNTS_BMARK   0x4000	/* Button "markieren" anwÑhlbar */
+#define	FNTS_CHNAME	 0x0100	/* Checkbox f√ºr die Namen anzeigen */
+#define	FNTS_CHSTYLE 0x0200	/* Checkbox f√ºr die Stile anzeigen */
+#define	FNTS_CHSIZE  0x0400	/* Checkbox f√ºr die H√∂he anzeigen */
+#define	FNTS_CHRATIO 0x0800	/* Checkbox f√ºr das Verh√§ltnis Breite/H√∂he anzeigen */
+#define	FNTS_RATIO   0x1000	/* Verh√§ltnis Breite/H√∂he einstellbar */
+#define	FNTS_BSET    0x2000	/* Button "setzen" anw√§hlbar */
+#define	FNTS_BMARK   0x4000	/* Button "markieren" anw√§hlbar */
 
-/* Definitionen fÅr <button> bei fnts_evnt() */
+/* Definitionen f√ºr <button> bei fnts_evnt() */
 
-#define	FNTS_CANCEL 1		/* "Abbruch" wurde angewÑhlt */
-#define	FNTS_OK     2		/* "OK" wurde gedrÅckt */
-#define	FNTS_SET    3		/* "setzen" wurde angewÑhlt */
-#define	FNTS_MARK   4		/* "markieren" wurde betÑtigt */
-#define	FNTS_OPT    5		/* der applikationseigene Button wurde ausgewÑhlt */
+#define	FNTS_CANCEL 1		/* "Abbruch" wurde angew√§hlt */
+#define	FNTS_OK     2		/* "OK" wurde gedr√ºckt */
+#define	FNTS_SET    3		/* "setzen" wurde angew√§hlt */
+#define	FNTS_MARK   4		/* "markieren" wurde bet√§tigt */
+#define	FNTS_OPT    5		/* der applikationseigene Button wurde ausgew√§hlt */
 
 
 #define	FONT_FLAGS	(FNTS_BTMP + FNTS_OUTL + FNTS_MONO + FNTS_PROP)
@@ -1235,13 +1235,14 @@ int dial_ttppar(char *pgm, char *par)
 
 void dial_fontsel(void)
 {
-	int work_out[57],work_in [12];	 /* VDI- Felder fÅr v_opnvwk() */
-	int handle;
+	WORD work_out[57],work_in[12];	 /* VDI- Felder f√ºr v_opnvwk() */
+	WORD handle;
 	register int i;
 	void *fnt_dialog;
-	int button,check_boxes;
+	int button;
+	short check_boxes;
 	long id,pt,ratio;
-	int mono,dummy;
+	short mono, dummy;
 			
 
 	for (i = 1; i < 10; i++)											/* work_in initialisieren */
@@ -1292,7 +1293,7 @@ void dial_fontsel(void)
 
 /****************************************************************
 *
-* Der Dialog "Auflîsung wechseln".
+* Der Dialog "Aufl√∂sung wechseln".
 *
 ****************************************************************/
 

@@ -2,18 +2,17 @@
 *
 * Beginn der Programmierung: 14.3.89
 *
-* Dieses Modul enthÑlt die Hauptsteuerung von MAGXDESK, also die
+* Dieses Modul enth√§lt die Hauptsteuerung von MAGXDESK, also die
 * event_multi - Schleife.
 *
 *********************************************************************/
 
-#include <mgx_dos.h>
-#include "k.h"
-#include <vdi.h>
+#include "K.H"
 #include <limits.h>
 #include <string.h>
 #include <stdlib.h>
-#include "pattern.h"
+#include <stdio.h>
+#include "PATTERN.H"
 
 
 /*
@@ -27,20 +26,19 @@ WINDOW *windows[NUM_WINDOWS + 1];
 ICON *icon;
 MENUPROGRAM menuprograms[NUM_PROGRAMS];
 
-int ap_id;
-int *aes_global;
-int work_out[57], work_in [12];	 /* VDI- Felder fÅr v_opnvwk() */
+short ap_id;
+short work_out[57], work_in[12];	 /* VDI- Felder f√ºr v_opnvwk() */
 int isfirst;					/* MAGXDESK gebootet */
 int is_primary_shell;			/* Haupt-Shell */
 int ismagic622 = 0;		/* moderne Doppelklick-Behandlung */
 
-int aes_handle;
-int vdi_handle;
-int vdi_device;
-int gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
-GRECT desk_g,screen_g;				/* Maûe fÅr Hintergrund */
-int char_w,char_h;
-int text_column_dist;				/* FÅr Textausgabe */
+short aes_handle;
+short vdi_handle;
+short vdi_device;
+short gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
+GRECT desk_g,screen_g;				/* Ma√üe f√ºr Hintergrund */
+short char_w,char_h;
+int text_column_dist;				/* F√ºr Textausgabe */
 int dirty_applicat_dat;
 
 char *bg_tile_1;		/* Kachel 1 Plane (monochrom) */
@@ -65,9 +63,9 @@ DISKINFO dinfo[NUM_DRIVES];
 * local variables
 */
 
-static WINDOW windows0;		/* fÅr den Desktop-Hintergrund */
+static WINDOW windows0;		/* f√ºr den Desktop-Hintergrund */
 
-static int text_attrib[10];			 /* Default- Textattribute */
+static short text_attrib[10];			 /* Default- Textattribute */
 
 /* Einstellungen */
 
@@ -87,9 +85,9 @@ int folder_w;
 
 /****************************************************************
 *
-* FÅhrt auf Tastencodes Aktionen durch.
+* F√ºhrt auf Tastencodes Aktionen durch.
 *
-* RÅckgabe 1, falls Code verarbeitet.
+* R√ºckgabe 1, falls Code verarbeitet.
 *
 ****************************************************************/
 
@@ -97,26 +95,11 @@ static int key_2_action(int key, char ascii, int kstate)
 {
 	WINDOW *w;
 
-/*
-/* SH-INS	*/
-	if (key == 0x5230)
-	{
-		settings.resident = TRUE;
-		return 1;
-	}
-
-/* SH-DEL	*/
-	if (key == 0x537f)
-	{
-		settings.resident = FALSE;
-		return 1;
-	}
-*/
 
 	if ((kstate == K_LSHIFT+K_ALT) && (ascii == '<'))
 	{
 		int dst_apid;
-		int msg[8];
+		short msg[8];
 
 		dst_apid = appl_find("START   ");
 		if (dst_apid >= 0)
@@ -215,12 +198,12 @@ void init_popup(OBJECT *dialog, int objnr,
 
 /****************************************************************
 *
-* DurchlÑuft alle selektierten Objekte eines Fensters.
+* Durchl√§uft alle selektierten Objekte eines Fensters.
 * Wenn die Funktion "tue" < 0 liefert, wird abgebrochen.
 *
-* tue == NULL:		Anzahl Objekte zÑhlen
+* tue == NULL:		Anzahl Objekte z√§hlen
 *
-* RÅckgabe: letzter Fehlercode von "tue" oder 0.
+* R√ºckgabe: letzter Fehlercode von "tue" oder 0.
 *
 ****************************************************************/
 
@@ -256,7 +239,7 @@ int walk_sel(WINDOW *w, int (*cb)(WINDOW *w, int obj, void *par), void *par)
 *
 * Bestimmt die Begrenzung aller selektierten Unterobjekte
 * in absoluten Bildschirmkoordinaten.
-* (rechteckige HÅlle aller selektierten Unterobjekte).
+* (rechteckige H√ºlle aller selektierten Unterobjekte).
 *
 ****************************************************************/
 
@@ -270,7 +253,7 @@ void tree_sel_grect(OBJECT *tree, GRECT *g)
 	ox = tree->ob_x;
 	oy = tree->ob_y;
 	mx = my = INT_MAX;		/* Ecke links oben */
-	mrx = mry = -INT_MAX;	/* Ecke rechts unten (auûerhalb) */
+	mrx = mry = -INT_MAX;	/* Ecke rechts unten (au√üerhalb) */
 
 	if ((i = (tree->ob_head)) > 0)
 	{
@@ -301,135 +284,30 @@ void tree_sel_grect(OBJECT *tree, GRECT *g)
 }
 
 
-/*
-/*----------------------------------------------------------------------------------------*/ 
-/* Fontnamen und Grîûeninformationn zurÅckliefern														*/
-/* Funktionsergebnis:	Font-ID																				*/
-/*	handle:					VDI-Handle																			*/
-/*	flags:					angeforderte Informationen														*/
-/*	id:						Font-ID oder 0																		*/
-/* index:					Index des Fonts (1 - Anzahl) oder 0											*/
-/*	info:						Strukur fÅr die RÅckgabewerte													*/
-/*----------------------------------------------------------------------------------------*/ 
-typedef struct
-{
-   LONG  size;             /* LÑnge der Struktur, muû vor vqt_xfntinfo() gesetzt werden */
-   WORD  format;           /* Fontformat, z.B. 4 fÅr TrueType */
-   WORD  id;               /* Font-ID, z.B. 6059 */
-   WORD  index;            /* Index */
-   BYTE  font_name[50];    /* vollstÑndiger Fontname, z.B. "Century 725 Italic BT" */
-   BYTE  family_name[50];  /* Name der Fontfamilie, z.B. "Century725 BT" */
-   BYTE  style_name[50];   /* Name des Fontstils, z.B. "Italic" */
-   BYTE  file_name1[200];  /* Name der 1. Fontdatei, z.B. "C:\FONTS\TT1059M_.TTF" */
-   BYTE  file_name2[200];  /* Name der optionalen 2. Fontdatei */
-   BYTE  file_name3[200];  /* Name der optionalen 3. Fontdatei */
-   WORD  pt_cnt;           /* Anzahl der Punkthîhen fÅr vst_point(), z.B. 10 */
-   WORD  pt_sizes[64];     /* verfÅgbare Punkthîhen,
-                              z.B. { 8, 9, 10, 11, 12, 14, 18, 24, 36, 48 } */
-} XFNT_INFO;
-
-static WORD	vqt_xfntinfo(WORD handle, WORD flags, WORD id, WORD index, XFNT_INFO *info)
-{
-	VDIPB pb;
-	WORD contrl[12];
-	WORD intin[16];
-	WORD ptsin[16];
-	WORD intout[16];
-	WORD ptsout[16];
-
-	pb.contrl = contrl;
-	pb.intin = intin;
-	pb.ptsin = ptsin;
-	pb.intout = intout;
-	pb.ptsout = ptsout;
-
-	info->size = (LONG) sizeof(XFNT_INFO);
-
-	intin[0] = flags;
-	intin[1] = id;
-	intin[2] = index;
-	*(XFNT_INFO **)&intin[3] = info;
-
-	contrl[0] = 229;
-	contrl[1] = 0;
-	contrl[3] = 5;
-	contrl[5] = 0;
-	contrl[6] = handle;
-
-	vdi(&pb);
-
-	return intout[1];
-}
 
 
 /****************************************************************
 *
-* vqt_name fÅr NVDI 3
-*
-****************************************************************/
-
-static int Mvqt_name(int handle, int index, unsigned int *flags)
-{
-	VDIPB pb;
-	WORD contrl[12];
-	WORD intin[4];
-	WORD intout[40];
-
-	pb.contrl = contrl;
-	pb.intin = intin;
-	pb.intout = intout;
-
-	intin[0]  = index;
-
-	contrl[0] = 130;
-	contrl[1] = 0;
-	contrl[3] = 2;
-	contrl[5] = 1;
-	contrl[6] = handle;
-
-	vdi(&pb);
-
-/*
-Cconout(intout[1]);
-Cconout(intout[2]);
-Cconout(intout[3]);
-Cconout(intout[4]);
-Cconout(intout[5]);
-Cconout(intout[6]);
-Cconout(intout[7]);
-Cconout(intout[8]);
-*/
-
-	*flags = intout[34];
-	return (contrl[4] < 35);
-}
-*/
-
-
-/****************************************************************
-*
-* Setzt die Zeichenhîhe
+* Setzt die Zeichenh√∂he
 *
 ****************************************************************/
 
 void set_char_dim(void)
 {
-	int dummy;
-/*	unsigned int flags;
-	XFNT_INFO info;	*/
+	short dummy;
 	BITBLK *folder_image, *parentfolder_image;
 	int folder_index,parentfolder_index;
-	int out[8];
+	short out[8];
 
 
 	if (vq_gdos())
 		vst_font(vdi_handle, settings.fontID);
 	vst_point(vdi_handle, settings.fontH, &dummy, &dummy,
 			&char_w, &char_h);
-	/* linksbÅndig, Zeichenzellenoberkante */
+	/* linksb√ºndig, Zeichenzellenoberkante */
 	vst_alignment(vdi_handle, 0, 5, &dummy, &dummy);
 
-	/* Spaltenabstand fÅr Textmodus */
+	/* Spaltenabstand f√ºr Textmodus */
 	vqt_extent(vdi_handle, "M", out);
 	text_column_dist = out[2] - out[0];
 
@@ -467,7 +345,7 @@ void set_char_dim(void)
 	parentfolder_mfdb.fd_nplanes = 1;
 	/* vertikal zentrieren */
 	folder_y_offs = (char_h - folder_mfdb.fd_h) >> 1;
-	folder_w = folder_image->bi_hl; 	/* Breite wie Hîhe */
+	folder_w = folder_image->bi_hl; 	/* Breite wie H√∂he */
 }
 
 
@@ -479,18 +357,20 @@ void set_char_dim(void)
 
 void redraw(const WINDOW *w, const GRECT *new_g)
 {
+	GRECT clip = *new_g;
+
 	if (w->handle > 0 && !w->path[0])
 		return;						/* Fenster geschlossen */
-	objc_wdraw(w->pobj, 0, 1, new_g, w->handle);
+	objc_wdraw(w->pobj, 0, 1, &clip, w->handle);
 }
 
 
 /****************************************************************
 *
-* gibt Nummer des "Fensters" zurÅck, in dem selektierte Objekte
+* gibt Nummer des "Fensters" zur√ºck, in dem selektierte Objekte
 * liegen.
 *
-* RÅckgabe : *rw = WINDOW *
+* R√ºckgabe : *rw = WINDOW *
 *		   	  = NULL			kein Objekt selektiert
 *		   *objn =  Nummer des 1. selekt. Objekts oder undef.
 *
@@ -576,9 +456,9 @@ WINDOW *whdl2window(int whdl)
 
 /****************************************************************
 *
-* Gibt an, ob ein Objekt ein Ziel fÅr ein Verschieben von Icons
+* Gibt an, ob ein Objekt ein Ziel f√ºr ein Verschieben von Icons
 * sein kann.
-* GÅltiges Ziel sind Ordner (O_), Laufwerke (?D), Programme bzw.
+* G√ºltiges Ziel sind Ordner (O_), Laufwerke (?D), Programme bzw.
 * angemeldete Dateien (?P), Batchprogramme (?B),
 * Papierkorb und Drucker.
 *
@@ -599,24 +479,24 @@ int is_dest(WINDOW *w, int objnr)
 /****************************************************************
 *
 * Zeichnet die benutzerdefinierten Objekte (Texte verschiedener
-* Grîûe). Textgrîûe und Ausrichtung auf Zellenoberkante ist schon
+* Gr√∂√üe). Textgr√∂√üe und Ausrichtung auf Zellenoberkante ist schon
 * eingestellt.
 * Der Clippingbereich wird nur dann neu gesetzt, wenn sich dieser
-* geÑndert hat, dadurch werden einige vs_clip()'s gespart.
+* ge√§ndert hat, dadurch werden einige vs_clip()'s gespart.
 *
 ****************************************************************/
 
-int clip_rect[4];
+short clip_rect[4];
 
-int cdecl draw_userdef(PARMBLK *p)
+short __CDECL draw_userdef(PARMBLK *p)
 {
 	char *s,*t,*fname;
 	register int wnr;
 	register WINDOW **pw,*w;
 	register MYDTA *m;
 	int isalias,isdir,isparentdir;
-	int dummy;
-	int pxy[4];
+	short dummy;
+	short pxy[4];
 	char buf[256];
 	static int last_cursive = FALSE;
 	int pos,offs;
@@ -656,17 +536,17 @@ int cdecl draw_userdef(PARMBLK *p)
 
 	pos = p->pb_x;
 
-	/* FÅr den Fall, daû nicht der Systemfont verwendet wird,	*/
-	/* muû fÅr Ordner ein Icon ausgegeben werden				*/
+	/* F√ºr den Fall, da√ü nicht der Systemfont verwendet wird,	*/
+	/* mu√ü f√ºr Ordner ein Icon ausgegeben werden				*/
 	/* -------------------------------------------------------- */
 
 	offs = 0;
 	if ((settings.fontID != 1) && (isdir))
-	{	/* G_IMAGE fÅr Ordner ausgeben */
-		int col[2] = {BLACK,WHITE};
+	{	/* G_IMAGE f√ºr Ordner ausgeben */
+		short col[2] = {G_BLACK, G_WHITE};
 		MFDB mfdb_scr;
 		MFDB *mfdb_ic;
-		int pxy[8];
+		short pxy[8];
 
 
 		mfdb_ic = (isparentdir) ? &parentfolder_mfdb : &folder_mfdb;
@@ -728,11 +608,11 @@ int cdecl draw_userdef(PARMBLK *p)
 			{
 				if (m->filesize > 9999999L)
 				{
-					ultoa((m->filesize) >> 10L, buf, 10);
+					snprintf(buf, sizeof(buf), "%lu", m->filesize >> 10);
 					strcat(buf, "k");
 				}
 				else
-					ultoa(m->filesize, buf, 10);
+					snprintf(buf, sizeof(buf), "%lu", m->filesize);
 				/* Ausrichtung rechts */
 				vst_alignment(vdi_handle, 2, 5, &dummy, &dummy);
 				v_gtext(vdi_handle, pos, p->pb_y, buf);
@@ -767,7 +647,7 @@ int cdecl draw_userdef(PARMBLK *p)
 		*s++ = ' ';
 
 		if ((m->icon_type == ITYP_ORDNER) && (settings.fontID == 1))
-			*s++ = '\7';		/* Zeichen fÅr Ordner */
+			*s++ = '\7';		/* Zeichen f√ºr Ordner */
 		else
 		if (m->icon_type == ITYP_PROGRA)
 			*s++ = '.';
@@ -813,11 +693,11 @@ int cdecl draw_userdef(PARMBLK *p)
 			{
 				if (m->filesize > 9999999L)
 				{
-					ultoa((m->filesize) >> 10L, gr, 10);
+					snprintf(gr, sizeof(gr), "%lu", m->filesize >> 10);
 					strcat(gr, "k");
 				}
 				else
-					ultoa(m->filesize, gr, 10);
+					snprintf(gr, sizeof(gr), "%lu", m->filesize);
 			}
 			for	(wnr = 8 - (int) strlen(gr); wnr > 0; wnr--)
 				*s++ = ' ';
@@ -853,7 +733,7 @@ USERBLK userblk = {draw_userdef, 0L};
 
 /****************************************************************
 *
-* Setzt den Clipping-Bereich auf die Bildschirmgrîûe.
+* Setzt den Clipping-Bereich auf die Bildschirmgr√∂√üe.
 *
 ****************************************************************/
 
@@ -884,8 +764,8 @@ void open_work(void)
 	work_in[10] = 2;                     /* Rasterkoordinaten */
 	v_opnvwk(work_in, &vdi_handle, work_out);
 	vswr_mode(vdi_handle,MD_REPLACE);      /* Replace- Modus */
-	vsf_color(vdi_handle,WHITE);           /* FÅllfarbe weiû */
-	vsf_interior(vdi_handle,SOLID);        /* komplett ausfÅllen */
+	vsf_color(vdi_handle, G_WHITE);           /* F√ºllfarbe wei√ü */
+	vsf_interior(vdi_handle,SOLID);        /* komplett ausf√ºllen */
 	vqt_attributes(vdi_handle, text_attrib);
 	Cursconf(0,0);
 	if (vq_gdos())
@@ -896,10 +776,10 @@ void open_work(void)
 
 /****************************************************************
 *
-* MenÅzeile abschalten
-* Speicher fÅr Fenster freigeben
+* Men√ºzeile abschalten
+* Speicher f√ºr Fenster freigeben
 * Desktop- Hintergrund abmelden
-* Fenster schlieûen und lîschen
+* Fenster schlie√üen und l√∂schen
 *
 ****************************************************************/
 
@@ -912,7 +792,7 @@ void close_all_wind(void)
 		    /* int dummy; */
 
 
-	/* Default- Zeichengrîûe wieder einstellen */
+	/* Default- Zeichengr√∂√üe wieder einstellen */
 /*
 	vst_height(vdi_handle, text_attrib[7], &char_w, &char_h, &dummy, &dummy);
 */
@@ -929,8 +809,8 @@ void close_all_wind(void)
 			{
 				wind_get_grect(w->handle, WF_UNICONIFY, &w->out);
 			}
-			wind_close(w->handle);  /* ...dann schlieûen */
-			wind_delete(w->handle); /* ...und immer lîschen!  */
+			wind_close(w->handle);  /* ...dann schlie√üen */
+			wind_delete(w->handle); /* ...und immer l√∂schen!  */
 			windows_g[i] = w->out;
 			Mfree(w);
 			*pw = NULL;
@@ -944,11 +824,11 @@ void close_all_wind(void)
 * Macht einen Shutdown
 *
 * dev == -1:		Shutdown
-* sonst:			Auflîsungswechsel mit dev/txt
+* sonst:			Aufl√∂sungswechsel mit dev/txt
 *
-* Wird beim MenÅpunkt "Ende" mit (-1,0) aufgerufen.
-* Wird beim MenÅpunkt "Alt-Ende" mit (-2,0) aufgerufen.
-* Wird beim MenÅpunkt "Auflîsung wechseln" mit (0,0) aufgerufen.
+* Wird beim Men√ºpunkt "Ende" mit (-1,0) aufgerufen.
+* Wird beim Men√ºpunkt "Alt-Ende" mit (-2,0) aufgerufen.
+* Wird beim Men√ºpunkt "Aufl√∂sung wechseln" mit (0,0) aufgerufen.
 *
 ****************************************************************/
 
@@ -994,7 +874,7 @@ void shutdown(int dev, int txt)
 
 /****************************************************************
 *
-* Ein Tastencode fÅr Fenster 0 muû verarbeitet werden.
+* Ein Tastencode f√ºr Fenster 0 mu√ü verarbeitet werden.
 * Er wird einfach ignoriert.
 *
 ****************************************************************/
@@ -1014,7 +894,7 @@ static void wind0_closed(WINDOW *w, int kstate)
 
 /****************************************************************
 *
-* Initialisierung aller Fenster, ggf. îffnen
+* Initialisierung aller Fenster, ggf. √∂ffnen
 *
 ****************************************************************/
 
@@ -1027,10 +907,10 @@ void open_all_wind(void)
 	Mgraf_mouse(HOURGLASS);
 	for	(i = 0; i < NUM_DRIVES; i++)
 	{
-		dinfo[i].b_clsiz = 0L;		/* ungÅltig */
+		dinfo[i].b_clsiz = 0L;		/* ung√ºltig */
 	}
 
-	/* MenÅzeile auf den Bildschirm */
+	/* Men√ºzeile auf den Bildschirm */
 	/* ---------------------------- */
 
 	menu_bar(tree_menu, TRUE);
@@ -1044,20 +924,14 @@ void open_all_wind(void)
 	windows0.closed = wind0_closed;
 	*((GRECT *) &(windows0.pobj->ob_x)) = screen_g;
 	wind_set_ptr_int(SCREEN, WF_NEWDESK, windows0.pobj, 0);
-	form_dial(FMD_FINISH, NULL, &screen_g);
+	form_dial(FMD_FINISH, 0, 0, 0, 0,
+			  screen_g.g_x, screen_g.g_y, screen_g.g_w, screen_g.g_h);
 
-	/* Fenster îffnen */
+	/* Fenster √∂ffnen */
 	/* -------------- */
 
-	set_char_dim();		/* Zeichengrîûe einstellen */
+	set_char_dim();		/* Zeichengr√∂√üe einstellen */
 
-/*
-	for	(i = 1; i <= NUM_WINDOWS; i++)
-	{
-		windows[i].handle = -1;			/* unbenutzt			*/
-		windows[i].memblk = NULL; 		/* kein allozierter Speicher */
-	}
-*/
 	for	(set = FALSE,i = 1; i <= NUM_WINDOWS; i++)
 	{
 		j = i;
@@ -1139,7 +1013,7 @@ void get_rsc(void)
 		load_app_icons();
 	}
 
-	/* Icongrîûen fÅr Auflîsungen korrigieren */
+	/* Icongr√∂√üen f√ºr Aufl√∂sungen korrigieren */
 /*
 	for	(i = I_FLPDSK; i <= I_BTCHDA; i++)
 	{
@@ -1176,7 +1050,7 @@ void get_rsc(void)
 
 /****************************************************************
 *
-* Initialisierung von MAGIXDESK (AES,RSC,VDI,Fenster,Icons,MenÅ).
+* Initialisierung von MAGIXDESK (AES,RSC,VDI,Fenster,Icons,Men√º).
 * MAGIXDESK wird immer im eigenen Verzeichnis gestartet.
 *
 ****************************************************************/
@@ -1204,13 +1078,12 @@ static void pgm_init(void)
 	aes_handle = vdi_handle =
 	graf_xhandle(&gl_hwchar, &gl_hhchar, &gl_hwbox, &gl_hhbox,
 						 &vdi_device);
-	aes_global = _GemParBlk.global;
 	wind_get_grect(SCREEN, WF_WORKXYWH, &desk_g);
 	screen_g.g_x = screen_g.g_y = 0;
 	screen_g.g_w = desk_g.g_x+desk_g.g_w;
 	screen_g.g_h = desk_g.g_y+desk_g.g_h;
 
-	/* TOS- Version und GEM- Variablen fÅr spÑter merken */
+	/* TOS- Version und GEM- Variablen f√ºr sp√§ter merken */
 	/* ------------------------------------------------- */
 
 	get_syshdr();		/* bestimmt aesvars, inf_name[0] (drv) */
@@ -1219,10 +1092,10 @@ static void pgm_init(void)
 	is_primary_shell = FALSE;
 	isfirst = FALSE;
 
-	if (!srcmd[0])	/* Name muû leer sein */
+	if (!srcmd[0])	/* Name mu√ü leer sein */
 	{
 		sht = (SHELTAIL *) srtail;
-		if (sht->dummy == 0 && sht->magic == 'SHEL')
+		if (sht->dummy == 0 && sht->magic == 0x5348454cL)
 			is_primary_shell = TRUE;
 		isfirst = sht->isfirst;
 	}
@@ -1244,7 +1117,7 @@ static void pgm_init(void)
 	windows0.in = windows0.out = desk_g;
 	windows0.pmydta	= NULL;
 
-	/* numplanes-abhÑngige Variablen */
+	/* numplanes-abh√§ngige Variablen */
 	/* ----------------------------- */
 
 	bg_tile_1 = bg_tile_4 = bg_tile_8 = bg_tile_m = NULL;
@@ -1309,7 +1182,7 @@ static void pgm_init(void)
 				if ((windows[j]) && (windows[j]->path[0] == drv))
 					goto nexticn;
 			}
-			if (drv < 'C')		/* nicht fÅr A: und B: */
+			if (drv < 'C')		/* nicht f√ºr A: und B: */
 				continue;
 			name[0] = EOS;
 			pth[0] = drv;
@@ -1320,7 +1193,7 @@ static void pgm_init(void)
 
 	wind_update(END_UPDATE);
 
-	/* Wenn APPLICAT.INF verÑndert wurde, muû	*/
+	/* Wenn APPLICAT.INF ver√§ndert wurde, mu√ü	*/
 	/* APPLICAT.DAT neu aufgebaut werden		*/
 	/* ----------------------------------------- */
 
@@ -1360,12 +1233,12 @@ static void handle_key(EVNT *w_ev)
 	}
 	w_ev->kstate &= (K_LSHIFT + K_CTRL + K_ALT);
 
-	/* 1. Fall: Alt-Shift-[A..Z] (Fenster îffnen) */
+	/* 1. Fall: Alt-Shift-[A..Z] (Fenster √∂ffnen) */
 	/* ----------------------------------------- */
 
 	if (w_ev->kstate == (K_ALT + K_LSHIFT))
 	{
-		int drv = toupper(ascii);
+		int drv = mgx_toupper((unsigned char) ascii);
 		if ((drv >= 'A') && (drv <= 'Z'))
 		{
 			if (0 > (i = drv_to_icn(drv)))
@@ -1383,22 +1256,10 @@ static void handle_key(EVNT *w_ev)
 		}
 	}
 
-	/* 2. Fall: Alt-1 .. Alt-9 (Auflîsungswechsel) */
+	/* 2. Fall: Alt-1 .. Alt-9 (Aufl√∂sungswechsel) */
 	/* ------------------------------------------- */
-/*
-	if ((w_ev->kstate & K_ALT) &&
-		 !(w_ev->kstate & (K_LSHIFT+K_RSHIFT+K_CTRL)) &&
-		 (unsigned int) keycode >= 0x7800 &&
-		 (unsigned int) keycode <= 0x8100)
-	{
-		i = scancode - 0x77;
-		if (i != vdi_device);
-			shutdown(i, 0);
-		return;	/* Taste verarbeitet */
-	}
-*/
 
-	/* 3. Fall: Ctrl-Fn (MenÅprogramm ausfÅhren) */
+	/* 3. Fall: Ctrl-Fn (Men√ºprogramm ausf√ºhren) */
 	/* ----------------------------------------- */
 
 	if ((w_ev->kstate & K_CTRL) &&
@@ -1412,7 +1273,7 @@ static void handle_key(EVNT *w_ev)
 		return;	/* Taste verarbeitet */
 	}
 
-	/* 4. Fall: MenÅeintrag Åber Tastatur angewÑhlt */
+	/* 4. Fall: Men√ºeintrag √ºber Tastatur angew√§hlt */
 	/* -------------------------------------------- */
 
 	if (key_2_menu(w_ev->key, w_ev->kstate, &title, &entry))
@@ -1427,7 +1288,7 @@ static void handle_key(EVNT *w_ev)
 		return;	/* Taste verarbeitet */
 	}
 
-	/* 5. Fall: Aktion durchfÅhren */
+	/* 5. Fall: Aktion durchf√ºhren */
 	/* --------------------------- */
 
 	if (key_2_action(w_ev->key, ascii, w_ev->kstate))
@@ -1526,7 +1387,8 @@ static void handle_message(EVNT *w_ev)
 				(*(char **)(w_ev->msg + 6)) = "MAGXDESK";
 				appl_write(client, 16, w_ev->msg);
 				break;
-			}/*
+			}
+/*
 			case AV_EXIT:
 				break;
 */
@@ -1537,7 +1399,8 @@ static void handle_message(EVNT *w_ev)
 				return;
 
 			case AV_WHAT_IZIT:
-			{				int client = w_ev->msg[1];
+			{
+				int client = w_ev->msg[1];
 				WINDOW *w = whdl2window(wind_find(w_ev->msg[3], w_ev->msg[4]));
 				if (w)
 				{
@@ -1555,12 +1418,16 @@ static void handle_message(EVNT *w_ev)
 					w_ev->msg[1] = ap_id;
 					w_ev->msg[2] =
 					w_ev->msg[7] = 0;
-					w_ev->msg[3] = ap_id;					(*(char **)(w_ev->msg + 5)) = NULL;
+					w_ev->msg[3] = ap_id;
+					(*(char **)(w_ev->msg + 5)) = NULL;
 					appl_write(client, 16, w_ev->msg);
-				}				break;
-			}
+				}
+				break;
+			}
+
 			case AV_DRAG_ON_WINDOW:
-			{				int client = w_ev->msg[1];
+			{
+				int client = w_ev->msg[1];
 				w_ev->msg[0] = VA_DRAG_COMPLETE;
 				w_ev->msg[1] = ap_id;
 				w_ev->msg[2] =
@@ -1571,7 +1438,8 @@ static void handle_message(EVNT *w_ev)
 				w_ev->msg[7] = 0;
 				appl_write(client, 16, w_ev->msg);
 				break;
-			}
+			}
+
 			case AV_STARTED:
 				Mfree((*(char **)(w_ev->msg + 3)) - 1);
 				break;
@@ -1733,7 +1601,7 @@ static void handle_message(EVNT *w_ev)
 *
 ****************************************************************/
 
-void main()
+int main(void)
 {
 	EVNT w_ev;
 	int wait_nclicks;
@@ -1754,7 +1622,7 @@ void main()
 		upd_infos();
 		modify_menu();
 
-		/* Das eingestellte Doppelklick-Intervall kînnte geÑndert worden sein. */
+		/* Das eingestellte Doppelklick-Intervall k√∂nnte ge√§ndert worden sein. */
 		dclick_interval_hz200 = get_dclick_interval_ms() / 5;
 
 		/* Wenn ein Laufwerk mit Tastatur selektiert wurde, wird 200 ms	*/
@@ -1766,28 +1634,23 @@ void main()
 		if (settings.rtbutt_dclick)
 		{
 			button_waitclicks = 0x101;	/* NOT und Doppelklicks manuell */
-			mbuttons = 0;		/* keine Maustaste gedrÅckt */
+			mbuttons = 0;		/* keine Maustaste gedr√ºckt */
 			mbmask = 3;		/* beide Maustasten */
 		}
 		else
 		{
-			button_waitclicks = wait_nclicks; /* Doppelklicks, wenn mîglich, manuell erkennen, nicht vom System */
-			mbuttons = 1;		/* linke Maustaste gedrÅckt	*/
+			button_waitclicks = wait_nclicks; /* Doppelklicks, wenn m√∂glich, manuell erkennen, nicht vom System */
+			mbuttons = 1;		/* linke Maustaste gedr√ºckt	*/
 			mbmask = 1;		/* nur linke Maustaste */
 		}
 		
 		w_ev.mwhich = evnt_multi(waitfor,
-						  button_waitclicks,
-						  mbmask,			
-						  mbuttons,
-						  0,NULL,		/* kein 1. Rechteck */
-						  0,NULL,		/* kein 2. Rechteck */
-						  w_ev.msg,
-						  AUTOUPDATE_MS,	/* ms */
-						  (EVNTDATA *) &(w_ev.mx),
-						  &w_ev.key,
-						  &w_ev.mclicks
-						  );
+						  button_waitclicks, mbmask, mbuttons,
+						  0, 0, 0, 0, 0,
+						  0, 0, 0, 0, 0,
+						  w_ev.msg, AUTOUPDATE_MS,
+						  &w_ev.mx, &w_ev.my, &w_ev.mbutton, &w_ev.kstate,
+						  &w_ev.key, &w_ev.mclicks);
 
 		/* Fensterdialoge */
 		/* -------------- */
@@ -1806,7 +1669,7 @@ void main()
 			}
 		}
 
-		/* Abfrage auf BetÑtigung einer Taste */
+		/* Abfrage auf Bet√§tigung einer Taste */
 		/* ---------------------------------- */
 
 		if (w_ev.mwhich & MU_KEYBD)
@@ -1824,7 +1687,7 @@ void main()
 			wind_update(END_UPDATE);
 		}
 
-		/* Abfrage auf BetÑtigung eines Mausknopfs */
+		/* Abfrage auf Bet√§tigung eines Mausknopfs */
 		/* --------------------------------------- */
 
 		if (w_ev.mwhich & MU_BUTTON)
@@ -1853,14 +1716,18 @@ void main()
 				w_ev.mbutton = 1;		/* Doppelklick simulieren */
 			}
 
-			handle_mouse_button(w_ev.mclicks, (const EVNTDATA *) &(w_ev.mx));
+			EVNTDATA mouse_event = {
+				w_ev.mx, w_ev.my, w_ev.mbutton, w_ev.kstate
+			};
+			handle_mouse_button(w_ev.mclicks, &mouse_event);
 
 			/* poll mouse and keyboard state */
-			graf_mkstate((EVNTDATA *) &(w_ev.mx));
+			graf_mkstate(&w_ev.mx, &w_ev.my, &w_ev.mbutton, &w_ev.kstate);
 			if (w_ev.mbutton & 1)
 			{
 				/* left button still pressed, wait for release */
-				evnt_button(1, 1, 0, (EVNTDATA *) &(w_ev.mx));
+				evnt_button(1, 1, 0,
+						    &w_ev.mx, &w_ev.my, &w_ev.mbutton, &w_ev.kstate);
 			}
 		}
 

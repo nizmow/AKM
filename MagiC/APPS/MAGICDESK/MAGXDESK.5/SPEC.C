@@ -1,14 +1,13 @@
 /*********************************************************************
 *
-* Dieses Modul enth„lt TOS- Spezifisches
+* Dieses Modul enthÃ¤lt TOS- Spezifisches
 *
 *********************************************************************/
 
 
-#include <mgx_dos.h>
-#include "k.h"
-#include <vdi.h>
-#include <string.h>
+#include "MAGXDESK_GEM.H"
+#include "K.H"
+#include <stdlib.h>
 
 #define _HZ_200     ((long *)          0x4ba)
 
@@ -16,22 +15,22 @@
 /*********************************************************************
 *
 * Merkt Zeiger auf Betriebssystemheader und die Betriebssystemversion.
-* Muž bei Initialisierung von KAOSDESK aufgerufen werden.
+* MuÃŸ bei Initialisierung von KAOSDESK aufgerufen werden.
 * TOS 1.4- Versionen, die nicht vom 6.4.89 sind, werden als TOS 1.5
 * angesehen.
-* Aužerdem wird ein Zeiger auf den aktuellen Applikationsnamen
+* AuÃŸerdem wird ein Zeiger auf den aktuellen Applikationsnamen
 * gemerkt, da die Funktion menu_register(-1, name) unter GEM 2.x nicht
-* mehr untersttzt wird.
+* mehr unterstÃ¼tzt wird.
 *
 *********************************************************************/
 
-char *os_ver_s = "MagiC v__.__  vom __.__.____";
+char os_ver_s[] = "MagiC v__.__  vom __.__.____";
 static AESVARS *aesvars;
 
 void get_syshdr(void)
 {
 	aesvars = *((AESVARS **) (aes_global+11));
-	if	(aesvars->magic2 != 'MAGX')
+	if (aesvars->magic2 != 0x4d414758L)
 		Pterm(-1);
 	inf_name[0] = *(aesvars->aes_bootdrv) + 'A';
 
@@ -42,7 +41,7 @@ void get_syshdr(void)
 
 	if (aesvars->release < 3)
 	{
-		os_ver_s[12] = *("àáâ" + (aesvars->release));
+		os_ver_s[12] = *("\340\341\342" + (aesvars->release));
 	}
 
 	os_ver_s[18] = (((aesvars->date) >> 28)      ) + '0';
@@ -66,7 +65,21 @@ void get_syshdr(void)
 
 int alt_keycode_2_ascii(int keycode)
 {
-	return (int) xbios(39, 'AnKr', 1, keycode);
+	register long result __asm__("d0");
+	short key = (short) keycode;
+
+	/* Puntaes subfunction 1 consumes a WORD, not a LONG keycode. */
+	__asm__ volatile (
+		"move.w %1,-(%%sp)\n\t"
+		"move.w #1,-(%%sp)\n\t"
+		"move.l #0x416e4b72,-(%%sp)\n\t"
+		"move.w #39,-(%%sp)\n\t"
+		"trap #14\n\t"
+		"lea 10(%%sp),%%sp"
+		: "=r" (result)
+		: "r" (key)
+		: "d1", "d2", "a0", "a1", "a2", "cc", "memory");
+	return (int) result;
 }
 
 
@@ -78,7 +91,7 @@ int alt_keycode_2_ascii(int keycode)
 
 COOKIE *getcookie(long key)
 {
-	return (COOKIE *) xbios(39, 'AnKr', 4, key);
+	return (COOKIE *) (uintptr_t) trap_14_wlwl(39, 0x416e4b72L, 4, key);
 }
 
 
@@ -91,19 +104,19 @@ COOKIE *getcookie(long key)
 long read_bootsec
 (
 	int lw,
-	long *ser, int *bps, int *spc,
-	int *res, int *nfats, int *ndirs, int *nsects,
-	int *media, int *spf, int *spt, int *nsides,
-	int *nhid, int *exec
+	long *ser, short *bps, short *spc,
+	short *res, short *nfats, short *ndirs, short *nsects,
+	short *media, short *spf, short *spt, short *nsides,
+	short *nhid, short *exec
 )
 {
 	long doserr;
 	unsigned char *s;
-	unsigned int  *sw;
+	unsigned short *sw;
 
 
-	if (NULL == (s = Malloc(512L)))
-		return ENSMEM ;
+	if (NULL == (s = malloc(512)))
+		return ENSMEM;
 	doserr = Rwabs(0, s, 1, 0, lw);
 /*
 	if (lw == 0 || lw == 1)
@@ -126,21 +139,21 @@ long read_bootsec
 		*nsides = s[26] + 256 * s[27];
 		*nhid   = s[28] + 256 * s[29];
 		*exec   = 0;
-		for	(sw = (unsigned int *) s; (unsigned char *) sw < s+512; sw++)
+		for	(sw = (unsigned short *) s; (unsigned char *) sw < s+512; sw++)
 		{
 			*exec += *sw;
 		}
 		*exec = (*exec == 0x1234);
 	}
 
-	Mfree(s);
+	free(s);
 	return doserr;
 }
 
 
 /****************************************************************
 *
-* Hilfsfunktion fr getHz200
+* Hilfsfunktion fÃ¼r getHz200
 *
 ****************************************************************/
 
@@ -152,7 +165,7 @@ static long _getHz200(void)
 
 /****************************************************************
 *
-* Systemzeit fr Intervall-Berechnungen
+* Systemzeit fÃ¼r Intervall-Berechnungen
 *
 ****************************************************************/
 
@@ -165,7 +178,7 @@ long getHz200(void)
 /****************************************************************
 *
 * Doppelklick-Zeit in Millisekunden,
-* muž mit 5 multipliziert werden fr 5-ms-Einheiten fr den 200-Hz-Timer
+* muÃŸ mit 5 multipliziert werden fÃ¼r 5-ms-Einheiten fÃ¼r den 200-Hz-Timer
 *
 ****************************************************************/
 
@@ -201,12 +214,11 @@ static void *rsc_block;
 
 static long restart(void)
 {
-	extern BASPAG *_BasPag;
-
+	/* _base is the public MiNTLib current basepage pointer. */
 	*(aesvars->shel_vector) = NULL;
 	*((void **) (aes_global+7)) = rsc_block;
 	rsc_block = NULL;
-	return Pexec(EXE_EXFR, "", _BasPag, NULL);
+	return Pexec(EXE_EXFR, "", _base, NULL);
 }
 
 void res_exec(void)
