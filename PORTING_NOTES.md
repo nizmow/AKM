@@ -1092,3 +1092,12 @@ states, unchanged masks after Cancel, isolated bit changes after OK/Save,
 four-byte-only executable modifications, and saved-mask restoration after each
 accessory reboot. Full captures retain the caption-revision differences.
 Evidence: `build/atari/neost-magxconf-20261121-110743/`.
+
+`scripts/cpx_abi_lint.py` enforces the known CPX callback-to-bridge mapping in
+the ported MAGXCONF source, including callbacks with only 32-bit arguments.
+Do not call or extract those callback pointers outside the approved bridge
+argument. Add each newly ported consumer to the lint's default source list;
+add a bridge contract before enabling a previously unused callback.
+`mise run test:cpx-abi` exercises the actual assembly bridges against synthetic
+native callees that check argument layout and deliberately destroy D2/A2.
+These checks cover the CPX boundary, not arbitrary kernel/SLB function pointers.

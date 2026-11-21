@@ -246,6 +246,12 @@ Save modifies the executable itself, so install writable copies and test on
 cloned images. `mise run test:magxconf-neost` exercises Cancel/OK/Save and
 accessory boot persistence. This is not the separate MAGXCONF CPX.
 
+`mise run lint:cpx-abi` checks native CPX callback access; the MAGXCONF CPX
+build runs it automatically. `mise run test:cpx-abi` also runs source-lint
+regressions and executable bridge tests using the Atari toolchain container
+and host `qemu-m68k`, without a ROM or MagiC image. See [TESTING.md](TESTING.md)
+for scope and limits.
+
 `mise run apps -- flp-par` builds `FLP_PAR0.PRG` and `FLP_PAR1.PRG` in
 `build/atari/apps/flp-par/`. The individual `flp-par0` and `flp-par1`
 targets disable and enable MagiC's parallel floppy-access flag respectively.

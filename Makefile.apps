@@ -470,6 +470,12 @@ $(BUILD_DIR)/flp-par/FLP_PAR1.PRG: MagiC/APPS/FLP_PAR/SRC/FLP_PAR1.C Makefile.ap
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
+.PHONY: cpx-abi-lint
+cpx-abi-lint:
+	python3 scripts/cpx_abi_lint.py
+
+$(BUILD_DIR)/cpx/MAGXCONF.o: | cpx-abi-lint
+
 $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG: MagiC/APPS/WBDAEMON/TESTDATA/NEOSTEST.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \

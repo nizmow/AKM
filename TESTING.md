@@ -299,3 +299,44 @@ numeric version/date fields are compared pixel-for-pixel. The competing MAGXCONF
 CPX is disabled only in the clones so its boot initializer cannot overwrite the
 accessory's saved configuration. See `PORTING_NOTES.md` for the self-save contract and
 remaining verification limits.
+
+## CPX foreign-ABI checks
+
+```sh
+mise run lint:cpx-abi
+mise run test:cpx-abi
+```
+
+The lint defaults to the ported `MagiC/APPS/CPX/MAGXCONF.C`. Explicit source
+paths can be passed to `python3 scripts/cpx_abi_lint.py`. Known XCPB callback
+members may only be used as the first argument to their approved bridge;
+direct calls, pointer extraction and the wrong bridge are rejected. Scalar
+XCPB fields are unaffected. The MAGXCONF CPX build runs this gate even when
+its objects are up to date.
+
+This is a token-based policy for known callback field names, not a C type
+checker: it ignores comments/literals and does not resolve preprocessing,
+pointer arithmetic or arbitrary aliases of the XCPB storage. It is not a
+repository-wide ABI safety proof. Extend the source list and callback mapping
+explicitly as consumers are ported.
+
+A lint failure is a bridge-policy violation, not proof of a runtime failure.
+Because matching uses field names rather than types, unrelated structures with
+the same member names can produce false positives. Historical sources may also
+be correct under their original compiler despite failing the GCC-port policy.
+Treat findings as ABI boundaries to investigate or adapt, not confirmed crashes.
+
+The regression task runs the lint tests and assembles the production
+`cpx_entry.S` with the existing Atari toolchain container. A standalone m68k
+ELF fixture executes under host `qemu-m68k`; no ROM, disk image, Linux cross
+compiler or Atari application startup is needed. Synthetic native callbacks
+check argument order and word widths, clobber D2/A2, and return sentinel
+values. The caller checks register preservation and stack balance. Temporary
+builds are isolated and removed after the run; missing prerequisites fail
+rather than silently skipping coverage.
+
+These tests verify bridge contracts, not behavior of a real CPX manager.
+A regression failure demonstrates a failure under the fixture's tested ABI
+contract. Passing establishes coverage of those cases in the assembled bridge,
+not every possible call, real manager or whole-program ABI correctness.
+The NeoST MAGXCONF.CPX scenario remains the application-level check.

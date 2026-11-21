@@ -125,6 +125,16 @@ description = "Compile the application ABI layout checks"
 dir = "{{ config_root }}"
 run = "scripts/atari-container run make -f Makefile.apps abi-check"
 
+[tasks."lint:cpx-abi"]
+description = "Reject CPX native callback access outside approved ABI bridges"
+dir = "{{ config_root }}"
+run = "python3 scripts/cpx_abi_lint.py"
+
+[tasks."test:cpx-abi"]
+description = "Lint CPX callbacks and execute bridge ABI regressions under QEMU"
+dir = "{{ config_root }}"
+run = "python3 scripts/cpx_abi_lint.py && python3 -m unittest discover -s scripts -p 'test_cpx_*.py'"
+
 [tasks."verify:apps"]
 description = "Check expected application outputs; pass -- --build for a fresh build"
 dir = "{{ config_root }}"
