@@ -1011,3 +1011,65 @@ The DE/EN/FR comparisons passed under NeoST 0.6.5/MagiC 6.20/TOS 2.06:
 both programs returned status 0, and all 16 captured guest files per language
 matched (48 byte-identical pairs). Evidence:
 `build/atari/neost-mcmd-20261121-103027/`.
+
+## MAGXCONF program/accessory
+
+`make -f Makefile.apps magxconf` produces both `MAGXCONF.PRG` and `MAGXCONF.ACC`
+under `build/atari/apps/magxconf/de/`. Select `MAGXCONF_LANG=en` or `fr`;
+`magxconf-languages` builds all three languages in separate directories. The
+program and accessory files are identical copies: the original startup code
+detects the mode from the basepage parent pointer. Do not invent a separate
+compile-time accessory ABI or confuse these outputs with `MAGXCONF.CPX`.
+
+The source includes the existing `MagiC/INC_AS/{OSBIND,AESBIND,MAGIX}.INC`.
+The shared MAS normalizer and VASM's native TOS writer replace the old tool
+chain. Canonical `MAGXCONF.S` is UTF-8; `--atari-strings` restores Atari bytes
+inside assembly literals, and `-noesc` retains literal backslashes. COUNTRY
+1/2/3 selects German/French/English, retaining the original French default when
+assembling without a selection. The VASM warning about the `global` label
+conflicting with a directive is a name warning, not an unresolved symbol.
+
+MAS starts an independent counter at each `OFFSET`/`OFFSET 0`. VASM reuses its
+offset section, so normalization must emit an explicit `ORG 0` as well. Without
+that reset, the OBJECT, TEDINFO, AESVARS and application BSS layouts accumulate:
+the version lookup misses AESVARS and the application BSS is oversized.
+MAGXCONF asserts the AESVARS magic/date/version offsets (12/16/48), and its
+runtime comparison checks the displayed version/date values. Rebuilding the
+three MCMD executables with this normalization change produced byte-identical
+outputs; the kernel was not rebuilt as part of this application check.
+
+Save finds the running file through `shel_find` and changes exactly four bytes
+at file offset 30: the default configuration immediately after the two-byte
+entry branch and 28-byte TOS header. There is no companion configuration file.
+Accessory startup applies a valid saved default with Sconfig's word-sized
+`'EL'` selector; `'AK'` queries the current mask. Keep this entry layout intact
+and install writable copies.
+
+`test:magxconf-neost` runs archived and rebuilt PRG/ACC copies on distinct
+MagiC image clones. A guest query probe checks that Cancel preserves the mask,
+OK changes only bit 4, Save additionally changes only bit 7, and an accessory
+reboot restores the saved mask. The runner also requires that no executable
+bytes outside the saved longword change. It activates the accessory through
+the real desktop menu; the pinned fixture has MAGXCONF before Control Panels.
+
+Disable a competing MAGXCONF CPX inside each clone before testing accessory
+persistence: COPS calls its boot initializer, which restores a separate saved
+configuration mask. The runner renames `AUTO\ACCS\CPX\MAGXCONF.CPX` to `.CPZ`
+when present, leaving COPS and its menu entry available. Without that isolation
+the supplied image overwrites the accessory's saved mask during boot. The
+original disk and CPX source/build remain unchanged.
+
+The archives and source are different resource revisions: besides Mag!X/MagiC,
+the English archive has padded On labels, Abort instead of Cancel, and older
+option wording. Full screenshots retain those differences. Pixel comparison
+covers switch state margins, action-button borders, and numeric version/date
+fields; it does not compare the changed captions or claim whole-dialog parity.
+Other option bits, color/low-resolution displays, KAOS operation, and failure
+paths for read-only/missing executables remain outside the scenario.
+
+All DE/EN/FR program and accessory lifecycle comparisons passed under NeoST
+0.6.5/TOS 2.06 on the supplied MagiC image: 39 paired switch/button/version/date
+states, unchanged masks after Cancel, isolated bit changes after OK/Save,
+four-byte-only executable modifications, and saved-mask restoration after each
+accessory reboot. Full captures retain the caption-revision differences.
+Evidence: `build/atari/neost-magxconf-20261121-110743/`.

@@ -272,3 +272,30 @@ independently and compared byte-for-byte between archived and rebuilt runs.
 `PORTING_NOTES.md` records the retained external-quote and trailing-directory
 behaviors. Interactive editing, pipes, long filenames and AUTOEXEC/BOOT startup
 remain untested.
+
+## NeoST: MAGXCONF configuration dialog and persistence
+
+```sh
+MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
+  mise run test:magxconf-neost
+```
+
+The runner builds DE/EN/FR program/accessory pairs and the guest query probe,
+then uses separate cloned MagiC images for each archive/rebuilt case. It drives
+Cancel, OK and Save, checks runtime configuration masks, verifies the exact
+four-byte executable modification, and reboots each accessory case to check
+restoration from the saved default.
+
+Required: NeoST, TOS 2.06, a bootable MagiC image and host `mtools`. The profile
+is MegaSTE/4 MiB/monochrome with C: at offset 1024 by default. The fixture uses
+`C:\AUTO\ACCS`, `C:\GEMSYS\MAGIC\START`, and a disposable host-backed E: for
+guest query results. Its desktop menu has MAGXCONF before Control Panels;
+different installations need their own activation coordinates.
+
+Use `--languages de` or `--modes p`/`a` to narrow the scenario. Evidence goes to
+a fresh `build/atari/neost-magxconf-*` directory. Screenshots preserve source/
+archive caption differences; switch state margins, action-button borders and
+numeric version/date fields are compared pixel-for-pixel. The competing MAGXCONF
+CPX is disabled only in the clones so its boot initializer cannot overwrite the
+accessory's saved configuration. See `PORTING_NOTES.md` for the self-save contract and
+remaining verification limits.

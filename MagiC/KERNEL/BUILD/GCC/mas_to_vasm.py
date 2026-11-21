@@ -124,8 +124,10 @@ def normalize(text, sections=()):
         if include:
             name = include[1].replace("\\", "/").rsplit("/", 1)[-1].upper()
             line = '     include "' + name + '"'
-        elif re.fullmatch(r"\s*OFFSET\s*(?:;.*)?", line, re.I):
-            line = "     offset 0"
+        elif re.fullmatch(r"\s*OFFSET(?:\s+0)?\s*(?:;.*)?", line, re.I):
+            # VASM reuses its offset section; MAS starts a fresh structure.
+            yield "     offset 0"
+            line = "     org 0"
         elif re.fullmatch(r"\s*TEXT\s*(?:;.*)?", line, re.I):
             line = "     section .text,code"
         elif re.fullmatch(r"\s*DATA\s*(?:;.*)?", line, re.I):

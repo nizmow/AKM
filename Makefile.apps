@@ -63,7 +63,7 @@ VT52_OBJECTS := $(patsubst $(VT52_DIR)/%.C,$(BUILD_DIR)/vt52/%.o,$(VT52_SOURCES)
 
 MCMD_DIR := MagiC/APPS/CMD/SRC
 MCMD_LANG ?= de
-MCMD_NORMALIZER := MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py
+MAS_NORMALIZER := MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py
 MCMD_SOURCES := $(wildcard $(MCMD_DIR)/*.S $(MCMD_DIR)/*.INC $(MCMD_DIR)/INTERN/*.S)
 MCMD_NORMALIZED := $(addprefix $(BUILD_DIR)/mcmd/src/,$(notdir $(MCMD_SOURCES)))
 
@@ -72,11 +72,11 @@ mcmd: $(BUILD_DIR)/mcmd/$(MCMD_LANG)/MCMD.TOS
 mcmd-languages: $(foreach lang,de en fr,$(BUILD_DIR)/mcmd/$(lang)/MCMD.TOS)
 mcmd-test-driver: $(BUILD_DIR)/mcmd/NEOSTART.PRG $(BUILD_DIR)/mcmd/CHILD.TTP
 
-$(BUILD_DIR)/mcmd/src/%: $(MCMD_DIR)/% $(MCMD_NORMALIZER) Makefile.apps
-	python3 $(MCMD_NORMALIZER) "$<" "$@"
+$(BUILD_DIR)/mcmd/src/%: $(MCMD_DIR)/% $(MAS_NORMALIZER) Makefile.apps
+	python3 $(MAS_NORMALIZER) "$<" "$@"
 
-$(BUILD_DIR)/mcmd/src/%: $(MCMD_DIR)/INTERN/% $(MCMD_NORMALIZER) Makefile.apps
-	python3 $(MCMD_NORMALIZER) "$<" "$@"
+$(BUILD_DIR)/mcmd/src/%: $(MCMD_DIR)/INTERN/% $(MAS_NORMALIZER) Makefile.apps
+	python3 $(MAS_NORMALIZER) "$<" "$@"
 
 $(BUILD_DIR)/mcmd/%/MCMD.TOS: $(MCMD_NORMALIZED) Makefile.apps
 	mkdir -p "$(@D)"
@@ -94,6 +94,41 @@ $(BUILD_DIR)/mcmd/CHILD.TTP: MagiC/APPS/CMD/TESTDATA/CHILD.C MagiC/APPS/TOS_ARGS
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.TTP=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+MAGXCONF_DIR := MagiC/APPS/MAGXCONF/SRC
+MAGXCONF_LANG ?= de
+MAGXCONF_INCLUDES := OSBIND.INC AESBIND.INC MAGIX.INC
+MAGXCONF_NORMALIZED := $(addprefix $(BUILD_DIR)/magxconf/src/,$(MAGXCONF_INCLUDES)) \
+  $(BUILD_DIR)/magxconf/src/MAGXCONF.S
+
+.PHONY: magxconf magxconf-languages magxconf-test-driver
+magxconf: $(BUILD_DIR)/magxconf/$(MAGXCONF_LANG)/MAGXCONF.PRG \
+  $(BUILD_DIR)/magxconf/$(MAGXCONF_LANG)/MAGXCONF.ACC
+magxconf-languages: $(foreach lang,de en fr,$(BUILD_DIR)/magxconf/$(lang)/MAGXCONF.PRG \
+  $(BUILD_DIR)/magxconf/$(lang)/MAGXCONF.ACC)
+magxconf-test-driver: $(BUILD_DIR)/magxconf/NEOSTART.PRG
+
+$(BUILD_DIR)/magxconf/src/%.INC: MagiC/INC_AS/%.INC $(MAS_NORMALIZER) Makefile.apps
+	python3 $(MAS_NORMALIZER) --atari-strings "$<" "$@"
+
+$(BUILD_DIR)/magxconf/src/MAGXCONF.S: $(MAGXCONF_DIR)/MAGXCONF.S $(MAS_NORMALIZER) Makefile.apps
+	python3 $(MAS_NORMALIZER) --atari-strings "$<" "$@"
+
+$(BUILD_DIR)/magxconf/%/MAGXCONF.PRG: $(MAGXCONF_NORMALIZED) Makefile.apps
+	mkdir -p "$(@D)"
+	case "$*" in de) country=1;; fr) country=2;; en) country=3;; \
+	  *) echo "Unsupported MAGXCONF language: $* (use de, en or fr)" >&2; exit 1;; esac; \
+	$(VASM) -Ftos -m68000 -noesc -DCOUNTRY=$$country \
+	  -I"$(BUILD_DIR)/magxconf/src/" -o "$@" "$(BUILD_DIR)/magxconf/src/MAGXCONF.S"
+
+# The same executable detects program/accessory startup from its basepage.
+$(BUILD_DIR)/magxconf/%/MAGXCONF.ACC: $(BUILD_DIR)/magxconf/%/MAGXCONF.PRG
+	cp "$<" "$@"
+
+$(BUILD_DIR)/magxconf/NEOSTART.PRG: MagiC/APPS/MAGXCONF/TESTDATA/NEOSTART.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 
 .PHONY: all applicat mod-app cmdline mac2st dump fc split showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 vt52-test-driver magxdesk abi-check console-test-driver

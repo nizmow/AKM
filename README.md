@@ -238,6 +238,14 @@ executable directly from normalized assembly; no archived MAS/ALN tools or
 objects are used. `mise run test:mcmd-neost` compares batch execution and guest
 file effects against the localized archives on cloned MagiC images.
 
+`mise run apps -- magxconf` builds German `MAGXCONF.PRG` and `MAGXCONF.ACC`
+in `build/atari/apps/magxconf/de/`. Select `MAGXCONF_LANG=en` or `fr`, or use
+`magxconf-languages` for all six outputs. The same assembly executable detects
+PRG versus ACC startup; no GCC ABI conversion or archived objects are needed.
+Save modifies the executable itself, so install writable copies and test on
+cloned images. `mise run test:magxconf-neost` exercises Cancel/OK/Save and
+accessory boot persistence. This is not the separate MAGXCONF CPX.
+
 Repeatable emulator checks use explicit, subsystem-scoped tasks. Run
 `mise run test:mod-app-neost` (or `python3 scripts/neost-mod-app-smoke.py`).
 Runner options and outputs: `python3 scripts/neost-mod-app-smoke.py --help`.
