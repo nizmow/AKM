@@ -246,6 +246,13 @@ Save modifies the executable itself, so install writable copies and test on
 cloned images. `mise run test:magxconf-neost` exercises Cancel/OK/Save and
 accessory boot persistence. This is not the separate MAGXCONF CPX.
 
+`mise run apps -- magxconf-cpx` builds `build/atari/apps/cpx/MAGXCONF.CPX`
+from the original `MagiC/APPS/CPX/MAGXCONF.C`. The external XCONTROL CPX SDK
+headers are reproduced locally; VASM shims preserve the classic 16-bit callback
+arguments. `mise run test:magxconf-cpx-neost` compares the boot initializer and
+the CPX dialog opened through COPS against the archived module on cloned MagiC
+images. Other CPX managers and Save-button interaction remain untested.
+
 `mise run lint:cpx-abi` checks native CPX callback access; the MAGXCONF CPX
 build runs it automatically. `mise run test:cpx-abi` also runs source-lint
 regressions and executable bridge tests using the Atari toolchain container

@@ -1093,6 +1093,43 @@ four-byte-only executable modifications, and saved-mask restoration after each
 accessory reboot. Full captures retain the caption-revision differences.
 Evidence: `build/atari/neost-magxconf-20261121-110743/`.
 
+## MAGXCONF.CPX
+
+`mise run apps -- magxconf-cpx` builds `build/atari/apps/cpx/MAGXCONF.CPX`
+from the original `MagiC/APPS/CPX/MAGXCONF.C`. A CPX file is a 512-byte
+`struct cpxhead` followed by a classic TOS program: 28-byte header, text, data,
+BSS size and TOS relocation deltas. The unchanged `MAGXCONF.HDR` supplies the
+header/icon/title; `MAGXCONF.RSC/.RSO/.RSH` remain the original resource
+inputs. `scripts/elf_to_cpx.py` packages the linked relocatable ELF, and
+`MagiC/APPS/CPX/cpx.ld` keeps text/data/BSS contiguous from zero.
+
+The external XCONTROL CPX SDK headers were not in the repository. `cpxhead.h`
+and `cpxdata.h` reproduce the classic `XCPB`, `CPXINFO`, `CPXHEAD`, resource
+index and MagiC-cookie records used by the archived module; `magxconf.h` and
+`country.h` are local include shims. The callback field offsets were checked
+against the archived module's disassembly (`getcookie` 80, `Country_Code` 84,
+`Xform_do` 52, `rsh_obfix` 20, `CPX_Save` 72, `Get_Buffer` 76) and compile-time
+asserts.
+
+`struct save_vars` must be the first data-segment longword because the manager's
+`CPX_Save` writes at `512 + 28 + text_length`. The source places it in
+`.save_vars`, and `cpx.ld` keeps that section first. The boot initializer clears
+the CPX's `SCONFIG_MASK` bits and ORs the saved default, so a scratch copy with
+a nonzero default makes the effect observable.
+
+Classic CPX callbacks take 16-bit arguments, but GCC passes `short` arguments
+as 32-bit stack slots. `cpx_entry.S` provides VASM shims that repack
+`Xform_do(fn, tree, edit, msg)`, `rsh_obfix(fn, tree, ob)` and
+`XGen_Alert(fn, id)` to the classic 4+2+4/4+2/2-byte layouts. Without them the
+dialog runs invisibly: `Xform_do` reads a shifted message pointer and
+`rsh_obfix` receives the wrong tree/index, leaving invalid geometry. Every
+callback invocation goes through a shim that saves and restores D2/A2:
+`Xform_do`, `rsh_obfix`, `XGen_Alert`, `GetFirstRect`, `GetNextRect`,
+`CPX_Save`, `Get_Buffer` and `getcookie`. Those registers are callee-saved for
+the C caller, while the classic callbacks may clobber them (COPS' own bridges
+declare the same clobbers). The generic `cpx_call2` bridge passes a zero filler
+for zero/one-argument callbacks.
+
 `scripts/cpx_abi_lint.py` enforces the known CPX callback-to-bridge mapping in
 the ported MAGXCONF source, including callbacks with only 32-bit arguments.
 Do not call or extract those callback pointers outside the approved bridge
@@ -1101,3 +1138,17 @@ add a bridge contract before enabling a previously unused callback.
 `mise run test:cpx-abi` exercises the actual assembly bridges against synthetic
 native callees that check argument layout and deliberately destroy D2/A2.
 These checks cover the CPX boundary, not arbitrary kernel/SLB function pointers.
+
+`test:magxconf-cpx-neost` builds both modules, installs a scratch saved default
+of `SCB_NFAST` into archived and rebuilt CPX copies, boots separate clones of
+the MAGXCONF fixture with COPS enabled, checks the boot-time configuration
+(`00000010`), opens Control Panels and double-clicks MagiC Config., and requires
+pixel-identical dialog screenshots. The fixture's desktop menu and CPX list
+coordinates are pinned. The archived module and rebuilt dialog matched exactly.
+
+Limits: boot initialization and dialog rendering were exercised through the
+COPS accessory in the supplied image. XCONTROL.ACC other managers, Save-button
+confirmation/CPX_Save writes, switch toggling with OK, other languages and
+failure alerts remain untested. The CPX header, icon and resource binaries are
+retained unchanged. Evidence:
+`build/atari/neost-magxconf-cpx-20261121-141502/`.

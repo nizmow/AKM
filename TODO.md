@@ -145,7 +145,12 @@ all nine ahead of their consumers.
   on cloned MagiC images: `00000000 → 00000800 → 00000000`, zero child statuses
   and no other bits changed. Physical parallel-floppy operation remains
   untested.
-- [ ] Loadable components: image/window-frame SLBs, CPXs and drivers.
+- [x] **MAGXCONF.CPX** — build the archived module format from the existing
+  source; local CPX ABI headers and VASM shims reproduce the classic 16-bit
+  callback arguments. `test:magxconf-cpx-neost` verifies the boot initializer
+  and a pixel-identical dialog opened through COPS on cloned MagiC images.
+- [ ] Remaining loadable components: `TSLICE.CPX`, image/window-frame SLBs and
+  drivers.
 - [x] Account explicitly in the catalogue for remaining diagnostic, historical,
   host-specific, missing-source and external-dependency entries.
 

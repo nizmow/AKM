@@ -300,6 +300,25 @@ CPX is disabled only in the clones so its boot initializer cannot overwrite the
 accessory's saved configuration. See `PORTING_NOTES.md` for the self-save contract and
 remaining verification limits.
 
+## NeoST: MAGXCONF.CPX boot initializer and dialog
+
+`mise run test:magxconf-cpx-neost` builds the rebuilt CPX and the MAGXCONF
+configuration probe, then runs archived and rebuilt modules in separate clones
+of the same MagiC image:
+
+```sh
+MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
+  python3 scripts/neost-magxconf-cpx-smoke.py
+```
+
+The runner installs a scratch CPX copy with `SCB_NFAST` as its saved default, so
+the boot initializer's effect is observable. After boot it requires the guest
+query to report `00000010`, opens Control Panels, double-clicks MagiC Config.,
+and compares the dialog screenshots. The fixture must have COPS in
+`C:\AUTO\ACCS` and the CPX mirrored in `C:\AUTO\ACCS\CPX`; menu and list
+coordinates are pinned to this installation. Other CPX managers, Save-button
+confirmation and switch toggling remain outside the scenario.
+
 ## CPX foreign-ABI checks
 
 ```sh
