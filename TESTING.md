@@ -359,3 +359,37 @@ A regression failure demonstrates a failure under the fixture's tested ABI
 contract. Passing establishes coverage of those cases in the assembled bridge,
 not every possible call, real manager or whole-program ABI correctness.
 The NeoST MAGXCONF.CPX scenario remains the application-level check.
+
+## NeoST: DIS1/DIS2 disassembler
+
+`mise run test:dis-neost` builds both passes and the generic console driver,
+then runs the archived and rebuilt binaries against the same bundled `TST`
+corpus under NeoST's EmuTOS:
+
+```sh
+python3 scripts/neost-dis-smoke.py
+```
+
+Each case gets its own disposable GEMDOS C: tree. The runner compares child
+status and all generated guest files. Child console text is not checked:
+NeoST's console log contains only the driver's `STATUS` line, and its screenshot
+is taken after the driver returns to the desktop. Banners, usage and diagnostics
+remain a documented gap.
+
+- DIS1 on `T.PRG`, `U.PRG`, `T.O`, `-3 T.PRG`, a recognized DRI object
+  (`KAOS/APPS/KAOSDESK.SRC/ICNEDIT/IMPORT/PCMXSTRT.O`) and no arguments.
+  `T.O` is a Pure C (`0x4efa`) object, not a DRI object.
+- DIS2 raw input (`-e`) with default, code/address/ASCII, 68030 and MAS/absolute
+  output options, a hexadecimal range, signed 16-bit displacement and MOVEM
+  reversed-mask fixtures, and a missing file.
+- DIS2 with archived DIS1 workfiles for `T.PRG`, after setting the fixture
+  `.rlo` symbol length to 4. The corpus executables have no symbol table, and
+  both the archived and rebuilt DIS2 reject `Malloc(0)`.
+- DIS2 with the archived DRI object workfiles and symbol table, exercising the
+  object relocation-map path and source output.
+
+No MagiC image, ROM download or `mtools` is needed because the tools use only
+GEMDOS and console output. Interactive editing, `-t` stdout capture, memory
+(`-m`) disassembly and MagiC-kernel-specific behavior remain untested. The
+generated `.s` text is compared byte-for-byte against the archive, not
+assembled or executed.

@@ -40,6 +40,8 @@ TARGETS = {
     "mgedit": ("mgedit", ["MGEDIT.APP", "mgedit.rsc", "EDITOBJC.SLB"]),
     "abi-check": ("abi-check", ["ABI_CHECK.o"]),
     "console-test-driver": ("console", ["RUNARG.PRG"]),
+    "dis1": ("dis1", ["DIS1.TTP"]),
+    "dis2": ("dis2", ["DIS2.TTP"]),
 }
 
 

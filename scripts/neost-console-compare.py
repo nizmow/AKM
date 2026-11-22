@@ -81,7 +81,8 @@ def main():
     parser.add_argument("--fixture", type=Path, action="append", default=[],
                         help="file or directory copied into each guest C: root")
     parser.add_argument("--driver", type=Path, default=DEFAULT_DRIVER)
-    parser.add_argument("--compare", choices=("status", "console", "files", "all"),
+    parser.add_argument("--compare",
+                        choices=("status", "console", "files", "status-files", "all"),
                         default="all")
     parser.add_argument("--frames", type=int, default=1800)
     parser.add_argument("--timeout", type=int, default=120)
@@ -113,11 +114,11 @@ def main():
     a_status, a_console, a_files = results["archived"]
     r_status, r_console, r_files = results["rebuilt"]
     failures = []
-    if args.compare in ("status", "all") and a_status != r_status:
+    if args.compare in ("status", "status-files", "all") and a_status != r_status:
         failures.append(f"status archived={a_status} rebuilt={r_status}")
     if args.compare in ("console", "all") and a_console != r_console:
         failures.append("console output differs")
-    if args.compare in ("files", "all") and a_files != r_files:
+    if args.compare in ("files", "status-files", "all") and a_files != r_files:
         failures.append("guest file output differs")
     summary = [
         f"archived status: {a_status}",

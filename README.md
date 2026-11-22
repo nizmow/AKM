@@ -117,6 +117,15 @@ tools with `mise run apps -- mac2st`, `-- dump`, `-- fc` or `-- split`. Run
 `mise run test:console-tools-neost`; it builds the tools and console driver,
 then compares archived/rebuilt status, output and file effects through
 `scripts/neost-console-tools-smoke.py`.
+
+Build the two-pass disassembler with `mise run apps -- dis` (or `dis1`/`dis2`)
+into `build/atari/apps/dis1/DIS1.TTP` and `build/atari/apps/dis2/DIS2.TTP`.
+`mise run test:dis-neost` runs both against the bundled `TST` corpus and a DRI
+object fixture, comparing child status, `.lbl`/`.rlo`/`.s` output and argument
+handling with the archived binaries. Child console text is not captured: the
+NeoST log records only the driver's `STATUS` line, and the post-exit screenshot
+is the desktop. The sources were converted from Atari ST text to UTF-8; runtime
+banner bytes remain explicit octal escapes.
 Host Python pinning does not change the Python installed inside the toolchain
 container. Proprietary TOS ROMs and writable
 MagiC disk images are supplied separately, never installed by mise.

@@ -75,6 +75,11 @@ description = "Compare archived and rebuilt MAC2ST, DUMP, FC and SPLIT under Neo
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-console-tools-smoke.py"
 
+[tasks."test:dis-neost"]
+description = "Compare archived and rebuilt DIS1/DIS2 on the TST corpus under NeoST"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-dis-smoke.py"
+
 [tasks."test:mgclock-neost"]
 description = "Verify MGCLOCK desktop timer and MagiC coexistence under NeoST"
 dir = "{{ config_root }}"

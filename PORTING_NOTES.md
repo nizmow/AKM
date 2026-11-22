@@ -1152,3 +1152,54 @@ confirmation/CPX_Save writes, switch toggling with OK, other languages and
 failure alerts remain untested. The CPX header, icon and resource binaries are
 retained unchanged. Evidence:
 `build/atari/neost-magxconf-cpx-20261121-141502/`.
+
+## DIS1/DIS2
+
+`mise run apps -- dis` builds `build/atari/apps/dis1/DIS1.TTP` and
+`build/atari/apps/dis2/DIS2.TTP` from `MagiC/TOOLS/DIS/SRC`. The Atari ST
+sources were decoded to canonical UTF-8; runtime banner bytes were replaced
+with explicit octal escapes (`\277` for `™`, `\275` for `©`, `\236` for `ß`).
+Comments may remain UTF-8; execution strings must not.
+
+This port is mostly a width exercise, because the sources assumed 16-bit
+`int`:
+
+- `DIS_COMPAT.H` declares the 28-byte GEMDOS program header and 14-byte
+  GEMDOS symbol record with fixed 16/32-bit fields. `struct symbol` and
+  `sizeof(PH)` must never use MiNTLib's 32-bit `int`.
+- `DIS1`'s file buffer is `int16_t *`, and `getcode()`/`DEC` keep machine words
+  in `int16_t`. Reading two bytes into an `int` would land in the high half on
+  big-endian m68k and break every opcode comparison.
+- DRI objects carry one 16-bit relocation slot per image word. `DIS2`'s
+  `rlo_obj` allocation and all three declarations are `uint16_t *`; the
+  `DIS1` label pass reads each slot into a `uint16_t`. A 32-bit slot type would
+  double the stride and run past the allocated image.
+- `_DTA` supplies `dta_size`/`dta_name`; `DIS_COMPAT.H` maps the old
+  `d_length`/`d_fname` names. `Fsfirst` fills the DTA set in `main`, so
+  `load_rlo` can use that size after its own lookup.
+- Symbol types are 16-bit. `printtype` truncates before masking the defined/
+  undefined bit; otherwise `0x8000` sign-extends and the fallback type text
+  disappears.
+- The MOVEM predecrement mask is a reversed 16-bit mask. `ISREG` tests
+  `((uint16_t)regs >> (15-i)) & 1`; a 32-bit left shift tested bit 31 and
+  dropped the selected register. The `48e7 0001` fixture decodes `sp`.
+- `cerrws` now writes to `HDL_CON`; Pure C's `_BasPag->p_stdfh[STDERR]` test
+  has no MiNTLib equivalent and is not needed for these console tools.
+
+The `TST` corpus has executable programs without symbol tables. `DIS2` calls
+`Malloc(0)` when the `.rlo` symbol length is zero; both the archived and rebuilt
+binaries exit with status 1. The runtime check therefore patches only the test
+`.rlo` symbol length to 4, which exercises label/relocation/symbol loading
+without changing the tables. This is retained legacy behavior, not a port fix.
+
+`test:dis-neost` compares archived/rebuilt child status and generated files
+under NeoST/EmuTOS. Child console text is not captured: the NeoST log contains
+only the driver's `STATUS` line, and the post-exit screenshot is the desktop.
+Banners, usage and diagnostics therefore remain outside the automated check.
+Raw `-e`, code/address/ASCII comments, 68030, MAS output, range, signed-word
+and MOVEM edge cases, error cases and a recognized DRI object are covered. The object fixture is
+`KAOS/APPS/KAOSDESK.SRC/ICNEDIT/IMPORT/PCMXSTRT.O`; its archived DIS1
+workfiles and symbol table feed both DIS2 builds. `TST/T.O` is a Pure C
+(`0x4efa`) object and is not treated as a DRI object. Interactive usage, `-t`
+stdout capture and MagiC-kernel-specific behavior are not. Evidence:
+`build/atari/neost-dis-20261122-113653/`.

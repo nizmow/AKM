@@ -11,16 +11,16 @@
 *                                 e: keine EXE- Datei
 *                                 t: Ausgabe auf stdout
 *                                 d: Datei als DATA- Segment betrachten
-*                                 c: jew. Code fÅr Befehle angeben
+*                                 c: jew. Code f√ºr Befehle angeben
 *                                 a: jew. Adressen angeben
 *                                 z: ASCII angeben
-*                                 i: Tmp- Dateien RLO und LBL lîschen
+*                                 i: Tmp- Dateien RLO und LBL l√∂schen
 *						    n: bei ".o" keine 0007 testen
 *						    m: MAS-68K (bra.b und ; Kommentar)
-*						    g: Bei abs.Adr. Grîûe angeben
+*						    g: Bei abs.Adr. Gr√∂√üe angeben
 *						    3: 68030 Code
 *                             2) -oh: h ist Origin (bei nicht- exe)
-*                             3) -mhex1-hex2 fÅr Speicher disassemblieren
+*                             3) -mhex1-hex2 f√ºr Speicher disassemblieren
 *                             4) Zu disassemblierender Bereich:
 *                                xxxxx-xxxxx  (Hex- Zahlen)
 *                             5) Zu disassemblierende Programmdatei
@@ -32,21 +32,19 @@
 * erstellt            Source- Code        "filename.s"
 * 
 *  rlo- Datei beginnt mit 5 Langworten:
-*		l_text, l_data, l_bss, l_sym, l_stk (optional fÅr Turbo)
+*		l_text, l_data, l_bss, l_sym, l_stk (optional f√ºr Turbo)
 *
-*  lbl- Datei enthÑlt zunÑchst ein Langwort mit der TabellenlÑnge.
-*  (Anzahl der Tabellen- EintrÑge).
+*  lbl- Datei enth√§lt zun√§chst ein Langwort mit der Tabellenl√§nge.
+*  (Anzahl der Tabellen- Eintr√§ge).
 *
 *******************************************************************/
 
 
-#include <tos.h>
-#include <tosdefs.h>
+#include "DIS_COMPAT.H"
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <ctype.h>
-#include <magix.h>
 
 #define FALSE             (0)
 #define TRUE              (1)
@@ -55,30 +53,25 @@
 #define STDOUT             1
 #define MAXLONG           2147483647L
 
-struct symbol {
-  char symname[8];
-  int  symtype;
-  long symvalue;
-  };
-#define SLEN ( (long) sizeof(struct symbol) ) 
+#define SLEN ( (long) sizeof(struct symbol) )
 
 int  prg_file, s_file;
 long *rlo_tab;                /* Relocation- Tabelle */
-int	rlo_max;				/* TabellenlÑnge */
-unsigned *rlo_obj;			/* bei Objektdatei: alle Reloc.daten	*/
-long *lbl_tab;                /* Label- Tabelle, lbl_tab[0] ist LÑnge */
+int	rlo_max;				/* Tabellenl√§nge */
+uint16_t *rlo_obj;			/* bei Objektdatei: alle Reloc.daten	*/
+long *lbl_tab;                /* Label- Tabelle, lbl_tab[0] ist L√§nge */
 struct symbol *symboltab;	/* Symboltabelle */
-int  sym_max;				/* TabellenlÑnge */
+int  sym_max;				/* Tabellenl√§nge */
 int  iserror;
 int  isobj   = FALSE;		/* Objektdatei */
-int  notexe  = FALSE;         /* Flag, ob Datei ausfÅhrbar            */
+int  notexe  = FALSE;         /* Flag, ob Datei ausf√ºhrbar            */
 int  isstd   = FALSE;         /* Flag, ob Ausgabe auf 'stdout'        */
 int  isdata  = FALSE;         /* Datei nur als DATA behandeln         */
 int  iscode  = FALSE;         /* Maschinencode in hex mit angeben     */
-int  isadr   = FALSE;         /* Adresse fÅr jeden Befehl angeben     */
+int  isadr   = FALSE;         /* Adresse f√ºr jeden Befehl angeben     */
 int  isasc   = FALSE;         /* ASCII- Code mit angeben ?            */
 int  ismem   = FALSE;         /* Speicher disassemblieren             */
-int  killtmp = FALSE;         /* .LBL, .RLO lîschen, wenn TRUE        */
+int  killtmp = FALSE;         /* .LBL, .RLO l√∂schen, wenn TRUE        */
 int  no0007  = FALSE;		/* per Default 0007 bei ".o" testen	*/
 int	ismas   = FALSE;		/* per Default "bra.s" und '*' Kommentar*/
 int	issize  = FALSE;		/* per Default kein .w/.l			*/
@@ -102,7 +95,7 @@ int  load_rlo(char *name, DTA *dtabuf);
 int  load_sym( void );
 
 
-void main (int argc, char *argv[])
+int main (int argc, char *argv[])
 {
 	extern	void	dis(char *dateiname);
 	register	long	retcode;
@@ -113,7 +106,7 @@ void main (int argc, char *argv[])
 
 	Fwrite(HDL_CON, 58L, "GEMDOS\277 Disassembler (Phase 2), \275 1987-92 Andreas Kromke\r\n");
 
-	if   (argc < 2)                        /* Kommandozeile prÅfen */
+	if   (argc < 2)                        /* Kommandozeile pr√ºfen */
 		{
 		cerrws("\r\nUsage: dis2 [from[-to]] {-etdcazinus3} [-oOrigin] [-mfrom-to] filename.ext\r\n\r\n");
 		cerrws("          -e   Not executable\r\n"
@@ -151,7 +144,7 @@ void main (int argc, char *argv[])
 
 	makepath(path, argname, dtabuf.d_fname);  /* Pfad und Name zusammensetzen */
 	if   (!ismem) {
-		if   (0L > (retcode = Fopen(path, RMODE_RD))) {        /* Datei îffnen */
+		if   (0L > (retcode = Fopen(path, RMODE_RD))) {        /* Datei √∂ffnen */
 			cerrws("Cannot open ");
 			cerrws(path);
 			goto newline;
@@ -212,18 +205,14 @@ void main (int argc, char *argv[])
 
 void cerrws(char *string)
 {
-	extern BASPAG *_BasPag;
-
-
-	Fwrite( (_BasPag->p_stdfh[STDERR]) ? STDERR : HDL_CON,
-		  strlen(string), string);
+	Fwrite(HDL_CON, (long) strlen(string), string);
 }
 
 
 /**************************************************************
 *
 * Schreibt einen String <string> auf die Quelltext- Datei mit
-* dem handle <s_file> und lîscht den ausgabe[] - Puffer.
+* dem handle <s_file> und l√∂scht den ausgabe[] - Puffer.
 * Tritt ein Schreibfehler auf, wird das Programm ABGEBROCHEN.
 *
 **************************************************************/
@@ -324,8 +313,8 @@ char inpath[],name[];
 /**************************************************************
 *
 * Tauscht im Dateinamen <name> die Extension durch <ext> aus.
-* Hat <name> noch keine Extension, wird sie angehÑngt.
-* <ext> muû mit Punkt angegeben werden!
+* Hat <name> noch keine Extension, wird sie angeh√§ngt.
+* <ext> mu√ü mit Punkt angegeben werden!
 *
 **************************************************************/
 
@@ -350,7 +339,7 @@ char name[],ext[];
 *
 * Liest die Argumente der Kommandozeile und initialisiert
 * Bereich und Flags.
-* Es wird genau dann TRUE zurÅckgegeben, wenn ein Fehler
+* Es wird genau dann TRUE zur√ºckgegeben, wenn ein Fehler
 * aufgetreten ist.
 *
 **************************************************************/
@@ -452,9 +441,9 @@ char *argv[];
 /**************************************************************
 *
 * Liest die Label- Tabelle ein.
-* RÅckgabe FALSE : ok
+* R√ºckgabe FALSE : ok
 *              1 : Datei nicht vorhanden
-*              2 : Datei lÑût sich nicht lesen
+*              2 : Datei l√§√üt sich nicht lesen
 *              3 : Zuwenig Speicher vorhanden
 *
 **************************************************************/
@@ -474,7 +463,7 @@ int load_lbl(char *name)
           }
      handle = (int) retcode;
 
-     if   (4L != Fread(handle, 4L, &tabsize)) {  /* TabellenlÑnge einlesen */
+     if   (4L != Fread(handle, 4L, &tabsize)) {  /* Tabellenl√§nge einlesen */
           errcode = 2;   /* Lesefehler */
           Fclose(handle);
           goto error;
@@ -495,7 +484,7 @@ int load_lbl(char *name)
      Fclose(handle);
      lbl_tab[0] = tabsize;
      if   (killtmp)
-          Fdelete(name);                /* Labeldatei lîschen */
+          Fdelete(name);                /* Labeldatei l√∂schen */
      return(FALSE);
 }
 
@@ -503,9 +492,9 @@ int load_lbl(char *name)
 /**************************************************************
 *
 * Liest die Relocation- Tabelle ein.
-* RÅckgabe FALSE : ok
+* R√ºckgabe FALSE : ok
 *              1 : Datei nicht vorhanden
-*              2 : Datei lÑût sich nicht îffnen oder lesen
+*              2 : Datei l√§√üt sich nicht √∂ffnen oder lesen
 *              3 : Zuwenig Speicher vorhanden
 *
 **************************************************************/
@@ -528,7 +517,7 @@ int load_rlo(char *name, DTA *dtabuf)
           }
 
      if   (0L > (retcode = Fopen(name, RMODE_RD))) {
-          errcode = 2;         /* Datei kann nicht geîffnet werden */
+          errcode = 2;         /* Datei kann nicht ge√∂ffnet werden */
           goto error;
           }
      handle = (int) retcode;
@@ -556,7 +545,7 @@ int load_rlo(char *name, DTA *dtabuf)
      rlo_max  = (int) ((*dtabuf).d_length/sizeof(long) - 5);
 	if	(isobj)
 		{
-		rlo_obj = (unsigned *) Malloc(text_len+data_len);
+		rlo_obj = (uint16_t *) Malloc(text_len+data_len);
 		if	(rlo_obj == NULL)
 			return(3);
 		if	(relo_pos != Fseek(relo_pos, prg_file, 0))
@@ -566,7 +555,7 @@ int load_rlo(char *name, DTA *dtabuf)
 			return(3);
 		}
      if   (killtmp)
-          Fdelete(name);                /* Relocationdatei lîschen */
+          Fdelete(name);                /* Relocationdatei l√∂schen */
      return(FALSE);
 }
 
@@ -574,9 +563,9 @@ int load_rlo(char *name, DTA *dtabuf)
 /**************************************************************
 *
 * Liest die Symbol- Tabelle ein.
-* RÅckgabe FALSE : ok
+* R√ºckgabe FALSE : ok
 *              1 : Datei nicht vorhanden
-*              2 : Datei lÑût sich nicht îffnen oder lesen
+*              2 : Datei l√§√üt sich nicht √∂ffnen oder lesen
 *              3 : Zuwenig Speicher vorhanden
 *
 **************************************************************/

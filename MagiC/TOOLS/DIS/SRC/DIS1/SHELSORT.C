@@ -5,35 +5,35 @@
 *
 *         letzte Modifikation:
 *
-* MODUL fÅr Shellsort- Algorithmus.
+* MODUL f√ºr Shellsort- Algorithmus.
 * Syntax wie bei QSORT.
 * Der Algorithmus ist NICHT rekursiv, funktioniert daher
 *  auch bei kleinem Stack.
-* Der Algorithmus ist bestmîglich optimiert, indem:
+* Der Algorithmus ist bestm√∂glich optimiert, indem:
 *
-* 1) AUSSCHLIEûLICH register- Variablen benutzt werden
+* 1) AUSSCHLIE√üLICH register- Variablen benutzt werden
 * 2) nicht mit Indizes, sondern mit Zeigern gerechnet wird,
-*	damit alle Multiplikationen auûerhalb der inneren Schleifen
-*	ausgefÅhrt werden
-* 3) FÅr long oder void * wird eine besonders schnelle Vertauschung
-*    von Elementen durchgefÅhrt
+*	damit alle Multiplikationen au√üerhalb der inneren Schleifen
+*	ausgef√ºhrt werden
+* 3) F√ºr long oder void * wird eine besonders schnelle Vertauschung
+*    von Elementen durchgef√ºhrt
 *
-* Verbesserungsmîglichkeit: assembleroptimierte memxchg- Funktion
+* Verbesserungsm√∂glichkeit: assembleroptimierte memxchg- Funktion
 *
 *******************************************************************/
 
 #include <string.h>
 
 static void longxchg(char *s1, char *s2, size_t count)
-#pragma warn -par
 {
 	long tmp;
+
+	(void) count;
 
 	tmp = *( (long *) s1);
 	*( (long *) s1) = *( (long *) s2);
 	*( (long *) s2) = tmp;
 }
-#pragma warn +par
 
 
 static void memxchg(char *s1, char *s2, size_t count)
@@ -61,14 +61,14 @@ void shelsort(char *base, size_t count, size_t size,
 
 
 
-	k2 = count / 2;				/* k2 = ElementzÑhler */
+	k2 = count / 2;				/* k2 = Elementz√§hler */
 	count *= size;					/* count: max-Byte */
 	if	(0 == (((long) base) & 1) && size == 4L)
 		xchg = longxchg;
 	while(k2 > 0)
 		{
-		k = k2 * size;				/* k = BytezÑhler */
-		for	(i = k; i < count; i += size)
+		k = k2 * size;				/* k = Bytez√§hler */
+		for	(i = k; i < (long) count; i += size)
 			{
 			j = base + i - k;
 			while((j >= base) && ((*vgl)(j,j+k)) > 0)
