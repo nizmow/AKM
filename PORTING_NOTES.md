@@ -1280,6 +1280,33 @@ Limits: this exercises NVDI's selection and drawing for one organisation
 MegaSTE screen. Animation, other screen modes and long-term stability remain
 untested.
 
+### OFF016IP.OSD offscreen driver
+
+`mise run apps -- off016ip` builds `build/atari/apps/osd/OFF016IP.OSD` from
+`MagiC/KERNEL/VDI/SRC/MAGIC.DRV/OSD/OFF016IP.S`. It is byte-identical to the
+archived V4.10 `MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF016IP.OSD`; like
+OFF004IP it needs `-no-opt` so VASM keeps the archive's `movem` restores. The
+shipped Release driver also reports header version 4.10 but has different
+text/data sizes and entry offsets, so it is a structural comparison only.
+
+`mise run test:osd-off016ip-neost` builds the driver and
+`MagiC/KERNEL/VDI/TESTDATA/OFF016IP.C`. The probe requests the 16-colour,
+4-plane, non-packed interleaved format explicitly (`intin[15..19]` = colour
+count high/low words, planes, format, organisation), because a default request
+inherits the screen organisation. It opens a caller-owned 64x64 MFDB
+(`fd_wdwidth=4`, `fd_stand=0`, `fd_nplanes=4`; 32 bytes per row, 2048 bytes),
+draws five bars with pens 2, 3, 4, 9 and 1, samples x=15 and x=16 for each bar
+plus an untouched pixel, and dumps the bitmap. `color_map` maps those pens to
+raw colours 1, 2, 4, 8 and 15; expected readbacks are
+`1/2 1/2 2/3 2/3 4/4 4/4 8/9 8/9 15/1 15/1 0/0` (raw/VDI). The runner also
+runs a clone with `OFF016IP.OSD` deleted; no other installed driver matches
+this request, so `v_opnbm()` must be rejected and write no bitmap. Evidence is
+under `build/atari/neost-off016ip-*`.
+
+Limits: one organisation (16 colours, 4 planes, format 0, organisation 1) on
+the tested colour MegaSTE screen; animation, other screen modes and long-term
+stability remain untested.
+
 ### WINFRAME.SLB
 
 `mise run apps -- winframe` builds `build/atari/apps/winframe/WINFRAME.SLB`

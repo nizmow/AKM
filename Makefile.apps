@@ -125,6 +125,28 @@ $(BUILD_DIR)/off004ip/OFF004IP.PRG: MagiC/KERNEL/VDI/TESTDATA/OFF004IP.C Makefil
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
+# 16-colour, 4-plane interleaved offscreen driver from the same source family.
+OSD016IP_NORMALIZED := $(BUILD_DIR)/osd/src/OFF016IP.S
+OSD016IP_OUTPUT := $(BUILD_DIR)/osd/OFF016IP.OSD
+
+$(OSD016IP_NORMALIZED): $(OSD002_DIR)/OFF016IP.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(OSD016IP_OUTPUT): $(OSD016IP_NORMALIZED) $(OSD002_INCLUDES) Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 -no-opt \
+	  -I"$(BUILD_DIR)/osd/src/" -o "$@" "$(OSD016IP_NORMALIZED)"
+
+.PHONY: off016ip off016ip-test-driver
+off016ip: $(OSD016IP_OUTPUT)
+off016ip-test-driver: $(BUILD_DIR)/off016ip/OFF016IP.PRG
+
+$(BUILD_DIR)/off016ip/OFF016IP.PRG: MagiC/KERNEL/VDI/TESTDATA/OFF016IP.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
 .PHONY: mcmd mcmd-languages mcmd-test-driver
 mcmd: $(BUILD_DIR)/mcmd/$(MCMD_LANG)/MCMD.TOS
 mcmd-languages: $(foreach lang,de en fr,$(BUILD_DIR)/mcmd/$(lang)/MCMD.TOS)
@@ -617,6 +639,7 @@ $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG: MagiC/APPS/WBDAEMON/TESTDATA/NEOSTEST.C Make
 -include $(BUILD_DIR)/cpx/TSLICE.d
 -include $(BUILD_DIR)/off002/OFF002.d
 -include $(BUILD_DIR)/off004ip/OFF004IP.d
+-include $(BUILD_DIR)/off016ip/OFF016IP.d
 
 WINFRAME_DIR := MagiC/KERNEL/WINFRAME
 WINFRAME_OBJECTS := $(BUILD_DIR)/winframe/WIN_SLB.o $(BUILD_DIR)/winframe/WIN_OBJS.o \

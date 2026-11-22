@@ -490,6 +490,31 @@ Evidence goes to `build/atari/neost-off004ip-*`. Animation, other OSD
 organisations, other screen modes and long-term stability are outside this
 scenario.
 
+## NeoST: OFF016IP.OSD 4-plane offscreen driver
+
+`mise run test:osd-off016ip-neost` builds `OFF016IP.OSD` and a VDI probe. The
+build must be byte-identical to
+`MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF016IP.OSD`; VASM runs with `-no-opt`
+to preserve the archived `movem` encoding. The Release driver reports the same
+header version but differs in text/data size and entry offsets, so it is
+recorded structurally, not as a byte reference.
+
+The scenario installs archive and rebuild as `C:\GEMSYS\OFF016IP.OSD` in
+separate clones, requests a 16-colour, 4-plane, non-packed interleaved 64x64
+MFDB through `v_opnbm()`, fills five pens, and compares eleven pixel readbacks
+plus the 2048-byte bitmap against the other binary and an independent
+expectation. A third clone deletes the driver; no other installed driver
+matches the request, so the open must be rejected with no bitmap written. Each
+positive case also copies the installed driver back and checks its SHA-256
+against the file it installed; it does not trace which driver NVDI loaded.
+
+Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
+`mtools`. Run with
+`MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img mise run test:osd-off016ip-neost`.
+Evidence goes to `build/atari/neost-off016ip-*`. Animation, other OSD
+organisations, other screen modes and long-term stability are outside this
+scenario.
+
 ## NeoST: WINFRAME.SLB window frames
 
 `mise run test:winframe-neost` builds the alternate window-frame library,

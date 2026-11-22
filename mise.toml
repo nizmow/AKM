@@ -140,6 +140,11 @@ description = "Build OFF004IP.OSD and prove NVDI draws into a 2-plane offscreen 
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-off004ip-smoke.py"
 
+[tasks."test:osd-off016ip-neost"]
+description = "Build OFF016IP.OSD and prove NVDI draws into a 4-plane offscreen bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-off016ip-smoke.py"
+
 [tasks."test:neost-server"]
 description = "Run NeoST server client protocol regression tests"
 dir = "{{ config_root }}"
