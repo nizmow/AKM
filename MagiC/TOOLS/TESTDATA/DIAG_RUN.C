@@ -1,13 +1,11 @@
 /* Run the tool named in C:\DIAG.TXT and capture stdout/status. */
 #include <mint/osbind.h>
 #include <stdio.h>
-#include <string.h>
 
 int main(void)
 {
     char config[128];
-    char target[64];
-    char tail[2] = {0, 0};
+    char tail[128] = {0};
     char line[24];
     char *end;
     short handle;
@@ -28,13 +26,14 @@ int main(void)
     while (*end && *end != '\r' && *end != '\n')
         end++;
     *end = '\0';
-    strcpy(target, config);
+    if (*config == '\0')
+        return 2;
 
     handle = Fcreate("C:\\DIAG.OUT", 0);
     saved = Fdup(1);
     if (handle < 0 || saved < 0 || Fforce(1, handle) < 0)
         return 3;
-    result = Pexec(0, target, tail, 0);
+    result = Pexec(0, config, tail, 0);
     Fforce(1, saved);
     Fclose(saved);
     Fclose(handle);
@@ -43,7 +42,9 @@ int main(void)
     if (handle < 0)
         return 4;
     length = snprintf(line, sizeof(line), "%ld\n", result);
-    Fwrite(handle, length, line);
-    Fclose(handle);
+    if (length < 0 || Fwrite(handle, length, line) != length)
+        return 5;
+    if (Fclose(handle) < 0)
+        return 5;
     return 0;
 }

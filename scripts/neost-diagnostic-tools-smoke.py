@@ -28,6 +28,8 @@ def boot_image(label: str, source: Path, output: Path, headless: Path,
     image = MagiCImage.clone(source, case / "magic.img",
                              partition_offset=partition_offset)
     image.verify_magic()
+    for name in ("DIAG.STA", "DIAG.OUT"):
+        run(["mdel", "-i", image.image_spec, f"::/{name}"])
     if driver is not None:
         image.copy_in(driver, f"::/{guest}")
     image.copy_in(BUILD / "apps/diagnostic/DIAG.PRG",
@@ -44,20 +46,13 @@ def boot_image(label: str, source: Path, output: Path, headless: Path,
     ]
     result = run(command, timeout=120)
     require(result.returncode == 0, f"{label}: NeoST failed")
-    status = b""
     for name in ("DIAG.STA", "DIAG.OUT"):
-        try:
-            image.copy_out(f"::/{name}", case / name)
-        except RuntimeError:
-            pass
-    if (case / "DIAG.STA").is_file():
-        status = (case / "DIAG.STA").read_bytes()
-    return case / "final.ppm", status
+        image.copy_out(f"::/{name}", case / name)
+    return case / "final.ppm", (case / "DIAG.STA").read_bytes()
 
 
 def read_output(case: Path) -> bytes:
-    path = case / "DIAG.OUT"
-    return path.read_bytes() if path.is_file() else b""
+    return (case / "DIAG.OUT").read_bytes()
 
 
 def normalize(data: bytes) -> bytes:
@@ -110,14 +105,15 @@ def main() -> int:
                 read_output(output / ("rebuilt-" + case.lower()))
             require(a_status == r_status == b"0\n", f"{case}: child status differs")
             if case == "MAGXKERN":
-                require(a_out == r_out, "MAGXKERN output differs")
+                require(a_out and a_out == r_out, "MAGXKERN output differs")
             elif case == "CRASHDMP":
                 require(a_out == r_out == b"", "CRASHDMP wrote unexpected output")
             else:
                 for data in (a_out, r_out):
                     require(b"Table 0" in data and b"boot" in data and
                             b"AES" in data and b"free" in data and
-                            b"DIAGTOOL.TTP" in data, "MEMEXAMN structure differs")
+                            b"DIAGTOOL.TTP" in data and b"KROM" in data,
+                            "MEMEXAMN structure differs")
                 require(normalize(a_out).splitlines()[:30] ==
                         normalize(r_out).splitlines()[:30],
                         "MEMEXAMN header/early table differs")
@@ -148,9 +144,10 @@ def main() -> int:
             # NeoST's console log duplicates rebuilt MiNTLib output; collapse it.
             collapsed = re.sub(r"(.)\1", r"\1", text)
             samples = (text, collapsed)
+            require(all("from Sconfig" not in sample for sample in samples),
+                    f"{label}: Sconfig failed")
             require(any("MagiC Internal Memory Monitor" in sample and
-                        "blocks used" in sample and "Error" not in sample
-                        for sample in samples),
+                        "blocks used" in sample for sample in samples),
                     f"{label}: unexpected monitor output")
         require((output / "archive-showfree/final.ppm").read_bytes() ==
                 (output / "rebuilt-showfree/final.ppm").read_bytes(),

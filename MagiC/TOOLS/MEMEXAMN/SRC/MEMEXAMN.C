@@ -20,7 +20,7 @@
 
 #define RMODE_RD 0
 #define SC_VARS 2
-#define ENSMEM 0xffff
+#define ENSMEM (-39)
 #define ERROR (-1L)
 
 /* MagiC Sconfig takes a word subfunction; MiNTLib has no matching binding. */
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 
 	if	(NULL == (buf = (char *) Malloc(65536L)))
 		return((int) ENSMEM);
-	if	(argc < 2 || argv[1][0] == '\0')
+	if	(argc < 2 || (argc == 2 && argv[1][0] == '\0'))
 		*name = '\0';
 	else	if	(argc == 2)
 		*name = argv[1][0];

@@ -16,6 +16,7 @@
 
 #include <mint/osbind.h>
 #include <stddef.h>
+#include <stdint.h>
 
 
 #define P_COOKIES	((long *) 0x5a0)
@@ -24,7 +25,7 @@
 #define proc_regs	((long *) 0x384L)
 #define proc_pc	((long *) 0x3c4L)
 #define proc_usp	((long *) 0x3c8L)
-#define proc_stk	((int  *) 0x3ccL)
+#define proc_stk	((int16_t *) 0x3ccL)
 
 #define EN_BUS		2
 #define EN_ADDR	3
@@ -242,7 +243,7 @@ void print_sr(int st)
 
 
 	Cconws("SR bei Auftreten des Fehlers: ");
-     if   (st < 0)
+     if   (st & 0x8000)
           Cconws(" TR");
      if   (st & (1 << 13))
           Cconws(" SUP");
