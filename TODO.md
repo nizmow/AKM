@@ -176,7 +176,12 @@ the remaining shared families ahead of their consumers.
   MFDB with identical pixel readbacks and bitmap bytes, and a driver-less clone
   rejects the open. The shipped Release is a different build and remains
   unported.
-- [ ] Remaining loadable components: MFA/MFM screen and six other OSD drivers.
+- [x] **OFF256IP.OSD** — VASM build matches the archived V4.10 MIN-ATAR binary
+  byte-for-byte with `-no-opt` after folding the zero-displacement colour-map
+  load; the Release copy is the same binary. Archive and rebuild render an
+  8-plane interleaved MFDB with identical pixel readbacks and 4096-byte bitmap
+  bytes, asserted independently, and a driver-less clone rejects the open.
+- [ ] Remaining loadable components: MFA/MFM screen and five other OSD drivers.
 - [x] Account explicitly in the catalogue for remaining diagnostic, historical,
   host-specific, missing-source and external-dependency entries.
 

@@ -1307,6 +1307,36 @@ Limits: one organisation (16 colours, 4 planes, format 0, organisation 1) on
 the tested colour MegaSTE screen; animation, other screen modes and long-term
 stability remain untested.
 
+### OFF256IP.OSD offscreen driver
+
+`mise run apps -- off256ip` builds `build/atari/apps/osd/OFF256IP.OSD` from
+`MagiC/KERNEL/VDI/SRC/MAGIC.DRV/OSD/OFF256IP.S` with the same includes and
+`-no-opt` as OFF016IP. It is byte-identical to both the archived V4.10
+`MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF256IP.OSD` and the shipped Release
+copy (same SHA-256, 22,558 bytes, text length 0x5798). The source uses
+`movea.l (a2),a0` where the original spelling was
+`movea.l _color_map_ptr(a2),a0`; `_color_map_ptr` is `EQU 0`, and the archived
+assembler folded the zero displacement while VASM `-no-opt` does not. Without
+the folded spelling the text is two bytes longer and every later entry shifts.
+
+`mise run test:osd-off256ip-neost` builds the driver and
+`MagiC/KERNEL/VDI/TESTDATA/OFF256IP.C`. The probe requests the 256-colour,
+8-plane, non-packed interleaved format explicitly (`intin[15..19]` = 0, 256,
+8, 0, 1), opens a caller-owned 64x64 MFDB (`fd_wdwidth=4`, `fd_stand=0`,
+`fd_nplanes=8`; 64 bytes per row, 4096 bytes), draws ten bars with pens 2, 3,
+4, 9, 16, 32, 64, 128, 1 and 5, samples x=15 and x=16 for each bar plus an
+untouched pixel, and dumps the bitmap. Expected readbacks are
+`1/2 1/2 2/3 2/3 4/4 4/4 8/9 8/9 16/16 16/16 32/32 32/32 64/64 64/64
+128/128 128/128 255/1 255/1 6/5 6/5 0/0` (raw/VDI). The runner compares
+archive and rebuild, asserts the bitmap against an independent interleaved
+layout, and runs a clone with `OFF256IP.OSD` deleted; the probe must report the
+open as rejected and leave no bitmap dump. Evidence is under
+`build/atari/neost-off256ip-*`.
+
+Limits: one organisation (256 colours, 8 planes, format 0, organisation 1) on
+the tested colour MegaSTE screen; animation, other screen modes and long-term
+stability remain untested.
+
 ### WINFRAME.SLB
 
 `mise run apps -- winframe` builds `build/atari/apps/winframe/WINFRAME.SLB`
