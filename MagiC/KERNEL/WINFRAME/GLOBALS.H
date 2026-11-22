@@ -8,7 +8,7 @@
 #define RGT_WINOBJS (UPARROW+DNARROW+VSLIDE)
 #define BOT_WINOBJS (LFARROW+RTARROW+HSLIDE)
 
-/* WINDOW-Struktur fÅr MagiC-Kernel */
+/* WINDOW-Struktur f√ºr MagiC-Kernel */
 
 typedef struct {
 	WORD state;
@@ -21,16 +21,16 @@ typedef struct {
 	GRECT prev;
 	GRECT full;
 	GRECT work;
-	GRECT overall;			/* Umriû */
+	GRECT overall;			/* Umri√ü */
 	GRECT unic;
-	GRECT min;			/* Minimale Grîûe */
-	WORD	oldheight;		/* alte Hîhe vor Shading	*/
+	GRECT min;			/* Minimale Gr√∂√üe */
+	WORD	oldheight;		/* alte H√∂he vor Shading	*/
 	WORD	hslide;		 	/* horizontale Schieberposition */
 	WORD vslide; 			/* vertikale Schieberposition */
-	WORD hslsize;			/* horizontale Schiebergrîûe */
-	WORD vslsize;			/* vertikale Schiebergrîûe */
+	WORD hslsize;			/* horizontale Schiebergr√∂√üe */
+	WORD vslsize;			/* vertikale Schiebergr√∂√üe */
 	void *wg;				/* Rechteckliste */
-	void *nextwg;			/* nÑchstes Rechteck der Liste */
+	void *nextwg;			/* n√§chstes Rechteck der Liste */
 	WORD	whdl;
 	OBJECT tree[N_OBJS];
 	USERBLK frame_userblk;
@@ -51,12 +51,12 @@ typedef struct {
 #define ICONIFIED 32
 #define SHADED 64
 
-/* öbergabe-Struktur zum Einklinken */
+/* √úbergabe-Struktur zum Einklinken */
 
 typedef struct {
 	WORD		version;		/* Versionsnummer der Struktur */
-	LONG		wsizeof;		/* Grîûe der WINDOW-Struktur */
-	WORD		whshade;		/* Hîhe eines ge-shade-ten Fensters */
+	LONG		wsizeof;		/* Gr√∂√üe der WINDOW-Struktur */
+	WORD		whshade;		/* H√∂he eines ge-shade-ten Fensters */
 	void		(*wbm_create)( WININFO *w );
 	void		(*wbm_skind)( WININFO *w );
 	void		(*wbm_ssize)( WININFO *w );
@@ -67,7 +67,7 @@ typedef struct {
 	WORD		(*wbm_obfind)( WININFO *w, WORD x, WORD y );
 } WINFRAME_HANDLER;
 
-/* öbergabe-Struktur fÅr globale Fenster-Einstellungen */
+/* √úbergabe-Struktur f√ºr globale Fenster-Einstellungen */
 
 typedef struct {
 	WORD		flags;
@@ -81,5 +81,5 @@ typedef struct {
 
 extern WINFRAME_SETTINGS *settings;
 extern WORD h_inw;
-extern int vdi_handle;
+extern short vdi_handle;
 extern OBJECT *adr_window;

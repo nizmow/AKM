@@ -1233,3 +1233,38 @@ screens pixel-for-pixel. The boot initializer is exercised implicitly because
 the dialog reads back the scheduler timeslice/priority it sets. Slider
 dragging, Save confirmation and actual scheduler behavior under load remain
 untested. Evidence: `build/atari/neost-tslice-cpx-20261122-120331/`.
+
+### WINFRAME.SLB
+
+`mise run apps -- winframe` builds `build/atari/apps/winframe/WINFRAME.SLB`
+and copies `WINFRAME.RSC` beside it. The alternate window-frame manager
+registers through MagiC's AES subcommand 6; it is not part of `MAGIC.RAM` and
+the `#_SLB 0 WINFRAME.SLB` line in `MAGX.INF` is optional. The SLB header is
+version 1, exports no numbered functions, and keeps the header/lifecycle
+pointer relocations in the classic TOS image.
+
+The source uses public GEMlib `AESPB`/`aes()` for registration instead of the
+legacy Pure C `mt_aes.lib` and `_GemParBlk`. `_GemParBlk.global[10]` became
+`aes_global[10]`; VDI work arrays, handles and coordinate arrays are `short`,
+while the application-visible `WORD`/`LONG` types remain 16/32-bit. `TEDINFO`
+uses the public GEMlib fields at the same reserved-word offsets. The resource
+and handler layout still assume MagiC 6's `WININFO` contract and the 20-object
+frame tree; do not reuse this recipe for a different kernel without checking
+`wsizeof` and the callback offsets. The manager deliberately returns an error
+when the AES reports fewer than 16 colours, so a monochrome desktop will not
+show its frames; the runtime scenario boots a colour MegaSTE profile.
+
+The kernel dispatches the eight `wbm_*` manager callbacks with a register ABI,
+not the GCC stack ABI: `WINDOW *` is in A0 and scalar arguments are in D0/D1.
+`WINFRAME_ENTRY.S` supplies register-to-stack bridges for `create`, `skind`,
+`ssize`, `sslid`, `sstr`, `sattr`, `calc` and `obfind`; the handler table points
+at those bridges. The lifecycle entries and the USERDEF frame callback remain
+stack-based. Without the bridges the kernel reads stack garbage as the window
+pointer, corrupting the tree.
+
+`test:winframe-neost` boots three clones of the same MagiC image: archived
+WINFRAME, rebuilt WINFRAME, and a clone with the `#_SLB` line disabled. It
+requires the enabled/disabled booted dialog to differ, and compares the
+archived/rebuilt screens pixel-for-pixel. The fixture's booted MAGXCONF dialog
+provides the visible frame; the test does not drag, resize, shade or exercise
+scrollbar paths. Evidence: `build/atari/neost-winframe-20261122-141115/`.

@@ -411,3 +411,22 @@ pixel-for-pixel. The fixture must have COPS in `C:\AUTO\ACCS`; the pinned list
 coordinate is installation-specific. The cloned image is cleaned of a stale
 `ZCNFTEST.PRG` probe when present. Slider dragging, Save confirmation and
 scheduler behavior under load remain outside the scenario.
+
+## NeoST: WINFRAME.SLB window frames
+
+`mise run test:winframe-neost` builds the alternate window-frame library,
+installs archived and rebuilt copies into separate MagiC clones, and also boots
+a clone with `#_SLB 0 WINFRAME.SLB` disabled:
+
+```sh
+MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
+ python3 scripts/neost-winframe-smoke.py
+```
+
+The scenario switches `MAGX.INF` to ST-low colour (`#_DEV 2 0`) because
+WINFRAME refuses to initialize below 16 colours. It requires WINFRAME-enabled
+and disabled booted screens to differ, and compares archived/rebuilt screens
+pixel-for-pixel. The fixture's booted MAGXCONF dialog supplies the visible
+window frame. Dragging, resizing, shading, scrollbar movement and unload
+behavior are not exercised. Evidence is written to a fresh
+`build/atari/neost-winframe-*` directory.

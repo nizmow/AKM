@@ -43,6 +43,7 @@ TARGETS = {
     "dis1": ("dis1", ["DIS1.TTP"]),
     "dis2": ("dis2", ["DIS2.TTP"]),
     "tslice-cpx": ("cpx", ["TSLICE.CPX"]),
+    "winframe": ("winframe", ["WINFRAME.SLB", "WINFRAME.RSC"]),
 }
 
 

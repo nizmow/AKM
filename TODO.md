@@ -91,8 +91,8 @@ framework or shared-library rewrite is required before these are attempted.
 
 ## Following batches
 
-The current core source-backed remainder is 31 build families: 15
-application/tool/extension families, 9 shared library/startup families and 7
+The current core source-backed remainder is 30 build families: 15
+application/tool/extension families, 9 shared library/startup families and 6
 system-component families. Historical, test-only, blocked, binary-only and KAOS
 entries are outside that count.
 

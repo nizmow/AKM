@@ -129,6 +129,15 @@ class ElfToSlbTests(unittest.TestCase):
         self.assertEqual(struct.unpack_from(">i", relocated, 96)[0], -10)
         self.assertEqual(struct.unpack_from(">I", relocated, 32)[0], 0)
 
+    def test_custom_header_name_and_version(self):
+        data = bytearray(make_elf())
+        struct.pack_into(">I", data, 52 + 8, 1)
+        data[52 + 72:52 + 84] = b"WINFRAME.SLB"
+        image = elf_to_slb.package(bytes(data), "WINFRAME.SLB", 1)
+        payload = image[28:]
+        self.assertEqual(payload[72:84], b"WINFRAME.SLB")
+        self.assertEqual(struct.unpack_from(">I", payload, 8)[0], 1)
+
     def test_pc_relative_reference_is_accepted_without_movable_relocation(self):
         image = elf_to_slb.package(make_elf())
         offsets = decode_tos_relocations(image[28 + 512 + 8:])

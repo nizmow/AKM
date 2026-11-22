@@ -120,6 +120,11 @@ description = "Compare archived and rebuilt MAGXCONF.CPX boot init and dialog un
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-magxconf-cpx-smoke.py"
 
+[tasks."test:winframe-neost"]
+description = "Compare archived and rebuilt WINFRAME.SLB window frames under MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-winframe-smoke.py"
+
 [tasks."test:neost-server"]
 description = "Run NeoST server client protocol regression tests"
 dir = "{{ config_root }}"

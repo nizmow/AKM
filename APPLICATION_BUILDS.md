@@ -90,7 +90,7 @@ not belong in an application link or automatically in `MAGIC.RAM`.
 |---|---|---|
 | `MAGXBOOT` loader variants | `MagiC/KERNEL/BIOS/ATARI/BOOT` | Assembly loader. Source `MAGXBOOT.S`; archived `MAGXBOOT.PRG` and `MAGXBO32.PRG`, release installs `MAGXBOOT.TOS`. Determine switches and naming per variant. Keep original loader as baseline until its replacement is tested. |
 | `HARDCOPY.PRG` | `MagiC/KERNEL/XTENSION/HARDCOPY.S` | Separate assembly hardcopy extension. |
-| `WINFRAME.SLB` | `MagiC/KERNEL/WINFRAME` | Separate window-frame shared library with its own project; callback/layout ABI matters. |
+| `WINFRAME.SLB` + `WINFRAME.RSC` (B / library built, MagiC-tested) | `MagiC/KERNEL/WINFRAME` | `mise run apps -- winframe` builds the alternate AES window-frame manager and copies its resource. Public GEMlib AESPB/AES registration replaces the legacy `mt_aes` call; the SLB header, lifecycle entries and classic TOS relocations are packaged independently. `mise run test:winframe-neost` compares the booted dialog frame against the archive, with WINFRAME enabled and disabled. The separate `WINFRAME.DEM` project remains unbuilt. |
 | `WINFRAME.SLB` demo variant | `MagiC/KERNEL/WINFRAME.DEM` | Separate source/project producing the same filename. Use a distinct output directory and select at install time. |
 | `MFA2.SYS`, `MFA4.SYS`, `MFA16.SYS`, `MFA256.SYS`, `MFA32K.SYS` | `MagiC/KERNEL/VDI/SRC/MAGIC.DRV/MFA` | Five independent screen-driver outputs, one family of recipes. Test suitable hardware/video configurations. |
 | `MFM2.SYS`, `MFM16.SYS`, `MFM16IP.SYS`, `MFM16M.SYS`, `MFM256.SYS`, `MFM32K.SYS`, `MFM4IP.SYS` | `MagiC/KERNEL/VDI/SRC/MAGIC.DRV/MFM` | Seven driver projects; `ORIG/` contains another historical MFM4IP project, not a new product. |

@@ -2,40 +2,37 @@
 *
 *             WINFRAME                             26.12.97
 *             ========
-*                                 letzte énderung:
+*                                 letzte √Ñnderung:
 *
 * geschrieben mit Pure C V1.1
 * Projektdatei: WINFRAME.PRJ
 *
-* Alternativer Window-Frame-Manager fÅr MagiC 6
-* Das Programm ist als SharedLib ausgefÅhrt.
+* Alternativer Window-Frame-Manager f√ºr MagiC 6
+* Das Programm ist als SharedLib ausgef√ºhrt.
 *
 ****************************************************************/
 
 #define DEBUG 0
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
-#include <vdi.h>
 #include <string.h>
 #include <stdlib.h>
-#include <tosdefs.h>
-#include "globals.h"
-#include "win_objs.h"
-#include "winframe.h"
+#include "WINFRAME_SDK.H"
+#include "GLOBALS.H"
+#include "WIN_OBJS.H"
+#include "WINFRAME.H"
 
 #define SCREEN	0
 
 extern char __text[];
 typedef void *PD;
 
-int	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
+short	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
 int	ap_id;
 int	ncolours;
 GRECT scrg;
-int aes_handle;		/* Screen-Workstation des AES */
-int vdi_handle;
-int	work_out[57], work_in[12];	 /* VDI- Felder fÅr v_opnvwk() */
+short aes_handle;		/* Screen-Workstation des AES */
+short vdi_handle;
+short	work_out[57], work_in[12];	 /* VDI- Felder f√ºr v_opnvwk() */
 OBJECT *adr_window;
 
 static void open_work(void);
@@ -43,6 +40,15 @@ static void open_work(void);
 WINFRAME_HANDLER old_wfh,new_wfh;
 WINFRAME_SETTINGS *settings;
 WORD h_inw;
+
+extern void win_wbm_create( WININFO *w );
+extern void win_wbm_skind( WININFO *w );
+extern void win_wbm_ssize( WININFO *w );
+extern void win_wbm_sslid( WININFO *w, WORD vertical );
+extern void win_wbm_sstr( WININFO *w );
+extern void win_wbm_sattr( WININFO *w, WORD chbits );
+extern void win_wbm_calc( WORD kind, WORD *fg );
+extern WORD win_wbm_obfind( WININFO *w, WORD x, WORD y );
 
 
 /*********************************************************************
@@ -55,16 +61,17 @@ static WORD sys_set_winframe_manager( WINFRAME_HANDLER *old_wfh,
 						WINFRAME_HANDLER *new_wfh,
 						WINFRAME_SETTINGS **set )
 {
-	PARMDATA d;
-	static WORD	c[] = { 0, 1, 1, 2 };
+	WORD control[5] = { 0, 1, 1, 2, 1 };
+	WORD intin[1] = { 6 };	/* Subcode 6: Fensterrahmen-Manager */
+	WORD intout[1] = { 0 };
+	long addrin[2] = { (long)old_wfh, (long)new_wfh };
+	long addrout[1] = { 0 };
+	AESPB pb = { control, aes_global, intin, intout, addrin, addrout };
 
-	d.intin[0] = 6;	/* Subcode 6: Fensterrahmen-Manager */
-	d.addrin[0] = old_wfh;
-	d.addrin[1] = new_wfh;
-	_mt_aes( &d, c, NULL );
+	aes( &pb );
 	if	(set)
-		*set = d.addrout[0];
-	return( d.intout[0] );
+		*set = (WINFRAME_SETTINGS *)addrout[0];
+	return( intout[0] );
 }
 
 
@@ -105,7 +112,7 @@ LONG cdecl slb_init( void )
 
 	if   ((ap_id = appl_init()) < 0)
 		return(ERROR);
-	i = _GemParBlk.global[10];
+	i = aes_global[10];
 	ncolours = (i > 8) ? 32767 : (1 << i);
 	if	(ncolours < 16)
 		return(-1L);
@@ -139,14 +146,14 @@ LONG cdecl slb_init( void )
 	new_wfh.version = old_wfh.version = 2;
 	new_wfh.wsizeof = sizeof(WININFO);
 	new_wfh.whshade = 20;
-	new_wfh.wbm_create = wbm_create;
-	new_wfh.wbm_skind = wbm_skind;
-	new_wfh.wbm_ssize = wbm_ssize;
-	new_wfh.wbm_sslid = wbm_sslid;
-	new_wfh.wbm_sstr = wbm_sstr;
-	new_wfh.wbm_sattr = wbm_sattr;
-	new_wfh.wbm_calc = wbm_calc;
-	new_wfh.wbm_obfind = wbm_obfind;
+	new_wfh.wbm_create = win_wbm_create;
+	new_wfh.wbm_skind = win_wbm_skind;
+	new_wfh.wbm_ssize = win_wbm_ssize;
+	new_wfh.wbm_sslid = win_wbm_sslid;
+	new_wfh.wbm_sstr = win_wbm_sstr;
+	new_wfh.wbm_sattr = win_wbm_sattr;
+	new_wfh.wbm_calc = win_wbm_calc;
+	new_wfh.wbm_obfind = win_wbm_obfind;
 
 	/* Manager anmelden */
 	/* ---------------- */
@@ -166,9 +173,9 @@ LONG cdecl slb_init( void )
 
 /*****************************************************************
 *
-* Bibliothek aufrÑumen.
-* Wir dÅrfen kein appl_exit() machen, weil wir keine
-* ap_id haben. rsrc_free() dagegen wÑre erlaubt, weil die
+* Bibliothek aufr√§umen.
+* Wir d√ºrfen kein appl_exit() machen, weil wir keine
+* ap_id haben. rsrc_free() dagegen w√§re erlaubt, weil die
 * RSC-Strukturen im global-Feld liegen.
 *
 *****************************************************************/
@@ -188,7 +195,7 @@ extern void cdecl slb_exit( void )
 
 /*****************************************************************
 *
-* Bibliothek îffnen
+* Bibliothek √∂ffnen
 *
 *****************************************************************/
 
@@ -201,7 +208,7 @@ extern LONG cdecl slb_open( PD *pd )
 
 /*****************************************************************
 *
-* Bibliothek schlieûen
+* Bibliothek schlie√üen
 *
 *****************************************************************/
 

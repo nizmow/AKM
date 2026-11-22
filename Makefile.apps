@@ -131,7 +131,7 @@ $(BUILD_DIR)/magxconf/NEOSTART.PRG: MagiC/APPS/MAGXCONF/TESTDATA/NEOSTART.C Make
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 
-.PHONY: all applicat mod-app cmdline mac2st dump fc split dis dis1 dis2 showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver flp-par flp-par0 flp-par1 magxconf-cpx tslice-cpx mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 vt52-test-driver magxdesk abi-check console-test-driver
+.PHONY: all applicat mod-app cmdline mac2st dump fc split dis dis1 dis2 showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver flp-par flp-par0 flp-par1 magxconf-cpx tslice-cpx winframe mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 vt52-test-driver magxdesk abi-check console-test-driver
 all: mod-app
 applicat: $(BUILD_DIR)/applicat/APPLICAT.APP $(BUILD_DIR)/applicat/applicat.rsc \
   $(BUILD_DIR)/applicat/applicat.inf
@@ -189,6 +189,7 @@ flp-par0: $(BUILD_DIR)/flp-par/FLP_PAR0.PRG
 flp-par1: $(BUILD_DIR)/flp-par/FLP_PAR1.PRG
 magxconf-cpx: $(BUILD_DIR)/cpx/MAGXCONF.CPX
 tslice-cpx: $(BUILD_DIR)/cpx/TSLICE.CPX
+winframe: $(BUILD_DIR)/winframe/WINFRAME.SLB $(BUILD_DIR)/winframe/WINFRAME.RSC
 wbdaemon-test-driver: $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG
 mod-app-test-driver: $(BUILD_DIR)/mod-app/NEOSTEST.PRG
 
@@ -553,6 +554,34 @@ $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG: MagiC/APPS/WBDAEMON/TESTDATA/NEOSTEST.C Make
 -include $(BUILD_DIR)/flp-par/FLP_PAR1.d
 -include $(BUILD_DIR)/cpx/MAGXCONF.d
 -include $(BUILD_DIR)/cpx/TSLICE.d
+
+WINFRAME_DIR := MagiC/KERNEL/WINFRAME
+WINFRAME_OBJECTS := $(BUILD_DIR)/winframe/WIN_SLB.o $(BUILD_DIR)/winframe/WIN_OBJS.o \
+  $(BUILD_DIR)/winframe/WINFRAME_ENTRY.o
+
+$(BUILD_DIR)/winframe/%.o: $(WINFRAME_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(WINFRAME_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/winframe/WINFRAME_ENTRY.o: $(WINFRAME_DIR)/WINFRAME_ENTRY.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/winframe/WINFRAME.elf: $(WINFRAME_OBJECTS) \
+  MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld Makefile.apps
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld \
+	  $(WINFRAME_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
+
+$(BUILD_DIR)/winframe/WINFRAME.SLB: $(BUILD_DIR)/winframe/WINFRAME.elf scripts/elf_to_slb.py
+	python3 scripts/elf_to_slb.py --name WINFRAME.SLB --version 1 "$<" "$@"
+
+$(BUILD_DIR)/winframe/WINFRAME.RSC: $(WINFRAME_DIR)/WINFRAME.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+-include $(BUILD_DIR)/winframe/WIN_SLB.d
+-include $(BUILD_DIR)/winframe/WIN_OBJS.d
 -include $(APPLICAT_OBJECTS:.o=.d)
 -include $(MGVIEW_OBJECTS:.o=.d)
 EDIT_SLB_DIR := MagiC/EXTENSIO/EDIT_SLB/SRC
