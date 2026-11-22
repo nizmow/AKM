@@ -191,7 +191,7 @@ build_color_maps:	movem.l	d0/a0-a2,-(sp)
 						movea.l	nvdi_struct(pc),a2
 						movea.l	_nvdi_colmaptab(a2),a2
 						
-						movea.l	_color_map_ptr(a2),a0
+						movea.l	(a2),a0
 						lea		color_map(pc),a1
 						moveq		#63,d0
 copy_map_loop:		move.l	(a0)+,(a1)+
@@ -1769,7 +1769,7 @@ fbox_universal:	move.w	wr_mode(a6),d7
 						moveq 	#15,d6
 
 						tst.w 	f_planes(a6)		;Farbmuster?
-						beq		fbox_repl_mono
+						beq.s		fbox_repl_mono
 
 						and.w 	d6,d1 			;y1 & 15
 						beq.s 	fbox_repl_cfill2
@@ -2959,7 +2959,7 @@ bitblt:				cmp.w		d4,d6										;horizontal skalieren?
 
 						move.w	r_splanes(a6),d6
 						cmp.w 	r_dplanes(a6),d6
-						bne		bitblt_exit
+						bne.s		bitblt_exit
 						subi.w	#15,d6
 						bne.s		bitblt_exit
 

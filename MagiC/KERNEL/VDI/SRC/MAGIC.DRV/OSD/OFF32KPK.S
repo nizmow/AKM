@@ -211,7 +211,7 @@ build_color_maps:	movem.l	d0/a0-a2,-(sp)
 						movea.l	nvdi_struct(pc),a2
 						movea.l	_nvdi_colmaptab(a2),a2
 						
-						movea.l	_color_map_ptr(a2),a0
+						movea.l	(a2),a0
 						lea		color_map(pc),a1
 						moveq		#63,d0
 copy_map_loop:		move.l	(a0)+,(a1)+

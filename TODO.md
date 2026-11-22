@@ -181,7 +181,14 @@ the remaining shared families ahead of their consumers.
   load; the Release copy is the same binary. Archive and rebuild render an
   8-plane interleaved MFDB with identical pixel readbacks and 4096-byte bitmap
   bytes, asserted independently, and a driver-less clone rejects the open.
-- [ ] Remaining loadable components: MFA/MFM screen and five other OSD drivers.
+- [x] **OSD phase 2** — `OFF016PK`, `OFF256PK`, `OFF32KFL`, `OFF32KPK` and
+  `OFF16MOV` build from the legacy sources. OFF016PK matches the V4.10 archive
+  and OFF32KFL the V4.11 Release byte-for-byte; the other three have no
+  byte-identical reference and are verified structurally and at runtime.
+  `mise run test:osd-<driver>-neost` checks each requested layout, readbacks
+  and full bitmap, plus a missing-driver control. OFF16MOV asserts its 16 KB
+  bitmap and the word-swapped TrueColor readbacks.
+- [ ] Remaining screen drivers: MFA/MFM.
 - [x] Account explicitly in the catalogue for remaining diagnostic, historical,
   host-specific, missing-source and external-dependency entries.
 

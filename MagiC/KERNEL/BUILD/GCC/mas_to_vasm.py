@@ -137,6 +137,17 @@ def normalize(text, sections=()):
         elif re.fullmatch(r"\s*SUPER\s*(?:;.*)?", line, re.I):
             # MAS privilege-checking mode, not an instruction; vasm allows it.
             line = ""
+        elif re.match(r"\s*ALIGN\s+", line, re.I):
+            # MAS ALIGN takes a byte count; VASM ALIGN takes its log2.
+            code, sep, comment = line.partition(";")
+            expression = re.split(r"\s+", code.strip(), maxsplit=1)[1].strip()
+            try:
+                value = int(expression.replace("$", "0x"), 0)
+            except ValueError:
+                raise ValueError(f"ALIGN needs a literal, got {expression!r}")
+            if value <= 0 or value & (value - 1):
+                raise ValueError(f"ALIGN needs a power of two, got {expression!r}")
+            line = f"     align {value.bit_length() - 1}" + sep + comment
         elif re.match(r"\s*IFF\s+", line, re.I):
             line = re.sub(r"\bIFF\b", "ifeq", line, count=1, flags=re.I)
         elif re.match(r"\s*IF\s+", line, re.I):

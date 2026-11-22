@@ -150,6 +150,31 @@ description = "Build OFF256IP.OSD and prove NVDI draws into an 8-plane offscreen
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-off256ip-smoke.py"
 
+[tasks."test:osd-off016pk-neost"]
+description = "Build OFF016PK.OSD and prove NVDI draws into a 16-colour packed bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-osd-batch-smoke.py --driver off016pk"
+
+[tasks."test:osd-off256pk-neost"]
+description = "Build OFF256PK.OSD and prove NVDI draws into a 256-colour packed bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-osd-batch-smoke.py --driver off256pk"
+
+[tasks."test:osd-off32kfl-neost"]
+description = "Build OFF32KFL.OSD and prove NVDI draws into a flat 15-bit bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-osd-batch-smoke.py --driver off32kfl"
+
+[tasks."test:osd-off32kpk-neost"]
+description = "Build OFF32KPK.OSD and prove NVDI draws into a packed 15-bit bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-osd-batch-smoke.py --driver off32kpk"
+
+[tasks."test:osd-off16mov-neost"]
+description = "Build OFF16MOV.OSD and prove NVDI draws into a 32-bit TrueColor bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-osd-batch-smoke.py --driver off16mov"
+
 [tasks."test:neost-server"]
 description = "Run NeoST server client protocol regression tests"
 dir = "{{ config_root }}"

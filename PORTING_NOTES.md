@@ -1337,6 +1337,45 @@ Limits: one organisation (256 colours, 8 planes, format 0, organisation 1) on
 the tested colour MegaSTE screen; animation, other screen modes and long-term
 stability remain untested.
 
+### Packed and direct-colour OSD drivers
+
+`mise run apps -- osd-batch` builds `OFF016PK.OSD`, `OFF256PK.OSD`,
+`OFF32KFL.OSD`, `OFF32KPK.OSD` and `OFF16MOV.OSD` under
+`build/atari/apps/osd/`. All five use the MAS normalizer and the OSD include
+set. `mas_to_vasm.py` now translates `ALIGN n` to VASM's exponent form
+(`align log2(n)`): VASM's `align n` means 2^n, while these sources supply byte
+counts, and the untranslated form padded by 64 KB.
+
+`-no-opt` preserves the archived MOVEM encodings. OFF256PK is the exception:
+its branches need VASM's size extension, so it builds with default
+optimization. Zero-displacement folds were needed where the archived assembler
+folded them but `-no-opt` does not: `move.b 0(a1),d4` became `move.b (a1),d4`
+in OFF016PK, and `movea.l _color_map_ptr(a2),a0` became `movea.l (a2),a0` in
+OFF256PK, OFF32KFL, OFF32KPK and OFF16MOV. OFF32KFL also uses explicit `.s` on
+two previously unsized branches.
+
+Reference parity is per driver: OFF016PK is byte-identical to its V4.10
+source-tree archive; OFF32KFL is byte-identical to the shipped V4.11 Release.
+OFF256PK (source V4.11; archive V3.02, Release V4.12), OFF32KPK (V4.11; archive
+0410, Release 0413) and OFF16MOV (V4.13; both references differ, notably the
+source keeps the `scrninfo`/palette tables in TEXT while the references place
+them in DATA) have no byte-identical reference, so their structure and runtime
+behavior are verified instead.
+
+`mise run test:osd-<driver>-neost` runs the shared
+`scripts/neost-osd-batch-smoke.py --driver <driver>` scenario. Each probe
+requests its exact tuple through VDI 100/1, draws four-pixel bars crossing the
+x=15/16 boundary, samples both sides, dumps the bitmap and checks an untouched
+pixel. Indexed drivers use NVDI's colour map; direct-colour probes set pens
+through VDI opcode 14. Archive and rebuild run in separate clones; a clone with
+the driver deleted must report the open as rejected and write no bitmap. The
+16MOV scenario asserts the full 16 KB bitmap and readbacks equal to the stored
+longword with VDI's 16-bit word swap.
+
+Limits: one organisation per driver on the tested colour MegaSTE screen. Three
+drivers have no byte-identical reference; animation, other screen modes and
+long-term stability remain untested.
+
 ### WINFRAME.SLB
 
 `mise run apps -- winframe` builds `build/atari/apps/winframe/WINFRAME.SLB`

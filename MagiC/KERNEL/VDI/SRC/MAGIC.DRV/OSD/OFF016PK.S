@@ -1274,7 +1274,7 @@ fline_exit: 		rts
 vline:				sub.w 	d1,d3 			;Z„hler
 						lea		color_map(pc),a1
 						adda.w	l_color(a6),a1
-						move.b	0(a1),d4 		;Ebenenzuordnung
+						move.b	(a1),d4 		;Ebenenzuordnung
 
 ;Startadresse berechnen
 						movea.l	v_bas_ad.w,a1	;Adresse des Bildschirms
