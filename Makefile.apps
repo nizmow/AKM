@@ -214,6 +214,59 @@ off32kfl-test-driver: $(BUILD_DIR)/osd-probes/OFF32KFL.PRG
 off32kpk-test-driver: $(BUILD_DIR)/osd-probes/OFF32KPK.PRG
 off16mov-test-driver: $(BUILD_DIR)/osd-probes/OFF16MOV.PRG
 
+# MFA (Atari) and MFM (MagiCMac) screen drivers. The older MFM sources still
+# name the NVDI field at offset 196 `_nvdi_PixMap_ptr`; the current include
+# calls the same field `_nvdi_vdi_setup_ptr`.
+SCREEN_DIR := MagiC/KERNEL/VDI/SRC/MAGIC.DRV
+SCREEN_MFA_NAMES := MFA2 MFA4 MFA16 MFA256 MFA32K
+SCREEN_MFM_NAMES := MFM2 MFM16 MFM16IP MFM16M MFM256 MFM32K MFM4IP
+SCREEN_NAMES := $(SCREEN_MFA_NAMES) $(SCREEN_MFM_NAMES)
+SCREEN_INCLUDE_NAMES := DRIVER.I HARDWARE.I LINEA.I NVDI_WK.I PIXMAP.I TOS.I VDI.I
+SCREEN_INCLUDES := $(addprefix $(BUILD_DIR)/screen/src/,$(SCREEN_INCLUDE_NAMES))
+SCREEN_NORMALIZED := $(addprefix $(BUILD_DIR)/screen/src/,$(addsuffix .S,$(SCREEN_NAMES)))
+SCREEN_OUTPUTS := $(addprefix $(BUILD_DIR)/screen/,$(addsuffix .SYS,$(SCREEN_NAMES)))
+SCREEN_MFA_OUTPUTS := $(addprefix $(BUILD_DIR)/screen/,$(addsuffix .SYS,$(SCREEN_MFA_NAMES)))
+SCREEN_MFM_OUTPUTS := $(addprefix $(BUILD_DIR)/screen/,$(addsuffix .SYS,$(SCREEN_MFM_NAMES)))
+
+$(BUILD_DIR)/screen/src/%.I: $(OSD_INCLUDE_DIR)/%.I $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(addprefix $(BUILD_DIR)/screen/src/,$(addsuffix .S,$(SCREEN_MFA_NAMES))): \
+  $(BUILD_DIR)/screen/src/%.S: $(SCREEN_DIR)/MFA/%.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(addprefix $(BUILD_DIR)/screen/src/,$(addsuffix .S,$(SCREEN_MFM_NAMES))): \
+  $(BUILD_DIR)/screen/src/%.S: $(SCREEN_DIR)/MFM/%.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(SCREEN_OUTPUTS): $(BUILD_DIR)/screen/%.SYS: $(BUILD_DIR)/screen/src/%.S $(SCREEN_INCLUDES) Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 -DDUMMY=0 \
+	  -D_nvdi_PixMap_ptr=196 -no-opt -opt-allbra \
+	  -I"$(BUILD_DIR)/screen/src/" -o "$@" "$<"
+
+.PHONY: screen-drivers mfa mfm \
+  mfa2 mfa4 mfa16 mfa256 mfa32k \
+  mfm2 mfm16 mfm16ip mfm16m mfm256 mfm32k mfm4ip
+screen-drivers: $(SCREEN_OUTPUTS)
+mfa: $(SCREEN_MFA_OUTPUTS)
+mfm: $(SCREEN_MFM_OUTPUTS)
+mfa2: $(BUILD_DIR)/screen/MFA2.SYS
+mfa4: $(BUILD_DIR)/screen/MFA4.SYS
+mfa16: $(BUILD_DIR)/screen/MFA16.SYS
+mfa256: $(BUILD_DIR)/screen/MFA256.SYS
+mfa32k: $(BUILD_DIR)/screen/MFA32K.SYS
+mfm2: $(BUILD_DIR)/screen/MFM2.SYS
+mfm16: $(BUILD_DIR)/screen/MFM16.SYS
+mfm16ip: $(BUILD_DIR)/screen/MFM16IP.SYS
+mfm16m: $(BUILD_DIR)/screen/MFM16M.SYS
+mfm256: $(BUILD_DIR)/screen/MFM256.SYS
+mfm32k: $(BUILD_DIR)/screen/MFM32K.SYS
+mfm4ip: $(BUILD_DIR)/screen/MFM4IP.SYS
+
 .PHONY: mcmd mcmd-languages mcmd-test-driver
 mcmd: $(BUILD_DIR)/mcmd/$(MCMD_LANG)/MCMD.TOS
 mcmd-languages: $(foreach lang,de en fr,$(BUILD_DIR)/mcmd/$(lang)/MCMD.TOS)

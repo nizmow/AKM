@@ -571,6 +571,32 @@ Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
 organisations, other screen modes and long-term stability are outside these
 scenarios.
 
+## NeoST: MFA/MFM screen drivers
+
+`mise run test:screen-drivers-neost` builds all five MFA and seven MFM screen
+drivers and checks each rebuilt file's TOS branch, `NVDIDRV` header, version,
+header length, type, organization, segment bounds and relocation table. It then
+boots archived, rebuilt and missing drivers for ST high (`MFA2`), medium
+(`MFA4`) and low (`MFA16`) in separate MagiC clones:
+
+```sh
+export MAGIC_IMAGE=/path/to/magic.img
+export TOS206_ROM=/path/to/tos206uk.img
+mise run test:screen-drivers-neost
+```
+
+For each mode the archive and rebuild are installed under
+`C:\GEMSYS\<driver>.SYS`; the control removes that file. The medium and low
+cases rewrite `#_DEV` to `3 0` and `2 0`. Archived and rebuilt screens must be
+pixel-identical, and the missing-driver screen must differ materially after the
+loader's `Bildschirm-Treiber nicht gefunden.` halt. Evidence goes to
+`build/atari/neost-screen-*`.
+
+Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
+`mtools`. Only ST high/medium/low are runtime-tested. NeoST profiles do not
+cover TT/Falcon, and MFM needs a MagiCMac host, so the other nine outputs are
+structural-only.
+
 ## NeoST: WINFRAME.SLB window frames
 
 `mise run test:winframe-neost` builds the alternate window-frame library,

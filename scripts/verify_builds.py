@@ -46,6 +46,12 @@ TARGETS = {
     "winframe": ("winframe", ["WINFRAME.SLB", "WINFRAME.RSC"]),
     "xp-rastr": ("xp-rastr", ["XP_RASTR.SLB"]),
     "load-img": ("load-img", ["LOAD_IMG.SLB"]),
+    "screen-drivers": ("screen", [
+        f"{name}.SYS" for name in (
+            "MFA2", "MFA4", "MFA16", "MFA256", "MFA32K",
+            "MFM2", "MFM16", "MFM16IP", "MFM16M", "MFM256", "MFM32K", "MFM4IP",
+        )
+    ]),
 }
 
 

@@ -1376,6 +1376,29 @@ Limits: one organisation per driver on the tested colour MegaSTE screen. Three
 drivers have no byte-identical reference; animation, other screen modes and
 long-term stability remain untested.
 
+### MFA/MFM screen drivers
+
+`mise run apps -- screen-drivers` builds the five Atari MFA and seven MagiCMac
+MFM screen drivers under `build/atari/apps/screen/`. The sources use the same
+MAS normalizer and VDI include set as the OSD drivers. VASM runs with
+`-DDUMMY=0 -no-opt -opt-allbra`, which preserves the archived MOVEM choices
+while still shortening branches. The older MFM sources name the NVDI field at
+offset 196 `_nvdi_PixMap_ptr`; the current `DRIVER.I` calls it
+`_nvdi_vdi_setup_ptr`, so the build supplies the legacy alias as a define.
+
+The rebuilt files match their archives' header versions and organizations but
+are not byte-identical: file sizes differ by 2–10 bytes from VASM branch and
+encoding choices. Parity is therefore structural, not byte-for-byte. `MFM4.SYS` is
+requested by `load_MAC_driver` when a 2-plane non-ATARI2 display is selected,
+but no such project or binary exists in the tree; `ORIG/` is historical.
+
+`scripts/neost-screen-driver-smoke.py` builds the family and checks every TOS
+header, organization and relocation. It boots archived, rebuilt and missing
+`MFA2.SYS`/`MFA4.SYS`/`MFA16.SYS` at ST high/medium/low; the first two render
+the same desktop and the missing file reaches the loader halt. TT/Falcon modes
+require a profile NeoST does not expose, and MFM requires a MagiCMac host with
+`VDI_SETUP_DATA`; the other nine drivers are structurally verified only.
+
 ### WINFRAME.SLB
 
 `mise run apps -- winframe` builds `build/atari/apps/winframe/WINFRAME.SLB`
