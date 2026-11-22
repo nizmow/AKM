@@ -188,7 +188,33 @@ the remaining shared families ahead of their consumers.
   `mise run test:osd-<driver>-neost` checks each requested layout, readbacks
   and full bitmap, plus a missing-driver control. OFF16MOV asserts its 16 KB
   bitmap and the word-swapped TrueColor readbacks.
-- [ ] Remaining screen drivers: MFA/MFM.
+- [ ] **MFA/MFM screen drivers** — scope and reference binaries are in the
+  [build catalogue](APPLICATION_BUILDS.md#2-system-components-outside-the-application-tree).
+  - [x] Resolve the 12 canonical `.PRJ` inputs, includes and archived `.SYS`
+    references. Exclude `MFM/ORIG`; `MFM4.SYS` is named by the loader but has no
+    project or binary in the tree.
+  - [ ] Establish the archived `MFA2.SYS` baseline on a cloned MagiC image
+    under NeoST with a mono monitor. Prove the driver's `init` ran and returned
+    a workstation length, capture geometry and deterministic screen drawing,
+    and check that removing the `.SYS` alone reaches the missing-driver path.
+  - [ ] Find a MagiCMac host exposing the `VDI_SETUP_DATA` display ABI and
+    establish the equivalent `MFM2.SYS` baseline and missing-driver control.
+    NeoST's Atari profiles cannot exercise this path; absence of the host
+    blocks MFM runtime proof, not MFM assembly.
+  - [ ] Build `mfa2` and `mfm2` as representative `Makefile.apps` targets.
+    Check TOS relocations, the `NVDIDRV` header, entry offsets and organization
+    against each archive. Compare bytes only for equivalent references.
+  - [ ] Repeat each available representative guest baseline with the rebuilt
+    driver under the same guest filename; require matching initialization,
+    geometry and independently expected pixels. Keep the kernel and companion
+    offscreen drivers fixed across archive, rebuild and control.
+  - [ ] Add the remaining canonical `mfa`/`mfm` family outputs after the build
+    boundary is proven. Verify all 12 nonempty `.SYS` files and their headers and
+    relocations; report unsupported modes separately from build failures.
+  - [ ] Exercise ST high/medium/low (`MFA2`/`MFA4`/`MFA16`) first. Cover
+    `MFA256`/`MFA32K` with compatible TT/Falcon profiles and MFM with matching
+    MagiCMac display formats where available. Record built, load-proven and
+    functionally tested status separately in the catalogue.
 - [x] Account explicitly in the catalogue for remaining diagnostic, historical,
   host-specific, missing-source and external-dependency entries.
 
