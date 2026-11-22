@@ -176,7 +176,7 @@ dir = "{{ config_root }}"
 run = "python3 scripts/neost-osd-batch-smoke.py --driver off16mov"
 
 [tasks."test:screen-drivers-neost"]
-description = "Build MFA2.SYS and prove the archived and rebuilt screen driver boot identically"
+description = "Build all MFA/MFM screen drivers and verify ST high/medium/low archive and rebuild boots"
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-screen-driver-smoke.py"
 

@@ -586,16 +586,21 @@ mise run test:screen-drivers-neost
 ```
 
 For each mode the archive and rebuild are installed under
-`C:\GEMSYS\<driver>.SYS`; the control removes that file. The medium and low
-cases rewrite `#_DEV` to `3 0` and `2 0`. Archived and rebuilt screens must be
-pixel-identical, and the missing-driver screen must differ materially after the
-loader's `Bildschirm-Treiber nicht gefunden.` halt. Evidence goes to
+`C:\GEMSYS\<driver>.SYS`; the control removes that file. The script rewrites the
+single active `#_DEV` setting to `1 0`, `3 0` or `2 0`. It installs `SCREEN.PRG`
+in `C:\GEMSYS\MAGIC\START`; that probe writes `C:\SCREEN.TXT` only after MagiC
+starts. Positive runs must produce the marker and pixel-identical screens; the
+missing-driver run must produce no marker and a screen differing by more than
+10% of its pixels. Recorded controls also show
+`Bildschirm-Treiber nicht gefunden.` and the MCMD shell, but the automated check
+asserts only the marker and pixel difference. Evidence goes to
 `build/atari/neost-screen-*`.
 
-Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
-`mtools`. Only ST high/medium/low are runtime-tested. NeoST profiles do not
-cover TT/Falcon, and MFM needs a MagiCMac host, so the other nine outputs are
-structural-only.
+Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, exactly one active
+`#_DEV` setting in `MAGX.INF`, `C:\GEMSYS\MAGIC\START`, the three tested MFA
+drivers present for `mdel`, TOS 2.06, and host `mtools`. Only ST
+high/medium/low are runtime-tested. NeoST profiles do not cover TT/Falcon, and
+MFM needs a MagiCMac host, so the other nine outputs are structural-only.
 
 ## NeoST: WINFRAME.SLB window frames
 

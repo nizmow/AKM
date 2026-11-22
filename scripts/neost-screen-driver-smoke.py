@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import os
 from pathlib import Path
+import re
 import struct
 import subprocess
 import sys
@@ -73,9 +74,18 @@ def check_driver(path: Path, expected_version: int, expected_org: tuple) -> dict
     require(cursor + 1 == len(data), f"trailing relocation bytes: {path}")
     require(16 in relocations and 20 in relocations,
             f"driver entry slots are not relocated: {path}")
+    for slot in (16, 20):
+        entry = struct.unpack_from(">I", data, 28 + slot)[0]
+        require(80 <= entry < tlen and entry % 2 == 0,
+                f"invalid relocated entry at text+{slot:#x}: {path}")
     return {"length": len(data), "tlen": tlen, "dlen": dlen, "blen": blen,
             "version": version, "relocations": len(relocations),
             "sha256": hashlib.sha256(data).hexdigest()}
+
+
+def guest_present(image: MagiCImage, guest: str) -> bool:
+    result = run(["mdir", "-i", image.image_spec, guest])
+    return result.returncode == 0
 
 
 def boot_case(label: str, driver: Path | None, mode: dict, headless: Path,
@@ -86,21 +96,25 @@ def boot_case(label: str, driver: Path | None, mode: dict, headless: Path,
     image = MagiCImage.clone(source, case / "magic.img",
                              partition_offset=partition_offset)
     image.verify_magic()
-    if image.image_spec and mode["dev"] != b"1 0":
-        inf = case / "MAGX.INF"
-        image.copy_out("::/MAGX.INF", inf)
-        text = inf.read_bytes()
-        old, new = b"#_DEV 1 0", b"#_DEV " + mode["dev"]
-        require(text.count(old) == 1 and new not in text,
-                f"{mode['label']}: unexpected MAGX.INF device line")
-        inf.write_bytes(text.replace(old, new))
-        image.copy_in(inf, "::/MAGX.INF")
+    inf = case / "MAGX.INF"
+    image.copy_out("::/MAGX.INF", inf)
+    text = inf.read_bytes()
+    pattern = re.compile(rb"(?im)^([ \t]*#_DEV[ \t]+)\d+[ \t]+\d+")
+    require(len(pattern.findall(text)) == 1,
+            f"{mode['label']}: expected one active #_DEV setting")
+    text = pattern.sub(lambda match: match.group(1) + mode["dev"],
+                       text, count=1)
+    inf.write_bytes(text)
+    image.copy_in(inf, "::/MAGX.INF")
     guest = f"::/GEMSYS/{mode['driver']}.SYS"
     if driver is None:
         result = run(["mdel", "-i", image.image_spec, guest])
         require(result.returncode == 0, f"{label}: could not remove {guest}")
     else:
         image.copy_in(driver, guest)
+    image.copy_in(BUILD / "apps/screen/SCREEN.PRG",
+                  "::/GEMSYS/MAGIC/START/SCREEN.PRG")
+    run(["mdel", "-i", image.image_spec, "::/SCREEN.TXT"])
     (case / "GEMDRIVE" / "E").mkdir(parents=True)
     command = [
         str(headless), "--machine", "megaste", "--mem", "4m", "--no-disk",
@@ -120,7 +134,11 @@ def boot_case(label: str, driver: Path | None, mode: dict, headless: Path,
         require(hashlib.sha256((case / "installed.SYS").read_bytes()).hexdigest()
                 == hashlib.sha256(driver.read_bytes()).hexdigest(),
                 f"{label}: installed driver differs from {driver}")
-    return case / "final.ppm", installed
+    marker = None
+    if guest_present(image, "::/SCREEN.TXT"):
+        image.copy_out("::/SCREEN.TXT", case / "SCREEN.TXT")
+        marker = (case / "SCREEN.TXT").read_bytes()
+    return case / "final.ppm", installed, marker
 
 
 def main() -> int:
@@ -140,11 +158,13 @@ def main() -> int:
 
     build = subprocess.run(
         [str(ROOT / "scripts/atari-container"), "run", "make", "-f", "Makefile.apps",
-         "screen-drivers"], cwd=ROOT, text=True,
+         "screen-drivers", "screen-boot-probe"], cwd=ROOT, text=True,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=600)
     if build.returncode:
         print(build.stdout, file=sys.stderr)
         return build.returncode
+    require((BUILD / "apps/screen/SCREEN.PRG").is_file(),
+            "build did not produce the screen boot probe")
     infos = {}
     for name, (version, org) in DRIVERS.items():
         path = BUILD / "apps/screen" / (name + ".SYS")
@@ -166,17 +186,22 @@ def main() -> int:
                 archive = ARCHIVE / (name + ".SYS")
                 rebuilt = BUILD / "apps/screen" / (name + ".SYS")
                 check_driver(archive, *DRIVERS[name])
-                archive_shot, archive_installed = boot_case(
+                archive_shot, archive_installed, archive_marker = boot_case(
                     "archive", archive, mode, headless, rom, source, output,
                     args.partition_offset, args.frames)
-                rebuilt_shot, rebuilt_installed = boot_case(
+                rebuilt_shot, rebuilt_installed, rebuilt_marker = boot_case(
                     "rebuilt", rebuilt, mode, headless, rom, source, output,
                     args.partition_offset, args.frames)
-                missing_shot, missing_installed = boot_case(
+                missing_shot, missing_installed, missing_marker = boot_case(
                     "missing", None, mode, headless, rom, source, output,
                     args.partition_offset, args.frames)
                 require(archive_installed and rebuilt_installed and not missing_installed,
                         f"{name}: driver installation state is wrong")
+                require(archive_marker and archive_marker.startswith(b"MAGIC") and
+                        rebuilt_marker and rebuilt_marker.startswith(b"MAGIC"),
+                        f"{name}: MagiC did not reach the boot probe")
+                require(missing_marker is None,
+                        f"{name}: missing driver still reached the boot probe")
                 width, height, _ = read_ppm(archive_shot)
                 rebuilt_diff, rebuilt_box = diff_stats(archive_shot, rebuilt_shot)
                 missing_diff, missing_box = diff_stats(archive_shot, missing_shot)

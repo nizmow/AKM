@@ -248,10 +248,18 @@ $(SCREEN_OUTPUTS): $(BUILD_DIR)/screen/%.SYS: $(BUILD_DIR)/screen/src/%.S $(SCRE
 	  -D_nvdi_PixMap_ptr=196 -no-opt -opt-allbra \
 	  -I"$(BUILD_DIR)/screen/src/" -o "$@" "$<"
 
-.PHONY: screen-drivers mfa mfm \
+SCREEN_PROBE := $(BUILD_DIR)/screen/SCREEN.PRG
+
+$(SCREEN_PROBE): MagiC/KERNEL/VDI/TESTDATA/SCREEN.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+.PHONY: screen-drivers screen-boot-probe mfa mfm \
   mfa2 mfa4 mfa16 mfa256 mfa32k \
   mfm2 mfm16 mfm16ip mfm16m mfm256 mfm32k mfm4ip
 screen-drivers: $(SCREEN_OUTPUTS)
+screen-boot-probe: $(SCREEN_PROBE)
 mfa: $(SCREEN_MFA_OUTPUTS)
 mfm: $(SCREEN_MFM_OUTPUTS)
 mfa2: $(BUILD_DIR)/screen/MFA2.SYS

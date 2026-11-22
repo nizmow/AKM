@@ -1380,7 +1380,8 @@ long-term stability remain untested.
 
 `mise run apps -- screen-drivers` builds the five Atari MFA and seven MagiCMac
 MFM screen drivers under `build/atari/apps/screen/`. The sources use the same
-MAS normalizer and VDI include set as the OSD drivers. VASM runs with
+MAS normalizer and VDI include directory as the OSD drivers; this recipe stages
+`HARDWARE.I` and `PIXMAP.I`, while the OSD recipe stages `SEEDFILL.I`. VASM runs with
 `-DDUMMY=0 -no-opt -opt-allbra`, which preserves the archived MOVEM choices
 while still shortening branches. The older MFM sources name the NVDI field at
 offset 196 `_nvdi_PixMap_ptr`; the current `DRIVER.I` calls it
@@ -1392,12 +1393,16 @@ encoding choices. Parity is therefore structural, not byte-for-byte. `MFM4.SYS` 
 requested by `load_MAC_driver` when a 2-plane non-ATARI2 display is selected,
 but no such project or binary exists in the tree; `ORIG/` is historical.
 
-`scripts/neost-screen-driver-smoke.py` builds the family and checks every TOS
-header, organization and relocation. It boots archived, rebuilt and missing
-`MFA2.SYS`/`MFA4.SYS`/`MFA16.SYS` at ST high/medium/low; the first two render
-the same desktop and the missing file reaches the loader halt. TT/Falcon modes
-require a profile NeoST does not expose, and MFM requires a MagiCMac host with
-`VDI_SETUP_DATA`; the other nine drivers are structurally verified only.
+`scripts/neost-screen-driver-smoke.py` builds the family plus a small
+`SCREEN.PRG` boot probe and checks every TOS header, organization and
+relocation. The probe writes `C:\SCREEN.TXT` only after MagiC starts. It boots
+archived, rebuilt and missing `MFA2.SYS`/`MFA4.SYS`/`MFA16.SYS` at ST
+high/medium/low: the positive runs produce the marker and identical screens,
+while the missing file produces no marker and a materially different screen.
+Recorded controls show `Bildschirm-Treiber nicht gefunden.` and the MCMD shell;
+the automated check does not assert those strings or the later halt. TT/Falcon
+modes require a profile NeoST does not expose, and MFM requires a MagiCMac host
+with `VDI_SETUP_DATA`; the other nine drivers are structurally verified only.
 
 ### WINFRAME.SLB
 

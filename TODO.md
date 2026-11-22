@@ -208,7 +208,7 @@ the remaining shared families ahead of their consumers.
   - [x] Add the remaining canonical `mfa`/`mfm` family outputs. All twelve
     `.SYS` files build and pass header, organization and relocation checks.
   - [x] Exercise ST high/medium/low (`MFA2`/`MFA4`/`MFA16`): archived and
-    rebuilt screens match and each missing file reaches the loader halt.
+    rebuilt screens match; each missing file fails before the MagiC boot probe.
   - [ ] Cover `MFA256`/`MFA32K` with compatible TT/Falcon profiles and MFM with
     matching MagiCMac display formats where available. Record built, load-proven
     and functionally tested status separately in the catalogue.
