@@ -130,6 +130,16 @@ description = "Compare archived and rebuilt WINFRAME.SLB window frames under Mag
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-winframe-smoke.py"
 
+[tasks."test:osd-off002-neost"]
+description = "Build OFF002.OSD and prove NVDI draws into a 1-plane offscreen bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-off002-smoke.py"
+
+[tasks."test:osd-off004ip-neost"]
+description = "Build OFF004IP.OSD and prove NVDI draws into a 2-plane offscreen bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-off004ip-smoke.py"
+
 [tasks."test:neost-server"]
 description = "Run NeoST server client protocol regression tests"
 dir = "{{ config_root }}"

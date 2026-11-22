@@ -1234,6 +1234,52 @@ the dialog reads back the scheduler timeslice/priority it sets. Slider
 dragging, Save confirmation and actual scheduler behavior under load remain
 untested. Evidence: `build/atari/neost-tslice-cpx-20261122-120331/`.
 
+### OFF002.OSD offscreen driver
+
+The OSD sources use Pure C/MAS syntax and Windows-style `INCLUDE` paths. Normalize
+them with `MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py`, including the MAGICVDI.2
+`INCLUDE` files, then link with VASM `-Ftos -m68000 -noesc -nosym
+-tos-flags=7`. `-nosym` prevents VASM from adding a symbol table where the
+archived TOS executable has `slen=0`; `-tos-flags=7` preserves the header flag
+word. The resulting V4.10 `OFF002.OSD` is byte-identical to the archived
+MIN-ATAR file, including its TOS header, driver entry offsets and relocation
+stream. The shipped Release driver is V4.11 and has different code/data sizes
+and entry offsets; do not treat this source as a byte-identical V4.11 rebuild.
+
+`v_opnbm()` is a VDI 100 call with `contrl[5]=1`, 20 intin words and the MFDB
+pointer in `contrl[7/8]`. A caller-owned 64x64 one-plane MFDB with
+`fd_wdwidth=4`, `fd_stand=0` and `fd_nplanes=1` selects `OFF002.OSD` on a
+colour MagiC screen. The test probe fills a rectangle and checks pixel 1 and the
+bitmap hash; see `MagiC/KERNEL/VDI/TESTDATA/OFF002.C`.
+
+### OFF004IP.OSD offscreen driver
+
+`mise run apps -- off004ip` builds `build/atari/apps/osd/OFF004IP.OSD` from
+`MagiC/KERNEL/VDI/SRC/MAGIC.DRV/OSD/OFF004IP.S` through the same MAS-to-VASM
+normalization and include set as OFF002. It is byte-identical to the archived
+V4.10 `MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF004IP.OSD`. VASM's default
+optimization rewrites `movem.l (sp)+,a0/a2` as two `movea.l` instructions; the
+archive keeps the MOVEM encoding, so this target passes `-no-opt`. The shipped
+Release driver is V4.11 with different text/data sizes and entry offsets; it is
+not a byte reference.
+
+`mise run test:osd-off004ip-neost` builds the driver and a probe
+(`MagiC/KERNEL/VDI/TESTDATA/OFF004IP.C`), then runs the archived and rebuilt
+files as `C:\GEMSYS\OFF004IP.OSD` in separate cloned MagiC 6.20/TOS 2.06 images.
+The probe opens a caller-owned 64x64 two-plane interleaved MFDB
+(`fd_wdwidth=4`, `fd_stand=0`, `fd_nplanes=2`) through `v_opnbm()`, fills bars
+with VDI pens 2 and 3, reads five pixels and dumps the 1024-byte bitmap. The
+driver maps pens `{0,3,1,2}`; raw colours 1 and 2 therefore exercise one plane
+each, and samples at x=14..18 cross the 16-pixel word boundary. Expected
+readbacks are `1/2 1/2 2/3 2/3 0/0` (raw/VDI), and the bitmap is asserted
+independently, not only against the archive. Evidence is under
+`build/atari/neost-off004ip-*`.
+
+Limits: this exercises NVDI's selection and drawing for one organisation
+(4 colours, 2 planes, format 0, organisation 1) on the tested colour
+MegaSTE screen. Animation, other screen modes and long-term stability remain
+untested.
+
 ### WINFRAME.SLB
 
 `mise run apps -- winframe` builds `build/atari/apps/winframe/WINFRAME.SLB`

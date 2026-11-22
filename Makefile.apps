@@ -64,8 +64,66 @@ VT52_OBJECTS := $(patsubst $(VT52_DIR)/%.C,$(BUILD_DIR)/vt52/%.o,$(VT52_SOURCES)
 MCMD_DIR := MagiC/APPS/CMD/SRC
 MCMD_LANG ?= de
 MAS_NORMALIZER := MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py
+
+# First standalone OSD port. The archived MIN-ATARI binary is the structural
+# reference: it is the same V4.10 source and must match byte-for-byte.
+OSD002_DIR := MagiC/KERNEL/VDI/SRC/MAGIC.DRV/OSD
+OSD_INCLUDE_DIR := MagiC/KERNEL/VDI/SRC/MAGICVDI.2/INCLUDE
+OSD002_SOURCE := $(OSD002_DIR)/OFF002.S
+OSD002_NORMALIZED := $(BUILD_DIR)/osd/src/OFF002.S
+OSD002_INCLUDES := $(addprefix $(BUILD_DIR)/osd/src/,\
+  LINEA.I TOS.I SEEDFILL.I NVDI_WK.I VDI.I DRIVER.I)
+OSD002_OUTPUT := $(BUILD_DIR)/osd/OFF002.OSD
+
 MCMD_SOURCES := $(wildcard $(MCMD_DIR)/*.S $(MCMD_DIR)/*.INC $(MCMD_DIR)/INTERN/*.S)
 MCMD_NORMALIZED := $(addprefix $(BUILD_DIR)/mcmd/src/,$(notdir $(MCMD_SOURCES)))
+
+$(BUILD_DIR)/osd/src/%.I: $(OSD_INCLUDE_DIR)/%.I $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(OSD002_NORMALIZED): $(OSD002_SOURCE) $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+# -nosym drops VASM's symbol table (the archived TOS header has slen=0).
+# -tos-flags=7 preserves the archived TOS header's stack/absolute flags.
+$(OSD002_OUTPUT): $(OSD002_NORMALIZED) $(OSD002_INCLUDES) Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 \
+	  -I"$(BUILD_DIR)/osd/src/" -o "$@" "$(OSD002_NORMALIZED)"
+
+.PHONY: off002 off002-test-driver
+off002: $(OSD002_OUTPUT)
+off002-test-driver: $(BUILD_DIR)/off002/OFF002.PRG
+
+$(BUILD_DIR)/off002/OFF002.PRG: MagiC/KERNEL/VDI/TESTDATA/OFF002.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+# Same V4.10 source family as OFF002, with a 4-colour/2-plane header. The
+# MIN-ATARI archive is the byte reference; the Release driver is V4.11.
+OSD004IP_NORMALIZED := $(BUILD_DIR)/osd/src/OFF004IP.S
+OSD004IP_OUTPUT := $(BUILD_DIR)/osd/OFF004IP.OSD
+
+$(OSD004IP_NORMALIZED): $(OSD002_DIR)/OFF004IP.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(OSD004IP_OUTPUT): $(OSD004IP_NORMALIZED) $(OSD002_INCLUDES) Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 -no-opt \
+	  -I"$(BUILD_DIR)/osd/src/" -o "$@" "$(OSD004IP_NORMALIZED)"
+
+.PHONY: off004ip off004ip-test-driver
+off004ip: $(OSD004IP_OUTPUT)
+off004ip-test-driver: $(BUILD_DIR)/off004ip/OFF004IP.PRG
+
+$(BUILD_DIR)/off004ip/OFF004IP.PRG: MagiC/KERNEL/VDI/TESTDATA/OFF004IP.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 .PHONY: mcmd mcmd-languages mcmd-test-driver
 mcmd: $(BUILD_DIR)/mcmd/$(MCMD_LANG)/MCMD.TOS
@@ -557,6 +615,8 @@ $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG: MagiC/APPS/WBDAEMON/TESTDATA/NEOSTEST.C Make
 -include $(BUILD_DIR)/flp-par/FLP_PAR1.d
 -include $(BUILD_DIR)/cpx/MAGXCONF.d
 -include $(BUILD_DIR)/cpx/TSLICE.d
+-include $(BUILD_DIR)/off002/OFF002.d
+-include $(BUILD_DIR)/off004ip/OFF004IP.d
 
 WINFRAME_DIR := MagiC/KERNEL/WINFRAME
 WINFRAME_OBJECTS := $(BUILD_DIR)/winframe/WIN_SLB.o $(BUILD_DIR)/winframe/WIN_OBJS.o \

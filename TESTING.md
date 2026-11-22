@@ -445,6 +445,51 @@ The lower-level `mise run apps -- xp-rastr` / `load-img` checks remain
 build/package-only: explicit headers, export counts (2 and 5), lifecycle
 pointers and the classic TOS relocation stream.
 
+## NeoST: OFF002.OSD 1-plane offscreen driver
+
+`mise run test:osd-off002-neost` builds `OFF002.OSD` and a small VDI probe.
+The build uses VASM's TOS output with `-nosym` and `-tos-flags=7`; it must be
+byte-identical to `MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF002.OSD`. The
+Release `GEMSYS/OFF002.OSD` is V4.11 and differs in text/data size and entry
+offsets; the runner records that comparison but does not claim equivalence.
+
+The MagiC scenario installs the rebuilt driver and probe in a disposable image,
+boots `MAGXBOOT.TOS`, then asks VDI for `v_opnbm()` with a caller-owned 64x64,
+one-plane MFDB. It fills a rectangle, reads pixel `1`, and checks the bitmap
+hash. The runner copies the guest driver back and checks its SHA-256 against the
+file it installed; it does not trace which driver NVDI loaded. This exercises
+NVDI driver selection and drawing, not other OSD variants, animation, or
+long-term stability. Evidence goes to `build/atari/neost-off002-*`.
+
+Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
+`mtools`. Run with
+`MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img mise run test:osd-off002-neost`.
+
+## NeoST: OFF004IP.OSD 2-plane offscreen driver
+
+`mise run test:osd-off004ip-neost` builds `OFF004IP.OSD` and a VDI probe. The
+build must be byte-identical to
+`MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF004IP.OSD`; VASM runs with `-no-opt`
+so the archived `movem` encoding is preserved. Release V4.11 is recorded as a
+structural difference, not a byte reference.
+
+The scenario installs archive and rebuild as `C:\GEMSYS\OFF004IP.OSD` in
+separate clones of the same MagiC image, boots `MAGXBOOT.TOS`, and opens a
+caller-owned 64x64, two-plane interleaved MFDB through `v_opnbm()`. It fills
+bars with VDI pens 2 and 3, compares five pixel readbacks, and compares the
+1024-byte bitmap dump against both the other binary and an independent
+expectation. The pens map to raw colours 1 and 2, so each plane is exercised,
+and the samples cross the x=15/16 word boundary. The runner copies the guest
+driver back and checks its SHA-256 against the file it installed; it does not
+trace which driver NVDI loaded.
+
+Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
+`mtools`. Run with
+`MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img mise run test:osd-off004ip-neost`.
+Evidence goes to `build/atari/neost-off004ip-*`. Animation, other OSD
+organisations, other screen modes and long-term stability are outside this
+scenario.
+
 ## NeoST: WINFRAME.SLB window frames
 
 `mise run test:winframe-neost` builds the alternate window-frame library,

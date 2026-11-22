@@ -164,7 +164,14 @@ the remaining shared families ahead of their consumers.
 - [x] **XP_RASTR.SLB / LOAD_IMG.SLB** — independent builds with version-1
   packed C export records. Four-plane conversion and XIMG rendering match the
   source-tree archives. The shipped Release XIMG colours differ; see porting notes.
-- [ ] Remaining loadable components: MFA/MFM screen and OSD offscreen drivers.
+- [x] **OFF002.OSD** — VASM build matches the archived V4.10 MIN-ATAR binary
+  byte-for-byte; NVDI selects it for a 1-plane offscreen bitmap and draws into
+  the caller-owned MFDB. Release V4.11 remains a different, unported version.
+- [x] **OFF004IP.OSD** — VASM build matches the archived V4.10 MIN-ATAR binary
+  byte-for-byte with `-no-opt`; archive and rebuild draw into a 2-plane
+  interleaved MFDB with identical pixel readbacks and bitmap bytes, asserted
+  independently. Release V4.11 remains a different, unported version.
+- [ ] Remaining loadable components: MFA/MFM screen and seven other OSD drivers.
 - [x] Account explicitly in the catalogue for remaining diagnostic, historical,
   host-specific, missing-source and external-dependency entries.
 
