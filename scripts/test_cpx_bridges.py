@@ -25,12 +25,19 @@ FAILURES = {
     12: "call2 A2 preservation",
     13: "zero-argument call2 filler/return",
     14: "one-argument call2/return",
+    17: "scheduler callback argument/return",
+    18: "scheduler D2 preservation",
+    19: "scheduler A2 preservation",
     21: "native xform callback received incorrect arguments",
     22: "native obfix callback received incorrect arguments",
     23: "native alert callback received incorrect argument",
     24: "native call2 callback received incorrect arguments",
     25: "native zero-argument callback received incorrect filler",
     26: "native one-argument callback received incorrect argument",
+    27: "native scheduler callback did not receive D0 settings",
+    28: "packed slider-arrow arguments or horizontal direction",
+    29: "slider-arrow D2 preservation",
+    30: "slider-arrow A2 preservation",
 }
 
 

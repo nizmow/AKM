@@ -16,6 +16,7 @@ import sys
 
 DEFAULT_SOURCES = (
     Path(__file__).resolve().parent.parent / "MagiC/APPS/CPX/MAGXCONF.C",
+    Path(__file__).resolve().parent.parent / "MagiC/APPS/CPX/TSLICE.C",
 )
 
 # Function-pointer members in CPXINFO and XCPB (cpxhead.h).
@@ -36,6 +37,11 @@ BRIDGES = {
     "getcookie": "cpx_call2",
     "Get_Buffer": "cpx_call2",
     "CPX_Save": "cpx_call2",
+    "Sl_x": "cpx_sl_x",
+    "Sl_arrow": "cpx_sl_arrow",
+    "Sl_dragx": "cpx_sl_dragx",
+    "Sl_dragy": "cpx_sl_dragy",
+    "MFsave": "cpx_mfsave",
 }
 BRIDGE_NAMES = frozenset(BRIDGES.values())
 

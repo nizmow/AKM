@@ -5,6 +5,8 @@
         xref    cpx_rsh_obfix
         xref    cpx_xgen_alert
         xref    cpx_call2
+        xref    cpx_ctrl_timeslice
+        xref    cpx_sl_arrow
 
 _start:
         ; Each caller uses the C stack layout expected by the public bridge.
@@ -98,9 +100,54 @@ _start:
         cmpi.l  #0xfedcba98,d0
         bne     fail14
         bsr     check_state
+
+        move.l  #0x11223344,d2
+        move.l  #0x55667788,a2
+        pea     0x11223344
+        pea     native_timeslice
+        jsr     cpx_ctrl_timeslice
+        lea     8(sp),sp
+        cmpi.l  #0x90abcdef,d0
+        bne     fail17
+        cmpi.l  #0x11223344,d2
+        bne     fail18
+        cmpa.l  #0x55667788,a2
+        bne     fail19
+        bsr     check_state
+
+        move.l  #0x11223344,d2
+        move.l  #0x55667788,a2
+        clr.l   -(sp)               ; userdef
+        pea     1                   ; direction = horizontal
+        pea     arrow_value
+        pea     10                  ; max
+        pea     1                   ; min
+        pea     1                   ; inc
+        pea     1                   ; obj
+        pea     2                   ; slider
+        pea     1                   ; base
+        pea     arrow_tree
+        pea     native_sl_arrow
+        jsr     cpx_sl_arrow
+        lea     44(sp),sp
+        cmpi.l  #0x11223344,d2
+        bne     fail29
+        cmpa.l  #0x55667788,a2
+        bne     fail30
+        bsr     check_state
         moveq   #0,d1
         bra     exit
 fail15: moveq #15,d1
+        bra exit
+fail17: moveq #17,d1
+        bra exit
+fail18: moveq #18,d1
+        bra exit
+fail19: moveq #19,d1
+        bra exit
+fail29: moveq #29,d1
+        bra exit
+fail30: moveq #30,d1
         bra exit
 
 fail1:  moveq #1,d1
@@ -216,6 +263,35 @@ native_one:
         move.l  #0xdeadbeef,a2
         move.l  #0xfedcba98,d0
         rts
+native_timeslice:
+        cmpi.l  #0x11223344,d0
+        bne cbfail7
+        move.l  #0xaabbccdd,d2
+        move.l  #0xdeadbeef,a2
+        move.l  #0x90abcdef,d0
+        rts
+native_sl_arrow:
+        cmpi.l  #arrow_tree,4(sp)
+        bne cbfail8
+        cmpi.w  #1,8(sp)            ; base
+        bne cbfail8
+        cmpi.w  #2,10(sp)           ; slider
+        bne cbfail8
+        cmpi.w  #1,12(sp)           ; obj
+        bne cbfail8
+        cmpi.w  #1,14(sp)           ; inc
+        bne cbfail8
+        cmpi.w  #1,16(sp)           ; min
+        bne cbfail8
+        cmpi.w  #10,18(sp)          ; max
+        bne cbfail8
+        cmpi.l  #arrow_value,20(sp)
+        bne cbfail8
+        cmpi.w  #1,24(sp)           ; horizontal direction
+        bne cbfail8
+        move.l  #0xaabbccdd,d2
+        move.l  #0xdeadbeef,a2
+        rts
 cbfail1: moveq #21,d1
         bra exit
 cbfail2: moveq #22,d1
@@ -228,12 +304,20 @@ cbfail5: moveq #25,d1
         bra exit
 cbfail6: moveq #26,d1
         bra exit
+cbfail7: moveq #27,d1
+        bra exit
+cbfail8: moveq #28,d1
+        bra exit
 
         section .data,data
 saved_sp:
         dc.l    0
 xform_msg:
         dc.l    0xabcdef01
+arrow_value:
+        dc.w    5
+arrow_tree:
+        dc.l    0
 
         ; Link-only entry required by cpx_entry.S; never called.
 cpx_init:

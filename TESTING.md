@@ -326,12 +326,12 @@ mise run lint:cpx-abi
 mise run test:cpx-abi
 ```
 
-The lint defaults to the ported `MagiC/APPS/CPX/MAGXCONF.C`. Explicit source
-paths can be passed to `python3 scripts/cpx_abi_lint.py`. Known XCPB callback
-members may only be used as the first argument to their approved bridge;
-direct calls, pointer extraction and the wrong bridge are rejected. Scalar
-XCPB fields are unaffected. The MAGXCONF CPX build runs this gate even when
-its objects are up to date.
+The lint defaults to `MagiC/APPS/CPX/MAGXCONF.C` and `TSLICE.C`. Explicit
+source paths can be passed to `python3 scripts/cpx_abi_lint.py`. Known XCPB
+callback members may only be used as the first argument to their approved
+bridge; direct calls, pointer extraction and the wrong bridge are rejected.
+Scalar XCPB fields are unaffected. The MAGXCONF and TSLICE CPX builds run this
+gate even when their objects are up to date.
 
 This is a token-based policy for known callback field names, not a C type
 checker: it ignores comments/literals and does not resolve preprocessing,
@@ -393,3 +393,21 @@ GEMDOS and console output. Interactive editing, `-t` stdout capture, memory
 (`-m`) disassembly and MagiC-kernel-specific behavior remain untested. The
 generated `.s` text is compared byte-for-byte against the archive, not
 assembled or executed.
+
+## NeoST: TSLICE.CPX dialog
+
+`mise run test:tslice-cpx-neost` builds `TSLICE.CPX`, installs archived and
+rebuilt copies into separate clones of the same MagiC image, and opens Control
+Panels through the desktop menu:
+
+```sh
+MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
+ python3 scripts/neost-tslice-cpx-smoke.py
+```
+
+It double-clicks the `MagiC Timeslice` CPX, requires the dialog to differ from
+the Control Panels screen, and compares archived/rebuilt dialogs
+pixel-for-pixel. The fixture must have COPS in `C:\AUTO\ACCS`; the pinned list
+coordinate is installation-specific. The cloned image is cleaned of a stale
+`ZCNFTEST.PRG` probe when present. Slider dragging, Save confirmation and
+scheduler behavior under load remain outside the scenario.

@@ -91,7 +91,7 @@ framework or shared-library rewrite is required before these are attempted.
 
 ## Following batches
 
-The current core source-backed remainder is 32 build families: 16
+The current core source-backed remainder is 31 build families: 15
 application/tool/extension families, 9 shared library/startup families and 7
 system-component families. Historical, test-only, blocked, binary-only and KAOS
 entries are outside that count.
@@ -155,8 +155,11 @@ all nine ahead of their consumers.
   source; local CPX ABI headers and VASM shims reproduce the classic 16-bit
   callback arguments. `test:magxconf-cpx-neost` verifies the boot initializer
   and a pixel-identical dialog opened through COPS on cloned MagiC images.
-- [ ] Remaining loadable components: `TSLICE.CPX`, image/window-frame SLBs and
-  drivers.
+- [x] **TSLICE.CPX** — independent `tslice-cpx` target; scheduler callback
+  bridged stack→D0, slider/mouse callbacks use packed classic arguments, and
+  the saved timeslice/priority record stays first in DATA.
+  `test:tslice-cpx-neost` compares the COPS dialog with the archive.
+- [ ] Remaining loadable components: image/window-frame SLBs and drivers.
 - [x] Account explicitly in the catalogue for remaining diagnostic, historical,
   host-specific, missing-source and external-dependency entries.
 

@@ -110,6 +110,11 @@ description = "Compare localized MAGXCONF PRG/ACC dialog and saved configuration
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-magxconf-smoke.py"
 
+[tasks."test:tslice-cpx-neost"]
+description = "Compare archived and rebuilt TSLICE.CPX dialog under MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-tslice-cpx-smoke.py"
+
 [tasks."test:magxconf-cpx-neost"]
 description = "Compare archived and rebuilt MAGXCONF.CPX boot init and dialog under MagiC"
 dir = "{{ config_root }}"

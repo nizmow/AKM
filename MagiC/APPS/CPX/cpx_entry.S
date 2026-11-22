@@ -9,6 +9,12 @@ cpx_entry:
         xdef    cpx_rsh_obfix
         xdef    cpx_xgen_alert
         xdef    cpx_call2
+        xdef    cpx_ctrl_timeslice
+        xdef    cpx_sl_x
+        xdef    cpx_sl_arrow
+        xdef    cpx_sl_dragx
+        xdef    cpx_sl_dragy
+        xdef    cpx_mfsave
 
 ; short cpx_xform_do(void *fn, OBJECT *tree, long edit, short *msg)
 ; Classic CPX callbacks take a 16-bit edit argument and 32-bit pointers.
@@ -64,5 +70,105 @@ cpx_call2:
         move.l  d0,-(sp)
         jsr     (a0)
         addq.l  #8,sp
+        movem.l (sp)+,d2/a2
+        rts
+
+; long cpx_ctrl_timeslice(void *fn, long settings)
+; MagiC's AESVARS ctrl_timeslice takes the packed value in D0 and returns D0.
+cpx_ctrl_timeslice:
+        movem.l d2/a2,-(sp)
+        movea.l 12(sp),a0
+        move.l  16(sp),d0
+        jsr     (a0)
+        movem.l (sp)+,d2/a2
+        rts
+
+; void cpx_sl_x(void *fn, OBJECT *tree, short base, short slider,
+;               short value, short min, short max, void *userdef)
+cpx_sl_x:
+        movem.l d2/a2,-(sp)
+        movea.l 12(sp),a0
+        lea     -18(sp),sp
+        move.l  34(sp),0(sp)
+        move.w  40(sp),4(sp)
+        move.w  44(sp),6(sp)
+        move.w  48(sp),8(sp)
+        move.w  52(sp),10(sp)
+        move.w  56(sp),12(sp)
+        move.l  58(sp),14(sp)
+        jsr     (a0)
+        lea     18(sp),sp
+        movem.l (sp)+,d2/a2
+        rts
+
+; void cpx_sl_arrow(void *fn, OBJECT *tree, short base, short slider,
+;                   short obj, short inc, short min, short max,
+;                   short *value, short direction, void *userdef)
+cpx_sl_arrow:
+        movem.l d2/a2,-(sp)
+        movea.l 12(sp),a0
+        lea     -26(sp),sp
+        move.l  42(sp),0(sp)
+        move.w  48(sp),4(sp)
+        move.w  52(sp),6(sp)
+        move.w  56(sp),8(sp)
+        move.w  60(sp),10(sp)
+        move.w  64(sp),12(sp)
+        move.w  68(sp),14(sp)
+        move.l  70(sp),16(sp)
+        move.w  76(sp),20(sp)
+        move.l  78(sp),22(sp)
+        jsr     (a0)
+        lea     26(sp),sp
+        movem.l (sp)+,d2/a2
+        rts
+
+; void cpx_sl_dragx(void *fn, OBJECT *tree, short base, short slider,
+;                   short min, short max, short *value, void *userdef)
+cpx_sl_dragx:
+        movem.l d2/a2,-(sp)
+        movea.l 12(sp),a0
+        lea     -20(sp),sp
+        move.l  36(sp),0(sp)
+        move.w  42(sp),4(sp)
+        move.w  46(sp),6(sp)
+        move.w  50(sp),8(sp)
+        move.w  54(sp),10(sp)
+        move.l  56(sp),12(sp)
+        move.l  60(sp),16(sp)
+        jsr     (a0)
+        lea     20(sp),sp
+        movem.l (sp)+,d2/a2
+        rts
+
+; void cpx_sl_dragy(void *fn, OBJECT *tree, short base, short slider,
+;                   short min, short max, short *value, void *userdef)
+cpx_sl_dragy:
+        movem.l d2/a2,-(sp)
+        movea.l 12(sp),a0
+        lea     -20(sp),sp
+        move.l  36(sp),0(sp)
+        move.w  42(sp),4(sp)
+        move.w  46(sp),6(sp)
+        move.w  50(sp),8(sp)
+        move.w  54(sp),10(sp)
+        move.l  56(sp),12(sp)
+        move.l  60(sp),16(sp)
+        jsr     (a0)
+        lea     20(sp),sp
+        movem.l (sp)+,d2/a2
+        rts
+
+; void cpx_mfsave(void *fn, short flag, MFORM *mf)
+cpx_mfsave:
+        movem.l d2/a2,-(sp)
+        movea.l 12(sp),a0
+        move.w  18(sp),d0
+        move.l  20(sp),a1
+        subq.l  #6,sp
+        move.w  d0,0(sp)
+        move.l  a1,2(sp)
+        jsr     (a0)
+        addq.l  #6,sp
         movem.l (sp)+,d2/a2
         rts

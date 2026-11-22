@@ -1203,3 +1203,33 @@ workfiles and symbol table feed both DIS2 builds. `TST/T.O` is a Pure C
 (`0x4efa`) object and is not treated as a DRI object. Interactive usage, `-t`
 stdout capture and MagiC-kernel-specific behavior are not. Evidence:
 `build/atari/neost-dis-20261122-113653/`.
+
+## TSLICE.CPX
+
+`mise run apps -- tslice-cpx` builds `build/atari/apps/cpx/TSLICE.CPX` from
+`MagiC/APPS/CPX/TSLICE.C`, using the same 512-byte header, `cpx.ld` layout and
+`elf_to_cpx.py` packaging as `MAGXCONF.CPX`. The saved
+timeslice/priority record remains first in DATA and is written by `CPX_Save`.
+
+Two foreign ABIs beyond the existing XCPB bridges matter here:
+
+- `AESVARS.ctrl_timeslice` is a kernel entry point at offset 100. It takes a
+  packed ticks/priority value in D0 and returns the old value in D0; it is not
+  a normal C function pointer. `cpx_ctrl_timeslice` moves the C argument from
+  the stack to D0, calls it, and preserves D2/A2.
+- `Sl_x`, `Sl_arrow`, `Sl_dragx`, `Sl_dragy` and `MFsave` receive packed
+  classic argument structures, not GCC's 32-bit argument slots. Dedicated
+  assembly bridges build the 18/26/20/6-byte records in place. The C source
+  still uses the readable separate-argument calls from the original.
+
+`TSLICE.RSH` is compiled C resource data. Its English Cancel string was
+corrected from `Abort` to `Cancel` to match `TSLICE.RSC` and the archived CPX;
+the alert strings remain unchanged.
+
+`test:tslice-cpx-neost` clones a MagiC image, installs the archived or rebuilt
+CPX in `AUTO/ACCS/CPX`, opens Control Panels and double-clicks the `MagiC
+Timeslice` entry. It requires the dialog to open and compares archived/rebuilt
+screens pixel-for-pixel. The boot initializer is exercised implicitly because
+the dialog reads back the scheduler timeslice/priority it sets. Slider
+dragging, Save confirmation and actual scheduler behavior under load remain
+untested. Evidence: `build/atari/neost-tslice-cpx-20261122-120331/`.

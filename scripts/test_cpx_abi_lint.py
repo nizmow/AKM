@@ -44,6 +44,10 @@ class CpxAbiLintTests(unittest.TestCase):
             cpx_xgen_alert((void *)xcpb->XGen_Alert, 0);
             cpx_call2((void *)xcpb->CPX_Save, vars, size);
             cpx_call2((void *)((xcpb->GetFirstRect)), rect, 0);
+            cpx_sl_x((void *)xcpb->Sl_x, tree, 0, 0, 0, 0, 0, 0);
+            cpx_sl_arrow((void *)xcpb->Sl_arrow, tree, 0, 0, 0, 0, 0, 0, val, 0, 0);
+            cpx_sl_dragx((void *)xcpb->Sl_dragx, tree, 0, 0, 0, 0, val, 0);
+            cpx_mfsave((void *)xcpb->MFsave, 0, mf);
         """
         self.assertEqual(lint_text(source), [])
 

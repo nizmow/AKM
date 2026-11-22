@@ -56,12 +56,17 @@ typedef struct xcpb {
     void cdecl (*rsh_fix)(void);
     void cdecl (*rsh_obfix)(OBJECT *, short);
     short cdecl (*Popup)(char **, short, short, short, GRECT *, GRECT *);
-    void cdecl (*Sl_size)(void);
-    void cdecl (*Sl_x)(void);
-    void cdecl (*Sl_y)(void);
-    void cdecl (*Sl_arrow)(void);
-    void cdecl (*Sl_dragx)(void);
-    void cdecl (*Sl_dragy)(void);
+    void cdecl (*Sl_size)(OBJECT *, short, short, short, short, short, short);
+    void cdecl (*Sl_x)(OBJECT *, short, short, short, short, short,
+                       void cdecl (*)(void));
+    void cdecl (*Sl_y)(OBJECT *, short, short, short, short, short,
+                       void cdecl (*)(void));
+    void cdecl (*Sl_arrow)(OBJECT *, short, short, short, short, short, short,
+                           short *, short, void cdecl (*)(void));
+    void cdecl (*Sl_dragx)(OBJECT *, short, short, short, short, short *,
+                           void cdecl (*)(void));
+    void cdecl (*Sl_dragy)(OBJECT *, short, short, short, short, short *,
+                           void cdecl (*)(void));
     short cdecl (*Xform_do)(OBJECT *, short, short *);
     GRECT *cdecl (*GetFirstRect)(GRECT *);
     GRECT *cdecl (*GetNextRect)(void);
@@ -71,7 +76,7 @@ typedef struct xcpb {
     void *cdecl (*Get_Buffer)(void);
     short cdecl (*getcookie)(long, long *);
     short Country_Code;
-    void cdecl (*MFsave)(void);
+    void cdecl (*MFsave)(short, MFORM *);
 } XCPB;
 
 #define CPX_SAVE_DEFAULTS 0

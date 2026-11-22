@@ -262,8 +262,15 @@ arguments. `mise run test:magxconf-cpx-neost` compares the boot initializer and
 the CPX dialog opened through COPS against the archived module on cloned MagiC
 images. Other CPX managers and Save-button interaction remain untested.
 
-`mise run lint:cpx-abi` checks native CPX callback access; the MAGXCONF CPX
-build runs it automatically. `mise run test:cpx-abi` also runs source-lint
+`mise run apps -- tslice-cpx` builds `build/atari/apps/cpx/TSLICE.CPX` from
+`MagiC/APPS/CPX/TSLICE.C`. The scheduler callback is invoked through a dedicated
+stack-to-D0 bridge, and slider/mouse callbacks use the classic packed argument
+structures. `mise run test:tslice-cpx-neost` compares the archived and rebuilt
+dialogs opened through COPS on cloned MagiC images; slider dragging and Save
+behavior remain untested.
+
+`mise run lint:cpx-abi` checks native CPX callback access; the MAGXCONF and
+TSLICE CPX builds run it automatically. `mise run test:cpx-abi` also runs source-lint
 regressions and executable bridge tests using the Atari toolchain container
 and host `qemu-m68k`, without a ROM or MagiC image. See [TESTING.md](TESTING.md)
 for scope and limits.

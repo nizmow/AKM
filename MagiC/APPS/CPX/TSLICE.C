@@ -1,11 +1,9 @@
-#include <tos.h>
-#include <mt_aes.h>
-#include <vdi.h>
+#include <gem.h>
 #include <string.h>
 #include <stddef.h>
-#include "cpxdata.h"
 #include "cpxhead.h"
 #include "country.h"
+#include "tslice_compat.h"
 
 struct save_vars {
 	_WORD ticks;
@@ -26,9 +24,25 @@ static XCPB *xcpb;
 
 
 /* must be first item in data segment; written by CPX_Save */
-struct save_vars save_vars = { 1, 1, 9, 19, 1 };
+struct save_vars save_vars __attribute__((section(".save_vars"))) = { 1, 1, 9, 19, 1 };
 
-#include "tslice.rsh"
+#include "TSLICE.RSH"
+
+extern long cpx_ctrl_timeslice(void *fn, long settings);
+extern short cpx_xform_do(void *fn, OBJECT *tree, long edit, short *msg);
+extern void cpx_rsh_obfix(void *fn, OBJECT *tree, long ob);
+extern short cpx_xgen_alert(void *fn, long id);
+extern long cpx_call2(void *fn, long a1, long a2);
+extern void cpx_sl_x(void *fn, OBJECT *tree, short base, short slider,
+                     short value, short min, short max, void *userdef);
+extern void cpx_sl_arrow(void *fn, OBJECT *tree, short base, short slider,
+                         short obj, short inc, short min, short max,
+                         short *value, short direction, void *userdef);
+extern void cpx_sl_dragx(void *fn, OBJECT *tree, short base, short slider,
+                         short min, short max, short *value, void *userdef);
+extern void cpx_sl_dragy(void *fn, OBJECT *tree, short base, short slider,
+                         short min, short max, short *value, void *userdef);
+extern void cpx_mfsave(void *fn, short flag, MFORM *mf);
 
 
 
@@ -42,7 +56,7 @@ static _WORD get_timeslice(void)
 	
 	u.w[0] = -2;
 	u.w[1] = -2;
-	u.l = aesvars->ctrl_timeslice(u.l);
+	u.l = cpx_ctrl_timeslice((void *) aesvars->ctrl_timeslice, u.l);
 	return u.w[1];
 }
 
@@ -56,7 +70,7 @@ static _WORD get_prio(void)
 	
 	u.w[0] = -2;
 	u.w[1] = -2;
-	u.l = aesvars->ctrl_timeslice(u.l);
+	u.l = cpx_ctrl_timeslice((void *) aesvars->ctrl_timeslice, u.l);
 	return u.w[0];
 }
 
@@ -70,7 +84,7 @@ static _WORD set_timeslice(_WORD v)
 	
 	u.w[1] = v;
 	u.w[0] = -2;
-	u.l = aesvars->ctrl_timeslice(u.l);
+	u.l = cpx_ctrl_timeslice((void *) aesvars->ctrl_timeslice, u.l);
 	return u.w[1];
 }
 
@@ -84,7 +98,7 @@ static _WORD set_prio(_WORD v)
 	
 	u.w[0] = v;
 	u.w[1] = -2;
-	u.l = aesvars->ctrl_timeslice(u.l);
+	u.l = cpx_ctrl_timeslice((void *) aesvars->ctrl_timeslice, u.l);
 	return u.w[0];
 }
 
@@ -142,17 +156,17 @@ static void draw_obj(OBJECT *tree, _WORD index)
 	GRECT desk;
 	GRECT *r;
 	
-	mt_wind_get(DESK, WF_WORKXYWH, &desk.g_x, &desk.g_y, &desk.g_w, &desk.g_h, NULL);
-	mt_objc_offset(tree, ROOT, &gr.g_x, &gr.g_y, NULL);
+	wind_get(DESK, WF_WORKXYWH, &desk.g_x, &desk.g_y, &desk.g_w, &desk.g_h);
+	objc_offset(tree, ROOT, &gr.g_x, &gr.g_y);
 	gr.g_w = tree[ROOT].ob_width;
 	gr.g_h = tree[ROOT].ob_height;
-	r = xcpb->GetFirstRect(&gr);
+	r = (GRECT *) cpx_call2((void *) xcpb->GetFirstRect, (long) &gr, 0);
 	while (r)
 	{
 		clip = *r;
 		if (rc_intersect(&desk, &clip))
-			mt_objc_draw_grect(tree, index, MAX_DEPTH, &clip, NULL);
-		r = xcpb->GetNextRect();
+			objc_draw_grect(tree, index, MAX_DEPTH, &clip);
+		r = (GRECT *) cpx_call2((void *) xcpb->GetNextRect, 0, 0);
 	}
 }
 
@@ -196,8 +210,10 @@ static void get_config(void)
 		config.old_bgprio = config.bgprio;
 		config.old_ticks = config.ticks;
 		set_objects();
-		xcpb->Sl_x(tree, BG_2, SLIDER_2, config.bgprio, MIN_BGPRIO, MAX_BGPRIO, NULLFUNC);
-		xcpb->Sl_x(tree, BG_1, SLIDER_1, config.ticks, MIN_TICKS, MAX_TICKS, NULLFUNC);
+		cpx_sl_x((void *) xcpb->Sl_x, tree, BG_2, SLIDER_2,
+		         config.bgprio, MIN_BGPRIO, MAX_BGPRIO, (void *) NULLFUNC);
+		cpx_sl_x((void *) xcpb->Sl_x, tree, BG_1, SLIDER_1,
+		         config.ticks, MIN_TICKS, MAX_TICKS, (void *) NULLFUNC);
 	} else
 	{
 		strcpy(tree[SLIDER_1].ob_spec.free_string, "-");
@@ -210,42 +226,43 @@ static void handle_slider(OBJECT *tree, _WORD *val, _WORD left, _WORD right, _WO
 {
 	_WORD dir;
 	_WORD inc;
-	void cdecl (*drag)(OBJECT *tree, _WORD base, _WORD slider, _WORD min, _WORD max, _WORD *val, void cdecl (*foo)(void));
 	MFORM mf;
 	EVNTDATA ev;
 	_WORD x;
 	_WORD y;
 	
 	if (tree[left].ob_x == tree[right].ob_x)
-	{
 		dir = VERTICAL;
-		drag = xcpb->Sl_dragy;
-	} else
-	{
+	else
 		dir = HORIZONTAL;
-		drag = xcpb->Sl_dragx;
-	}
 	if (obj == left || obj == right)
 	{
 		inc = obj == left ? -1 : 1;
-		xcpb->Sl_arrow(tree, bg, slider, obj, inc, min, max, val, dir, foo);
+		cpx_sl_arrow((void *) xcpb->Sl_arrow, tree, bg, slider, obj, inc,
+		             min, max, val, dir, (void *) foo);
 	} else if (obj == bg)
 	{
-		mt_graf_mkstate_event(&ev, NULL);
-		mt_objc_offset(tree, slider, &x, &y, NULL);
+		graf_mkstate(&ev.x, &ev.y, &ev.bstate, &ev.kstate);
+		objc_offset(tree, slider, &x, &y);
 		if (dir == VERTICAL)
 		{
 			ev.x = y;
 			x = ev.y;
 		}
 		inc = ev.x < x ? -4 : 4;
-		xcpb->Sl_arrow(tree, bg, slider, NIL, inc, min, max, val, dir, foo);
+		cpx_sl_arrow((void *) xcpb->Sl_arrow, tree, bg, slider, NIL, inc,
+		             min, max, val, dir, (void *) foo);
 	} else if (obj == slider)
 	{
-		xcpb->MFsave(MFSAVE, &mf);
-		mt_graf_mouse(FLAT_HAND, NULL, NULL);
-		drag(tree, bg, slider, min, max, val, foo);
-		xcpb->MFsave(MFRESTORE, &mf);
+		cpx_mfsave((void *) xcpb->MFsave, MFSAVE, &mf);
+		graf_mouse(FLAT_HAND, NULL);
+		if (dir == VERTICAL)
+			cpx_sl_dragy((void *) xcpb->Sl_dragy, tree, bg, slider,
+			             min, max, val, (void *) foo);
+		else
+			cpx_sl_dragx((void *) xcpb->Sl_dragx, tree, bg, slider,
+			             min, max, val, (void *) foo);
+		cpx_mfsave((void *) xcpb->MFsave, MFRESTORE, &mf);
 	}
 }
 
@@ -270,9 +287,10 @@ static _WORD handle_msg(_WORD obj, _WORD *msg)
 		ret = 1;
 		break;
 	case SAVE:
-		if (xcpb->XGen_Alert(CPX_SAVE_DEFAULTS) != 0)
+		if (cpx_xgen_alert((void *) xcpb->XGen_Alert, CPX_SAVE_DEFAULTS) != 0)
 		{
-			xcpb->CPX_Save(&config, sizeof(config));
+			cpx_call2((void *) xcpb->CPX_Save, (long) &config,
+			          (long) sizeof(config));
 		}
 		tree[SAVE].ob_state &= ~OS_SELECTED;
 		draw_obj(tree, SAVE);
@@ -341,7 +359,7 @@ static BOOLEAN cdecl cpx_call(GRECT *work)
 	draw_obj(tree, ROOT);
 	do
 	{
-		obj = xcpb->Xform_do(tree, ROOT, msg);
+		obj = cpx_xform_do((void *) xcpb->Xform_do, tree, ROOT, msg);
 		ret = handle_msg(obj, msg);
 	} while (ret == 0);
 	return 0;
@@ -434,7 +452,7 @@ static void set_texts(_WORD country)
 	}
 
 	{
-		char *buffer = xcpb->Get_Buffer();
+		char *buffer = (char *) cpx_call2((void *) xcpb->Get_Buffer, 0, 0);
 		char *title = buffer - (offsetof(CPXHEAD, buffer) - offsetof(CPXHEAD, title_txt));
 		strcpy(title, rs_frstr[p[0]]);
 		title = buffer - (offsetof(CPXHEAD, buffer) - offsetof(CPXHEAD, i_text));
@@ -461,14 +479,14 @@ CPXINFO *cdecl cpx_init(XCPB *Xcpb)
 	OBJECT *tree;
 
 	xcpb = Xcpb;
-	xcpb->getcookie(0x4D616758L, (long *)&magx);
+	cpx_call2((void *) xcpb->getcookie, 0x4D616758L, (long) &magx);
 	
-	mt_appl_init(NULL);
+	appl_init();
 	set_texts(xcpb->Country_Code);
 
 	if (magx == 0 && !xcpb->booting)
 	{
-		mt_form_alert(1, rs_frstr[al_no_magic], NULL);
+		form_alert(1, rs_frstr[al_no_magic]);
 		return NULL;
 	}
 	if (magx == 0)
@@ -479,7 +497,7 @@ CPXINFO *cdecl cpx_init(XCPB *Xcpb)
 	aesvars = magx->aesvars;
 	if (aesvars == NULL && !xcpb->booting)
 	{
-		mt_form_alert(1, rs_frstr[al_not_active], NULL);
+		form_alert(1, rs_frstr[al_not_active]);
 		return NULL;
 	}
 	
@@ -526,7 +544,7 @@ CPXINFO *cdecl cpx_init(XCPB *Xcpb)
 		_WORD i;
 		
 		for (i = 0; i < NUM_OBS; i++)
-			xcpb->rsh_obfix(rs_object, i);
+			cpx_rsh_obfix((void *) xcpb->rsh_obfix, rs_object, i);
 	}
 	return &cpxinfo;
 }
