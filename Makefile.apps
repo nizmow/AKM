@@ -131,7 +131,7 @@ $(BUILD_DIR)/magxconf/NEOSTART.PRG: MagiC/APPS/MAGXCONF/TESTDATA/NEOSTART.C Make
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 
-.PHONY: all applicat mod-app cmdline mac2st dump fc split dis dis1 dis2 showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver flp-par flp-par0 flp-par1 magxconf-cpx tslice-cpx winframe mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 vt52-test-driver magxdesk abi-check console-test-driver
+.PHONY: all applicat mod-app cmdline mac2st dump fc split dis dis1 dis2 showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver flp-par flp-par0 flp-par1 magxconf-cpx tslice-cpx winframe xp-rastr load-img slbtest mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 vt52-test-driver magxdesk abi-check console-test-driver
 all: mod-app
 applicat: $(BUILD_DIR)/applicat/APPLICAT.APP $(BUILD_DIR)/applicat/applicat.rsc \
   $(BUILD_DIR)/applicat/applicat.inf
@@ -190,6 +190,9 @@ flp-par1: $(BUILD_DIR)/flp-par/FLP_PAR1.PRG
 magxconf-cpx: $(BUILD_DIR)/cpx/MAGXCONF.CPX
 tslice-cpx: $(BUILD_DIR)/cpx/TSLICE.CPX
 winframe: $(BUILD_DIR)/winframe/WINFRAME.SLB $(BUILD_DIR)/winframe/WINFRAME.RSC
+xp-rastr: $(BUILD_DIR)/xp-rastr/XP_RASTR.SLB
+load-img: $(BUILD_DIR)/load-img/LOAD_IMG.SLB
+slbtest: $(BUILD_DIR)/slbtest/SLBTEST.PRG
 wbdaemon-test-driver: $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG
 mod-app-test-driver: $(BUILD_DIR)/mod-app/NEOSTEST.PRG
 
@@ -582,6 +585,87 @@ $(BUILD_DIR)/winframe/WINFRAME.RSC: $(WINFRAME_DIR)/WINFRAME.RSC
 
 -include $(BUILD_DIR)/winframe/WIN_SLB.d
 -include $(BUILD_DIR)/winframe/WIN_OBJS.d
+
+XPRASTR_DIR := MagiC/EXTENSIO/XP_RASTR.SLB/SRC
+XPRASTR_OBJECTS := $(BUILD_DIR)/xp-rastr/XP_RASTR.o \
+  $(BUILD_DIR)/xp-rastr/FARBICON.o $(BUILD_DIR)/xp-rastr/XPRASTR_BRIDGE.o \
+  $(BUILD_DIR)/xp-rastr/XP_RASTR_ENTRY.o
+
+$(BUILD_DIR)/xp-rastr/XP_RASTR.o: $(XPRASTR_DIR)/XP_RASTR.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(XPRASTR_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/xp-rastr/FARBICON.s: $(XPRASTR_DIR)/FARBICON.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(BUILD_DIR)/xp-rastr/FARBICON.o: $(BUILD_DIR)/xp-rastr/FARBICON.s Makefile.apps
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/xp-rastr/XPRASTR_BRIDGE.o: $(XPRASTR_DIR)/XPRASTR_BRIDGE.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/xp-rastr/XP_RASTR_ENTRY.o: $(XPRASTR_DIR)/XP_RASTR_ENTRY.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/xp-rastr/XP_RASTR.elf: $(XPRASTR_OBJECTS) \
+  MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld Makefile.apps
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld \
+	  $(XPRASTR_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
+
+$(BUILD_DIR)/xp-rastr/XP_RASTR.SLB: $(BUILD_DIR)/xp-rastr/XP_RASTR.elf scripts/elf_to_slb.py
+	python3 scripts/elf_to_slb.py --name XP_RASTR.SLB --version 1 --exports 2 "$<" "$@"
+
+-include $(BUILD_DIR)/xp-rastr/XP_RASTR.d
+
+$(BUILD_DIR)/slbtest/LEGACY_CALLS.o: scripts/testdata/LEGACY_CALLS.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/slbtest/SLBTEST.PRG: scripts/testdata/SLBTEST.C \
+  $(BUILD_DIR)/slbtest/LEGACY_CALLS.o Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none \
+	  $(BUILD_DIR)/slbtest/LEGACY_CALLS.o $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+-include $(BUILD_DIR)/slbtest/SLBTEST.d
+
+LOADIMG_DIR := MagiC/TOOLS/LOAD_IMG.SLB/SRC
+LOADIMG_OBJECTS := $(BUILD_DIR)/load-img/LOAD_IMG.o \
+  $(BUILD_DIR)/load-img/IMGLOAD.o $(BUILD_DIR)/load-img/LOAD_IMG_RASTER.o \
+  $(BUILD_DIR)/load-img/LOAD_IMG_ENTRY.o
+
+$(BUILD_DIR)/load-img/LOAD_IMG.o: $(LOADIMG_DIR)/LOAD_IMG.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(LOADIMG_DIR)" -I"MagiC/INC_C" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/load-img/IMGLOAD.o: $(LOADIMG_DIR)/IMGLOAD.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(LOADIMG_DIR)" -I"MagiC/INC_C" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/load-img/LOAD_IMG_RASTER.o: $(LOADIMG_DIR)/LOAD_IMG_RASTER.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/load-img/LOAD_IMG_ENTRY.o: $(LOADIMG_DIR)/LOAD_IMG_ENTRY.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/load-img/LOAD_IMG.elf: $(LOADIMG_OBJECTS) \
+  MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld Makefile.apps
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld \
+	  $(LOADIMG_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
+
+$(BUILD_DIR)/load-img/LOAD_IMG.SLB: $(BUILD_DIR)/load-img/LOAD_IMG.elf scripts/elf_to_slb.py
+	python3 scripts/elf_to_slb.py --name LOAD_IMG.SLB --version 1 --exports 5 "$<" "$@"
+
+-include $(BUILD_DIR)/load-img/LOAD_IMG.d
+-include $(BUILD_DIR)/load-img/IMGLOAD.d
 -include $(APPLICAT_OBJECTS:.o=.d)
 -include $(MGVIEW_OBJECTS:.o=.d)
 EDIT_SLB_DIR := MagiC/EXTENSIO/EDIT_SLB/SRC

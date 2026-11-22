@@ -91,15 +91,15 @@ framework or shared-library rewrite is required before these are attempted.
 
 ## Following batches
 
-The current core source-backed remainder is 30 build families: 15
-application/tool/extension families, 9 shared library/startup families and 6
+The current core source-backed remainder is 28 build families: 15
+application/tool/extension families, 7 shared library/startup families and 6
 system-component families. Historical, test-only, blocked, binary-only and KAOS
 entries are outside that count.
 
 Shared families are consumer-driven, not a library-first batch. Each enters with
 its first concrete consumer and a runtime check; the first-consumer boundaries
 are recorded in [APPLICATION_BUILDS.md](APPLICATION_BUILDS.md) §6. Do not build
-all nine ahead of their consumers.
+the remaining shared families ahead of their consumers.
 
 - [x] **VFATCONF** — add `vfatconf` producing `VFATCONF.PRG` plus its required
   resource; launch reaches the dialog under MagiC, but configuration changes
@@ -159,7 +159,12 @@ all nine ahead of their consumers.
   bridged stack→D0, slider/mouse callbacks use packed classic arguments, and
   the saved timeslice/priority record stays first in DATA.
   `test:tslice-cpx-neost` compares the COPS dialog with the archive.
-- [ ] Remaining loadable components: image/window-frame SLBs and drivers.
+- [x] **WINFRAME.SLB** — independent library/resource build; the colour MagiC
+  booted frame matches the archive. Interactive paths and unload are untested.
+- [x] **XP_RASTR.SLB / LOAD_IMG.SLB** — independent builds with version-1
+  packed C export records. Four-plane conversion and XIMG rendering match the
+  source-tree archives. The shipped Release XIMG colours differ; see porting notes.
+- [ ] Remaining loadable components: MFA/MFM screen and OSD offscreen drivers.
 - [x] Account explicitly in the catalogue for remaining diagnostic, historical,
   host-specific, missing-source and external-dependency entries.
 

@@ -1,11 +1,11 @@
 /*
 *
 * "shared library" zur Expandierung einer Bitmap.
-* Wird f걊 die Ausgabe von Farbicons oder Pixelbildern
-* (IMG) ben봳igt.
+* Wird f체r die Ausgabe von Farbicons oder Pixelbildern
+* (IMG) ben철tigt.
 * Die im Standard-Format (Planes hintereinander) vorliegende
 * Bitmap wird auf die Bildschirm-Bit-Tiefe expandiert und
-* hardwareabh꼗gig umgewandelt.
+* hardwareabh채ngig umgewandelt.
 *
 *
 * (C) Seven Behne 1996
@@ -16,11 +16,8 @@
 *
 */
 
-#include <portab.h>
-#include <tos.h>
-#include <tosdefs.h>
-#include <vdi.h>
-#include "farbicon.h"
+#include "XPRASTR_SDK.H"
+#include "FARBICON.H"
 
 #pragma warn -par
 
@@ -28,6 +25,33 @@ typedef struct {
 	char intern[128];
 	char cmd[128];
 } PD;
+
+/* The MagiC dispatcher tail-jumps with the classic packed stack layout. */
+struct __attribute__((packed, aligned(2))) slb_args {
+	PD *pd;
+	LONG fn;
+	WORD nargs;
+};
+
+struct __attribute__((packed, aligned(2))) get_raster_args {
+	struct slb_args call;
+	void **xp_r_ass;
+	void **xp_r_cdecl;
+};
+
+struct __attribute__((packed, aligned(2))) set_colours_args {
+	struct slb_args call;
+	UWORD *colour_values;
+};
+
+_Static_assert(sizeof(struct slb_args) == 10 &&
+	offsetof(struct slb_args, fn) == 4 &&
+	offsetof(struct slb_args, nargs) == 8, "SLB dispatch prefix");
+_Static_assert(sizeof(struct get_raster_args) == 18 &&
+	offsetof(struct get_raster_args, xp_r_ass) == 10 &&
+	offsetof(struct get_raster_args, xp_r_cdecl) == 14, "XP_RASTR export 0");
+_Static_assert(sizeof(struct set_colours_args) == 14 &&
+	offsetof(struct set_colours_args, colour_values) == 10, "XP_RASTR export 1");
 
 struct initparm {
 	VDIPB *vdipb;
@@ -38,6 +62,7 @@ void *xp_tab;		/* Farbtabelle Index => Farbe */
 void (*xp_ptr)( void );
 static UBYTE color_remap[16] = { 0,2,3,6,4,7,5,8,9,10,11,14,12,15,13,255 };
 static WORD nplanes;
+VDIPB *saved_vdipb;
 
 static void xp_colmp( VDIPB *vdipb, WORD planes,
 				WORD *work_out, UWORD *colour_values );
@@ -46,10 +71,10 @@ static ULONG intensity_to_value( WORD intensity, WORD bits, WORD *bit_no );
 
 /*****************************************************************
 *
-* Ab MagiC 6 erh꼕t man den eigenen PD und optional einen
+* Ab MagiC 6 erh채lt man den eigenen PD und optional einen
 * Parameter.
 *
-* R갷kgabe:		-1L	Wandlung nicht notwendig
+* R체ckgabe:		-1L	Wandlung nicht notwendig
 *				-2L	unbekanntes Format
 *				0L	OK
 *
@@ -61,11 +86,13 @@ extern LONG cdecl slb_init( PD *mypd, struct initparm *ip )
 	WORD planes = ip->nplanes;
 	LONG	len;
 
+	saved_vdipb = ip->vdipb;
+
 
 	if	( planes <= 1 )	/* nur eine Ebene? */
-		return(ERROR);		/* Wandlung nicht n봳ig */
+		return(ERROR);		/* Wandlung nicht n철tig */
 
-	_vq_scrninfo( ip->vdipb, work_out );
+	xp_vq_scrninfo( ip->vdipb, work_out );
 
 	switch( work_out[0] )		/* Pixelorganisation */
 	{
@@ -98,8 +125,8 @@ extern LONG cdecl slb_init( PD *mypd, struct initparm *ip )
 	if	( planes > 8 )		/* Direct Colour? */
 		{
 		len = ( planes + 15 ) / 8;	/* Bytes pro Farbe */
-		len *= 256;				/* Platz f걊 256 Farben lassen */
-		xp_tab = Malloc( len );		/* Speicher f걊 Expandiertabelle */
+		len *= 256;				/* Platz f체r 256 Farben lassen */
+		xp_tab = (void *)Malloc( len );		/* Speicher f占퐎 Expandiertabelle */
 		}
 	/*
 	else
@@ -142,17 +169,18 @@ extern void cdecl slb_close( PD *pd )
 
 /************************************************************************
 *
-* Berechnet die Farbtabelle f걊 direct colour.
+* Berechnet die Farbtabelle f체r direct colour.
 * Beim ersten Aufruf ist <colour_values> Null, daher wird der VDI-
-* Farbwert 갶er vq_color berechnet. Beim 럑dern der Palette werden
-* 3*256 UWORDs mit den Promillewerten f걊 r,g,b 갶ergeben.
+* Farbwert 체ber vq_color berechnet. Beim 횆ndern der Palette werden
+* 3*256 UWORDs mit den Promillewerten f체r r,g,b 체bergeben.
 *
 ************************************************************************/
 
 static void xp_colmp( VDIPB *vdipb, WORD planes,
 				WORD *work_out, UWORD *colour_values )
 {
-	int *vintout;
+	short *vintout;
+	short local_colour[4];
 	WORD	_work_out[272];
 	register WORD i;
 	WORD	index;
@@ -166,13 +194,15 @@ static void xp_colmp( VDIPB *vdipb, WORD planes,
 	if	(!xp_tab)							/* Indirect Colour? */
 		return;							/* ja, Ende */
 
+	if	(!vdipb)
+		vdipb = saved_vdipb;
 	if	(vdipb)
 		vintout = vdipb->intout;
 
 	if	(!work_out)
 		{
 		work_out = _work_out;
-		_vq_scrninfo( vdipb, work_out );
+		xp_vq_scrninfo( vdipb, work_out );
 		}
 
 
@@ -195,15 +225,19 @@ static void xp_colmp( VDIPB *vdipb, WORD planes,
 		if	(colour_values)
 			{
 			cv = colour_values+3*index;
-			vintout[1] = *cv++;
-			vintout[2] = *cv++;
-			vintout[3] = *cv;
+			local_colour[1] = *cv++;
+			local_colour[2] = *cv++;
+			local_colour[3] = *cv;
+			vintout = local_colour;
 			}
-		else	_vq_color( vdipb, index, 0 );
+		else	{
+			xp_vq_color( vdipb, index, 0 );
+			vintout = vdipb->intout;
+			}
 
-		value = intensity_to_value( vintout[1], work_out[8], &work_out[16] );/* Bitmuster f걊 Rot-Intensit꼝 */
-		value |= intensity_to_value( vintout[2], work_out[9], &work_out[32] );/* Bitmuster f걊 Gr걆-Intensit꼝 */
-		value |= intensity_to_value( vintout[3], work_out[10], &work_out[48] );/* Bitmuster f걊 Blau-Intensit꼝 */
+		value = intensity_to_value( vintout[1], work_out[8], &work_out[16] );/* Bitmuster f체r Rot-Intensit채t */
+		value |= intensity_to_value( vintout[2], work_out[9], &work_out[32] );/* Bitmuster f체r Gr체n-Intensit채t */
+		value |= intensity_to_value( vintout[3], work_out[10], &work_out[48] );/* Bitmuster f체r Blau-Intensit채t */
 
 		/* Farbwert ablegen */
 		/* ---------------- */
@@ -216,10 +250,10 @@ static void xp_colmp( VDIPB *vdipb, WORD planes,
 
 
 /*----------------------------------------------------------------------------------------*/ 
-/* Farbintensit꼝 in Promille in Pixelwert wandeln								*/
-/* Funktionsresultat:	Pixelwert f걊 die 갶ergebene Farbkomponente					*/
-/*	intensity:		Intensit꼝 in Promille									*/
-/*	bits:			Anzahl der Bits f걊 diese Intensit꼝						*/
+/* Farbintensit채t in Promille in Pixelwert wandeln								*/
+/* Funktionsresultat:	Pixelwert f체r die 체bergebene Farbkomponente					*/
+/*	intensity:		Intensit채t in Promille									*/
+/*	bits:			Anzahl der Bits f체r diese Intensit채t						*/
 /*	bit_no:			Zuordnung von Bitnummer zum Wert innerhalb des Pixels (work_out)	*/
 /*----------------------------------------------------------------------------------------*/ 
 static ULONG intensity_to_value( WORD intensity, WORD bits, WORD *bit_no )
@@ -230,8 +264,8 @@ static ULONG intensity_to_value( WORD intensity, WORD bits, WORD *bit_no )
 
 	value = ( 1L << bits ) - 1;
 
-	value = W_mul_L((UWORD) value, intensity );
-	value = L_div_W( value, 1000 );
+	value = xp_wmul((UWORD) value, intensity );
+	value = xp_ldiv( value, 1000 );
 
 	ret_val = 0;
 
@@ -249,31 +283,29 @@ static ULONG intensity_to_value( WORD intensity, WORD bits, WORD *bit_no )
 
 /*****************************************************************
 *
-* Funktion #0: Gibt Funktionszeiger f걊 Assembler- und
-* 'cdecl'-Zugriff zur갷k.
+* Funktion #0: Gibt Funktionszeiger f체r Assembler- und
+* 'cdecl'-Zugriff zur체ck.
 *
 *****************************************************************/
 
-extern LONG cdecl slb_fn0( PD *pd, LONG fn, WORD nargs,
-					void **xp_r_ass, void **xp_r_cdecl )
+LONG cdecl slb_fn0(struct get_raster_args args)
 {
-	if	(nargs >= 2)
-		*xp_r_ass = &xp_raster;
-	if	(nargs >= 4)
-		*xp_r_cdecl = &xp_rasterC;
+	if	(args.call.nargs >= 2)
+		*args.xp_r_ass = &xp_raster;
+	if	(args.call.nargs >= 4)
+		*args.xp_r_cdecl = &xp_rasterC;
 	return(E_OK);
 }
 
 
 /*****************************************************************
 *
-* Funktion #1: neue Farbtabelle 갶ergeben.
+* Funktion #1: neue Farbtabelle 체bergeben.
 *
 *****************************************************************/
 
-extern LONG cdecl slb_fn1( PD *pd, LONG fn, WORD nargs,
-					UWORD *colour_values )
+LONG cdecl slb_fn1(struct set_colours_args args)
 {
-	xp_colmp( (void *) 0L, nplanes, (void *) 0L, colour_values );
+	xp_colmp( (void *) 0L, nplanes, (void *) 0L, args.colour_values );
 	return(E_OK);
 }

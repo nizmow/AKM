@@ -44,6 +44,8 @@ TARGETS = {
     "dis2": ("dis2", ["DIS2.TTP"]),
     "tslice-cpx": ("cpx", ["TSLICE.CPX"]),
     "winframe": ("winframe", ["WINFRAME.SLB", "WINFRAME.RSC"]),
+    "xp-rastr": ("xp-rastr", ["XP_RASTR.SLB"]),
+    "load-img": ("load-img", ["LOAD_IMG.SLB"]),
 }
 
 

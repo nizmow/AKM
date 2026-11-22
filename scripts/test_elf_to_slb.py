@@ -138,6 +138,10 @@ class ElfToSlbTests(unittest.TestCase):
         self.assertEqual(payload[72:84], b"WINFRAME.SLB")
         self.assertEqual(struct.unpack_from(">I", payload, 8)[0], 1)
 
+    def test_rejects_export_count_mismatch(self):
+        with self.assertRaises(ValueError):
+            elf_to_slb.package(make_elf(), expected_exports=1)
+
     def test_pc_relative_reference_is_accepted_without_movable_relocation(self):
         image = elf_to_slb.package(make_elf())
         offsets = decode_tos_relocations(image[28 + 512 + 8:])

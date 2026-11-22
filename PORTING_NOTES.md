@@ -1268,3 +1268,44 @@ requires the enabled/disabled booted dialog to differ, and compares the
 archived/rebuilt screens pixel-for-pixel. The fixture's booted MAGXCONF dialog
 provides the visible frame; the test does not drag, resize, shade or exercise
 scrollbar paths. Evidence: `build/atari/neost-winframe-20261122-141115/`.
+
+### XP_RASTR.SLB and LOAD_IMG.SLB
+
+`mise run apps -- xp-rastr` builds `XP_RASTR.SLB`; `mise run apps -- load-img`
+builds `LOAD_IMG.SLB`. Both use explicit SLB headers with exported function
+tables: XP_RASTR has two functions and LOAD_IMG has five. The generic packager
+validates the declared export count and each exported pointer relocation.
+
+XP_RASTR's assembly helpers (`_vq_scrninfo`, `_vq_color`, `W_mul_L`,
+`L_div_W`) take register arguments. `XPRASTR_BRIDGE.S` provides stack-to-register
+wrappers and preserves D2/A2 around the VDI calls. The C source uses public
+GEMlib `VDIPB` and MiNTLib allocation/VDI types. LOAD_IMG's C source uses
+public GEMlib/MiNTLib types; its local `XATTR` mirrors the MiNT layout because
+the SDK does not expose that name.
+
+Keep the public version-1 calling convention, not the compiler's default
+argument layout. MagiC's `Slbx_fn` replaces the handle with the caller's
+process pointer and jumps to the numbered export without rearranging its
+stack. Each C export in `LOAD_IMG.C` and `XP_RASTR.C` receives a single
+`packed, aligned(2)` record **by value**: process pointer, 32-bit function
+number, 16-bit argument-word count, and the export-specific payload.
+`sizeof` and `offsetof` assertions pin the record to the native contract.
+For example, LOAD_IMG export 0 sees `nargs` at `12(sp)` and its two pointer
+arguments at `14(sp)` and `18(sp)` (including the return address). Separate
+GCC `short` parameters would occupy four-byte stack slots. Keep normal
+MiNTLib/GEMlib flags and leave the lifecycle entries on their own ABI.
+
+Use assembly when layout isn't the whole contract. `LOAD_IMG_RASTER.S`
+calls the legacy `xp_rasterC` callback with an 18-byte stack record and
+preserves D2, which that callback may clobber. A packed C parameter alone
+would not protect the register.
+
+Do not use the shipped Release `LOAD_IMG.SLB` as a source-level oracle.
+The archived binary under `TOOLS/LOAD_IMG.SLB/BIN` decodes in export 0, with
+a per-plane byte stride. The Release binary initializes a private image
+handle in export 0, reports an all-plane stride there, and decodes in
+export 2. Compare the full load → convert → draw path; do not compare raw
+descriptor buffers or accept both strides in a single buffer-size formula.
+The Release and rebuilt versions both rendered the test XIMG but produced
+different realized colours. The port does not claim Release-equivalent
+colour rendering.

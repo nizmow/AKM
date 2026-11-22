@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert a linked, relocatable m68k zero-export SLB ELF into a classic TOS image."""
+"""Convert a linked, relocatable m68k SLB ELF into a classic TOS image."""
 import argparse
 import struct
 from pathlib import Path
@@ -14,7 +14,7 @@ def cstring(data, offset):
     return data[offset:end].decode("ascii")
 
 
-def _package(data, expected_name="EDITOBJC.SLB", version=9):
+def _package(data, expected_name="EDITOBJC.SLB", version=9, expected_exports=0):
     if data[:7] != b"\x7fELF\x01\x02\x01":
         raise ValueError("expected big-endian ELF32")
     kind, machine, _, entry, _, shoff, _, _, _, _, shentsize, shnum, shstr = u(data, 16, "HHIIIIIHHHHHH")
@@ -79,15 +79,21 @@ def _package(data, expected_name="EDITOBJC.SLB", version=9):
         raise ValueError("unexpected SLB version or flags")
     if any(u(loaded, pos, "I")[0] == 0 for pos in (4, 16, 20, 24, 28)):
         raise ValueError("SLB name or lifecycle pointer is absent")
-    if u(loaded, 68, "I")[0] != 0:
-        raise ValueError("SLB must export zero named procedures")
-    if not {4, 16, 20, 24, 28}.issubset(offsets):
-        raise ValueError("SLB name/lifecycle pointer relocations are missing")
+    export_count = u(loaded, 68, "I")[0]
+    if export_count != expected_exports:
+        raise ValueError("unexpected SLB export count")
+    required = {4, 16, 20, 24, 28}
+    required.update(72 + 4 * i for i in range(export_count))
+    if not required.issubset(offsets):
+        raise ValueError("SLB header/export pointer relocations are missing")
     name_ptr = u(loaded, 4, "I")[0]
     if name_ptr >= len(loaded) or cstring(loaded, name_ptr) != expected_name:
         raise ValueError("invalid SLB name pointer")
     if any(u(loaded, pos, "I")[0] >= len(loaded) for pos in (16, 20, 24, 28)):
         raise ValueError("SLB lifecycle pointer is out of bounds")
+    for i in range(export_count):
+        if u(loaded, 72 + 4 * i, "I")[0] >= len(loaded):
+            raise ValueError("SLB export pointer is out of bounds")
     locs = sorted(offsets)
     relocs = bytearray()
     if locs:
@@ -104,9 +110,9 @@ def _package(data, expected_name="EDITOBJC.SLB", version=9):
     header = struct.pack(">H6IH", 0x601a, text[5], initialized[5], bss[5], 0, 0, 15, 0)
     return header + loaded + relocs
 
-def package(data, expected_name="EDITOBJC.SLB", version=9):
+def package(data, expected_name="EDITOBJC.SLB", version=9, expected_exports=0):
     try:
-        return _package(data, expected_name, version)
+        return _package(data, expected_name, version, expected_exports)
     except (struct.error, IndexError, KeyError, UnicodeError) as exc:
         raise ValueError("malformed ELF input") from exc
 
@@ -117,8 +123,9 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--name", default="EDITOBJC.SLB")
     parser.add_argument("--version", type=int, default=9)
+    parser.add_argument("--exports", type=int, default=0)
     args = parser.parse_args()
-    image = package(args.input.read_bytes(), args.name, args.version)
+    image = package(args.input.read_bytes(), args.name, args.version, args.exports)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(image)
     print(f"{args.output}: {len(image)} bytes")

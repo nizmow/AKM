@@ -16,10 +16,9 @@
 #if DEBUG
 #include <stdio.h>
 #endif
-#include <mgx_dos.h>
-#include <vdi.h>
-#include "imgload.h"
-#include "load_img.h"
+#include "LOADIMG_SDK.H"
+#include "IMGLOAD.H"
+#include "LOAD_IMG.H"
 
 #pragma warn -par
 
@@ -27,18 +26,80 @@
 #define MAX(a,b) ((a > b) ? a : b)
 #define ABS(X) ((X>0) ? X : -X)
 
-typedef struct
-{
-	WORD	g_x;
-	WORD	g_y;
-	WORD	g_w;
-	WORD	g_h;
-} GRECT;
-
 typedef struct {
 	char intern[128];
 	char cmd[128];
 } PD;
+
+/* MagiC replaces the SLB handle with pd, then jumps without moving
+ * the remaining stack bytes. A single by-value record keeps each WORD
+ * in its legacy two-byte slot under the default GCC ABI. */
+struct __attribute__((packed, aligned(2))) slb_args {
+	PD *pd;
+	LONG fn;
+	WORD nargs;
+};
+
+struct __attribute__((packed, aligned(2))) load_args {
+	struct slb_args call;
+	char *path;
+	img_descriptor **pimg;
+};
+
+struct __attribute__((packed, aligned(2))) free_args {
+	struct slb_args call;
+	img_descriptor *img;
+};
+
+struct __attribute__((packed, aligned(2))) convert_args {
+	struct slb_args call;
+	img_descriptor *img;
+	MFDB *fill;
+	WORD min_index;
+	WORD max_pen;
+	WORD vdi_handle;
+};
+
+struct __attribute__((packed, aligned(2))) draw_args {
+	struct slb_args call;
+	WORD vdi_handle;
+	MFDB *fill;
+	WORD x;
+	WORD y;
+};
+
+struct __attribute__((packed, aligned(2))) tile_args {
+	struct slb_args call;
+	WORD vdi_handle;
+	MFDB *fill;
+	GRECT *g;
+	GRECT *clipg;
+};
+
+_Static_assert(sizeof(struct slb_args) == 10 &&
+	offsetof(struct slb_args, fn) == 4 &&
+	offsetof(struct slb_args, nargs) == 8, "SLB dispatch prefix");
+_Static_assert(sizeof(struct load_args) == 18 &&
+	offsetof(struct load_args, path) == 10 &&
+	offsetof(struct load_args, pimg) == 14, "LOAD_IMG export 0");
+_Static_assert(sizeof(struct free_args) == 14 &&
+	offsetof(struct free_args, img) == 10, "LOAD_IMG export 1");
+_Static_assert(sizeof(struct convert_args) == 24 &&
+	offsetof(struct convert_args, img) == 10 &&
+	offsetof(struct convert_args, fill) == 14 &&
+	offsetof(struct convert_args, min_index) == 18 &&
+	offsetof(struct convert_args, max_pen) == 20 &&
+	offsetof(struct convert_args, vdi_handle) == 22, "LOAD_IMG export 2");
+_Static_assert(sizeof(struct draw_args) == 20 &&
+	offsetof(struct draw_args, vdi_handle) == 10 &&
+	offsetof(struct draw_args, fill) == 12 &&
+	offsetof(struct draw_args, x) == 16 &&
+	offsetof(struct draw_args, y) == 18, "LOAD_IMG export 3");
+_Static_assert(sizeof(struct tile_args) == 24 &&
+	offsetof(struct tile_args, vdi_handle) == 10 &&
+	offsetof(struct tile_args, fill) == 12 &&
+	offsetof(struct tile_args, g) == 16 &&
+	offsetof(struct tile_args, clipg) == 20, "LOAD_IMG export 4");
 
 struct initparm conf;
 
@@ -48,10 +109,12 @@ WORD errno;
 
 /*****************************************************************
 *
-* Ab MagiC 6 erhÑlt man den eigenen PD und optional einen
+* Ab MagiC 6 erh√§lt man den eigenen PD und optional einen
 * Parameter.
 *
 *****************************************************************/
+
+extern WORD loadimg_call_raster(void *fn, LONG words, LONG len, WORD planes, void *src, void *des);
 
 extern LONG cdecl slb_init( PD *mypd, struct initparm *parm )
 {
@@ -94,20 +157,20 @@ extern void cdecl slb_close( PD *pd )
 *
 *****************************************************************/
 
-extern LONG cdecl slb_fn0( PD *pd, LONG fn, WORD nargs,
-					char *path, img_descriptor **pimg )
+LONG cdecl slb_fn0(struct load_args args)
 {
-	img_descriptor *img = Malloc(sizeof(img_descriptor));
+	char *path = args.path;
+	img_descriptor *img = (img_descriptor *)Malloc(sizeof(img_descriptor));
 
 #if DEBUG
 	printf("Lade %s\n", path);
 	Cconin();
 #endif
 
-	*pimg = img;
+	*args.pimg = img;
 	if	(!img)
 		return(ENSMEM);
-	return(load_IMG( path, &img->w, &img->h,
+	return(load_IMG( (BYTE *)path, &img->w, &img->h,
 		&img->line_width, &img->nplanes,
 		&img->palette, &img->pal_entries,
 		&img->buf ));
@@ -120,9 +183,10 @@ extern LONG cdecl slb_fn0( PD *pd, LONG fn, WORD nargs,
 *
 *****************************************************************/
 
-extern LONG cdecl slb_fn1( PD *pd, LONG fn, WORD nargs,
-					img_descriptor *img )
+LONG cdecl slb_fn1(struct free_args args)
 {
+	img_descriptor *img = args.img;
+
 	if	(img->buf)
 		Mfree(img->buf);
 	if	(img->palette)
@@ -139,13 +203,13 @@ extern LONG cdecl slb_fn1( PD *pd, LONG fn, WORD nargs,
 *
 *****************************************************************/
 
-extern LONG cdecl slb_fn2( PD *pd, LONG fn, WORD nargs,
-					img_descriptor *img,
-					MFDB *fill,
-					WORD min_index,
-					WORD max_pen,
-					WORD vdi_handle )
+LONG cdecl slb_fn2(struct convert_args args)
 {
+	img_descriptor *img = args.img;
+	MFDB *fill = args.fill;
+	WORD min_index = args.min_index;
+	WORD max_pen = args.max_pen;
+	WORD vdi_handle = args.vdi_handle;
 	WORD	index;
 	WORD	pen;
 	static UBYTE color_map[16] = { 0, 255, 1, 2, 4, 6, 3, 5, 7 , 8, 9, 10, 12, 14, 11, 13 };
@@ -190,14 +254,14 @@ extern LONG cdecl slb_fn2( PD *pd, LONG fn, WORD nargs,
 
 	if	( (img->nplanes > 1) && (conf.xp_ret >= 0) )	/* farbiges IMG? */
 		{
-		exp_img = Malloc((LONG) img->line_width * img->h * conf.nplanes );	/* Speicher fÅr expandiertes IMG anfordern */
+		exp_img = (void *)Malloc((LONG) img->line_width * img->h * conf.nplanes );	/* Speicher fÔøΩr expandiertes IMG anfordern */
 
 		if	(! exp_img )
 			return(ENSMEM);
 
-		plane_len = (LONG) img->line_width * img->h;		/* LÑnge einer Ebene */
+		plane_len = (LONG) img->line_width * img->h;		/* L√§nge einer Ebene */
 
-		if ( (*conf.xp_raster)( plane_len / 2,
+		if ( loadimg_call_raster( (void *)conf.xp_raster, plane_len / 2,
 						plane_len,
 						img->nplanes, 
 						img->buf,
@@ -225,7 +289,7 @@ extern LONG cdecl slb_fn2( PD *pd, LONG fn, WORD nargs,
 	if	( img->palette )				/* Palette vorhanden? */
 		{
 
-		if (( img->pal_entries - 1 ) > max_pen )	/* mehr PaletteneintrÑge als Farbstifte??? */
+		if (( img->pal_entries - 1 ) > max_pen )	/* mehr Paletteneintr√§ge als Farbstifte??? */
 			img->pal_entries = max_pen + 1;
 	
 		for ( pen = 0; pen < img->pal_entries; pen++ )
@@ -237,7 +301,7 @@ extern LONG cdecl slb_fn2( PD *pd, LONG fn, WORD nargs,
 			else
 				index = pen;
 			
-			if ( pen >= min_index )	/* darf die Farbe verÑndert werden? */
+			if ( pen >= min_index )	/* darf die Farbe ver√§ndert werden? */
 				vs_color( vdi_handle, pen, img->palette + (index * 3) );
 		}
 	}
@@ -251,11 +315,14 @@ extern LONG cdecl slb_fn2( PD *pd, LONG fn, WORD nargs,
 *
 *****************************************************************/
 
-extern LONG cdecl slb_fn3( PD *pd, LONG fn, WORD nargs,
-				WORD vdi_handle, MFDB *fill, WORD x, WORD y )
+LONG cdecl slb_fn3(struct draw_args args)
 {
+	WORD vdi_handle = args.vdi_handle;
+	MFDB *fill = args.fill;
+	WORD x = args.x;
+	WORD y = args.y;
 	WORD	r[8];				/* wird bei vro_cpyfm() benutzt */
-	MFDB	screen;				/* MFDB fÅr Bildschirm */
+	MFDB	screen;				/* MFDB f√ºr Bildschirm */
 
 	screen.fd_addr = 0L;		/* Bildschirm */
 
@@ -287,7 +354,7 @@ extern LONG cdecl slb_fn3( PD *pd, LONG fn, WORD nargs,
 *
 ****************************************************************/
 
-static int rc_intersect(GRECT *p1, GRECT *p2)
+static int loadimg_rc_intersect(GRECT *p1, GRECT *p2)
 {
 	int	tx, ty, tw, th;
 
@@ -309,16 +376,18 @@ static int rc_intersect(GRECT *p1, GRECT *p2)
 *
 *****************************************************************/
 
-extern LONG cdecl slb_fn4( PD *pd, LONG fn, WORD nargs,
-				WORD vdi_handle, MFDB *fill,
-				GRECT *g, GRECT *clipg )
+LONG cdecl slb_fn4(struct tile_args args)
 {
+	WORD vdi_handle = args.vdi_handle;
+	MFDB *fill = args.fill;
+	GRECT *g = args.g;
+	GRECT *clipg = args.clipg;
 	WORD	x;
 	WORD	y;
 	WORD clip_rect[4];			/* Clipping-Rechteck */
-	WORD	obj[4];				/* Grîûe des zu zeichnenden Bildbereichs */
+	WORD	obj[4];				/* Gr√∂√üe des zu zeichnenden Bildbereichs */
 	WORD	r[8];				/* wird be vro_cpyfm() benutzt */
-	MFDB	screen;				/* MFDB fÅr Bildschirm */
+	MFDB	screen;				/* MFDB f√ºr Bildschirm */
 
 
 	screen.fd_addr = 0L;		/* Bildschirm */
@@ -329,15 +398,15 @@ extern LONG cdecl slb_fn4( PD *pd, LONG fn, WORD nargs,
 
 	*(GRECT *) clip_rect = *g;
 	/* Schneide Objekt-GRECT mit Clipping-GRECT => clip_rect*/
-	rc_intersect( clipg, (GRECT *) clip_rect );	/* Clipping-Rechteck */
+	loadimg_rc_intersect( clipg, (GRECT *) clip_rect );	/* Clipping-Rechteck */
 	/* clip_rect GRECT -> RECT */
 	clip_rect[2] += clip_rect[0] - 1;
 	clip_rect[3] += clip_rect[1] - 1;
-	vs_clip( vdi_handle, 1, clip_rect );	/* Zeichenoperationen auf gegebenen Bereich beschrÑnken */
+	vs_clip( vdi_handle, 1, clip_rect );	/* Zeichenoperationen auf gegebenen Bereich beschr√§nken */
 
 
 	obj[0] -= obj[0] % fill->fd_w;	/* x-Startkoordinate an Musterbreite ausrichten */
-	obj[1] -= obj[1] % fill->fd_h;	/* y-Startkoordinate an Musterhîhe ausrichten */
+	obj[1] -= obj[1] % fill->fd_h;	/* y-Startkoordinate an Musterh√∂he ausrichten */
 
 	r[0] = 0;
 	r[1] = 0;

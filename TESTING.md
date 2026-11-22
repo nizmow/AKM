@@ -412,6 +412,39 @@ coordinate is installation-specific. The cloned image is cleaned of a stale
 `ZCNFTEST.PRG` probe when present. Slider dragging, Save confirmation and
 scheduler behavior under load remain outside the scenario.
 
+## NeoST: image SLB ABI and rendering
+
+`mise run test:slb-consumer-neost` builds `XP_RASTR.SLB`, `LOAD_IMG.SLB` and a
+small GCC consumer (`SLBTEST.PRG`), installs the libraries in a disposable
+MagiC clone's `GEMSYS\MAGIC\XTENSION`, and runs the consumer from
+`GEMSYS\MAGIC\START\ZCNFTEST.PRG`:
+
+```sh
+MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
+ mise run test:slb-consumer-neost
+```
+
+The same probe runs against archived and rebuilt libraries on separate
+MegaSTE/ST-low clones. It calls the packed legacy XP export, checks an exact
+four-plane expansion, and calls LOAD_IMG exports 0 → 2 → 3 → 1 to load,
+convert, draw and free `PAT6.IMG`. It checks that drawing changes the screen
+and compares the realized VDI colours of the 64×64 image, not palette indices,
+bitmap storage or private descriptor fields. The success marker is written
+after closing both libraries. Evidence goes to `build/atari/neost-slb-consumer-*`.
+
+The default baseline is the source-tree `BIN` archives. The runner sets only
+the minimal-allocation bit in a disposable copy of the source-tree LOAD_IMG
+header; without it `Slbopen` returned `-39` on the fixture. To make the same
+strict comparison against the unmodified shipped LOAD_IMG, run
+`mise run test:slb-consumer-neost -- --baseline release` with the same image and
+ROM settings. That baseline loads and draws, but its XIMG colours
+differ from the source port; it is not a passing Release-equivalence test.
+The test does not cover tiled drawing or direct-colour workstations.
+
+The lower-level `mise run apps -- xp-rastr` / `load-img` checks remain
+build/package-only: explicit headers, export counts (2 and 5), lifecycle
+pointers and the classic TOS relocation stream.
+
 ## NeoST: WINFRAME.SLB window frames
 
 `mise run test:winframe-neost` builds the alternate window-frame library,
