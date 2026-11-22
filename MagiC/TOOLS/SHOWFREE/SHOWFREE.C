@@ -5,9 +5,17 @@
 *
 *********************************************************************/
 
+#include <mint/mintbind.h>
 #include <stdio.h>
-#include <mgx_dos.h>
 
+#define SC_INTMAVAIL 5
+#define SC_INTGARBC  6
+
+/* MagiC Sconfig takes a word subfunction and a long argument. */
+static long magx_sconfig(long fn, long arg)
+{
+	return trap_1_wwl(0x33, fn, arg);
+}
 
 int main()
 {
@@ -20,17 +28,17 @@ int main()
 	for	(;;)
 	{
 		/* do garbage collection until no futher memory block was freed */
-		while((ret = Sconfig(SC_INTGARBC, 0)) == 1)
+		while((ret = magx_sconfig(SC_INTGARBC, 0)) == 1)
 			;
 
 		if (ret != 0)
 		{
 			/* Maybe not running in MagiC */
-			printf("Error %d from Sconfig()\n", ret);
+			printf("Error %ld from Sconfig()\n", ret);
 			return ret;
 		}
 
-		Sconfig(SC_INTMAVAIL, (long) n);
+		magx_sconfig(SC_INTMAVAIL, (long) n);
 
 		if	(n[0] != n2[0] || n[1] != n2[1])
 		{

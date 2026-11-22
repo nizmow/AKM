@@ -3,9 +3,9 @@
 *  MEMEXAMN			17.08.91
 *  ========
 *
-*  letzte énderung		18.05.96 (shared blocks)
+*  letzte √Ñnderung		18.05.96 (shared blocks)
 *
-*  SchlÅsselt die Speicheraufteilung von Mag!X auf.
+*  Schl√ºsselt die Speicheraufteilung von Mag!X auf.
 *  Untersucht wahlweise eine Post-mortem-dump Datei oder den
 *  aktuellen Speicherinhalt.
 *
@@ -13,12 +13,21 @@
 *
 *********************************************************************/
 
-#include <tos.h>
-#include <magix.h>
-#include <tosdefs.h>
+#include <mint/mintbind.h>
 #include <stdio.h>
 #include <string.h>
-#include <country.h>
+#include "MEMEXAMN.H"
+
+#define RMODE_RD 0
+#define SC_VARS 2
+#define ENSMEM 0xffff
+#define ERROR (-1L)
+
+/* MagiC Sconfig takes a word subfunction; MiNTLib has no matching binding. */
+static long magx_sconfig(long fn, long arg)
+{
+	return trap_1_wwl(0x33, fn, arg);
+}
 
 char *nat_str(char *s);
 
@@ -40,18 +49,18 @@ long  aes_bp;
 int main(int argc, char *argv[])
 {
 	long errcode;
-	char	*name = "x:\\_sys_.$$$";
+	char	name[] = "x:\\_sys_.$$$";
 
 
 	Cconws(nat_str(
-		"\1\8\xff" "MagiC- Speicheruntersuchung, Ω 1991-96 Andreas Kromke\r\n\0"
-		"\2\xff"   "MAGiC - VÇrification de mÇmoire, Ω 1991-96 Andreas Kromke\r\n\0"
-		"\xff"     "MagiC- MEMEXAMN, Ω 1991-96 Andreas Kromke\r\n"
+		"\1\8\xff" "MagiC- Speicheruntersuchung, \275 1991-96 Andreas Kromke\r\n\0"
+		"\2\xff"   "MAGiC - V\202rification de m\202moire, \275 1991-96 Andreas Kromke\r\n\0"
+		"\xff"     "MagiC- MEMEXAMN, \275 1991-96 Andreas Kromke\r\n"
 		));
 
-	if	(NULL == (buf = Malloc(65536L)))
+	if	(NULL == (buf = (char *) Malloc(65536L)))
 		return((int) ENSMEM);
-	if	(argc < 2)
+	if	(argc < 2 || argv[1][0] == '\0')
 		*name = '\0';
 	else	if	(argc == 2)
 		*name = argv[1][0];
@@ -91,7 +100,7 @@ long meminfo( void )
 
 	printf(nat_str(
 			"\1\8\xff" "Adresse des Speicherzeigers: %8lx\n\n\0"
-			"\2\xff"   "Adresse du pointeur mÇmoire: %8lx\n\n\0"
+			"\2\xff"   "Adresse du pointeur m\202moire: %8lx\n\n\0"
 			"\xff"	 "Address of memory pointer: %8lx\n\n"
 		), roots);
 	for	(t = 0; *roots; roots++,t++)
@@ -139,7 +148,7 @@ void memstruct(void)
 	else	{
 		DOSVARS *dv;
 
-		dv = (DOSVARS *) Sconfig(SC_VARS, NULL);
+		dv = (DOSVARS *) magx_sconfig(SC_VARS, 0);
 		if	((long) dv <= 0L)
 			{
 			errm:
@@ -225,7 +234,7 @@ void own_name(long own, long mem, char **name, char **info)
 	if	(own == ur_pd)
 		*name = "boot";
 
-	if	(own == mem)				/* Speicherblock gehîrt sich */
+	if	(own == mem)				/* Speicherblock geh√∂rt sich */
 		*info = "Basepage";
 
 	if	(own == aes_bp)
@@ -288,7 +297,7 @@ void own_name(long own, long mem, char **name, char **info)
 
 /****************************************************************
 *
-* Ermittelt die NationalitÑt und wÑhlt Zeichenketten aus.
+* Ermittelt die Nationalit√§t und w√§hlt Zeichenketten aus.
 * Aufbau einer Zeichenkette:
 *
 * Nat1,Nat2,..,-1
@@ -313,11 +322,11 @@ char *nat_str(char *s)
 		long oldssp;
 		SYSHDR *syshdr;
 
-		/* NationalitÑt ermitteln */
+		/* Nationalit√§t ermitteln */
 
 		oldssp    = Super(0L);
 		syshdr    = (SYSHDR *)  (* _SYSBASE);
-		syshdr	= syshdr->os_base;	/* fÅr AUTO- Ordner */
+		syshdr	= syshdr->os_base;	/* f√ºr AUTO- Ordner */
 		nat		= (syshdr->os_palmode) >> 1;
 		Super((char *) oldssp);
 		}
@@ -326,10 +335,10 @@ char *nat_str(char *s)
 		{
 		do	{
 			c = *s++;
-			if	(c == nat)		/* NationalitÑt gefunden */
+			if	(c == nat)		/* Nationalit√§t gefunden */
 				{
-				while(*s != -1)	/* andere NationalitÑten */
-					s++;			/*  Åberspringen */
+				while(*s != -1)	/* andere Nationalit√§ten */
+					s++;			/*  √ºberspringen */
 				return(s+1);
 				}
 			}

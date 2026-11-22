@@ -442,6 +442,41 @@ $(BUILD_DIR)/abi-check/ABI_CHECK.o: MagiC/APPS/ABI_CHECK.C Makefile.apps
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"MagiC/APPS/MGVIEW/SRC" \
 	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
 
+.PHONY: showfree crashdmp memexamn magxkern
+showfree: $(BUILD_DIR)/showfree/SHOWFREE.TOS
+crashdmp: $(BUILD_DIR)/crashdmp/CRASHDMP.TOS
+memexamn: $(BUILD_DIR)/memexamn/MEMEXAMN.TTP
+magxkern: $(BUILD_DIR)/magxkern/MAGXKERN.TTP
+
+$(BUILD_DIR)/showfree/SHOWFREE.TOS: MagiC/TOOLS/SHOWFREE/SHOWFREE.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.TOS=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/crashdmp/CRASHDMP.TOS: MagiC/TOOLS/CRASHDMP/SRC/CRASHDMP.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.TOS=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/memexamn/MEMEXAMN.TTP: MagiC/TOOLS/MEMEXAMN/SRC/MEMEXAMN.C \
+  MagiC/TOOLS/MEMEXAMN/SRC/MEMEXAMN.H Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.TTP=.d)" -IMagiC/TOOLS/MEMEXAMN/SRC -x c "$<" -x none \
+	  $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/magxkern/MAGXKERN.TTP: MagiC/TOOLS/MAGXKERN/SRC/MAGXKERN.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.TTP=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+diagnostic-test-driver: $(BUILD_DIR)/diagnostic/DIAG.PRG
+
+$(BUILD_DIR)/diagnostic/DIAG.PRG: MagiC/TOOLS/TESTDATA/DIAG_RUN.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
 console-test-driver: $(BUILD_DIR)/console/RUNARG.PRG
 
 $(BUILD_DIR)/console/RUNARG.PRG: scripts/testdata/RUNARG.C Makefile.apps

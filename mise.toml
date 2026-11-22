@@ -175,6 +175,11 @@ description = "Build OFF16MOV.OSD and prove NVDI draws into a 32-bit TrueColor b
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-osd-batch-smoke.py --driver off16mov"
 
+[tasks."test:diagnostic-tools-neost"]
+description = "Compare archived and rebuilt SHOWFREE, MAGXKERN, MEMEXAMN and CRASHDMP under MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-diagnostic-tools-smoke.py"
+
 [tasks."test:screen-drivers-neost"]
 description = "Build all MFA/MFM screen drivers and verify ST high/medium/low archive and rebuild boots"
 dir = "{{ config_root }}"

@@ -1376,6 +1376,27 @@ Limits: one organisation per driver on the tested colour MegaSTE screen. Three
 drivers have no byte-identical reference; animation, other screen modes and
 long-term stability remain untested.
 
+### MagiC diagnostic tools
+
+`mise run apps -- showfree magxkern memexamn crashdmp` builds the four tools
+with MiNTLib's 32-bit `int` ABI. `Sconfig` still takes a word subfunction, so
+each tool calls `trap_1_wwl(0x33, fn, arg)` rather than a generic long binding.
+`SHOWFREE` and `CRASHDMP` need no guest structures; the latter uses BIOS
+`Cconws`/`Pterm` and the crash variables at `$380`–`$3cc`.
+
+`MAGXKERN` and `MEMEXAMN` read 16-bit kernel records. `MAGXKERN` keeps the
+original layout but scopes `#define int int16_t` around its structure
+definitions; `MEMEXAMN` uses local fixed-width `SYSHDR`/`DOSVARS`/`AESVARS`/
+`MCB`/`BASPAG` records. Do not replace this with `-mshort`: MiNTLib calls and
+variadic output still use 32-bit `int`. `MEMEXAMN` also needs a writable drive
+path buffer and treats an empty `argv[1]` as the live-system request.
+
+`mise run test:diagnostic-tools-neost` installs each archive/rebuild under the
+same guest name and compares status and output. MAGXKERN matches byte-for-byte;
+MEMEXAMN's addresses and block sizes differ with the larger rebuilt image, so
+only the table structure is compared. SHOWFREE loops until a key; the test
+compares screens and the first monitor output instead of exit status.
+
 ### MFA/MFM screen drivers
 
 `mise run apps -- screen-drivers` builds the five Atari MFA and seven MagiCMac

@@ -571,6 +571,24 @@ Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
 organisations, other screen modes and long-term stability are outside these
 scenarios.
 
+## NeoST: MagiC diagnostic tools
+
+`mise run test:diagnostic-tools-neost` builds `SHOWFREE.TOS`, `MAGXKERN.TTP`,
+`MEMEXAMN.TTP`, `CRASHDMP.TOS` and the shared `DIAG.PRG` runner. It clones the
+MagiC image for archive and rebuild, installs both under the same guest name,
+runs `DIAG.PRG` from `MAGIC\START`, and captures `DIAG.OUT`/`DIAG.STA`.
+
+- `MAGXKERN`: status 0 and byte-identical output.
+- `MEMEXAMN`: status 0; the banner, early table and owner names match. Block
+  sizes and addresses differ because the rebuilt executable is larger.
+- `CRASHDMP`: status 0 with no output on the no-record path.
+- `SHOWFREE`: both copies appear in `MAGIC\START`, print the monitor and
+  `blocks used`, and render pixel-identical screens.
+
+Required: the usual MagiC image with `MAGXBOOT.TOS`, TOS 2.06, `MAGIC\START`,
+and host `mtools`. Exception decoding, interactive SHOWFREE exit, post-mortem
+`MEMEXAMN` dumps and crash triggering are not covered.
+
 ## NeoST: MFA/MFM screen drivers
 
 `mise run test:screen-drivers-neost` builds all five MFA and seven MFM screen

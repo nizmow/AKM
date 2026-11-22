@@ -46,6 +46,11 @@ TARGETS = {
     "winframe": ("winframe", ["WINFRAME.SLB", "WINFRAME.RSC"]),
     "xp-rastr": ("xp-rastr", ["XP_RASTR.SLB"]),
     "load-img": ("load-img", ["LOAD_IMG.SLB"]),
+    "showfree": ("showfree", ["SHOWFREE.TOS"]),
+    "magxkern": ("magxkern", ["MAGXKERN.TTP"]),
+    "memexamn": ("memexamn", ["MEMEXAMN.TTP"]),
+    "crashdmp": ("crashdmp", ["CRASHDMP.TOS"]),
+    "diagnostic-test-driver": ("diagnostic", ["DIAG.PRG"]),
     "screen-drivers": ("screen", [
         f"{name}.SYS" for name in (
             "MFA2", "MFA4", "MFA16", "MFA256", "MFA32K",
