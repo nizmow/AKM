@@ -537,6 +537,27 @@ $(BUILD_DIR)/console/RUNARG.PRG: scripts/testdata/RUNARG.C Makefile.apps
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
+KEYB_DIR := MagiC/TOOLS/KEYB_SYS/SRC
+KEYB_NAMES := CZ DEI FRA SWG UK US
+KEYB_OUTPUTS := $(addprefix $(BUILD_DIR)/keyb-sys/KEYB_,$(addsuffix .PRG,$(KEYB_NAMES)))
+
+.PHONY: keyb-sys keyb-cz keyb-dei keyb-fra keyb-swg keyb-uk keyb-us
+keyb-sys: $(KEYB_OUTPUTS)
+keyb-cz: $(BUILD_DIR)/keyb-sys/KEYB_CZ.PRG
+keyb-dei: $(BUILD_DIR)/keyb-sys/KEYB_DEI.PRG
+keyb-fra: $(BUILD_DIR)/keyb-sys/KEYB_FRA.PRG
+keyb-swg: $(BUILD_DIR)/keyb-sys/KEYB_SWG.PRG
+keyb-uk: $(BUILD_DIR)/keyb-sys/KEYB_UK.PRG
+keyb-us: $(BUILD_DIR)/keyb-sys/KEYB_US.PRG
+
+$(KEYB_OUTPUTS): $(BUILD_DIR)/keyb-sys/%.PRG: $(KEYB_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -finput-charset=ISO-8859-1 \
+	  -fexec-charset=ISO-8859-1 -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+-include $(KEYB_OUTPUTS:.PRG=.d)
+
 $(BUILD_DIR)/mgcopy/%.o: $(MGCOPY_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(MGCOPY_INCLUDES) \

@@ -118,6 +118,12 @@ tools with `mise run apps -- mac2st`, `-- dump`, `-- fc` or `-- split`. Run
 then compares archived/rebuilt status, output and file effects through
 `scripts/neost-console-tools-smoke.py`.
 
+Build the six keyboard-table generators with `mise run apps -- keyb-sys` into
+`build/atari/apps/keyb-sys/KEYB_{CZ,DEI,FRA,SWG,UK,US}.PRG`. Individual
+`keyb-cz`…`keyb-us` targets are also available. `mise run test:keyb-sys-neost`
+runs each archived/rebuilt pair in separate disposable EmuTOS guests and
+requires the generated `KEYTABLS.SYS` to match byte-for-byte.
+
 Build the two-pass disassembler with `mise run apps -- dis` (or `dis1`/`dis2`)
 into `build/atari/apps/dis1/DIS1.TTP` and `build/atari/apps/dis2/DIS2.TTP`.
 `mise run test:dis-neost` runs both against the bundled `TST` corpus and a DRI
@@ -316,6 +322,10 @@ to compare MGCOPY copy, move, alias and delete effects on cloned MagiC images.
 Run `mise run test:cops-neost` (or `python3 scripts/neost-cops-smoke.py`)
 to compare the COPS panel and its `MAGXCONF.CPX`/`TSLICE.CPX` dialogs with the
 archive on cloned MagiC images.
+
+Run `mise run test:keyb-sys-neost` (or `python3 scripts/neost-keyb-sys-smoke.py`)
+to compare all six keyboard-table generators with their archives. It uses
+NeoST's bundled EmuTOS and needs no MagiC image.
 
 Run `mise run test:vt52-neost` (or `python3 scripts/neost-vt52-smoke.py`)
 to compare archived and rebuilt VT52 terminal sessions on cloned MagiC images.

@@ -185,6 +185,11 @@ description = "Compare archived and rebuilt COPS panel and CPX dialogs on MagiC"
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-cops-smoke.py"
 
+[tasks."test:keyb-sys-neost"]
+description = "Compare all six KEYB_SYS generators with their archives under NeoST"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-keyb-sys-smoke.py"
+
 [tasks."test:diagnostic-tools-neost"]
 description = "Compare archived and rebuilt SHOWFREE, MAGXKERN, MEMEXAMN and CRASHDMP under MagiC"
 dir = "{{ config_root }}"

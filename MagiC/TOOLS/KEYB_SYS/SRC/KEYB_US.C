@@ -9,7 +9,7 @@
 *
 */
 
-#include <tos.h>
+#include <mint/osbind.h>
 
 char tab_unshift[128] = {
  0,		/*   0: nicht belegt */
@@ -145,7 +145,7 @@ char tab_unshift[128] = {
 char tab_shift[128] = {
  0,
  0x1b,
- '!','@','#','0x','%','^','&','*','(',')','_',
+ '!','@','#','x','%','^','&','*','(',')','_',
  '+',0x08,0x09,
  'Q','W','E','R','T',
  'Y','U','I','O','P',

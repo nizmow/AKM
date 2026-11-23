@@ -606,6 +606,23 @@ Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
 organisations, other screen modes and long-term stability are outside these
 scenarios.
 
+## NeoST: KEYB_SYS keyboard-table generators
+
+`mise run test:keyb-sys-neost` builds all six generators and runs
+`scripts/neost-keyb-sys-smoke.py`. Each pair (archived vs rebuilt
+`KEYB_{CZ,DEI,FRA,SWG,UK,US}.PRG`) runs through the generic Pexec driver in its
+own disposable GEMDOS tree and must produce:
+
+- matching child status and console output (both status 0 and empty output in
+  the recorded run);
+- a byte-identical `KEYTABLS.SYS` (the 9×128-byte table block plus the
+  locale's dead-key trailer: 116 bytes for CZ, 42 for the rest);
+- six distinct layouts across the locales.
+
+The runner uses NeoST's bundled EmuTOS; no MagiC image, TOS ROM or `mtools` is
+required. Evidence goes to `build/atari/neost-keyb-sys-*`. This proves the
+generated tables, not that MagiC's keyboard driver loads them at boot.
+
 ## NeoST: MagiC diagnostic tools
 
 `mise run test:diagnostic-tools-neost` builds `SHOWFREE.TOS`, `MAGXKERN.TTP`,

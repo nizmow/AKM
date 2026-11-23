@@ -1431,6 +1431,38 @@ Limits: one organisation per driver on the tested colour MegaSTE screen. Four
 drivers have no byte-identical reference; animation, other screen modes and
 long-term stability remain untested.
 
+### KEYB_SYS keyboard-table generators
+
+`mise run apps -- keyb-sys` builds `KEYB_{CZ,DEI,FRA,SWG,UK,US}.PRG` under
+`build/atari/apps/keyb-sys/`; individual `keyb-cz`…`keyb-us` targets build one.
+`ALL.PRJ` omits the DEI project, so all six projects are listed explicitly.
+
+The six sources are Atari-encoded and stay that way. They are compiled with
+`-finput-charset=ISO-8859-1 -fexec-charset=ISO-8859-1`, which keeps the raw
+high-byte character literals in the tables at one byte each; transcoding to
+UTF-8 without rewriting those literals would change the generated tables.
+`#include <tos.h>` is replaced by `<mint/osbind.h>` (Pure C header, not in the
+supplied MiNTLib). Because the files are not valid UTF-8, that one-line include
+replacement was applied as a byte-preserving edit rather than through the
+UTF-8-only editor.
+
+Three sources contained `'0x'` where a single character was intended. GCC
+evaluates it as the multi-character constant `0x3078`; conversion to a `char`
+element keeps the low byte `0x78` (`'x'`). The archived tables store `'x'` at
+those positions, confirming the generated value. The literals are now the
+explicit `'x'`, which preserves the tables without relying on that conversion.
+
+Each generator writes nine 128-byte tables plus a dead-key trailer (CZ 116
+bytes, the rest 42) to `KEYTABLS.SYS`. `mise run test:keyb-sys-neost` runs each
+archived/rebuilt pair through the generic Pexec driver in separate disposable
+EmuTOS guests and requires matching status and console output (0 and empty in
+the recorded run), a byte-identical `KEYTABLS.SYS`, the expected file length,
+and six distinct layouts. Evidence:
+`build/atari/neost-keyb-sys-20261123-223130/`.
+
+Limits: this proves the generated tables, not that MagiC's `READ_KTB` loads
+them at boot; no MagiC image or live keyboard driver is involved.
+
 ### MagiC diagnostic tools
 
 `mise run apps -- showfree magxkern memexamn crashdmp` builds the four tools

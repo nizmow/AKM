@@ -64,6 +64,9 @@ TARGETS = {
             "OFF16MOV",
         )
     ]),
+    "keyb-sys": ("keyb-sys", [
+        f"KEYB_{name}.PRG" for name in ("CZ", "DEI", "FRA", "SWG", "UK", "US")
+    ]),
 }
 
 

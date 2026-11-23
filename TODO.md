@@ -91,7 +91,7 @@ framework or shared-library rewrite is required before these are attempted.
 
 ## Following batches
 
-The current core source-backed remainder is 27 build families: 14
+The current core source-backed remainder is 26 build families: 13
 application/tool/extension families, 7 shared library/startup families and 6
 system-component families. Historical, test-only, blocked, binary-only and KAOS
 entries are outside that count.
@@ -196,6 +196,13 @@ the remaining shared families ahead of their consumers.
   `TSLICE.CPX` through the panel, and matches the panel and both dialogs
   pixel-for-pixel against the archive. Accessory mode, board editing,
   Save/alerts and event-CPX callbacks remain untested.
+- [x] **KEYB_SYS** — add `keyb-sys` plus individual `keyb-cz`…`keyb-us`
+  targets for all six keyboard-table generators. Keep the Atari-encoded
+  sources and compile with explicit Latin-1 charsets; map `<tos.h>` to
+  `<mint/osbind.h>`; replace three verified `'0x'` multi-character constants.
+  `test:keyb-sys-neost` runs each archived/rebuilt pair in separate EmuTOS
+  guests and requires byte-identical `KEYTABLS.SYS` files, expected lengths and
+  six distinct layouts. Live keyboard-driver loading is untested.
 - [ ] **MFA/MFM screen drivers** — scope and reference binaries are in the
   [build catalogue](APPLICATION_BUILDS.md#2-system-components-outside-the-application-tree).
   - [x] Resolve the 12 canonical `.PRJ` inputs, includes and archived `.SYS`
