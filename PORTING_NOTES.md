@@ -1463,6 +1463,38 @@ and six distinct layouts. Evidence:
 Limits: this proves the generated tables, not that MagiC's `READ_KTB` loads
 them at boot; no MagiC image or live keyboard driver is involved.
 
+### MAGXBOOT loader
+
+`mise run apps -- magxboot` assembles `MAGXBOOT.TOS`, `MAGXBOOT.PRG` and the
+`OUTSIDE` variant `MAGXBO32.PRG` under `build/atari/apps/magxboot/` from
+`MAGXBOOT.S`, normalized with `mas_to_vasm.py --atari-strings`, and the shared
+`MagiC/INC_AS/OSBIND.INC`. `OUTSIDE`, `RESIDENT` and `MODIFY` come from the
+source; the recipe passes `OUTSIDE` only for the `MAGXBO32` variant, whose
+32-KB page alignment and virtual-memory title lines are guarded by an `IFND`
+default so an unparameterized assembly still works. The shipped
+`MagiC/Releases/MAGIC.A/AUTO/MAGXBOOT.TOS` and the archived
+`MagiC/KERNEL/BIOS/ATARI/BOOT/MAGXBOOT.PRG` are byte-identical references.
+The rebuilt `MAGXBOOT.PRG` is produced as a copy of the rebuilt TOS; that pair
+differs from the references only by the encodings noted below, so do not compare
+the rebuilt PRG against the shipped binary for byte equality.
+
+The rebuild reproduces the header, TEXT/DATA/BSS, flags and relocation tables
+of both references; the only differences are two `adda.w #12,sp` instructions
+that VASM always rewrites to the equivalent 4-byte `lea 12(sp),sp`, and the
+backend exposes no switch to disable that rewrite. Do not use `-no-opt` to avoid
+it: that also drops the size optimizations and grows TEXT to 1012 bytes.
+
+`mise run test:magxboot-neost` boots the shipped loader, the rebuild and a
+clone with the loader deleted, each with the `SCREEN.PRG` probe in
+`GEMSYS/MAGIC/START` and an unchanged `MAGIC.RAM`. Present cases must write
+`C:\SCREEN.TXT` (`MAGIC\r\n`) and produce an identical 640x400 MAGXDESK screen;
+the missing-loader case must write neither and differs by more than 10% of the
+screen. Evidence: `build/atari/neost-magxboot-*`.
+
+Limits: one MegaSTE/TOS 2.06 profile. `MAGXBO32`'s TT-RAM start path, the
+reset-resident path and other machines are built and structurally checked, not
+exercised.
+
 ### MagiC diagnostic tools
 
 `mise run apps -- showfree magxkern memexamn crashdmp` builds the four tools

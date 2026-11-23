@@ -308,6 +308,31 @@ mfm256: $(BUILD_DIR)/screen/MFM256.SYS
 mfm32k: $(BUILD_DIR)/screen/MFM32K.SYS
 mfm4ip: $(BUILD_DIR)/screen/MFM4IP.SYS
 
+MAGXBOOT_DIR := MagiC/KERNEL/BIOS/ATARI/BOOT
+MAGXBOOT_SRC := $(BUILD_DIR)/magxboot/src
+MAGXBOOT_OUTPUTS := $(addprefix $(BUILD_DIR)/magxboot/,MAGXBOOT.TOS MAGXBOOT.PRG MAGXBO32.PRG)
+
+.PHONY: magxboot
+magxboot: $(MAGXBOOT_OUTPUTS)
+
+$(MAGXBOOT_SRC)/MAGXBOOT.S: $(MAGXBOOT_DIR)/MAGXBOOT.S $(MAS_NORMALIZER) \
+  NON-TOS/atari-utf8-conversion/atari-utf8.c Makefile.apps
+	python3 $(MAS_NORMALIZER) --atari-strings "$<" "$@"
+
+$(MAGXBOOT_SRC)/OSBIND.INC: MagiC/INC_AS/OSBIND.INC $(MAS_NORMALIZER) Makefile.apps
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(BUILD_DIR)/magxboot/MAGXBO32.PRG: MAGXBOOT_OUTSIDE := 1
+$(BUILD_DIR)/magxboot/MAGXBOOT.TOS $(BUILD_DIR)/magxboot/MAGXBO32.PRG: \
+  $(MAGXBOOT_SRC)/MAGXBOOT.S $(MAGXBOOT_SRC)/OSBIND.INC Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 \
+	  -DOUTSIDE=$(if $(MAGXBOOT_OUTSIDE),1,0) -I"$(MAGXBOOT_SRC)/" -o "$@" "$<"
+
+# The shipped loader and the archived normal PRG have identical contents.
+$(BUILD_DIR)/magxboot/MAGXBOOT.PRG: $(BUILD_DIR)/magxboot/MAGXBOOT.TOS
+	cp "$<" "$@"
+
 .PHONY: mcmd mcmd-languages mcmd-test-driver
 mcmd: $(BUILD_DIR)/mcmd/$(MCMD_LANG)/MCMD.TOS
 mcmd-languages: $(foreach lang,de en fr,$(BUILD_DIR)/mcmd/$(lang)/MCMD.TOS)

@@ -67,6 +67,7 @@ TARGETS = {
     "keyb-sys": ("keyb-sys", [
         f"KEYB_{name}.PRG" for name in ("CZ", "DEI", "FRA", "SWG", "UK", "US")
     ]),
+    "magxboot": ("magxboot", ["MAGXBOOT.TOS", "MAGXBOOT.PRG", "MAGXBO32.PRG"]),
 }
 
 

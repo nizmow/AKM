@@ -200,6 +200,11 @@ description = "Build all MFA/MFM screen drivers and verify ST high/medium/low ar
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-screen-driver-smoke.py"
 
+[tasks."test:magxboot-neost"]
+description = "Compare the shipped and rebuilt MAGXBOOT loaders on cloned MagiC images"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-magxboot-smoke.py"
+
 [tasks."test:neost-server"]
 description = "Run NeoST server client protocol regression tests"
 dir = "{{ config_root }}"

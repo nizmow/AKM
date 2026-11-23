@@ -124,6 +124,12 @@ Build the six keyboard-table generators with `mise run apps -- keyb-sys` into
 runs each archived/rebuilt pair in separate disposable EmuTOS guests and
 requires the generated `KEYTABLS.SYS` to match byte-for-byte.
 
+Build the MAGiC boot loader with `mise run apps -- magxboot` into
+`build/atari/apps/magxboot/`: `MAGXBOOT.TOS`, `MAGXBOOT.PRG` and the `OUTSIDE`
+variant `MAGXBO32.PRG`. `mise run test:magxboot-neost` boots the shipped
+loader, the rebuild and a missing-loader clone on disposable MagiC images and
+compares the MAGXDESK screen and the boot marker.
+
 Build the two-pass disassembler with `mise run apps -- dis` (or `dis1`/`dis2`)
 into `build/atari/apps/dis1/DIS1.TTP` and `build/atari/apps/dis2/DIS2.TTP`.
 `mise run test:dis-neost` runs both against the bundled `TST` corpus and a DRI

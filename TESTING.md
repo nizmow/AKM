@@ -623,6 +623,26 @@ The runner uses NeoST's bundled EmuTOS; no MagiC image, TOS ROM or `mtools` is
 required. Evidence goes to `build/atari/neost-keyb-sys-*`. This proves the
 generated tables, not that MagiC's keyboard driver loads them at boot.
 
+## NeoST: MAGXBOOT loader
+
+`mise run test:magxboot-neost` builds the loader and the screen probe, then
+boots three disposable clones with an unchanged `MAGIC.RAM`:
+
+- the shipped `MAGIC.A/AUTO/MAGXBOOT.TOS`;
+- the rebuild from `build/atari/apps/magxboot/MAGXBOOT.TOS`;
+- a clone with `C:\AUTO\MAGXBOOT.TOS` deleted.
+
+Both present loaders must write `C:\SCREEN.TXT` (`MAGIC\r\n`) from the probe in
+`GEMSYS/MAGIC/START` and render a pixel-identical 640x400 MAGXDESK screen. The
+missing loader must reach neither; its screen must differ by more than 10% of
+the pixels. The runner also checks each executable's TEXT/DATA/BSS, TOS flags
+and absent symbols, and that the rebuilt `MAGXBOOT.PRG` equals the rebuilt TOS.
+
+Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06 and host
+`mtools`. Evidence goes to a fresh `build/atari/neost-magxboot-*` directory.
+Only the MegaSTE mono profile is exercised; `MAGXBO32` and the resident path are
+not booted.
+
 ## NeoST: MagiC diagnostic tools
 
 `mise run test:diagnostic-tools-neost` builds `SHOWFREE.TOS`, `MAGXKERN.TTP`,

@@ -91,8 +91,8 @@ framework or shared-library rewrite is required before these are attempted.
 
 ## Following batches
 
-The current core source-backed remainder is 26 build families: 13
-application/tool/extension families, 7 shared library/startup families and 6
+The current core source-backed remainder is 25 build families: 13
+application/tool/extension families, 7 shared library/startup families and 5
 system-component families. Historical, test-only, blocked, binary-only and KAOS
 entries are outside that count.
 
@@ -203,6 +203,13 @@ the remaining shared families ahead of their consumers.
   `test:keyb-sys-neost` runs each archived/rebuilt pair in separate EmuTOS
   guests and requires byte-identical `KEYTABLS.SYS` files, expected lengths and
   six distinct layouts. Live keyboard-driver loading is untested.
+- [x] **MAGXBOOT** — add `magxboot` producing the shipped TOS, the identical
+  `MAGXBOOT.PRG` and the `OUTSIDE` `MAGXBO32.PRG` from one VASM recipe. The
+  rebuild matches both references except two `adda.w #12,sp` encodings VASM
+  rewrites to `lea 12(sp),sp`. `test:magxboot-neost` boots shipped, rebuilt and
+  missing-loader clones; present loaders render an identical MAGXDESK screen and
+  write the probe marker, and the missing case reaches neither. Other machines,
+  TT-RAM starts and reset residency are untested.
 - [ ] **MFA/MFM screen drivers** — scope and reference binaries are in the
   [build catalogue](APPLICATION_BUILDS.md#2-system-components-outside-the-application-tree).
   - [x] Resolve the 12 canonical `.PRJ` inputs, includes and archived `.SYS`
