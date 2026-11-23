@@ -181,13 +181,14 @@ the remaining shared families ahead of their consumers.
   load; the Release copy is the same binary. Archive and rebuild render an
   8-plane interleaved MFDB with identical pixel readbacks and 4096-byte bitmap
   bytes, asserted independently, and a driver-less clone rejects the open.
-- [x] **OSD phase 2** — `OFF016PK`, `OFF256PK`, `OFF32KFL`, `OFF32KPK` and
-  `OFF16MOV` build from the legacy sources. OFF016PK matches the V4.10 archive
-  and OFF32KFL the V4.11 Release byte-for-byte; the other three have no
-  byte-identical reference and are verified structurally and at runtime.
+- [x] **OSD phase 2** — `OFF016PK`, `OFF256PK`, `OFF32KFL`, `OFF32KPK`,
+  `OFF65KPK` and `OFF16MOV` build from the legacy sources. OFF016PK matches the
+  V4.10 archive and OFF32KFL the V4.11 Release byte-for-byte; the other four
+  have no byte-identical reference and are verified structurally and at runtime.
   `mise run test:osd-<driver>-neost` checks each requested layout, readbacks
   and full bitmap, plus a missing-driver control. OFF16MOV asserts its 16 KB
-  bitmap and the word-swapped TrueColor readbacks.
+  bitmap and the word-swapped TrueColor readbacks; OFF65KPK asserts its 5/6/5
+  packed readbacks, 8192-byte bitmap and V4.11 header.
 - [x] **COPS.APP** — add `cops` producing the application-mode control-panel
   host from the original C sources with MiNTLib/GEMlib; compile the embedded
   resource and normalize `CLEARCPU.S` through the MAS converter.

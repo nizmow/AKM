@@ -576,7 +576,7 @@ scenario.
 
 ## NeoST: packed and direct-colour OSD drivers
 
-Five drivers share one scenario runner with per-driver profiles:
+Six drivers share one scenario runner with per-driver profiles:
 
 ```sh
 export MAGIC_IMAGE=/path/to/magic.img
@@ -585,13 +585,14 @@ mise run test:osd-off016pk-neost   # 16 colours, 4 planes, packed nibbles
 mise run test:osd-off256pk-neost   # 256 colours, 8 planes, packed bytes
 mise run test:osd-off32kfl-neost   # 32768 colours, flat 15-bit words
 mise run test:osd-off32kpk-neost   # 32768 colours, packed 15-bit words
+mise run test:osd-off65kpk-neost   # 65536 colours, packed 16-bit words
 mise run test:osd-off16mov-neost   # TrueColor, 32-bit pixels
 ```
 
 `scripts/neost-osd-batch-smoke.py` builds the driver and probe, checks the
 header organisation, and records archive/Release comparisons. OFF016PK must
-match its source-tree archive and OFF32KFL the Release; the other three have no
-byte-identical reference and are compared structurally.
+match its source-tree archive and OFF32KFL the Release; the remaining four have
+no byte-identical reference and are compared structurally.
 
 Each case installs archive and rebuild as `C:\GEMSYS\<driver>.OSD` in separate
 MagiC clones, requests the driver's exact VDI 100/1 tuple, draws bars crossing

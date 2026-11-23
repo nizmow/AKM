@@ -1384,27 +1384,36 @@ stability remain untested.
 ### Packed and direct-colour OSD drivers
 
 `mise run apps -- osd-batch` builds `OFF016PK.OSD`, `OFF256PK.OSD`,
-`OFF32KFL.OSD`, `OFF32KPK.OSD` and `OFF16MOV.OSD` under
-`build/atari/apps/osd/`. All five use the MAS normalizer and the OSD include
+`OFF32KFL.OSD`, `OFF32KPK.OSD`, `OFF65KPK.OSD` and `OFF16MOV.OSD` under
+`build/atari/apps/osd/`. All six use the MAS normalizer and the OSD include
 set. `mas_to_vasm.py` now translates `ALIGN n` to VASM's exponent form
 (`align log2(n)`): VASM's `align n` means 2^n, while these sources supply byte
 counts, and the untranslated form padded by 64 KB.
 
-`-no-opt` preserves the archived MOVEM encodings. OFF256PK is the exception:
-its branches need VASM's size extension, so it builds with default
-optimization. Zero-displacement folds were needed where the archived assembler
+`-no-opt` preserves the archived MOVEM encodings. OFF256PK is the only driver
+that requires default optimization: its branches need VASM's size extension.
+Zero-displacement folds were needed where the archived assembler
 folded them but `-no-opt` does not: `move.b 0(a1),d4` became `move.b (a1),d4`
 in OFF016PK, and `movea.l _color_map_ptr(a2),a0` became `movea.l (a2),a0` in
 OFF256PK, OFF32KFL, OFF32KPK and OFF16MOV. OFF32KFL also uses explicit `.s` on
 two previously unsized branches.
 
+OFF65KPK's V4.11 source is the orphan exception: it includes a local
+`..\include\*.inc` tree that is absent from the repository and uses `MD_*`
+write-mode aliases and `r_planes`. Its normalized copy therefore maps
+`.INC` to the shared `.I` includes and rewrites `MD_REPLACE`/`MD_XOR`/
+`MD_ERASE` to `REPLACE`/`EX_OR`/`REV_TRANS` plus `r_planes` to `planes`. It
+builds with default optimization; the driver's relocation table uses label
+differences, so instruction-size changes cannot desynchronize it.
+
 Reference parity is per driver: OFF016PK is byte-identical to its V4.10
 source-tree archive; OFF32KFL is byte-identical to the shipped V4.11 Release.
 OFF256PK (source V4.11; archive V3.02, Release V4.12), OFF32KPK (V4.11; archive
-0410, Release 0413) and OFF16MOV (V4.13; both references differ, notably the
-source keeps the `scrninfo`/palette tables in TEXT while the references place
-them in DATA) have no byte-identical reference, so their structure and runtime
-behavior are verified instead.
+0410, Release 0413), OFF65KPK (V4.11; archive 0410, Release 0413) and OFF16MOV
+(V4.13; both references differ, notably the source keeps the
+`scrninfo`/palette tables in TEXT while the references place them in DATA)
+have no byte-identical reference, so their structure and runtime behavior are
+verified instead.
 
 `mise run test:osd-<driver>-neost` runs the shared
 `scripts/neost-osd-batch-smoke.py --driver <driver>` scenario. Each probe
@@ -1414,9 +1423,11 @@ pixel. Indexed drivers use NVDI's colour map; direct-colour probes set pens
 through VDI opcode 14. Archive and rebuild run in separate clones; a clone with
 the driver deleted must report the open as rejected and write no bitmap. The
 16MOV scenario asserts the full 16 KB bitmap and readbacks equal to the stored
-longword with VDI's 16-bit word swap.
+longword with VDI's 16-bit word swap. OFF65KPK expects the byte-swapped 5/6/5
+values (`0x00F8`, `0xE007`, `0x1F00`, `0x00FC`, `0x1F80`) and its full
+8192-byte bitmap.
 
-Limits: one organisation per driver on the tested colour MegaSTE screen. Three
+Limits: one organisation per driver on the tested colour MegaSTE screen. Four
 drivers have no byte-identical reference; animation, other screen modes and
 long-term stability remain untested.
 

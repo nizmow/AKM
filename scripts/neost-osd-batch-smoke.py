@@ -90,6 +90,9 @@ def pixels(values) -> list[str]:
 V32FL = (0xF800, 0x07C0, 0x001F, 0xFC00, 0x801F)
 V32PK_BASE = (0x7C00, 0x03E0, 0x001F, 0x7E00, 0x401F)
 V32PK = tuple(((v << 8) | (v >> 8)) & 0xFFFF for v in V32PK_BASE)
+# 65536-colour packed: 5 red, 6 green, 5 blue bits, stored Intel-order (org 129).
+V65PK_BASE = (0xF800, 0x07E0, 0x001F, 0xFC00, 0x801F)
+V65PK = tuple(((v << 8) | (v >> 8)) & 0xFFFF for v in V65PK_BASE)
 V16MOV_RAW = (0x0000FF00, 0x00FF0000, 0xFF000000, 0x0080FF00, 0xFF008000)
 
 
@@ -135,6 +138,15 @@ PROFILES = {
         "release": RELEASE / "OFF32KPK.OSD",
         "text": "OFF32KP", "expected_pixels": pixels(V32PK),
         "bitmap": lambda: bitmap_32k(V32PK),
+    },
+    "off65kpk": {
+        "osd": "OFF65KPK", "version": "0411", "colors": 65536, "planes": 16,
+        "format": 2, "org": 129,
+        "exact": None,
+        "archive": OSD / "OFF65KPK.OSD",
+        "release": RELEASE / "OFF65KPK.OSD",
+        "text": "OFF65KP", "expected_pixels": pixels(V65PK),
+        "bitmap": lambda: bitmap_32k(V65PK),
     },
     "off16mov": {
         "osd": "OFF16MOV", "version": "0413", "colors": 16777216,

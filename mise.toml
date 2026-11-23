@@ -170,6 +170,11 @@ description = "Build OFF32KPK.OSD and prove NVDI draws into a packed 15-bit bitm
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-osd-batch-smoke.py --driver off32kpk"
 
+[tasks."test:osd-off65kpk-neost"]
+description = "Build OFF65KPK.OSD and prove NVDI draws into a packed 16-bit bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-osd-batch-smoke.py --driver off65kpk"
+
 [tasks."test:osd-off16mov-neost"]
 description = "Build OFF16MOV.OSD and prove NVDI draws into a 32-bit TrueColor bitmap"
 dir = "{{ config_root }}"

@@ -58,6 +58,12 @@ TARGETS = {
             "MFM2", "MFM16", "MFM16IP", "MFM16M", "MFM256", "MFM32K", "MFM4IP",
         )
     ]),
+    "osd-batch": ("osd", [
+        f"{name}.OSD" for name in (
+            "OFF016PK", "OFF256PK", "OFF32KFL", "OFF32KPK", "OFF65KPK",
+            "OFF16MOV",
+        )
+    ]),
 }
 
 

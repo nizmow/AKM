@@ -188,8 +188,10 @@ $(BUILD_DIR)/off256ip/OFF256IP.PRG: MagiC/KERNEL/VDI/TESTDATA/OFF256IP.C Makefil
 OSD_BATCH_NAMES := OFF016PK OFF256PK OFF32KFL OFF32KPK OFF16MOV
 OSD_BATCH_NOOPT := OFF016PK OFF32KFL OFF32KPK OFF16MOV
 OSD_BATCH_NORMALIZED := $(addprefix $(BUILD_DIR)/osd/src/,$(addsuffix .S,$(OSD_BATCH_NAMES)))
-OSD_BATCH_OUTPUTS := $(addprefix $(BUILD_DIR)/osd/,$(addsuffix .OSD,$(OSD_BATCH_NAMES)))
-OSD_BATCH_PROBES := $(addprefix $(BUILD_DIR)/osd-probes/,$(addsuffix .PRG,$(OSD_BATCH_NAMES)))
+OSD_BATCH_OUTPUTS := $(addprefix $(BUILD_DIR)/osd/,$(addsuffix .OSD,$(OSD_BATCH_NAMES))) \
+  $(BUILD_DIR)/osd/OFF65KPK.OSD
+OSD_BATCH_PROBES := $(addprefix $(BUILD_DIR)/osd-probes/,$(addsuffix .PRG,$(OSD_BATCH_NAMES))) \
+  $(BUILD_DIR)/osd-probes/OFF65KPK.PRG
 
 $(OSD_BATCH_NORMALIZED): $(BUILD_DIR)/osd/src/%.S: $(OSD002_DIR)/%.S $(MAS_NORMALIZER) Makefile.apps
 	mkdir -p "$(@D)"
@@ -208,25 +210,42 @@ $(BUILD_DIR)/osd/OFF256PK.OSD: $(BUILD_DIR)/osd/src/OFF256PK.S $(OSD002_INCLUDES
 	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 \
 	  -I"$(BUILD_DIR)/osd/src/" -o "$@" "$<"
 
+# OFF65KPK.S comes from a checkout whose local `include\*.inc` tree is absent;
+# every other OSD source names the shared MAGICVDI.2 includes as `.I`. That
+# include tree also defined the `MD_*` write-mode aliases as VDI.I's names.
+$(BUILD_DIR)/osd/src/OFF65KPK.S: $(OSD002_DIR)/OFF65KPK.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+	sed -i -E -e 's/\.INC"/.I"/g' -e 's/\bMD_REPLACE\b/REPLACE/g' \
+	  -e 's/\bMD_XOR\b/EX_OR/g' -e 's/\bMD_ERASE\b/REV_TRANS/g' \
+	  -e 's/\br_planes\b/planes/g' "$@"
+
+$(BUILD_DIR)/osd/OFF65KPK.OSD: $(BUILD_DIR)/osd/src/OFF65KPK.S $(OSD002_INCLUDES) Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 \
+	  -I"$(BUILD_DIR)/osd/src/" -o "$@" "$<"
+
 $(OSD_BATCH_PROBES): $(BUILD_DIR)/osd-probes/%.PRG: MagiC/KERNEL/VDI/TESTDATA/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
-.PHONY: osd-batch off016pk off256pk off32kfl off32kpk off16mov \
+.PHONY: osd-batch off016pk off256pk off32kfl off32kpk off16mov off65kpk \
   off016pk-test-driver off256pk-test-driver off32kfl-test-driver \
-  off32kpk-test-driver off16mov-test-driver
+  off32kpk-test-driver off16mov-test-driver off65kpk-test-driver
 osd-batch: $(OSD_BATCH_OUTPUTS) $(OSD_BATCH_PROBES)
 off016pk: $(BUILD_DIR)/osd/OFF016PK.OSD
 off256pk: $(BUILD_DIR)/osd/OFF256PK.OSD
 off32kfl: $(BUILD_DIR)/osd/OFF32KFL.OSD
 off32kpk: $(BUILD_DIR)/osd/OFF32KPK.OSD
 off16mov: $(BUILD_DIR)/osd/OFF16MOV.OSD
+off65kpk: $(BUILD_DIR)/osd/OFF65KPK.OSD
 off016pk-test-driver: $(BUILD_DIR)/osd-probes/OFF016PK.PRG
 off256pk-test-driver: $(BUILD_DIR)/osd-probes/OFF256PK.PRG
 off32kfl-test-driver: $(BUILD_DIR)/osd-probes/OFF32KFL.PRG
 off32kpk-test-driver: $(BUILD_DIR)/osd-probes/OFF32KPK.PRG
 off16mov-test-driver: $(BUILD_DIR)/osd-probes/OFF16MOV.PRG
+off65kpk-test-driver: $(BUILD_DIR)/osd-probes/OFF65KPK.PRG
 
 # MFA (Atari) and MFM (MagiCMac) screen drivers. The older MFM sources still
 # name the NVDI field at offset 196 `_nvdi_PixMap_ptr`; the current include
@@ -838,7 +857,7 @@ $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG: MagiC/APPS/WBDAEMON/TESTDATA/NEOSTEST.C Make
 -include $(BUILD_DIR)/off004ip/OFF004IP.d
 -include $(BUILD_DIR)/off016ip/OFF016IP.d
 -include $(BUILD_DIR)/off256ip/OFF256IP.d
--include $(addprefix $(BUILD_DIR)/osd-probes/, $(addsuffix .d,$(OSD_BATCH_NAMES)))
+-include $(OSD_BATCH_PROBES:.PRG=.d)
 
 WINFRAME_DIR := MagiC/KERNEL/WINFRAME
 WINFRAME_OBJECTS := $(BUILD_DIR)/winframe/WIN_SLB.o $(BUILD_DIR)/winframe/WIN_OBJS.o \
