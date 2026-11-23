@@ -1234,6 +1234,50 @@ the dialog reads back the scheduler timeslice/priority it sets. Slider
 dragging, Save confirmation and actual scheduler behavior under load remain
 untested. Evidence: `build/atari/neost-tslice-cpx-20261122-120331/`.
 
+## COPS
+
+`mise run apps -- cops` builds `build/atari/apps/cops/COPS.APP` in application
+mode. The legacy `MagiC/APPS/COPS/INCLUDE` headers are not placed on the include
+path: they supplied Pure C `MT_AES.H`/`MGX_DOS.H` declarations and would shadow
+the toolchain's `stdio.h`, `stdint.h` and GEMlib headers. The source now uses
+public `gem.h`/`gemx.h` and `mint/*.h`; `GLOBAL.H` keeps only the records MiNTLib
+does not declare.
+
+Contracts worth preserving:
+
+- `_app` comes from MiNTLib startup (non-zero for an application, zero for an
+  accessory). It is used to select the application/accessory paths.
+- The 512-byte CPX disk header, 90-byte `XCPB`, 40-byte `CPXINFO` and the packed
+  `Xform_do` argument record are asserted in `CPX.H`. The existing GCC callback
+  bridges in `CPX_BIND.C` are unchanged.
+- MiNTLib supplies `Dxreaddir()` but not its `XATTR` record, DTA field spellings
+  (`dta_name`) or the `Keytbl()` table name (`caps`); `GLOBAL.H` defines the
+  records or the callers use the public names.
+- `EVNTDATA` remains a 16-bit record; the `graf_mkstate_evntdata()` and
+  `evnt_button_evntdata()` macros expand to the public GEMlib calls.
+- `COPS_RS.RSC` is generated C data (`COPS_RS.H`), so the executable is
+  self-contained. `EMU_DBG.LIB` is not linked: `EMU_PRINTF` compiles the two
+  debug calls out.
+- `CLEARCPU.S` keeps its Pure Assembler form (`EXPORT`, `SUPER`) so `COPS.PRJ`
+  still assembles it. The modern build normalizes it with
+  `MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py`, which turns `EXPORT` into `XDEF`,
+  drops `SUPER`, converts `0x` literals and fixes directives. Verified object
+  bytes contain `cpushl`, `cpusha`, `cinva` and both `movec %cacr` forms.
+- The build rejects a `BUILD_DIR` whose `cops` output directory aliases
+  `MagiC/APPS/COPS`; otherwise normalization or linking could overwrite the
+  tracked source/archive on a case-insensitive checkout.
+
+`test:cops-neost` validates the `#_APP`/`#_ACC` paths, disables the accessory,
+removes inherited CPX modules and `COPS.INF` settings, and installs only
+`MAGXCONF.CPX` and `TSLICE.CPX` in `C:\CPX`. It parks the pointer at a neutral
+position before every capture, requires each dialog to differ from the panel
+and the two dialogs to differ from each other, and requires Cancel to restore
+everything right of the icon strip (the clicked icon keeps its selection
+highlight). The panel, restored panel and both dialogs are then compared
+pixel-for-pixel between archive and rebuild. Evidence:
+`build/atari/neost-cops-20261123-195738/`. Accessory mode, board editing,
+Save/alerts, event-CPX callbacks and other CPXs remain untested.
+
 ### OFF002.OSD offscreen driver
 
 The OSD sources use Pure C/MAS syntax and Windows-style `INCLUDE` paths. Normalize

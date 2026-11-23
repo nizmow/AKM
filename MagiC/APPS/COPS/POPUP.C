@@ -21,17 +21,14 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <mgx_dos.h>
 #include <string.h>
 #include <stdio.h>
-#include <mt_aes.h>
-#include <vdi.h>
 
-#include "cops_rsc.h"
-#include "cops.h"
-#include "objmacro.h"
-#include "adaptrsc.h"
-#include "popup.h"
+#include "COPS_RSC.H"
+#include "COPS.H"
+#include "OBJMACRO.H"
+#include "ADAPTRSC.H"
+#include "POPUP.H"
 
 #define graf_mkstate_mrets(mk) \
 	graf_mkstate(&(mk)->x,&(mk)->y,&(mk)->buttons,&(mk)->kstate)
@@ -341,7 +338,7 @@ do_popup(GRECT *button_rect, char **strs, int16_t no_strs, int16_t spaces, int16
 		if (no_strs > MAX_STRS)
 		{
 			if (aes_flags & GAI_SCROLLPOPUP)
-				slct = xfrm_popup(tree, 0, 0, 1, max_strs, no_strs, (init_popup_tf *) strs_init, (void *) &popup_par, &scroll_pos);
+				slct = xfrm_popup(tree, 0, 0, 1, max_strs, no_strs, strs_init, (void *) &popup_par, &scroll_pos);
 			else
 				slct = do_form_popup(tree, 0, 0, 1, max_strs, no_strs, strs_init, (void *) &popup_par, &scroll_pos);
 		} else if (aes_flags & GAI_POPUP)

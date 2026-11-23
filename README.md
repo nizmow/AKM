@@ -228,6 +228,13 @@ MiNTLib/GEMlib dialog calls and an app-local DOS compatibility layer.
 `MGFORMAT.PRG` and its German `MGFORMAT.RSC`. It uses native MagiC `wdlg`
 AES bindings; physical floppy operations are not covered by the NeoST test.
 
+`mise run apps -- cops` builds `build/atari/apps/cops/COPS.APP`, the
+application-mode control-panel host, from the original sources with
+MiNTLib/GEMlib. Its resource data is compiled in; no external RSC is needed.
+`mise run test:cops-neost` compares the panel and the `MAGXCONF.CPX` /
+`TSLICE.CPX` dialogs with the archive on cloned MagiC images. The accessory
+form is not built or tested.
+
 `mise run apps -- vt52` builds `build/atari/apps/vt52/`: `VT52.PRG` and its
 German `VT52.RSC`, with `DRAGDROP` compiled from source. The BIOS/XBIOS hooks
 use GCC's stack ABI. `mise run test:vt52-neost` compares an archived/rebuilt
@@ -305,6 +312,10 @@ screens on identical cloned images.
 
 Run `mise run test:mgcopy-neost` (or `python3 scripts/neost-mgcopy-smoke.py`)
 to compare MGCOPY copy, move, alias and delete effects on cloned MagiC images.
+
+Run `mise run test:cops-neost` (or `python3 scripts/neost-cops-smoke.py`)
+to compare the COPS panel and its `MAGXCONF.CPX`/`TSLICE.CPX` dialogs with the
+archive on cloned MagiC images.
 
 Run `mise run test:vt52-neost` (or `python3 scripts/neost-vt52-smoke.py`)
 to compare archived and rebuilt VT52 terminal sessions on cloned MagiC images.

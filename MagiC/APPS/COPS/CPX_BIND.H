@@ -24,8 +24,7 @@
 #ifndef _cpx_bind_h
 #define _cpx_bind_h
 
-#include "global.h"
-#include "cpx.h"
+#include "CPX.H"
 
 void cpx_userdef(void cdecl (*cpx_userdef)(void));
 

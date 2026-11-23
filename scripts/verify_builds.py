@@ -24,6 +24,7 @@ TARGETS = {
     "vfatconf": ("vfatconf", ["VFATCONF.PRG", "vfatconf.rsc"]),
     "shutdown": ("shutdown", ["SHUTDOWN.PRG"]),
     "wbdaemon": ("wbdaemon", ["WBDAEMON.PRG"]),
+    "cops": ("cops", ["COPS.APP"]),
     "applicat": ("applicat", ["APPLICAT.APP", "applicat.rsc", "applicat.inf"]),
     "mgview": ("mgview", ["MGVIEW.APP"]),
     "mgnotice": ("mgnotice", ["MGNOTICE.APP", "mgnotice.rsc", "EDITOBJC.SLB"]),

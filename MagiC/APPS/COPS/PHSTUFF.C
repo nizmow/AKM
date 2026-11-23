@@ -21,7 +21,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <mgx_dos.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -33,9 +32,9 @@
 #endif
 */
 
-#include "cops_rsc.h"
-#include "phstuff.h"
-#include "adaptrsc.h"
+#include "COPS_RSC.H"
+#include "PHSTUFF.H"
+#include "ADAPTRSC.H"
 
 extern long clear_cpu_cf(void);
 extern long clear_cpu_030(void);

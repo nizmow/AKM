@@ -24,8 +24,7 @@
 #ifndef _cops_h
 #define _cops_h
 
-#include "global.h"
-#include "cpx.h"
+#include "CPX.H"
 
 #define ALPHAFILEVERSION 8
 

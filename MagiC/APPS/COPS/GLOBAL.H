@@ -24,16 +24,143 @@
 # ifndef _global_h
 # define _global_h
 
-/*
-# include <sys/types.h>
-# include <mint/mintbind.h>
-*/
+#include <stdint.h>
+#include <gem.h>
+#include <gemx.h>
+#include <mint/mintbind.h>
+#include <mint/osbind.h>
+#include <mint/cookie.h>
+#include <mint/ssystem.h>
+#include <fcntl.h>
+
+#ifndef cdecl
+#define cdecl __CDECL
+#endif
+
+/* MiNTLib sets this in its startup code: non-zero for an application,
+ * zero for an accessory. */
+extern int16_t _app;
+
+/* COPS converts TOS dates itself instead of using the libc time package. */
+typedef int32_t time_t;
+
+struct tm
+{
+	int16_t tm_sec;			/* Seconds.	[0-60] (1 leap second) */
+	int16_t tm_min;			/* Minutes.	[0-59] */
+	int16_t tm_hour;		/* Hours.	[0-23] */
+	int16_t tm_mday;		/* Day.		[1-31] */
+	int16_t tm_mon;			/* Month.	[0-11] */
+	int16_t tm_year;		/* Year	- 1900.  */
+	int16_t tm_wday;		/* Day of week.	[0-6] */
+	int16_t tm_yday;		/* Days in year.[0-365]	*/
+	int16_t tm_isdst;		/* DST.		[-1/0/1]*/
+};
+
+/* MiNTLib declares Dxreaddir() but leaves the record to the caller. */
+typedef struct
+{
+	uint16_t mode;
+	int32_t  index;
+	uint16_t dev;
+	uint16_t reserved1;
+	uint16_t nlink;
+	uint16_t uid;
+	uint16_t gid;
+	int32_t  size;
+	int32_t  blksize;
+	int32_t  nblocks;
+	int16_t  mtime;
+	int16_t  mdate;
+	int16_t  atime;
+	int16_t  adate;
+	int16_t  ctime;
+	int16_t  cdate;
+	int16_t  attr;
+	int16_t  reserved2;
+	int32_t  reserved3[2];
+} XATTR;
+
+/* Keytbl() returns _KEYTAB; COPS only uses the three translation tables. */
+typedef struct
+{
+	char *unshift;
+	char *shift;
+	char *caps;
+} KEYTAB;
+
+/* GEM mouse state in COPS' historical 16-bit record. */
+typedef struct
+{
+	int16_t x;
+	int16_t y;
+	int16_t bstate;
+	int16_t kstate;
+} EVNTDATA;
+
+#define graf_mkstate_evntdata(ev) \
+	graf_mkstate(&(ev)->x, &(ev)->y, &(ev)->bstate, &(ev)->kstate)
+#define evnt_button_evntdata(clicks, mask, state, ev) \
+	evnt_button((clicks), (mask), (state), &(ev)->x, &(ev)->y, \
+		    &(ev)->bstate, &(ev)->kstate)
+
+/* TOS system header, reached through the 0x4f2 system variable. */
+typedef struct _syshdr
+{
+	uint16_t os_entry;
+	uint16_t os_version;
+	void *os_start;
+	struct _syshdr *os_base;
+	void *os_membot;
+	void *os_rsv1;
+	int32_t *os_magic;
+	int32_t os_gendat;
+	int16_t os_conf;
+	int16_t os_gendatg;
+	void *_root;
+	int32_t *kbshift;
+	void **_run;
+	void *p_rsv2;
+} SYSHDR;
+
+/* MagiC AES cookie payload. Only the version field is read here. */
+typedef struct
+{
+	int32_t magic;
+	void *membot;
+	void *aes_start;
+	int32_t magic2;
+	int32_t date;
+	void (*chgres)(int16_t res, int16_t txt);
+	int32_t (**shel_vector)(void);
+	char *aes_bootdrv;
+	int16_t *vdi_device;
+	void *reservd1;
+	void *reservd2;
+	void *reservd3;
+	int16_t version;
+	int16_t release;
+} AESVARS;
+
+typedef struct
+{
+	int32_t config_status;
+	void *dosvars;
+	AESVARS *aesvars;
+	void *res1;
+	void *hddrv_functions;
+	int32_t status_bits;
+} MAGX_COOKIE;
 
 # define str(x)		_stringify (x)
 # define _stringify(x)	#x
 
+#ifndef min
 #define min(a,b)	((a) < (b) ? (a) : (b))
+#endif
+#ifndef max
 #define max(a,b)	((a) > (b) ? (a) : (b))
+#endif
 #define between(x,a,b)	((x >= a) && (x <= b))
 #define ABS(a)		((a) < 0 ? -(a) : (a))
 
@@ -66,70 +193,6 @@
 #define __builtin_unreachable()
 #endif
 
-/* gemlib and mintlib compatibility */
 
-#define aes_global _GemParBlk.global
-#define C_MagX 0x4D616758L     /* MagX */
-typedef int32_t time_t;
-
-#define S_FLUSHCACHE 22
-#define Ssystem(a,b,c) gemdos(0x154, (int16_t) (a), (int32_t) (b), (int32_t) (c)) /* MiNT only */
-
-struct tm
-{
-  int16_t tm_sec;			/* Seconds.	[0-60] (1 leap second) */
-  int16_t tm_min;			/* Minutes.	[0-59] */
-  int16_t tm_hour;			/* Hours.	[0-23] */
-  int16_t tm_mday;			/* Day.		[1-31] */
-  int16_t tm_mon;			/* Month.	[0-11] */
-  int16_t tm_year;			/* Year	- 1900.  */
-  int16_t tm_wday;			/* Day of week.	[0-6] */
-  int16_t tm_yday;			/* Days in year.[0-365]	*/
-  int16_t tm_isdst;			/* DST.		[-1/0/1]*/
-};
-
-/** parameters for the init callback function (7th parameter of mt_xfrm_popup() )
- */
-struct POPUP_INIT_args
-{
-	OBJECT *tree;		/**< address of the object tree */
-	int16_t scrollpos;	/**< scroll position */
-	int16_t nlines;		/**< number of lines */
-	void *param;		/**< user-defined parameter */
-};
-
-/** parameters of HNDL_OBJ callback functions */
-struct HNDL_OBJ_args 
-{
-	DIALOG *dialog;	/**< Pointer to a dialog structure. One should not access the structure directly; the wdlg_xx functions should be used! */
-	EVNT *events;	/**< If obj is an object number (>=0), then events points to the EVNT structure that was passed by wdlg_evnt; otherwise events is basically 0L and can not be used for addressing */
-	int16_t obj;		/**< Object number (>=0) or function number (<0) */
-	int16_t clicks;	/**< Number of mouse clicks (if obj is an object number) */
-	void *data;		/**< If the parameter obj is a positive object number, then the variable user_data from wdlg_create() function will be passed here; otherwise the value depends on the corresponding function number */
-};
-
-/** 16b rectangle */
-typedef struct			/* Rectangle with 16-Bit-coordinates */
-{
-	int16_t	x1;			/**< X coordinate of the top left corner */
-	int16_t	y1;			/**< Y coordinate of the top left corner */
-	int16_t	x2;			/**< X coordinate of the bottom right corner + 1 */
-	int16_t	y2;			/**< Y coordinate of the bottom right corner + 1 */
-} RECT16;
-
-#define udef_vswr_mode vswr_mode
-#define udef_vsf_color vsf_color
-#define udef_vsl_color vsl_color
-#define udef_vsl_type vsl_type
-#define udef_vst_color vst_color
-#define udef_vst_font vst_font
-#define udef_vst_effects vst_effects
-#define udef_vst_alignment vst_alignment
-#define udef_vst_height vst_height
-#define udef_v_gtext v_gtext
-#define udef_v_pline v_pline
-#define udef_vs_clip vs_clip
-#define udef_vr_recfl vr_recfl
-#define udef_vrt_cpyfm vrt_cpyfm
 
 # endif /* _global_h */

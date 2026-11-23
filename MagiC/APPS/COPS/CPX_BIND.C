@@ -24,10 +24,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "cops_rsc.h"
-#include "callback.h"
-#include "cpx_bind.h"
-#include "cops.h"
+#include "COPS_RSC.H"
+#include "CALLBACK.H"
+#include "CPX_BIND.H"
+#include "COPS.H"
 
 #define CPX_STACKSIZE 16384
 

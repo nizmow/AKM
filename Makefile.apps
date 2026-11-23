@@ -61,6 +61,20 @@ VT52_OBJECTS := $(patsubst $(VT52_DIR)/%.C,$(BUILD_DIR)/vt52/%.o,$(VT52_SOURCES)
   $(patsubst $(VT52_DIR)/%.S,$(BUILD_DIR)/vt52/%.o,$(VT52_ASM_SOURCES)) \
   $(BUILD_DIR)/vt52/DRAGDROP.o
 
+COPS_DIR := MagiC/APPS/COPS
+COPS_SOURCES := $(addprefix $(COPS_DIR)/,COPS.C CALLBACK.C CPX_BIND.C \
+  ADAPTRSC.C FIX_RSC.C LIST.C PHSTUFF.C POPUP.C RC_INTER.C WLIB.C COPS_RSC.C)
+COPS_OBJECTS := $(patsubst $(COPS_DIR)/%.C,$(BUILD_DIR)/cops/%.o,$(COPS_SOURCES))
+COPS_ASM_OBJECTS := $(BUILD_DIR)/cops/CLEARCPU.o
+COPS_ASM_NORMALIZED := $(BUILD_DIR)/cops/CLEARCPU.s
+COPS_OUTPUT_DIR := $(abspath $(BUILD_DIR)/cops)
+COPS_SOURCE_DIR := $(abspath $(COPS_DIR))
+COPS_OUTPUT_LOWER := $(shell printf '%s' '$(COPS_OUTPUT_DIR)' | tr '[:upper:]' '[:lower:]')
+COPS_SOURCE_LOWER := $(shell printf '%s' '$(COPS_SOURCE_DIR)' | tr '[:upper:]' '[:lower:]')
+ifeq ($(COPS_OUTPUT_LOWER),$(COPS_SOURCE_LOWER))
+$(error BUILD_DIR=$(BUILD_DIR) aliases the COPS source directory)
+endif
+
 MCMD_DIR := MagiC/APPS/CMD/SRC
 MCMD_LANG ?= de
 MAS_NORMALIZER := MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py
@@ -339,7 +353,7 @@ $(BUILD_DIR)/magxconf/NEOSTART.PRG: MagiC/APPS/MAGXCONF/TESTDATA/NEOSTART.C Make
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 
-.PHONY: all applicat mod-app cmdline mac2st dump fc split dis dis1 dis2 showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver flp-par flp-par0 flp-par1 magxconf-cpx tslice-cpx winframe xp-rastr load-img slbtest mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 vt52-test-driver magxdesk abi-check console-test-driver
+.PHONY: all applicat mod-app cmdline mac2st dump fc split dis dis1 dis2 showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver flp-par flp-par0 flp-par1 magxconf-cpx tslice-cpx cops winframe xp-rastr load-img slbtest mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 vt52-test-driver magxdesk abi-check console-test-driver
 all: mod-app
 applicat: $(BUILD_DIR)/applicat/APPLICAT.APP $(BUILD_DIR)/applicat/applicat.rsc \
   $(BUILD_DIR)/applicat/applicat.inf
@@ -392,6 +406,7 @@ mgxclock: $(BUILD_DIR)/mgxclock/MGXCLOCK.PRG
 mgxclock-test-driver: $(BUILD_DIR)/mgxclock/NEOSTEST.PRG
 vfatconf: $(BUILD_DIR)/vfatconf/VFATCONF.PRG $(BUILD_DIR)/vfatconf/vfatconf.rsc
 wbdaemon: $(BUILD_DIR)/wbdaemon/WBDAEMON.PRG
+cops: $(BUILD_DIR)/cops/COPS.APP
 flp-par: flp-par0 flp-par1
 flp-par0: $(BUILD_DIR)/flp-par/FLP_PAR0.PRG
 flp-par1: $(BUILD_DIR)/flp-par/FLP_PAR1.PRG
@@ -403,6 +418,25 @@ load-img: $(BUILD_DIR)/load-img/LOAD_IMG.SLB
 slbtest: $(BUILD_DIR)/slbtest/SLBTEST.PRG
 wbdaemon-test-driver: $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG
 mod-app-test-driver: $(BUILD_DIR)/mod-app/NEOSTEST.PRG
+
+$(BUILD_DIR)/cops/%.o: $(COPS_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(COPS_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(COPS_ASM_NORMALIZED): $(COPS_DIR)/CLEARCPU.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(BUILD_DIR)/cops/CLEARCPU.o: $(COPS_ASM_NORMALIZED) Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -o "$@" "$<"
+
+$(BUILD_DIR)/cops/COPS.APP: $(COPS_OBJECTS) $(COPS_ASM_OBJECTS) Makefile.apps
+	$(CC) $(APP_FLAGS) $(COPS_OBJECTS) $(COPS_ASM_OBJECTS) \
+	  $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+-include $(COPS_OBJECTS:.o=.d)
 
 $(BUILD_DIR)/applicat/%.o: $(APPLICAT_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"

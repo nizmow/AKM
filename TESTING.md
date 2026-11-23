@@ -412,6 +412,40 @@ coordinate is installation-specific. The cloned image is cleaned of a stale
 `ZCNFTEST.PRG` probe when present. Slider dragging, Save confirmation and
 scheduler behavior under load remain outside the scenario.
 
+## NeoST: COPS control-panel manager
+
+`mise run test:cops-neost` builds `build/atari/apps/cops/COPS.APP` and runs
+`scripts/neost-cops-smoke.py`. Each case clones the MagiC image and first
+requires `MAGX.INF` to name `C:\GEMSYS\MAGIC\START` for `#_APP` and
+`C:\AUTO\ACCS` for `#_ACC`. It disables `AUTO\ACCS\COPS.ACC` by renaming it to
+`.ACX`, deletes inherited `C:\CPX\*.CPX`/`*.CPZ` and `COPS.INF` settings from
+the clone, installs only `MAGXCONF.CPX` and `TSLICE.CPX`, and installs the
+archived or rebuilt `COPS.APP` in `GEMSYS\MAGIC\START`:
+
+1. Boot MagiC and bring the COPS panel forward.
+2. Double-click `MagiC Config.` and capture the CPX dialog.
+3. Cancel it and require the dialog area to be restored; only the
+   double-clicked icon's selection highlight may remain.
+4. Double-click `MagiC Timeslice` and capture that dialog.
+
+Every capture parks the pointer at the same neutral desktop position first, so
+a screen difference cannot come from cursor movement. The runner requires each
+dialog to differ from the panel, the two dialogs to differ from each other, and
+compares the panel, the restored panel and both dialogs pixel-for-pixel between
+archive and rebuild.
+
+Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
+`mtools`. Run with fresh output:
+
+```sh
+MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
+  mise run test:cops-neost
+```
+
+Use `--partition-offset` for a different MagiC partition offset. Evidence stays
+in `build/atari/neost-cops-*`. Accessory mode, CPX board editing, Save/alerts,
+event-CPX callbacks and CPXs beyond the two fixtures remain untested.
+
 ## NeoST: image SLB ABI and rendering
 
 `mise run test:slb-consumer-neost` builds `XP_RASTR.SLB`, `LOAD_IMG.SLB` and a

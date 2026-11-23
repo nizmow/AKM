@@ -24,8 +24,8 @@
 #ifndef _wlib_h
 #define _wlib_h
 
-#include <mt_aes.h>
-#include "wstruct.h"
+#include "GLOBAL.H"
+#include "WSTRUCT.H"
 
 int16_t	init_wlib(int16_t id);
 int16_t	reset_wlib(void);

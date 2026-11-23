@@ -24,8 +24,7 @@
 #ifndef _adaptrsc_h
 #define _adaptrsc_h
 
-#include <mt_aes.h>
-#include "global.h"
+#include "GLOBAL.H"
 
 #define	GAI_WDLG	0x0001UL	/* wdlg_xx()-functions available */
 #define	GAI_LBOX	0x0002UL	/* lbox_xx()-functions available */

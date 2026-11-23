@@ -91,7 +91,7 @@ framework or shared-library rewrite is required before these are attempted.
 
 ## Following batches
 
-The current core source-backed remainder is 28 build families: 15
+The current core source-backed remainder is 27 build families: 14
 application/tool/extension families, 7 shared library/startup families and 6
 system-component families. Historical, test-only, blocked, binary-only and KAOS
 entries are outside that count.
@@ -188,6 +188,13 @@ the remaining shared families ahead of their consumers.
   `mise run test:osd-<driver>-neost` checks each requested layout, readbacks
   and full bitmap, plus a missing-driver control. OFF16MOV asserts its 16 KB
   bitmap and the word-swapped TrueColor readbacks.
+- [x] **COPS.APP** — add `cops` producing the application-mode control-panel
+  host from the original C sources with MiNTLib/GEMlib; compile the embedded
+  resource and normalize `CLEARCPU.S` through the MAS converter.
+  `test:cops-neost` disables the accessory, opens `MAGXCONF.CPX` and
+  `TSLICE.CPX` through the panel, and matches the panel and both dialogs
+  pixel-for-pixel against the archive. Accessory mode, board editing,
+  Save/alerts and event-CPX callbacks remain untested.
 - [ ] **MFA/MFM screen drivers** — scope and reference binaries are in the
   [build catalogue](APPLICATION_BUILDS.md#2-system-components-outside-the-application-tree).
   - [x] Resolve the 12 canonical `.PRJ` inputs, includes and archived `.SYS`

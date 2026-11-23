@@ -24,8 +24,7 @@
 #ifndef _cops_rsc_h
 #define _cops_rsc_h
 
-#include <mt_aes.h>
-#include "global.h"
+#include "GLOBAL.H"
 
 #define rs_tedinfo	rsc_rs_tedinfo
 #define rs_ciconblk	rsc_rs_ciconblk
@@ -37,10 +36,10 @@
 #define rs_trindex	tree_addr
 #define rs_object	rsc_rs_object
 
-#include "cops_rs.h"
+#include "COPS_RS.H"
 
 #ifdef WITH_RSC_DEFINITIONS
-#include "cops_rs.rsh"
+#include "COPS_RS.RSH"
 #endif
 
 #undef rs_tedinfo
