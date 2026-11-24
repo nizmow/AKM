@@ -114,8 +114,8 @@ int callback_ever( void )
 		else	
 		if	(w_ev.msg[0] == THR_EXIT)
 			{
-			action_error = ((long) ((unsigned short) w_ev.msg[4]) << 16)
-							| (unsigned short) w_ev.msg[5];
+			action_error = ((long) ((short) w_ev.msg[4]) * 65536L)
+							+ (unsigned short) w_ev.msg[5];
 			run_status = DLG_FINISHED;
 			copy_id = -1;
 			}
@@ -269,11 +269,13 @@ void read_inf( char *fname )
 				int win[4];
 
 				s += 12;
-				scan_values(&s, 4, win);
-				prefs.main_win.g_x = win[0];
-				prefs.main_win.g_y = win[1];
-				prefs.main_win.g_w = win[2];
-				prefs.main_win.g_h = win[3];
+				if	(scan_values(&s, 4, win) == 4)
+					{
+					prefs.main_win.g_x = win[0];
+					prefs.main_win.g_y = win[1];
+					prefs.main_win.g_w = win[2];
+					prefs.main_win.g_h = win[3];
+					}
 				}
 
 
@@ -282,11 +284,13 @@ void read_inf( char *fname )
 				int win[4];
 
 				s += 16;
-				scan_values(&s, 4, win);
-				prefs.progr_win.g_x = win[0];
-				prefs.progr_win.g_y = win[1];
-				prefs.progr_win.g_w = win[2];
-				prefs.progr_win.g_h = win[3];
+				if	(scan_values(&s, 4, win) == 4)
+					{
+					prefs.progr_win.g_x = win[0];
+					prefs.progr_win.g_y = win[1];
+					prefs.progr_win.g_w = win[2];
+					prefs.progr_win.g_h = win[3];
+					}
 				}
 
 			if	(!strncmp(s, "SHORT PROGRESS", 14))
@@ -538,6 +542,7 @@ int main( int argc, char *argv[] )
 		run_status = DLG_WAITING;	/* warte auf Drücken von OK */
 		abbruch = FALSE;
 		action_error = 0L;
+		exit_status = 0;
 
 		if	(!xargs)
 			continue;

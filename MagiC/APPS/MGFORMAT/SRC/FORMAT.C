@@ -811,7 +811,9 @@ long diskcopy(int dst_apid, int whdl, int slw, int dlw, int tmp, int fmt)
 	if	((slw != 0 && slw != 1) || (dlw != 0 && dlw != 1))
 		{
 		doserr = EUNCMD;
-		goto err;
+		send_finish( whdl, dst_apid, doserr );
+		form_xerr(doserr, "DISKCOPY");
+		return(doserr);
 		}
 
 	if	(lock_drive(slw))
@@ -1037,9 +1039,10 @@ long diskcopy(int dst_apid, int whdl, int slw, int dlw, int tmp, int fmt)
 						goto err;
 					for	(i = 0; i < spt; i++)
 						{
-						secnos[i] -= 2;
-						if	(secnos[i] < 1)
-							secnos[i] += spt;
+						/* Rotation um -2, ohne Unterlauf bei 1 und 2 */
+						secnos[i] = (unsigned short)
+							((secnos[i] > 2) ? (secnos[i] - 2)
+											 : (secnos[i] + spt - 2));
 						}
 					}
 				}

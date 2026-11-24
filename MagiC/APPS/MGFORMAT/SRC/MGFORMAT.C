@@ -163,11 +163,13 @@ void read_inf( void )
 				int win[4];
 
 				s += 14;
-				scan_values(&s, 4, win);
-				prefs.format_win.g_x = win[0];
-				prefs.format_win.g_y = win[1];
-				prefs.format_win.g_w = win[2];
-				prefs.format_win.g_h = win[3];
+				if	(scan_values(&s, 4, win) == 4)
+					{
+					prefs.format_win.g_x = win[0];
+					prefs.format_win.g_y = win[1];
+					prefs.format_win.g_w = win[2];
+					prefs.format_win.g_h = win[3];
+					}
 				}
 
 			if	(!strncmp(s, "TMPDRV ", 7))

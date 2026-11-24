@@ -623,6 +623,13 @@ successful action exits zero. `WINDOW MAIN`/`WINDOW PROGRESS` values are
 marshaled through four `int` fields instead of casting `GRECT`; a crafted INF
 round-tripped `10,20,300,150` and `30,40,320,120` unchanged. Native
 `SH_WDRAW`/`AK` and cancel messages now use zeroed `WORD[8]` records.
+Staging names are reserved with `Fopen(O_CREAT|O_EXCL)` before any dialog, and
+publication rechecks the destination's size, time and attribute snapshot so a
+late replacement is not silently overwritten. If restoring a backup fails
+because another process claims the name, the original remains as
+`~MGCPnn.BAK` and the operation reports the publication error against that
+path. Timestamp-granularity changes with identical size/time remain a residual
+race; a directory destination is never replaced by a file.
 
 ### MGFORMAT
 
@@ -659,17 +666,20 @@ both the format and disk-copy paths; MagiC's FDC reads one 16-bit word per entry
 (`FDC.S`), so a 32-bit `int` array supplied `0,1,0,2,…` instead of the intended
 IDs. Floppy FAT/root initialization now uses the six-argument `Rwabs` macro with
 `1` in both the legacy sector word and the long record; `Lrwabs` puts `-1` in the
-legacy word, which MagiC's floppy handler rejects as track 65535. `DOSVARS.
+legacy word, which MagiC's floppy handler rejects as record 65535. `DOSVARS.
 err_to_str` is at byte 50 (kernel table and `AESFRM.S` caller), not 52, and the
 native routine takes the error in `D0` and returns the default text in `A0`;
 `dos_error_text` now bridges that register contract. Worker progress, finish,
 cancel and desktop-refresh messages use zeroed `WORD[8]` buffers. Disk copy
 validates A:/B: before locking or reading, lock failures still send a terminal
 result, and short or zero-byte spill `Fwrite`/`Fread` results are errors.
-`WINDOW FORMAT` values use the same four-`int` marshaling as MGCOPY. The object
-code was checked for the 16-bit sector loop, `Rwabs` arguments, offset-50 load
-and 16-bit message stores; UI-driven logical Init and real media effects remain
-manual-hardware checks.
+`WINDOW FORMAT` values use the same four-`int` marshaling as MGCOPY; a short
+`WINDOW` record leaves the saved geometry unchanged. Disk-copy sector rotation
+is computed without unsigned underflow (IDs 1 and 2 wrap to the last IDs of the
+track). An unsupported copy drive is rejected before locking or refreshing the
+drive. The object code was checked for the 16-bit sector loop, `Rwabs`
+arguments, offset-50 load and 16-bit message stores; UI-driven logical Init and
+real media effects remain manual-hardware checks.
 
 ## Application porting workflow
 

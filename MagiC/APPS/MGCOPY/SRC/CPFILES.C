@@ -34,9 +34,13 @@ static char *copy_buffer;
 static char *_zielpath;
 
 static char dirty_drives[32];
+static char kept_backup[MAX_PATHLEN+2];	/* Rückbenennen fehlgeschlagen */
+static int  kept_backup_valid;
 
 static int make_stage_name(char *dir, char *ext, char *out);
-static long publish_file(char *dir, char *name, char *stage);
+static long open_stage(char *dir, char *ext, char *avoid, char *out);
+static long publish_file(char *dir, char *name, char *stage,
+                         XATTR *expected, int existed);
 
 
 static char *delete_file_s;
@@ -511,7 +515,8 @@ errcommand = "Fxattr";
 *
 *********************************************************************/
 
-long GFcreate(char *path, char *fname, XATTR *file, char *stage, int *skipped)
+long GFcreate(char *path, char *fname, XATTR *file, char *stage,
+              int stage_hdl, int *skipped)
 {
 	XATTR newfile;
 	char	all[MAX_PATHLEN+2],oldname[MAX_NAMELEN+2];
@@ -561,7 +566,8 @@ long GFcreate(char *path, char *fname, XATTR *file, char *stage, int *skipped)
 			/* ------------------------------------- */
 
 			if	(doserr == EFILNF)
-				doserr = Fcreate(stage ? stage : all, attr);
+				doserr = (stage_hdl >= 0) ? (long) stage_hdl
+										  : Fcreate(stage ? stage : all, attr);
 
 #if DEBUG
 errcommand = "Fcreate";
@@ -577,7 +583,8 @@ errcommand = "Fcreate";
 			if	(!stage && ((newfile.mode & S_IFMT) == S_IFLNK))
 				Fdelete(all);		/* existierenden Symlink löschen */
 		 again:
-			doserr = Fcreate(stage ? stage : all, attr);
+			doserr = (stage_hdl >= 0) ? (long) stage_hdl
+									  : Fcreate(stage ? stage : all, attr);
 
 #if DEBUG
 errcommand = "Fcreate";
@@ -650,6 +657,7 @@ long GFsymlink(char *buf, char *path, char *fname, XATTR *xa)
 	char do_rename = (copy_mode == RENAME);
 
 
+	kept_backup_valid = FALSE;
 	if	(xa)
 		{
 		mutime.actime = xa->atime;
@@ -755,7 +763,11 @@ errcommand = "Fsymlink";
 							}
 						else	if	(doserr != E_OK && have_backup)
 							{
-							Frename(0, backup, all);
+							if	(Frename(0, backup, all) != E_OK)
+								{
+								strcpy(kept_backup, backup);
+								kept_backup_valid = TRUE;
+								}
 							have_backup = FALSE;
 							}
 						}
@@ -786,7 +798,7 @@ errcommand = "Fsymlink";
 	set_dirty(doserr, path, 1);
 	if	(doserr < E_OK)
 		{
-		err_file = all;
+		err_file = kept_backup_valid ? kept_backup : all;
 		err_alert(doserr);
 		}
 	return(doserr);
@@ -824,6 +836,7 @@ long GFrename(char *path, char *fname,
 	old_ftype = ((xa->mode & S_IFMT) == S_IFDIR) ?
 				FOLDER : ORDINARYFILE;
 
+	kept_backup_valid = FALSE;
 	doserr = test_readonly(path, fname, xa);
 	if	(doserr <= E_OK)
 		return(doserr);		/* Fehler/Abbruch/Überspringen */
@@ -916,7 +929,11 @@ Cconws("EACCDN ");
 						}
 					else	if	(doserr != E_OK && have_backup)
 						{
-						Frename(0, backup, alld);
+						if	(Frename(0, backup, alld) != E_OK)
+							{
+							strcpy(kept_backup, backup);
+							kept_backup_valid = TRUE;
+							}
 						have_backup = FALSE;
 						}
 					set_dirty(doserr, alls, 1);
@@ -956,7 +973,7 @@ do_dial_datexi:
 	if	(!doserr)
 		down_cnt(3, NULL, NULL, xa->size);
 
-	err_file = alls;
+	err_file = kept_backup_valid ? kept_backup : alls;
 	return(err_alert(doserr));
 }
 
@@ -1041,13 +1058,53 @@ static int make_stage_name(char *dir, char *ext, char *out)
 
 /*********************************************************************
 *
-* Veröffentlicht eine fertig geschriebene Stagingdatei unter <name>
-* in <dir>. Die bisherige Zieldatei wird gesichert und bei einem
-* Fehlschlag zurückbenannt.
+* Reserviert eine neue Stagingdatei <~MGCPnn><ext> in <dir>.
+* Der Name wird exklusiv erzeugt; <avoid> wird nie verwendet.
+* Rückgabe: Dateihandle oder Fehlercode.
 *
 *********************************************************************/
 
-static long publish_file(char *dir, char *name, char *stage)
+static long open_stage(char *dir, char *ext, char *avoid, char *out)
+{
+	int i;
+	char *p;
+	long handle = EACCDN;
+
+
+	if	(strlen(dir) + 12 >= MAX_PATHLEN)
+		return(EACCDN);
+	for	(i = 0; i < 100; i++)
+		{
+		strcpy(out, dir);
+		p = out + strlen(out);
+		memcpy(p, "~MGCP", 5);
+		p += 5;
+		*p++ = '0' + i / 10;
+		*p++ = '0' + i % 10;
+		strcpy(p, ext);
+		if	(avoid && !strcmp(out, avoid))
+			continue;
+		handle = Fopen(out, O_WRONLY | O_CREAT | O_EXCL);
+		if	(handle >= E_OK)
+			return(handle);
+		if	(handle != EACCDN && handle != EFILNF)
+			return(handle);
+		}
+	return(handle);
+}
+
+/*********************************************************************
+*
+* Veröffentlicht eine fertig geschriebene Stagingdatei unter <name>
+* in <dir>. Die bisherige Zieldatei wird gesichert und bei einem
+* Fehlschlag zurückbenannt. <expected>/<existed> beschreiben den
+* Zustand vor dem Kopieren; eine spätere Änderung wird nicht
+* überschrieben.
+*
+*********************************************************************/
+
+static long publish_file(char *dir, char *name, char *stage,
+						 XATTR *expected, int existed)
 {
 	char dest[MAX_PATHLEN+2],backup[MAX_PATHLEN+2];
 	XATTR xa;
@@ -1055,12 +1112,31 @@ static long publish_file(char *dir, char *name, char *stage)
 	int have_backup = FALSE;
 
 
+	kept_backup_valid = FALSE;
 	strcpy(dest, dir);
 	strcat(dest, name);
 
 	doserr = Fxattr(1, dest, &xa);
+	if	(expected)
+		{
+		if	(existed)
+			{
+			if	(doserr != E_OK)
+				return(EACCDN);		/* Ziel verschwunden */
+			if	(xa.size != expected->size ||
+				 xa.mtime != expected->mtime ||
+				 xa.mdate != expected->mdate ||
+				 xa.attr != expected->attr)
+				return(EACCDN);		/* Ziel inzwischen geändert */
+			}
+		else	if	(doserr != EFILNF)
+			return((doserr == E_OK) ? EACCDN : doserr);
+		}
+
 	if	(doserr == E_OK)
 		{
+		if	((xa.mode & S_IFMT) == S_IFDIR)
+			return(EACCDN);	/* Ordner nie durch Datei ersetzen */
 		if	(!make_stage_name(dir, ".BAK", backup))
 			return(EACCDN);
 		doserr = Frename(0, dest, backup);
@@ -1075,7 +1151,13 @@ static long publish_file(char *dir, char *name, char *stage)
 	if	(doserr != E_OK)
 		{
 		if	(have_backup)
-			Frename(0, backup, dest);
+			{
+			if	(Frename(0, backup, dest) != E_OK)
+				{
+				strcpy(kept_backup, backup);
+				kept_backup_valid = TRUE;
+				}
+			}
 		}
 	else	if	(have_backup)
 		Fdelete(backup);
@@ -1097,13 +1179,18 @@ long GFcopy(char *path, char *fname,
 {
 	char	alls[MAX_PATHLEN+2],alld[MAX_PATHLEN+2];
 	char	stage[MAX_PATHLEN+2];
+	char	first_name[MAX_PATHLEN+2],avoid[MAX_PATHLEN+2];
+	XATTR	dest_old;
 	long doserr;
 	int shdl,dhdl;
 	long lbytes;
 	int drv;
 	long	my_bsize;		/* ggf. für Floppies kleineren Puffer nehmen */
+	long	stage_hdl = -1;
 	int	staged = FALSE;
 	int	skipped = FALSE;
+	int	stage_reserved = FALSE;
+	int	dest_info = 0;		/* 1: existiert, 2: fehlt, 0: unbekannt */
 
 
 	/* Symlinks extra kopieren */
@@ -1131,8 +1218,20 @@ long GFcopy(char *path, char *fname,
 	   die bisherige Datei ersetzen. So bleibt das alte Ziel bei
 	   Platzmangel, Abbruch oder Schreibfehler erhalten. */
 
-	if	(!make_stage_name(zpath, ".TMP", stage))
-		return(err_alert(EACCDN));
+	strcpy(first_name, new_name);
+	strcpy(avoid, zpath);
+	strcat(avoid, new_name);
+	doserr = Fxattr(1, avoid, &dest_old);
+	if	(doserr == E_OK)
+		dest_info = 1;
+	else	if	(doserr == EFILNF)
+		dest_info = 2;
+
+	stage_hdl = open_stage(zpath, ".TMP", avoid, stage);
+	if	(stage_hdl < 0)
+		return(err_alert(stage_hdl));
+	Fattrib(stage, 1, xa->attr & ~F_RDONLY);
+	stage_reserved = TRUE;
 
 	/* benutzte Puffergröße ggf. verkleinern */
 
@@ -1207,7 +1306,8 @@ errcommand = "Fread";
 			strcpy(alld, zpath);
 			strcat(alld, new_name);
 			down_cnt(2, write_file_s, alld, 0L);
-			doserr = GFcreate(zpath, new_name, xa, stage, &skipped);
+			doserr = GFcreate(zpath, new_name, xa, stage,
+							  (int) stage_hdl, &skipped);
 			strcpy(alld, zpath);
 			strcat(alld, new_name);	/* Name ggf. geändert */
 			if	(skipped)
@@ -1219,6 +1319,8 @@ errcommand = "Fread";
 			if	(doserr < E_OK)		/* Fehler oder Abbruch */
 				break;
 			dhdl = (int) doserr;
+			stage_hdl = -1;
+			stage_reserved = FALSE;
 			staged = TRUE;
 			}
 
@@ -1272,16 +1374,38 @@ errcommand = "Fwrite";
 			doserr = closeerr;
 		dhdl = -1;
 		}
+	if	(stage_reserved)
+		{
+		Fclose((int) stage_hdl);
+		Fdelete(stage);
+		stage_reserved = FALSE;
+		}
 	if	(staged)
 		{
-		if	(doserr == E_OK)
+		strcpy(alld, zpath);
+		strcat(alld, new_name);
+		if	(strcmp(stage, alld) != 0)
 			{
-			doserr = publish_file(zpath, new_name, stage);
+			if	(doserr == E_OK)
+				{
+				XATTR *expect = NULL;
+				int existed = 0;
+
+				if	((dest_info != 0) && !strcmp(new_name, first_name))
+					{
+					expect = &dest_old;
+					existed = (dest_info == 1);
+					}
+				doserr = publish_file(zpath, new_name, stage,
+									  expect, existed);
+				if	(doserr != E_OK)
+					err_file = kept_backup_valid ? kept_backup : alld;
+				}
 			if	(doserr != E_OK)
-				err_file = alld;
+				Fdelete(stage);
 			}
-		if	(doserr != E_OK)
-			Fdelete(stage);
+		else	if	(doserr != E_OK)
+			Fdelete(stage);		/* unfertige Zieldatei entfernen */
 		}
 	if	((err_file) && (doserr != ESKIP))
 		err_alert(doserr);
@@ -1455,7 +1579,10 @@ errcommand = "Dxreaddir";
 			if	(E_OK != (err = _before(_path, fname+4, &xa)))
 				{
 				if	(err == ESKIP)
+					{
 					_walk_skipped = TRUE;
+					err = E_OK;		/* Geschwister weiter bearbeiten */
+					}
 				continue;
 				}
 			}
@@ -1467,6 +1594,8 @@ errcommand = "Dxreaddir";
 			strcat(endp, "\\");
 			err = _walk_path();	/* REKURSION */
 			*endp = EOS;
+			if	(err == ESKIP)
+				err = E_OK;		/* bereits als übersprungen vermerkt */
 			if	(err)
 				continue;
 			}
@@ -1496,7 +1625,10 @@ errcommand = "Dxreaddir";
 			if	(E_OK != (err = _after(_path, fname+4, &xa)))
 				{
 				if	(err == ESKIP)
+					{
 					_walk_skipped = TRUE;
+					err = E_OK;
+					}
 				continue;
 				}
 			}			/* "User break" */
@@ -1843,10 +1975,12 @@ static long before_cpmv(char *path, char *fname, XATTR *xa)
 	if	(((xa->mode) & S_IFMT) == S_IFDIR)
 		{
 		doserr = GDcreate(_zielpath, fname);
+		if	(doserr)
+			return(doserr);		/* übersprungen/Fehler: Pfad unverändert */
 		strcat(_zielpath, fname);
 		strcat(_zielpath, "\\");
 		down_cnt(1, NULL, NULL, 1024L);
-		return(doserr);
+		return(E_OK);
 		}
 
 	/* Datei */
@@ -1910,12 +2044,10 @@ errcommand = "Fdelete";
 		doserr = GFcopy  (path, fname, new_name, xa, _zielpath);
 		}
 
-	if	(doserr == ESKIP)
-		doserr = E_OK;	/* überspringen */
 	copy_mode = old_mode_ovwr;
 	if	(!doserr)
 		down_cnt(0, NULL, NULL, 0L);
-	return(doserr);
+	return(doserr);		/* ESKIP bleibt für den Verzeichnislauf */
 }
 
 

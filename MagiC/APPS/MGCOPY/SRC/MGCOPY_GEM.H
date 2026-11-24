@@ -9,6 +9,17 @@
 #define RMODE_RD 0
 #define RMODE_WR 1
 
+/* MagiC/MiNT Fopen extension bits for reserving a staging file. */
+#ifndef O_WRONLY
+#define O_WRONLY 1
+#endif
+#ifndef O_CREAT
+#define O_CREAT 0x200
+#endif
+#ifndef O_EXCL
+#define O_EXCL 0x800
+#endif
+
 #ifndef FA_READONLY
 #define FA_READONLY FA_RDONLY
 #endif
