@@ -35,7 +35,7 @@ extern WORD global[];
 extern int open_format_options( void );
 extern int start_format( void *param );
 extern void MYsubobj_wdraw(void *d, int obj, int n, char *s);
-extern int send_message(int message[8]);
+extern int send_message(WORD message[8]);
 extern int send_message_break( int whdl );
 
 extern void *d_cpydsk;

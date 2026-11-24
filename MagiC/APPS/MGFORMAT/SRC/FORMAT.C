@@ -228,7 +228,7 @@ int lock_drive( int dev )
 
 void send_wdraw( int dev )
 {
-	int msg[8] = {SH_WDRAW, 0, 0};
+	WORD msg[8] = {SH_WDRAW, 0, 0, 0, 0, 0, 0, 0};
 
 	msg[1] = thread_ap_id;
 	msg[3] = dev;
@@ -248,21 +248,45 @@ void send_wdraw( int dev )
 *
 *********************************************************************/
 
+static char *dos_error_text( long code )
+{
+     DOSVARS *dosvars;
+     void *proc;
+     long arg;
+     char *text, *fallback;
+
+     dosvars = (DOSVARS *) Sconfig(SC_DOSVARS, 0L);
+     proc = (dosvars) ? (void *) dosvars->err_to_str : NULL;
+     if   (!proc)
+          return(NULL);
+     arg = (signed char) code;		/* native err_to_str takes char in d0 */
+     __asm__ volatile (
+          "move.l %2,%%d0\n\t"
+          "jsr %3@\n\t"
+          "move.l %%d0,%0\n\t"
+          "move.l %%a0,%1"
+          : "=r" (text), "=r" (fallback)
+          : "d" (arg), "a" (proc)
+          : "d0", "d1", "a0", "a1", "cc", "memory");
+     return(text ? text : fallback);
+}
+
 int tryagain(long *doserr, int drv)
 {
      int ret;
-     char *s;
+     char *s = dos_error_text(*doserr);
 
-
-     s = (((DOSVARS *) Sconfig(SC_DOSVARS, 0L))->err_to_str)((char) (*doserr));
-     ret = Rxform_alert(2, AL_CAN_RETR_CONT, drv+'A', s, global);
-     if   (ret == 1)          /* Abbruch */
+     ret = Rxform_alert(2, AL_CAN_RETR_CONT, drv+'A',
+                        s ? s : "Disk error", global);
+     if	(ret == 1)		/* Abbruch */
           return(0);
-     if   (ret == 2)          /* Wiederholen */
+     if	(ret == 2)		/* Wiederholen */
           return(1);
-     *doserr = E_OK;          /* Ignorieren */
+     *doserr = E_OK;		/* Ignorieren */
      return(0);
 }
+
+
 
 long M_Flopfmt( void *buf, void *filler, int devno, int spt, int trackno,
                 int sideno, int interlv, int virgin )
@@ -315,7 +339,7 @@ long M_Floprd (void *buf, void *filler, int devno, int sectno, int trackno,
 long send_status(int whdl, int dst_apid, int msg4, int msg5, int msg6)
 {
 	XAESMSG xmsg;		/* MagiC !!! */
-	int message[8];
+	WORD message[8] = {0};
 
 
 	message[0] = (msg6) ? 1043 : 1040;
@@ -330,7 +354,7 @@ long send_status(int whdl, int dst_apid, int msg4, int msg5, int msg6)
 		xmsg.dst_apid = dst_apid;
 		xmsg.unique_flg = TRUE;		/* !!! */
 		xmsg.attached_mem = NULL;
-		xmsg.msgbuf = (WORD *) message;
+		xmsg.msgbuf = message;
 		mt_appl_write(-2, 16, &xmsg, thread_global);
 		}
 	else	mt_appl_write(dst_apid, 16, message, thread_global);
@@ -358,7 +382,7 @@ long send_status(int whdl, int dst_apid, int msg4, int msg5, int msg6)
 
 void send_finish( int whdl, int dst_apid, long doserr )
 {
-	int message[8];
+	WORD message[8] = {0};
 
 	message[0] = 1041;  /* Formatieren beendet */
 	message[1] = thread_ap_id;
@@ -483,7 +507,9 @@ static long init_disk(int dev)
      /* --------------------- */
 
 /*	free_drive(dev);	*/
-     doserr = Lrwabs(1, buf, 2*bpb->fsiz + bpb->rdlen, 1, dev);
+     if   (dev <= 1)
+          doserr = Rwabs(1, buf, 2*bpb->fsiz + bpb->rdlen, 1, dev, 1L);
+     else doserr = Lrwabs(1, buf, 2*bpb->fsiz + bpb->rdlen, 1, dev);
 
      Mfree(buf);
      err:
@@ -522,7 +548,7 @@ long format(int dst_apid, int whdl, int dev, int is_logic,
 	unsigned char *buf = NULL;
 /*	BPB *bpb;	*/
 	long doserr;
-	int  secnos[100];        /* Sektornummern für Versatz */
+	unsigned short secnos[100];	/* Sektornummern für Versatz (FDC: Wort) */
 
 
 	if	((clu == 0) || (clu != 1 && clu & 1))
@@ -541,7 +567,10 @@ long format(int dst_apid, int whdl, int dev, int is_logic,
 			}
 
 		if	(lock_drive(dev))
-			return(ELOCKED);
+			{
+			doserr = ELOCKED;
+			goto err2;
+			}
 
 		doserr = init_disk(dev);
 		goto set_dname;
@@ -761,7 +790,7 @@ long diskcopy(int dst_apid, int whdl, int slw, int dlw, int tmp, int fmt)
 	char	tmpdatei[128];
 	int	gelesen;
 	int	handle = -1;
-	int	secnos[100];			/* Sektornummern für Versatz */
+	unsigned short secnos[100];		/* Sektornummern für Versatz (FDC: Wort) */
 	int	interlv;
 	long	doserr;
 	long	ser;
@@ -777,6 +806,13 @@ long diskcopy(int dst_apid, int whdl, int slw, int dlw, int tmp, int fmt)
 
 
 
+
+	/* Nur A: und B: werden unterstützt; vor jedem Sperren oder Lesen prüfen. */
+	if	((slw != 0 && slw != 1) || (dlw != 0 && dlw != 1))
+		{
+		doserr = EUNCMD;
+		goto err;
+		}
 
 	if	(lock_drive(slw))
 		{
@@ -812,11 +848,6 @@ long diskcopy(int dst_apid, int whdl, int slw, int dlw, int tmp, int fmt)
 	/* eine Fehlermeldung geliefert							 */
 	/* -------------------------------------------------------------- */
 
-	if	((slw != 0 && slw != 1) || (dlw != 0 && dlw != 1))
-		{
-		doserr = EUNCMD;
-		goto err;
-		}
 	if	(tmp == slw || tmp == dlw)
 		tmp = -1;		/* tolerieren und einfach ignorieren */
 
@@ -957,10 +988,12 @@ long diskcopy(int dst_apid, int whdl, int slw, int dlw, int tmp, int fmt)
 			if	(tmp >= 0 && bufsiz_trk < trk)
 				{
 				doserr = Fwrite(handle, n_bytes, buf);
-				if	(doserr != n_bytes && doserr > E_OK)
-					doserr = ENSMEM;
-				if	(doserr < E_OK)
+				if	(doserr != (long) n_bytes)
+					{
+					if	(doserr >= E_OK)
+						doserr = ENSMEM;
 					goto err;
+					}
 				if	(ctrack < trk)
 					continue;			/* Weiterlesen */
 				gelesen = TRUE;
@@ -972,8 +1005,12 @@ long diskcopy(int dst_apid, int whdl, int slw, int dlw, int tmp, int fmt)
 			}
 		else {
 			doserr = Fread(handle, n_bytes, buf);
-			if	(doserr != n_bytes)
+			if	(doserr != (long) n_bytes)
+				{
+				if	(doserr >= E_OK)
+					doserr = ENSMEM;
 				goto err;
+				}
 			}
 
 		/* Schreiben und ggf. Formatieren */

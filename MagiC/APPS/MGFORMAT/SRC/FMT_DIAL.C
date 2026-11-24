@@ -116,7 +116,7 @@ static void up_cnt( void *d, int n )
 
 int fmt_id = -1;
 
-int send_message(int message[8])
+int send_message(WORD message[8])
 {
 	extern int ap_id;
 
@@ -164,7 +164,7 @@ int start_format( void *param )
 
 int send_message_break( int whdl )
 {
-	int message[8];
+	WORD message[8] = {0};
 
 	if	(fmt_id >= 0)
 		{

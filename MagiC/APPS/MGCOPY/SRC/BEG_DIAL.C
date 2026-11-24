@@ -396,6 +396,8 @@ void beg_dial_action( int argc, char *argv[],
 						(char *) &thi, (char *) (&param));
 		if	(copy_id <= 0)
 			{
+			action_error = ENSMEM;
+			run_status = DLG_FINISHED;
 			form_xerr(ENSMEM, NULL);
 			wdlg_close(d_working, NULL, NULL);
 			wdlg_delete(d_working);
@@ -751,7 +753,7 @@ WORD	cdecl hdl_work( struct HNDL_OBJ_args args )
 
 		if	(copy_id > 0)
 			{
-			int message[8];
+			WORD message[8] = {0};
 
 			message[0] = 1031;		/* Nachrichtennummer */
 			message[1] = ap_id;		/* Absender */

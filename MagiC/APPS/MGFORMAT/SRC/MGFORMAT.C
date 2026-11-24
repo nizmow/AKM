@@ -160,8 +160,14 @@ void read_inf( void )
 
 			if	(!strncmp(s, "WINDOW FORMAT ", 14))
 				{
+				int win[4];
+
 				s += 14;
-				scan_values(&s, 4, (int *) &prefs.format_win);
+				scan_values(&s, 4, win);
+				prefs.format_win.g_x = win[0];
+				prefs.format_win.g_y = win[1];
+				prefs.format_win.g_w = win[2];
+				prefs.format_win.g_h = win[3];
 				}
 
 			if	(!strncmp(s, "TMPDRV ", 7))
@@ -247,11 +253,13 @@ void read_inf( void )
 
 static void print_winpos(char *s, GRECT *g, int n)
 {
-	g->g_x -= scrg.g_x;
-	g->g_y -= scrg.g_y;
-	print_values(s, n, (int *) g);
-	g->g_x += scrg.g_x;
-	g->g_y += scrg.g_y;
+	int win[4];
+
+	win[0] = g->g_x - scrg.g_x;
+	win[1] = g->g_y - scrg.g_y;
+	win[2] = g->g_w;
+	win[3] = g->g_h;
+	print_values(s, n, win);
 }
 
 

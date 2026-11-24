@@ -37,6 +37,7 @@ extern int working_is_expanded;
 extern int copy_id;
 extern short is_3d;
 extern int run_status;
+extern long action_error;
 extern int action,confirm,tst_free,copy_mode,abbruch;
 extern int  nargs;
 extern char **xargv;

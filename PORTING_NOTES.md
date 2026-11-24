@@ -607,6 +607,23 @@ Evidence is under `build/atari/neost-mgcopy-cross/`. Confirm-dialog interaction,
 cancellation, long paths, read-only/error paths and alternate resources remain
 untested.
 
+The port also writes each destination as `~MGCPnn.TMP` in the target directory,
+checks every write and the close, then renames the old destination to
+`~MGCPnn.BAK`, publishes the staged file and removes the backup; a failed
+publication restores the backup and deletes the staging file. Rename/alias
+replacement uses the same backup/restore sequence instead of deleting first.
+A disposable 720 KiB floppy probe overwrote a 200 KiB destination with a
+600 KiB source that could not fit: the rebuilt binary returned 65535, kept the
+old 200 KiB destination byte-identical, retained the moved source and left no
+staging file; the archived binary returned 0, destroyed the old destination and
+deleted the source. Skipped entries report `ESKIP` (not success) and a recursive
+move marks a tree skip so its source directory is not removed; quiet mode now
+exits through `Pterm()` with the worker's `THR_EXIT` error, while a skip or a
+successful action exits zero. `WINDOW MAIN`/`WINDOW PROGRESS` values are
+marshaled through four `int` fields instead of casting `GRECT`; a crafted INF
+round-tripped `10,20,300,150` and `30,40,320,120` unchanged. Native
+`SH_WDRAW`/`AK` and cancel messages now use zeroed `WORD[8]` records.
+
 ### MGFORMAT
 
 `mise run apps -- mgformat` builds `build/atari/apps/mgformat/MGFORMAT.PRG`
@@ -636,6 +653,23 @@ The dialog screens differ only in the desktop free-bytes status line. NeoST's
 floppy implementation reports a write fault when the dialog starts a physical
 format, so successful formatting, disk copy and volume-label effects require
 manual hardware or a different FDC implementation and remain unverified.
+
+The explicit sector-ID table passed to `Flopfmt` is an `unsigned short` array on
+both the format and disk-copy paths; MagiC's FDC reads one 16-bit word per entry
+(`FDC.S`), so a 32-bit `int` array supplied `0,1,0,2,…` instead of the intended
+IDs. Floppy FAT/root initialization now uses the six-argument `Rwabs` macro with
+`1` in both the legacy sector word and the long record; `Lrwabs` puts `-1` in the
+legacy word, which MagiC's floppy handler rejects as track 65535. `DOSVARS.
+err_to_str` is at byte 50 (kernel table and `AESFRM.S` caller), not 52, and the
+native routine takes the error in `D0` and returns the default text in `A0`;
+`dos_error_text` now bridges that register contract. Worker progress, finish,
+cancel and desktop-refresh messages use zeroed `WORD[8]` buffers. Disk copy
+validates A:/B: before locking or reading, lock failures still send a terminal
+result, and short or zero-byte spill `Fwrite`/`Fread` results are errors.
+`WINDOW FORMAT` values use the same four-`int` marshaling as MGCOPY. The object
+code was checked for the 16-bit sector loop, `Rwabs` arguments, offset-50 load
+and 16-bit message stores; UI-driven logical Init and real media effects remain
+manual-hardware checks.
 
 ## Application porting workflow
 

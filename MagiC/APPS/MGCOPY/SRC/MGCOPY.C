@@ -64,6 +64,8 @@ int copy_id = -1;			/* ap_id des threads */
 						/* Wenn > 0, ist eine Aktion aktiv */
 int run_status;			/* Kopieraktion aktiv */
 int abbruch;				/* Button "Abbruch" betätigt */
+long action_error;			/* Rückgabewert des letzten Threads */
+static int exit_status;		/* Prozeßstatus für Pexec */
 static int quit = FALSE;		/* nicht resident */
 int exit_immed = FALSE;
 
@@ -112,6 +114,8 @@ int callback_ever( void )
 		else	
 		if	(w_ev.msg[0] == THR_EXIT)
 			{
+			action_error = ((long) ((unsigned short) w_ev.msg[4]) << 16)
+							| (unsigned short) w_ev.msg[5];
 			run_status = DLG_FINISHED;
 			copy_id = -1;
 			}
@@ -262,15 +266,27 @@ void read_inf( char *fname )
 
 			if	(!strncmp(s, "WINDOW MAIN ", 12))
 				{
+				int win[4];
+
 				s += 12;
-				scan_values(&s, 4, (int *) &prefs.main_win);
+				scan_values(&s, 4, win);
+				prefs.main_win.g_x = win[0];
+				prefs.main_win.g_y = win[1];
+				prefs.main_win.g_w = win[2];
+				prefs.main_win.g_h = win[3];
 				}
 
 
 			if	(!strncmp(s, "WINDOW PROGRESS ", 16))
 				{
+				int win[4];
+
 				s += 16;
-				scan_values(&s, 4, (int *) &prefs.progr_win);
+				scan_values(&s, 4, win);
+				prefs.progr_win.g_x = win[0];
+				prefs.progr_win.g_y = win[1];
+				prefs.progr_win.g_w = win[2];
+				prefs.progr_win.g_h = win[3];
 				}
 
 			if	(!strncmp(s, "SHORT PROGRESS", 14))
@@ -333,11 +349,13 @@ void read_inf( char *fname )
 
 static void print_winpos(char *s, GRECT *g, int n)
 {
-	g->g_x -= scrx;
-	g->g_y -= scry;
-	print_values(s, n, (int *) g);
-	g->g_x += scrx;
-	g->g_y += scry;
+	int values[4];
+
+	values[0] = g->g_x - scrx;
+	values[1] = g->g_y - scry;
+	values[2] = g->g_w;
+	values[3] = g->g_h;
+	print_values(s, n, values);
 }
 
 
@@ -519,6 +537,7 @@ int main( int argc, char *argv[] )
 		{
 		run_status = DLG_WAITING;	/* warte auf Drücken von OK */
 		abbruch = FALSE;
+		action_error = 0L;
 
 		if	(!xargs)
 			continue;
@@ -629,6 +648,8 @@ int main( int argc, char *argv[] )
 			callback_ever();
 
 		close_beg_dialog();
+		if	(quit)
+			exit_status = (int) action_error;
 		}
 
 
@@ -712,5 +733,5 @@ void close_work(void)
 {
 	rsrc_free();
 	appl_exit();
-	Pterm0();
+	Pterm(exit_status);
 }

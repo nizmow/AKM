@@ -35,6 +35,9 @@ static char *_zielpath;
 
 static char dirty_drives[32];
 
+static int make_stage_name(char *dir, char *ext, char *out);
+static long publish_file(char *dir, char *name, char *stage);
+
 
 static char *delete_file_s;
 static char *delete_folder_s;
@@ -74,11 +77,12 @@ void send_shwdraw( void )
 {
 	register int i;
 	register char *s;
-	int	msg[8];
+	WORD msg[8];
 
 
+	memset(msg, 0, sizeof(msg));
 	msg[1] = ap_id;
-	msg[5] = msg[6] = msg[7] = 0;
+
 	for	(i = 0,s=dirty_drives; i < 32; i++,s++)
 		if	(*s)
 			{
@@ -507,7 +511,7 @@ errcommand = "Fxattr";
 *
 *********************************************************************/
 
-long GFcreate(char *path, char *fname, XATTR *file)
+long GFcreate(char *path, char *fname, XATTR *file, char *stage, int *skipped)
 {
 	XATTR newfile;
 	char	all[MAX_PATHLEN+2],oldname[MAX_NAMELEN+2];
@@ -517,6 +521,7 @@ long GFcreate(char *path, char *fname, XATTR *file)
 	char query = (copy_mode != OVERWRITE);
 
 
+	*skipped = FALSE;
 	attr = file->attr;				/* Attribute der Quelldatei */
 	attr &= ~F_RDONLY;				/* ReadOnly nicht übernehmen */
 	newfile.mode = S_IFREG;			/* initialisieren */
@@ -547,13 +552,16 @@ long GFcreate(char *path, char *fname, XATTR *file)
 
 			if	((doserr == EACCDN) &&
 				 (copy_mode == BACKUP))
+				{
+				*skipped = TRUE;
 				return(E_OK);	/* bei Verschieben: Löschen */
+				}
 
 			/* Datei existiert noch nicht: Erstellen */
 			/* ------------------------------------- */
 
 			if	(doserr == EFILNF)
-				doserr = Fcreate(all, attr);
+				doserr = Fcreate(stage ? stage : all, attr);
 
 #if DEBUG
 errcommand = "Fcreate";
@@ -566,10 +574,10 @@ errcommand = "Fcreate";
 		/* --------------------------------------- */
 
 		else {
-			if	((newfile.mode & S_IFMT) == S_IFLNK)
+			if	(!stage && ((newfile.mode & S_IFMT) == S_IFLNK))
 				Fdelete(all);		/* existierenden Symlink löschen */
 		 again:
-			doserr = Fcreate(all, attr);
+			doserr = Fcreate(stage ? stage : all, attr);
 
 #if DEBUG
 errcommand = "Fcreate";
@@ -597,7 +605,10 @@ errcommand = "Fcreate";
 				query = TRUE;
 				}
 			if	(ret == 0)		/* Überspringen */
+				{
+				*skipped = TRUE;
 				return(ESKIP);
+				}
 			if	(ret < 0)			/* Abbruch */
 				return(EBREAK);
 			}
@@ -631,8 +642,10 @@ long GFsymlink(char *buf, char *path, char *fname, XATTR *xa)
 	XATTR newfile;
 	struct mutimbuf mutime;
 	char	all[MAX_PATHLEN+2],oldname[MAX_NAMELEN+2];
+	char	backup[MAX_PATHLEN+2];
 	long doserr;
 	int ret;
+	int have_backup = FALSE;
 	char query = (copy_mode != OVERWRITE);
 	char do_rename = (copy_mode == RENAME);
 
@@ -717,26 +730,35 @@ errcommand = "Fxattr";
 						doserr = E_OK;
 
 					if	(!doserr)
-#if DEBUG
-{
-#endif
-						doserr = Fdelete(all);
-
-#if DEBUG
-errcommand = "Fdelete";
-}
-#endif
+						{
+						if	(make_stage_name(path, ".BAK", backup))
+							{
+							doserr = Frename(0, all, backup);
+							if	(doserr == E_OK)
+								have_backup = TRUE;
+							}
+						else	doserr = EACCDN;
+						}
 
 					if	(!doserr)
-#if DEBUG
-{
-#endif
+						{
 						doserr = Fsymlink(buf, all);
 
 #if DEBUG
 errcommand = "Fsymlink";
-}
 #endif
+
+						if	(doserr == E_OK && have_backup)
+							{
+							Fdelete(backup);
+							have_backup = FALSE;
+							}
+						else	if	(doserr != E_OK && have_backup)
+							{
+							Frename(0, backup, all);
+							have_backup = FALSE;
+							}
+						}
 
 					}
 				}
@@ -755,7 +777,7 @@ errcommand = "Fsymlink";
 				query = TRUE;
 				}
 			if	(ret == 0)		/* Überspringen */
-				return(E_OK);
+				return(ESKIP);
 			if	(ret < 0)			/* Abbruch */
 				return(EBREAK);
 			}
@@ -788,8 +810,10 @@ long GFrename(char *path, char *fname,
 	XATTR newfile;
 	int old_ftype,new_ftype;
 	char	alls[MAX_PATHLEN+2],alld[MAX_PATHLEN+2];
+	char	backup[MAX_PATHLEN+2];
 	long doserr;
 	int ret;
+	int have_backup = FALSE;
 	char query = copy_mode;
 
 
@@ -864,7 +888,15 @@ Cconws("EACCDN ");
 				/* Daher Zieldatei löschen				*/
 
 				if	(doserr == EFILNF)	/* darf überbügeln... */
-					doserr = Fdelete(alld);
+					{
+					if	(make_stage_name(zpath, ".BAK", backup))
+						{
+						doserr = Frename(0, alld, backup);
+						if	(doserr == E_OK)
+							have_backup = TRUE;
+						}
+					else	doserr = EACCDN;
+					}
 				set_dirty(doserr, alld, 1);
 				if	(doserr != E_OK && doserr != EACCDN)
 					{
@@ -877,6 +909,16 @@ Cconws("EACCDN ");
 				if	(doserr == E_OK)
 					{
 					doserr = Frename(0, alls, alld);
+					if	(doserr == E_OK && have_backup)
+						{
+						Fdelete(backup);
+						have_backup = FALSE;
+						}
+					else	if	(doserr != E_OK && have_backup)
+						{
+						Frename(0, backup, alld);
+						have_backup = FALSE;
+						}
 					set_dirty(doserr, alls, 1);
 					set_dirty(doserr, alld, 1);
 					}
@@ -964,6 +1006,85 @@ errcommand = "Freadlink";
 
 /*********************************************************************
 *
+* Sucht einen freien Hilfsnamen <~MGCPnn><ext> in <dir>.
+* Rückgabe: TRUE, Name in <out>; FALSE, kein Name frei.
+*
+*********************************************************************/
+
+static int make_stage_name(char *dir, char *ext, char *out)
+{
+	int i;
+	char *p;
+	DTA *olddta;
+	DTA dta;
+
+
+	if	(strlen(dir) + 12 >= MAX_PATHLEN)
+		return(FALSE);
+	olddta = (DTA *) Fgetdta();
+	Fsetdta(&dta);
+	for	(i = 0; i < 100; i++)
+		{
+		strcpy(out, dir);
+		p = out + strlen(out);
+		memcpy(p, "~MGCP", 5);
+		p += 5;
+		*p++ = '0' + i / 10;
+		*p++ = '0' + i % 10;
+		strcpy(p, ext);
+		if	(Fsfirst(out, 0x17) != E_OK)
+			break;
+		}
+	Fsetdta(olddta);
+	return(i < 100);
+}
+
+/*********************************************************************
+*
+* Veröffentlicht eine fertig geschriebene Stagingdatei unter <name>
+* in <dir>. Die bisherige Zieldatei wird gesichert und bei einem
+* Fehlschlag zurückbenannt.
+*
+*********************************************************************/
+
+static long publish_file(char *dir, char *name, char *stage)
+{
+	char dest[MAX_PATHLEN+2],backup[MAX_PATHLEN+2];
+	XATTR xa;
+	long doserr;
+	int have_backup = FALSE;
+
+
+	strcpy(dest, dir);
+	strcat(dest, name);
+
+	doserr = Fxattr(1, dest, &xa);
+	if	(doserr == E_OK)
+		{
+		if	(!make_stage_name(dir, ".BAK", backup))
+			return(EACCDN);
+		doserr = Frename(0, dest, backup);
+		if	(doserr != E_OK)
+			return(doserr);
+		have_backup = TRUE;
+		}
+	else	if	(doserr != EFILNF)
+		return(doserr);
+
+	doserr = Frename(0, stage, dest);
+	if	(doserr != E_OK)
+		{
+		if	(have_backup)
+			Frename(0, backup, dest);
+		}
+	else	if	(have_backup)
+		Fdelete(backup);
+	return(doserr);
+}
+
+
+/*********************************************************************
+*
 * Kopiert eine Datei <fname> in <path> nach <zpath>.
 * Ggf. wird andere Datei erzeugt und <fname> verändert.
 * Rückgabe ESKIP, falls die Datei übersprungen werden soll; sie
@@ -975,11 +1096,14 @@ long GFcopy(char *path, char *fname,
 			char *new_name, XATTR *xa, char *zpath)
 {
 	char	alls[MAX_PATHLEN+2],alld[MAX_PATHLEN+2];
+	char	stage[MAX_PATHLEN+2];
 	long doserr;
 	int shdl,dhdl;
 	long lbytes;
 	int drv;
 	long	my_bsize;		/* ggf. für Floppies kleineren Puffer nehmen */
+	int	staged = FALSE;
+	int	skipped = FALSE;
 
 
 	/* Symlinks extra kopieren */
@@ -1002,6 +1126,13 @@ long GFcopy(char *path, char *fname,
 
 	strcpy(alls, path);
 	strcat(alls, fname);
+
+	/* Zieldatei erst als Hilfsdatei schreiben und prüfen, danach
+	   die bisherige Datei ersetzen. So bleibt das alte Ziel bei
+	   Platzmangel, Abbruch oder Schreibfehler erhalten. */
+
+	if	(!make_stage_name(zpath, ".TMP", stage))
+		return(err_alert(EACCDN));
 
 	/* benutzte Puffergröße ggf. verkleinern */
 
@@ -1076,16 +1207,19 @@ errcommand = "Fread";
 			strcpy(alld, zpath);
 			strcat(alld, new_name);
 			down_cnt(2, write_file_s, alld, 0L);
-			doserr = GFcreate(zpath, new_name, xa);
+			doserr = GFcreate(zpath, new_name, xa, stage, &skipped);
 			strcpy(alld, zpath);
 			strcat(alld, new_name);	/* Name ggf. geändert */
-			if	(doserr <= E_OK)	/* < 0: Fehler oder Abbruch */
-				{				/* = 0: Überspringen 	   */
+			if	(skipped)
+				{
 				if	(!doserr)
 					down_cnt(3, NULL, NULL, xa->size);
 				break;
 				}
+			if	(doserr < E_OK)		/* Fehler oder Abbruch */
+				break;
 			dhdl = (int) doserr;
+			staged = TRUE;
 			}
 
 		if	(qbreak())
@@ -1120,16 +1254,35 @@ errcommand = "Fwrite";
 
 	if	(doserr > E_OK)
 		doserr = E_OK;
-	if	(shdl > 0)
-		Fclose(shdl);
-	if	(dhdl > 0)
+	if	(shdl >= 0)
 		{
-		Fdatime((DOSTIME *) &(xa->mtime), dhdl, RMODE_WR);
-		Fclose(dhdl);
+		long closeerr = Fclose(shdl);
+
+		if	(closeerr != E_OK && doserr == E_OK)
+			doserr = closeerr;
 		}
-	if	((dhdl > 0) && (doserr != E_OK) &&
-		 (doserr != EWRPRO) && (doserr != EDRVNR))
-		Fdelete(alld);
+	if	(dhdl >= 0)
+		{
+		long closeerr;
+
+		if	(doserr == E_OK)
+			Fdatime((DOSTIME *) &(xa->mtime), dhdl, RMODE_WR);
+		closeerr = Fclose(dhdl);
+		if	(closeerr != E_OK && doserr == E_OK)
+			doserr = closeerr;
+		dhdl = -1;
+		}
+	if	(staged)
+		{
+		if	(doserr == E_OK)
+			{
+			doserr = publish_file(zpath, new_name, stage);
+			if	(doserr != E_OK)
+				err_file = alld;
+			}
+		if	(doserr != E_OK)
+			Fdelete(stage);
+		}
 	if	((err_file) && (doserr != ESKIP))
 		err_alert(doserr);
 	return(doserr);
@@ -1217,6 +1370,7 @@ static int  _nfiles,_hfiles,_folders;
 static long (*_before)(char *path, char *fname, XATTR *xa);
 static long (*_after) (char *path, char *fname, XATTR *xa);
 static int  depth;
+static int  _walk_skipped;
 static char *_path;
 
 
@@ -1299,7 +1453,11 @@ errcommand = "Dxreaddir";
 			{
 			*endp = EOS;
 			if	(E_OK != (err = _before(_path, fname+4, &xa)))
+				{
+				if	(err == ESKIP)
+					_walk_skipped = TRUE;
 				continue;
+				}
 			}
 
 		if	((xa.mode & S_IFMT) == S_IFDIR)
@@ -1336,7 +1494,11 @@ errcommand = "Dxreaddir";
 			{
 			*endp = EOS;
 			if	(E_OK != (err = _after(_path, fname+4, &xa)))
+				{
+				if	(err == ESKIP)
+					_walk_skipped = TRUE;
 				continue;
+				}
 			}			/* "User break" */
 
 		dirlen++;
@@ -1347,6 +1509,8 @@ errcommand = "Dxreaddir";
 
 	if	(err == EFILNF || err == ENMFIL)
 		err = E_OK;
+	if	(_walk_skipped)
+		err = ESKIP;
 	Dclosedir(dirhandle);
 
 	depth--;
@@ -1361,6 +1525,8 @@ errcommand = "Dxreaddir";
 		if	(dirn % cluster_size_dst)
 			n_clu_dst++;
 		}
+	if	(err == ESKIP)
+		return(err);
 	return(err_alert(err));
 }
 
@@ -1374,6 +1540,7 @@ static long walk_path(char *path, long *nbytes,
 
 
 	_nbytes = _hbytes = _nfiles = _hfiles = _folders = depth = 0;
+	_walk_skipped = FALSE;
 	_before	= before;
 	_after	= after;
 	_path = path;
@@ -1732,7 +1899,8 @@ errcommand = "Fdelete";
 #endif
 
 				set_dirty(doserr, all, 1);
-				err_file = all;
+				if	(doserr)
+					err_file = all;
 				if	(doserr)
 					err_alert(doserr);
 				}
@@ -1917,7 +2085,7 @@ long copy_move(int move_flag,
 {
 	char srcpath[MAX_PATHLEN+2];
 	char dstpath[MAX_PATHLEN+2];
-	long err,flen;
+	long err,flen,result;
 	int drv;
 
 
@@ -1939,6 +2107,7 @@ long copy_move(int move_flag,
 		return(ENSMEM);
 
 	copy_mode = cmode;
+	result = E_OK;
 	for	(;argc > 0; argc-=2,argv++)
 		{
 		strcpy(srcpath, *argv);
@@ -1947,14 +2116,21 @@ long copy_move(int move_flag,
 		strcpy(dstpath, dest_path);
 		err = resolve_unknown_ftypes(srcpath, &flen);
 		if	(err)
+			{
+			Mfree((long) copy_buffer);
 			return(err_alert(err));
+			}
 		else err = _copy_move(srcpath, dstpath, move_flag, flen == -1);
+		if	(err == ESKIP)		/* Überspringen ist kein Fehler */
+			err = E_OK;
+		if	(err && result == E_OK)
+			result = err;
 		if	(err == EBREAK)
 			break;
 		}
 
 	Mfree((long) copy_buffer);
-	return(E_OK);
+	return(result);
 }
 
 
@@ -1968,12 +2144,13 @@ long create_aliases(int cmode, int argc, char *argv[],
 			char *dest_path)
 {
 	char path[MAX_PATHLEN+2];
-	long err,flen;
+	long err,flen,result;
 	char name[MAX_NAMELEN+2];
 	char *lastc;
 
 
 	copy_mode = cmode;
+	result = E_OK;
 	if	((copy_mode != CONFIRM) && (copy_mode != RENAME))
 		copy_mode = CONFIRM;
 	for	(;argc > 0; argc-=2,argv++)
@@ -2005,11 +2182,15 @@ long create_aliases(int cmode, int argc, char *argv[],
 				}
 			}
 		err = GFsymlink(path, dest_path, name, NULL);
+		if	(err == ESKIP)
+			err = E_OK;
+		if	(err && result == E_OK)
+			result = err;
 		if	(err == EBREAK)
 			break;
 		}
 	err_file = NULL;
-	return(E_OK);
+	return(result);
 }
 
 
@@ -2022,10 +2203,11 @@ long create_aliases(int cmode, int argc, char *argv[],
 long delete(int argc, char *argv[])
 {
 	char path[MAX_PATHLEN+2];
-	long err,flen;
+	long err,flen,result;
 
 
 	copy_mode = -1;		/* ungültig */
+	result = E_OK;
 	for	(;argc > 0; argc-=2,argv++)
 		{
 		if	(qbreak())
@@ -2037,10 +2219,14 @@ long delete(int argc, char *argv[])
 		if	(err)
 			return(err_alert(err));
 		err = _delete(path, flen == -1, flen);
+		if	(err == ESKIP)
+			err = E_OK;
+		if	(err && result == E_OK)
+			result = err;
 		if	(err == EBREAK)
 			break;
 		}
-	return(E_OK);
+	return(result);
 }
 
 

@@ -75,17 +75,17 @@ typedef struct {
 /* MagiC Sconfig(SC_DOSVARS) layout.  Only err_to_str is consumed here, but
  * retaining the pointer offsets avoids depending on a private header. */
 typedef struct {
-	void *in_dos;
+	long res0;
 	int *dos_time;
 	int *dos_date;
 	long res1;
 	long res2;
 	long res3;
 	void *act_pd;
-	long res4;
-	int res5;
+	void *res4;
+	short res5;
 	void *res6;
-	void *res7;
+	long *res7;
 	void (*resv_intmem)(void);
 	long (*etv_critic)(void);
 	char *((*err_to_str)(char e));
@@ -96,7 +96,7 @@ typedef struct {
 
 _Static_assert(sizeof(DTA) == 44, "legacy DTA layout");
 _Static_assert(offsetof(DTA, d_fname) == 30, "legacy DTA filename offset");
-_Static_assert(offsetof(DOSVARS, err_to_str) == 52, "MagiC DOSVARS layout");
+_Static_assert(offsetof(DOSVARS, err_to_str) == 50, "MagiC DOSVARS layout");
 
 
 /* MagiC's native wdlg API uses AES functions 160-167.  GEMlib's wdlg_*

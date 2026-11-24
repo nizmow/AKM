@@ -169,6 +169,14 @@ Use `--partition-offset` for a different MagiC C: partition offset and
 The source image is cloned for each binary. Confirm-dialog interaction,
 cancellation, long paths and general error paths are outside this scenario.
 
+A separate disposable-floppy probe checks the failure contract in
+[PORTING_NOTES.md](PORTING_NOTES.md#mgcopy): overwrite a 200 KiB destination
+with a 600 KiB source that cannot fit, then require a nonzero `Pexec` status,
+an unchanged old destination hash, a retained source, and no `~MGCPnn.*`
+staging files. The archived binary returned zero, replaced the destination
+with a partial 600 KiB file and deleted the moved source. Dialog-driven
+cancel/rename/skip remain untested.
+
 ## Shared host-side helpers
 
 `scripts/neost_image.py` wraps disposable image cloning, `MAGX.INF`
