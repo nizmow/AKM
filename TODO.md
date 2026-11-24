@@ -5,6 +5,41 @@ phase boundaries remain in [ROADMAP.md](ROADMAP.md); the full component list is
 [APPLICATION_BUILDS.md](APPLICATION_BUILDS.md). Do not duplicate that inventory
 here or interpret an unchecked item as a missing stub to manufacture.
 
+## Active queue — core Atari installation
+
+1. [x] **COPS accessory mode.** The shipped and rebuilt executable both run as
+   `AUTO/ACCS/COPS.ACC`; `test:cops-accessory-neost` verifies the menu item,
+   panel open/close/reopen and TSLICE dialog against a missing-accessory control.
+   No separate startup recipe was needed.
+2. [x] **German Atari/ST core ZIP.** `release:core` writes a deterministic
+   package; `test:release-neost` installs only its payload on a cleaned clone,
+   verifies every member hash, and boots MAGXDESK plus COPS. The manifest
+   records rebuilt versus retained inputs. File operations and the SHUTDOWN
+   confirmation were checked separately on that payload.
+3. **Use manifest gaps for the next core port.** PDLG, CHGRES and other
+   retained files remain binary-only; choose the next source target from
+   installed components whose rebuild is needed, not from unbuilt catalogue
+   count. Keep optional demos, Mac/TT/Falcon variants and legacy mutators out of
+   the default profile.
+
+## Deferred and optional work
+
+- **PDLG.SLB:** optional print-dialog support, not a boot prerequisite. The
+  shipped German binary loads; no working dialog was observed on the fixture
+  without a GDOS printer driver. No source target until the missing inputs are
+  resolved. See [porting notes](PORTING_NOTES.md#pdlgslb).
+- **MFA/MFM:** all 12 canonical drivers build. ST high/medium/low are tested;
+  `MFA256`/`MFA32K` await a compatible TT/Falcon profile, and MFM awaits a
+  MagiCMac `VDI_SETUP_DATA` host. Track these as runtime coverage, not ports.
+- **SLB_DEMO, EDIT.PRG, legacy utilities and old application variants:** optional,
+  not release gates. SLB_DEMO is a candidate for a small standalone port
+  (local projects and archived binaries; legacy libraries still need mapping).
+  Keep installer and disk/header mutators opt-in with disposable fixtures.
+- **Shared libraries and startup:** only build when a concrete consumer needs
+  them; see [the catalogue](APPLICATION_BUILDS.md#6-reusable-librarystartup-projects).
+  Keep historical, host-specific, external-dependency and missing-source work
+  in the catalogue, not the active Atari queue.
+
 ## Established by MOD_APP
 
 - [x] Add `Makefile.apps` with an independent `mod-app` target.
@@ -89,17 +124,7 @@ framework or shared-library rewrite is required before these are attempted.
 - [ ] Split the catalogue's combined status labels into compiled, linked,
   packaged, launched and functionally tested for the next batch.
 
-## Following batches
-
-The current core source-backed remainder is 24 build families: 13
-application/tool/extension families, 7 shared library/startup families and 4
-system-component families. Historical, test-only, blocked, binary-only and KAOS
-entries are outside that count.
-
-Shared families are consumer-driven, not a library-first batch. Each enters with
-its first concrete consumer and a runtime check; the first-consumer boundaries
-are recorded in [APPLICATION_BUILDS.md](APPLICATION_BUILDS.md) §6. Do not build
-the remaining shared families ahead of their consumers.
+## Completed port batches
 
 - [x] **VFATCONF** — add `vfatconf` producing `VFATCONF.PRG` plus its required
   resource; launch reaches the dialog under MagiC, but configuration changes
@@ -221,30 +246,9 @@ the remaining shared families ahead of their consumers.
   builds replace `scr_dump`, the missing launch fails and leaves it intact, and
   screens match. Printer output and the forced dump are untested (emulator
   capture/printer limits).
-- [ ] **MFA/MFM screen drivers** — scope and reference binaries are in the
-  [build catalogue](APPLICATION_BUILDS.md#2-system-components-outside-the-application-tree).
-  - [x] Resolve the 12 canonical `.PRJ` inputs, includes and archived `.SYS`
-    references. Exclude `MFM/ORIG`; `MFM4.SYS` is named by the loader but has no
-    project or binary in the tree.
-  - [x] Establish the archived `MFA2.SYS` baseline on a cloned MagiC image
-    under NeoST with a mono monitor: the desktop appears; removing `MFA2.SYS`
-    alone reaches `Bildschirm-Treiber nicht gefunden.` and the MCMD shell.
-  - [ ] Find a MagiCMac host exposing the `VDI_SETUP_DATA` display ABI and
-    establish the equivalent `MFM2.SYS` baseline and missing-driver control.
-    NeoST's Atari profiles cannot exercise this path; absence of the host
-    blocks MFM runtime proof, not MFM assembly.
-  - [x] Build `mfa2` and `mfm2` as representative `Makefile.apps` targets.
-    Check TOS relocations, the `NVDIDRV` header, entry offsets and organization
-    against each archive. Compare bytes only for equivalent references.
-  - [x] Repeat the archived MFA2 baseline with the rebuilt driver under the same
-    guest filename: archive and rebuild render an identical 640x400 screen.
-  - [x] Add the remaining canonical `mfa`/`mfm` family outputs. All twelve
-    `.SYS` files build and pass header, organization and relocation checks.
-  - [x] Exercise ST high/medium/low (`MFA2`/`MFA4`/`MFA16`): archived and
-    rebuilt screens match; each missing file fails before the MagiC boot probe.
-  - [ ] Cover `MFA256`/`MFA32K` with compatible TT/Falcon profiles and MFM with
-    matching MagiCMac display formats where available. Record built, load-proven
-    and functionally tested status separately in the catalogue.
+- [x] **MFA/MFM screen drivers** — all twelve canonical outputs build and pass
+  structural checks. NeoST verifies archived/rebuilt ST high/medium/low boots
+  and missing-driver rejection. See the deferred runtime work above.
 - [x] Account explicitly in the catalogue for remaining diagnostic, historical,
   host-specific, missing-source and external-dependency entries.
 

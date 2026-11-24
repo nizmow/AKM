@@ -446,6 +446,44 @@ Use `--partition-offset` for a different MagiC partition offset. Evidence stays
 in `build/atari/neost-cops-*`. Accessory mode, CPX board editing, Save/alerts,
 event-CPX callbacks and CPXs beyond the two fixtures remain untested.
 
+## NeoST: COPS accessory mode
+
+`mise run test:cops-accessory-neost` builds `build/atari/apps/cops/COPS.APP`,
+clones the MagiC image, removes inherited `GEMSYS\MAGIC\START\COPS.*` and
+`AUTO\ACCS\COPS.ACC`, then installs the Release accessory, the rebuilt
+executable under the same `COPS.ACC` guest name, or nothing for the control.
+It fixes `TSLICE.CPX` and requires `MAGX.INF` to keep `#_ACC C:\AUTO\ACCS` and
+`#_APP C:\GEMSYS\MAGIC\START`.
+
+The runner opens the MAGiC menu and requires its accessory item to differ from
+the no-accessory control, then opens the panel, double-clicks `MagiC
+Timeslice`, cancels it, closes the panel and reopens it from the menu. Captures
+park the pointer at a neutral position. Archive and rebuild must match
+pixel-for-pixel except the double-clicked icon's selection highlight and cursor
+pixels. Board editing, Save/alerts, event-CPX callbacks and other CPXs remain
+untested. Evidence goes to `build/atari/neost-cops-accessory-*`.
+
+## Release: German Atari/ST core ZIP
+
+`mise run release:core` runs `scripts/make-release.py`, writing
+`build/atari/release/core-de.zip` and a sorted SHA-256 manifest. The package
+combines rebuilt kernel, boot loader, MAGXDESK, applications, MFA/OSD drivers,
+COPS and CPX modules with retained Release data: `MAGX.INF`, desktop
+associations, help, patterns and localized German resources. The retained
+`MAGX.INF` has its `PDLG.SLB` line removed; PDLG is excluded as optional print
+support. TT/Falcon/MFM, Mac-specific programs, historical demos and ROMs are
+outside this profile.
+
+`mise run test:release-neost` builds the selected outputs, packs twice and
+requires byte-identical ZIPs. It then clones a MagiC image, removes `AUTO`,
+`BIN`, `EXTRAS`, `GEMSYS`, `LANG` and the root MagiC files, extracts only the
+ZIP, and verifies every installed member's hash. The clean payload must boot to
+MAGXDESK, open its menu and open the COPS panel. Only `HDDRIVER.SYS` remains
+from the fixture's boot infrastructure; it and retained Release CPX/desktop
+files are not rebuilt. The profile is a mono MegaSTE/TOS 2.06 boot; file
+operations and shutdown are exercised separately against the produced payload
+(MGCOPY suite and `SHUTDOWN.PRG`), not by this runner.
+
 ## NeoST: image SLB ABI and rendering
 
 `mise run test:slb-consumer-neost` builds `XP_RASTR.SLB`, `LOAD_IMG.SLB` and a

@@ -734,6 +734,29 @@ verify binding, relocation packaging and the client/library pair; a link-time
     demanding byte equality. Exclude only established address fields, never
     unexplained differences in record widths, offsets or payload data.
 
+## Core Atari release bundle
+
+`scripts/make-release.py` assembles `build/atari/release/core-de.zip` from an
+explicit rebuilt map and retained Release patterns; `mise run release:core`
+runs it. Rebuilt inputs are the kernel, `MAGXBOOT.TOS`, MAGXDESK and its
+resources, APPLICAT, MGCOPY/MGSEARCH/MGEDIT/MGVIEW/MGNOTICE/MGFORMAT, VT52,
+VFATCONF, SHUTDOWN, WBDAEMON, MOD_APP, MCMD, SHOWFILE, COPS as `COPS.ACC`,
+MAGXCONF/TSLICE CPX modules, WINFRAME, LOAD_IMG, EDITOBJC, and the MFA/OSD
+drivers. Retained data includes `MAGX.INF`, desktop associations, help,
+patterns, palettes, CPX modules and German resources; the INF copy drops the
+optional `PDLG.SLB` line. `HDDRIVER.SYS` is not packaged: the clean-install
+fixture keeps that third-party boot driver outside the ZIP payload.
+
+ZIP entries are sorted with a fixed timestamp, so two runs are byte-identical.
+The adjacent manifest records SHA-256, guest path and rebuilt/retained source.
+`mise run test:release-neost` builds the profile, compares two packs, cleans a
+clone of `AUTO/BIN/EXTRAS/GEMSYS/LANG` and root MagiC files, extracts only the
+ZIP, verifies every installed member hash, and boots MAGXDESK plus the COPS
+panel. The profile is German mono MegaSTE/TOS 2.06; TT/Falcon/MFM,
+Mac-specific programs, historical demos and ROMs are excluded. File operations
+and the SHUTDOWN confirmation were exercised separately on the produced
+payload with the MGCOPY suite and `SHUTDOWN.PRG`.
+
 ## Kernel workflow
 
 ### 1. Establish a reproducible build
@@ -1639,6 +1662,58 @@ boots a disabled control. The fixture removes any `SLBPATH` override so
 MAGXDESK directory window must differ from the disabled control and match the
 archive pixel-for-pixel. Only that boot screen is compared; dragging, resizing,
 shading, slider movement and unload remain untested.
+
+### PDLG.SLB
+
+`MagiC/EXTENSIO/PDLG_SLB` holds the localized print-dialog cores
+(`PDLG.C`, `PDLGSUB.C`, `PDLGDRV.C`, `PDLGQD.C`, `PDLGMGMC.C`, `RSRCFIX.C`),
+per-language `PDLG.H`/`PDLG.INC`/`PDLG.RSC`, and three PRJ variants selecting
+`COUNTRY=1/2/3`. The Release tree ships the selected language as
+`GEMSYS/MAGIC/XTENSION/PDLG.SLB`.
+
+An independent build is not yet available. Beyond the obsolete include paths,
+the projects reference kernel dialog infrastructure absent from this tree:
+`pdlghead.s`, `pdlgdsp.s`, `aesctrl.s`, `wdlgmain.h`, `std.h`, `filestat.h`,
+`ph.h`, `pdlg_slb.h`, `popup.c`, `list.c`, `readfile.c`, `filestat.c`,
+`adaptrsc.c`, `cookies.c`, `vdi.s`, `mac_api.s` and `wdtos.s`. COPS contains
+`LIST.C`/`POPUP.C`/`ADAPTRSC.C`, but those are application adapters, not the
+kernel copies named by the PRJ. `MagiC/KERNEL/AES/SRC/WDIALOG/WDIALOG.H`,
+`LISTBOX.H`, `MagiC/LIB/MT_AES/SRC/PRDIALOG.H` and the WINFRAME SLB entry
+pattern cover part of the ABI, so reconstruction is plausible; the missing
+files are not obtainable verbatim from the repository or its release archives.
+
+The shipped files are TOS executables with the SLB header at offset 28: name
+`PDLG.SLB`, no exported function table, and four lifecycle relocations for
+init/exit/open/close. DE reports version 3; EN and FR report 2. `slb_init()`
+takes a `BASEPAGE *`, derives the library name/path from `p_cmdlin`, and
+installs AES functions 200-207 through `sys_set_getfn()`/`sys_set_setfn()`;
+`do_pdlg_create()` reopens the library and dispatches the original create call.
+The missing `pdlgdsp.s`/`aesctrl.s` supplied the AESPB-to-C wrappers, and
+`PDLG_SLB.C`'s legacy `_mt_aes` calls need the same public-`AESPB` replacement
+used by WINFRAME.
+
+A compile probe of `PDLG.C` found that the kernel `WDIALOG.H` and public
+GEMlib `gemx.h` both define `EVNT` and `HNDL_OBJ` incompatibly. The legacy
+handler takes separate parameters; GEMlib declares a by-value
+`struct HNDL_OBJ_args` callback. Select and verify the callback boundary rather
+than including both headers or casting the handler pointer.
+
+Loading is verified; functional dialog behavior is not. On a disposable colour
+MegaSTE MagiC 6.20 clone, installing shipped DE and calling the public API gives
+`Slbopen("PDLG.SLB", NULL, 0, ...)` = 3 with a valid handle and exec pointer,
+while a missing library returns -33. `vq_gdos()` is 0 and `vq_vgdos()` is -2 on
+this image, so `pdlg_create(PDLG_3D)` returns NULL for the shipped library:
+`get_driver_list()` finds no VDI printer driver and no dialog is created.
+Adding `#_SLB 0 PDLG.SLB` to `MAGX.INF` does not change this. A GDOS/printer
+driver fixture is therefore required before any visible-dialog baseline; none
+exists in the repository or the supplied image.
+
+`PDLG.SLB` supplies print dialogs, not core Atari boot or desktop operation.
+Keep the shipped locale binaries as references. Any distribution that includes
+one must record it as a retained binary and check redistribution terms. Reopen
+the source build when the missing inputs are recovered or reconstruction is
+explicitly in scope; verify dialog open/cancel/close with a GDOS printer-driver
+fixture before claiming functional parity.
 
 ### XP_RASTR.SLB and LOAD_IMG.SLB
 

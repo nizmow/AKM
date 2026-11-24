@@ -190,6 +190,21 @@ description = "Compare archived and rebuilt COPS panel and CPX dialogs on MagiC"
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-cops-smoke.py"
 
+[tasks."test:cops-accessory-neost"]
+description = "Compare the shipped and rebuilt COPS accessory lifecycle on MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-cops-accessory-smoke.py"
+
+[tasks."release:core"]
+description = "Assemble the deterministic German Atari/ST core installation ZIP"
+dir = "{{ config_root }}"
+run = "python3 scripts/make-release.py --output build/atari/release/core-de.zip --manifest build/atari/release/core-de.manifest"
+
+[tasks."test:release-neost"]
+description = "Build, install and boot the German core ZIP on a clean MagiC image"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-release-smoke.py"
+
 [tasks."test:keyb-sys-neost"]
 description = "Compare all six KEYB_SYS generators with their archives under NeoST"
 dir = "{{ config_root }}"

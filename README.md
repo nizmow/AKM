@@ -400,6 +400,15 @@ kernel have reached MAGXDESK under Hatari 2.5.0: MegaSTE, 68000 at 16 MHz,
 4 MiB RAM, monochrome, TOS 2.06 and HDDRIVER 10.18. This verifies startup,
 not general functional correctness, stability or performance.
 
+Assemble the selected German Atari/ST core installation with
+`mise run release:core` (`scripts/make-release.py`), which writes a
+deterministic `build/atari/release/core-de.zip` plus a SHA-256 manifest.
+`mise run test:release-neost` builds the profile, verifies two identical packs,
+installs only the ZIP on a cleaned MagiC clone and boots MAGXDESK and COPS.
+PDLG.SLB, Mac/TT/Falcon variants and historical demos are excluded; retained
+Release files and third-party boot drivers are recorded separately, not
+claimed as rebuilt.
+
 The VDI `SETUP.C` listed in `MAGICVDI.PRJ` is linked alongside the `M.INP`
 modules. VASM's `-spaces` option is required for MAS expressions such as relative
 keyboard dispatch entries. UTF-8 assembly strings are encoded as Atari ST bytes;
