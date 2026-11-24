@@ -214,46 +214,70 @@ Do not commit ROMs, disk images, or other licensed installation files. Keep the
 source image and GEMDOS directory untouched; the shutdown test must use fresh
 copies. Record the hashes of both inputs and the NeoST version with each run.
 
-### Run
+### Install the binary under test
 
-Set `HEADLESS`, `TOS206_ROM`, `MAGIC_DISK`, and `GEMDRIVE_ROOT` to the local
-artifacts. Use a new output directory for each run:
+Set `MAGIC_DISK`, `TOS206_ROM`, and `GEMDRIVE_ROOT` to the local artifacts and
+use a fresh output directory. MagiC's desktop launches
+`C:\GEMSYS\GEMDESK\SHUTDOWN.PRG` when shutdown is requested. Replace that file,
+not a copy in `GEMSYS\MAGIC\START`: a START copy only starts another initiator
+and can leave the archived GEMDESK binary to draw the confirmation, so it does
+not exercise the rebuilt final flush.
 
 ```sh
 mise run apps -- shutdown
 OUT=$(mktemp -d build/atari/neost-magic-shutdown.XXXXXX)
+cp --reflink=auto "$MAGIC_DISK" "$OUT/magic.img"
+cp -a "$GEMDRIVE_ROOT" "$OUT/GEMDRIVE"
 {
   "$HEADLESS" --version
   sha256sum "$MAGIC_DISK" "$TOS206_ROM"
   find "$GEMDRIVE_ROOT" -type f -print0 | sort -z | xargs -0 sha256sum
 } >"$OUT/inputs.txt"
-cp --reflink=auto "$MAGIC_DISK" "$OUT/magic.img"
-cp -a "$GEMDRIVE_ROOT" "$OUT/GEMDRIVE"
 mcopy -i "$OUT/magic.img@@1024" \
   build/atari/apps/shutdown/SHUTDOWN.PRG \
-  ::/GEMSYS/MAGIC/START/SHUTDOWN.PRG
-
-"$HEADLESS" --machine megaste --mem 4m --mono --no-disk \
-  --acsi "$OUT/magic.img" --gemdos "$OUT/GEMDRIVE" \
-  --auto 'C:\AUTO\MAGXBOOT.TOS' \
-  --frames 18000 --scancode-at 6000 72 \
-  --screenshot "$OUT/final.ppm" "$TOS206_ROM" \
-  >"$OUT/headless.log" 2>&1
+  ::/GEMSYS/GEMDESK/SHUTDOWN.PRG
 ```
 
 The tested ACSI image's system partition starts at sector 2, hence the `@@1024`
-byte offset used by `mcopy`. Check the partition table and `#_APP` path in
+byte offset. Check the partition table and the `#_APP`/`#_DSK` entries in
 `MAGX.INF` before using a different installation; do not assume these match.
-The fixed Enter injection at frame 6000 and frame budget reproduce the current
-NeoST boot sequence. If the ROM, image, or emulator changes, inspect the screen
-and recalibrate rather than treating elapsed frames as proof of a successful
-boot.
+
+### Run
+
+Start the image in NeoST, wait until MAGXDESK owns the desktop, then press
+Ctrl–Alt–Del. For a bounded headless run, use the shared server client with
+`headless`, `rom`, an existing empty `out` directory, the cloned image path,
+and `guest_root` set as above:
+
+```python
+from neost_server import NeoSTServer
+
+with NeoSTServer(headless, rom, out, options=[
+        "--machine", "megaste", "--mem", "4m", "--mono", "--no-disk",
+        "--acsi", str(magic_img), "--gemdos", str(guest_root),
+        "--auto", r"C:\AUTO\MAGXBOOT.TOS"]) as server:
+    server.run_frames(10000)
+    server.chord([0x1D, 0x38, 0x53])   # Ctrl, Alt, Del make codes
+    server.run_frames(6000)
+    server.screenshot(out / "final.ppm")
+```
+
+The fixed frame budget reproduces the current NeoST boot sequence. If the ROM,
+image, or emulator changes, inspect the screen and recalibrate rather than
+treating elapsed frames as proof of a successful boot.
 
 Pass only when the screenshot shows MagiC's **“Shutdown was successful”**
-confirmation. Do not activate Restart or Cold Boot: SHUTDOWN is in the startup
-folder, so rebooting the test image can relaunch it. Preserve the screenshot and
-headless log as run evidence. This verifies the shutdown request through the
-confirmation dialog, not the final reboot/cold-boot path.
+confirmation. Do not activate Restart or Cold Boot: rebooting the test image
+re-launches the desktop helpers. Preserve the screenshot and headless log as
+run evidence. This verifies the shutdown request through the confirmation
+dialog, not the final reboot/cold-boot path.
+
+To check the failure branch, build a variant whose final flush reports an
+error (a throwaway build is enough), install it at the same GEMDESK path, and
+repeat the run. It must show the localized write-error alert
+(“Schreibfehler beim Sichern.” in German) and stay at the desktop; it must not
+reach the success alert or either reboot choice. Record that evidence
+separately from the normal run.
 
 ## NeoST: localized MCMD batch execution
 

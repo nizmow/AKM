@@ -23,8 +23,9 @@ PACKAGE = ROOT / "scripts/make-release.py"
 PAYLOAD = ("AUTO", "BIN", "EXTRAS", "GEMSYS", "LANG")
 ROOT_FILES = ("MAGX.INF", "MAGIC.RAM", "AUTOEXEC.BAT", "INSTALL.TXT", "NEWDESK.INF")
 BUILD_TARGETS = [
-    "magxboot", "mfa2", "mcmd", "magxdesk", "applicat", "mgcopy", "mgsearch",
-    "mgedit", "mgview", "mgnotice", "mgformat", "vt52", "vfatconf", "wbdaemon",
+    "magxboot", "mfa", "mcmd", "magxdesk", "applicat", "mgcopy", "mgsearch",
+    "mgedit", "mgview", "mgnotice", "mgformat", "vt52", "vfatconf", "shutdown",
+    "wbdaemon",
     "cops", "magxconf-cpx", "tslice-cpx", "winframe", "mod-app", "showfile",
     "load-img", "osd-batch",
 ]

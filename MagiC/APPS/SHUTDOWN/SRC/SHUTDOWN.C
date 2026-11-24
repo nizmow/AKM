@@ -81,6 +81,11 @@ static long magicmac_xbios(short mode)
 	return result;
 }
 
+static long sync_all(void)
+{
+	return trap_1_w(0x150);
+}
+
 
 #define DEBUG 0
 
@@ -973,6 +978,39 @@ int main(int argc, char *argv[])
 #if DEBUG
 			Bconin(2);
 #endif
+			/* Do not report success or reset while dirty data is unwritten. */
+			if (sync_all() != 0)
+			{
+				const char *t;
+
+				if (language == COUNTRY_DE)
+				{
+					t = "[3][SHUTDOWN:| |"
+						"Schreibfehler beim Sichern.|"
+						"Daten wurden nicht gesichert!]"
+						"[Abbruch]";
+				}
+				else
+				if (language == COUNTRY_FR)
+				{
+					t = "[3][SHUTDOWN:| |"
+						"Erreur d'ecriture.|"
+						"Donnees non sauvegardees!]"
+						"[Abandon]";
+				}
+				else
+				{
+					t = "[3][SHUTDOWN:| |"
+						"Write error while flushing.|"
+						"Data was not saved!]"
+						"[Cancel]";
+				}
+
+				form_alert(1, t);
+				shel_write(SHW_SHUTDOWN, FALSE, 0, NULL, NULL);
+				appl_exit();
+				return 4;
+			}
 			magicmac_xbios(0);	/* Beendet MagicMac */
 
 			if (bootmode == ask)

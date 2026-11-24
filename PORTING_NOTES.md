@@ -256,6 +256,22 @@ S, so that flag hides the intended source character even when the emitted byte
 happens to match. The non-debug localized literals were checked in the built
 PRG.
 
+The shutdown path calls `Ssync` (trap `0x150`) after STOP hooks and device
+cleanup, before the confirmation alert and both reboot choices. A nonzero
+result cancels the AES shutdown mode, shows a localized write-error alert and
+returns 4 instead of reporting success. This prevents a failed final flush from
+being presented as a successful shutdown; it cannot restore a FAT buffer that
+`write_sector` already invalidated after a failed sector write.
+
+Install the binary under test as `GEMSYS\GEMDESK\SHUTDOWN.PRG`. MagiC's desktop
+launches that copy when shutdown is requested. A copy in
+`GEMSYS\MAGIC\START` starts an extra initiator and can leave the archived
+GEMDESK binary to draw the confirmation, so it does not exercise the rebuilt
+final flush. Verified on NeoST 0.6.5/MagiC 6.20/TOS 2.06 with a server
+`Ctrl-Alt-Del` chord: the rebuilt binary reached the success alert, while a
+throwaway build that forced the final sync to fail showed
+“Schreibfehler beim Sichern.” and stayed at the desktop.
+
 ### WBDAEMON
 
 `mise run apps -- wbdaemon` builds `MagiC/APPS/WBDAEMON/SRC/WBDAEMON.C` as
@@ -269,6 +285,12 @@ Registration uses `trap_1_www(0x33, SC_WBACK, SCWB_SET)`, supplying MagiC's
 word-sized subcommand. MiNTLib's generic `Sconfig(4, 1)` instead pushes a long
 whose first word is zero, silently querying the daemon slot rather than setting
 it. The corrected call matches MGXCLOCK's binding.
+
+`Ssync` (trap `0x150`) now returns zero or the first filesystem sync error
+while still syncing the remaining drives. The daemon exit path and SHUTDOWN's
+final check consume this result. A failed sector write still invalidates the
+dirty FAT buffer in `write_sector`, so recovering or retrying that specific
+buffer remains a real-media error test rather than an emulator claim.
 
 `mise run apps -- wbdaemon wbdaemon-test-driver` builds the application and
 `wbdaemon/NEOSTEST.PRG` under the selected build directory. On a disposable
@@ -329,7 +351,8 @@ uses public MiNTLib/GEMlib headers, 16-bit AES/VDI parameters, a physical VDI
 handle from `graf_handle`, and a 19-byte buffer for the 18-character date/time
 plus NUL. The loop counter uses unsigned 16-bit wraparound rather than signed
 overflow. The original desktop drawing and 500 ms timer loop remain; this is
-not a windowed clock and does not add a new termination protocol.
+not a windowed clock. The loop now also consumes `AP_TERM`, so the registered
+daemon can be terminated by the desktop during shutdown.
 
 The kernel marks `Dcntl(KER_SETWBACK = 0x0300)` as removed. Registration now
 uses `trap_1_www(0x33, 4, 1)`: MagiC `Sconfig(SC_WBACK)` expects a **word**
@@ -338,21 +361,30 @@ is zero, silently querying the daemon instead of registering it. Each timer
 iteration calls `Ssync` through trap `0x150`. Registration failure exits rather
 than leaving a clock running without its advertised daemon.
 
+Before registering, MGXCLOCK sends `SHW_INFRECGN` so the AES knows it
+understands `AP_TERM`. Each iteration waits with MagiC's timed
+`appl_read(-2, 25, ...)` and exits on `AP_TERM`; normal process exit releases
+the daemon slot through the kernel's writeback teardown. Without this, the
+registered daemon ignores the desktop's `Ctrl-Alt-Del` `AP_TERM` and can hold
+up shutdown.
+
 Under NeoST 0.6.5, MegaSTE/4 MiB/monochrome, TOS 2.06 and a cloned MagiC 6.20
 disk, the startup folder launched MGXCLOCK alongside MAGXDESK. Screenshots
-verified initial date/time rendering and subsequent second updates. A guest
-probe found the application and a nonzero registered writeback daemon pointer.
-Evidence is under `build/atari/neost-mgxclock-KjyrfT/`. Disk-flush timing and
-data durability were not independently measured.
+verified date/time rendering and second updates. The lifecycle probe verified
+registration, `AP_TERM` exit, disappearance of the application and release of
+the daemon slot. It also wrote `C:\WBFLUSH.TXT` while the daemon was
+registered, and the host extracted matching bytes after exit, so the writeback
+session persisted that file. Exact periodic-flush latency remains unmeasured.
 
 `mise run apps -- mgxclock-test-driver` builds `mgxclock/NEOSTEST.PRG`
-under the selected build directory. For the registration regression scenario,
-use a disposable MagiC disk: replace its normal WBDAEMON startup entry with
-MGXCLOCK, then add the probe as `ZZPROBE.PRG` in the same `#_APP` folder. No
-other writeback daemon may run in this fixture. The probe waits 1.5 seconds,
-queries the AES application and writeback registration, and writes PASS/FAIL
-plus observations to `C:\MGXTEST.TXT`. The PASS check detects the generic
-long-argument binding error; a clock screenshot alone does not.
+under the selected build directory. For the lifecycle scenario, use a
+disposable MagiC disk: replace its normal WBDAEMON startup entry with MGXCLOCK,
+then add the probe as `ZZPROBE.PRG` in the same `#_APP` folder. No other
+writeback daemon may run in this fixture. The probe waits 1.5 seconds, checks
+registration, writes `C:\WBFLUSH.TXT`, sends `AP_TERM`, and requires the clock
+to disappear and the slot to clear before writing PASS/FAIL and observations to
+`C:\MGXTEST.TXT`. The PASS check detects both the generic-long binding error
+and a daemon that ignores `AP_TERM`; a clock screenshot alone does not.
 
 ### APPLICAT
 

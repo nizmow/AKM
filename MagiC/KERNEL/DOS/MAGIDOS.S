@@ -9594,6 +9594,7 @@ D_Tsetitimer:
 
 Ssync:
  movem.l  a6/a5/d7/d6,-(sp)
+ clr.l    -(sp)                ; erster Fehler
  move.l   act_pd,a0
  cmpa.l   bufl_wback,a0       ; Ssync kommt vom Writeback-Daemon ?
  seq      d6                  ; d6.b = TRUE: WB aktiv
@@ -9618,11 +9619,17 @@ sync_sync:
  move.l   d_xfs(a0),a2
  move.l   xfs_sync(a2),a2
  jsr      (a2)
+ tst.l    d0
+ beq.b    sync_nxtloop
+ tst.l    (sp)
+ bne.b    sync_nxtloop
+ move.l   d0,(sp)             ; ersten Fehler merken
 sync_nxtloop:
  addq.l   #4,a5
  addq.w   #1,d7
  cmpi.w   #LASTDRIVE,d7
  bls.b    sync_loop
+ move.l   (sp)+,d0
  movem.l  (sp)+,a6/a5/d7/d6
  rts
 

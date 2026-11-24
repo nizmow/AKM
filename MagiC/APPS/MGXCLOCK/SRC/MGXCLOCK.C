@@ -5,6 +5,7 @@
 *
 *****************************************************************/
 
+#include <stddef.h>
 #include <gem.h>
 #include <mint/osbind.h>
 
@@ -42,10 +43,16 @@ int main(void)
 	short vdi_handle;
 	short dummy, scrw;
 	short hwchar, hhbox, hhchar;
+	short event, message[8];
 
 
 	if (appl_init() < 0)
 		return 1;
+	if (!shel_write(SHW_INFRECGN, 1, 0, NULL, NULL))
+		{
+		appl_exit();
+		return 1;
+		}
 
 	/* SC_WBACK takes a word subcommand, unlike generic Sconfig's long argument. */
 	if (trap_1_www(0x33, SC_WBACK, SCWB_SET) < 0L)
@@ -98,7 +105,14 @@ int main(void)
 			v_gtext(vdi_handle, x, y, datetime);
 			}
 
-		evnt_timer(500);		/* 0,5s warten */
+		/* MagiC timed message wait: 25 ticks at 50 Hz. */
+		event = appl_read(-2, 25, message);
+		if ((event & MU_MESAG) && message[0] == AP_TERM)
+			{
+			v_clsvwk(vdi_handle);
+			appl_exit();
+			return 0;
+			}
 
 		Ssync();
 

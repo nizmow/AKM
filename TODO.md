@@ -129,9 +129,10 @@ framework or shared-library rewrite is required before these are attempted.
 - [x] **VFATCONF** — add `vfatconf` producing `VFATCONF.PRG` plus its required
   resource; launch reaches the dialog under MagiC, but configuration changes
   remain untested.
-- [x] **MGXCLOCK** — add `mgxclock` and a registration test driver; verify clock
-  updates and writeback daemon registration on a cloned MagiC disk. Actual
-  disk-flush timing remains unmeasured.
+- [x] **MGXCLOCK** — add `mgxclock` and a lifecycle test driver; verify clock
+  updates, writeback daemon registration, `AP_TERM` exit, slot release and
+  persistence of a cache-written file on a cloned MagiC disk. Actual
+  periodic-flush timing remains unmeasured.
 - [x] **APPLICAT** — independent bundle, cache compilation comparison and UI
   association-save scenario under MagiC; remaining paths are listed in porting notes.
 - [x] **MGVIEW** — independent executable; six archived/rebuilt MagiC scenarios
