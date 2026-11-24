@@ -38,6 +38,7 @@ static char kept_backup[MAX_PATHLEN+2];	/* Rückbenennen fehlgeschlagen */
 static int  kept_backup_valid;
 
 static int make_stage_name(char *dir, char *ext, char *out);
+static int same_name(const char *a, const char *b);
 static long open_stage(char *dir, char *ext, char *avoid, char *out);
 static long publish_file(char *dir, char *name, char *stage,
                          XATTR *expected, int existed);
@@ -534,6 +535,14 @@ long GFcreate(char *path, char *fname, XATTR *file, char *stage,
 	do	{
 		strcpy(all, path);
 		strcat(all, fname);
+		if	(stage && same_name(all, stage))
+			{
+			/* Zielname fällt auf unsere reservierte Stagingdatei */
+			doserr = (stage_hdl >= 0) ? (long) stage_hdl
+									  : Fcreate(stage, attr);
+			query = FALSE;
+			}
+		else
 		if	(query)
 			{
 			query = FALSE;
@@ -1064,6 +1073,21 @@ static int make_stage_name(char *dir, char *ext, char *out)
 *
 *********************************************************************/
 
+static int same_name(const char *a, const char *b)
+{
+	int ca, cb;
+
+	do	{
+		ca = (unsigned char) *a++;
+		cb = (unsigned char) *b++;
+		if	(ca >= 'a' && ca <= 'z')
+			ca -= 'a' - 'A';
+		if	(cb >= 'a' && cb <= 'z')
+			cb -= 'a' - 'A';
+		} while(ca && ca == cb);
+	return(ca == cb);
+}
+
 static long open_stage(char *dir, char *ext, char *avoid, char *out)
 {
 	int i;
@@ -1082,7 +1106,7 @@ static long open_stage(char *dir, char *ext, char *avoid, char *out)
 		*p++ = '0' + i / 10;
 		*p++ = '0' + i % 10;
 		strcpy(p, ext);
-		if	(avoid && !strcmp(out, avoid))
+		if	(avoid && same_name(out, avoid))
 			continue;
 		handle = Fopen(out, O_WRONLY | O_CREAT | O_EXCL);
 		if	(handle >= E_OK)
@@ -1142,6 +1166,12 @@ static long publish_file(char *dir, char *name, char *stage,
 		doserr = Frename(0, dest, backup);
 		if	(doserr != E_OK)
 			return(doserr);
+		/* Nach dem Umbenennen erneut prüfen: kein Ordner verdrängen */
+		if	(!Fxattr(1, backup, &xa) && ((xa.mode & S_IFMT) == S_IFDIR))
+			{
+			Frename(0, backup, dest);
+			return(EACCDN);
+			}
 		have_backup = TRUE;
 		}
 	else	if	(doserr != EFILNF)
@@ -1218,6 +1248,9 @@ long GFcopy(char *path, char *fname,
 	   die bisherige Datei ersetzen. So bleibt das alte Ziel bei
 	   Platzmangel, Abbruch oder Schreibfehler erhalten. */
 
+	if	(strlen(zpath) + strlen(new_name) >= MAX_PATHLEN)
+		return(err_alert(EPTHOV));
+
 	strcpy(first_name, new_name);
 	strcpy(avoid, zpath);
 	strcat(avoid, new_name);
@@ -1227,10 +1260,16 @@ long GFcopy(char *path, char *fname,
 	else	if	(doserr == EFILNF)
 		dest_info = 2;
 
+	/* Update-Modus: ein nicht älteres Ziel wird ohne Schreiben übersprungen. */
+	if	(copy_mode == BACKUP && dest_info == 1 &&
+		 !((unsigned) xa->mdate > (unsigned) dest_old.mdate ||
+		   ((unsigned) xa->mdate == (unsigned) dest_old.mdate &&
+			(unsigned) xa->mtime > (unsigned) dest_old.mtime)))
+		return(E_OK);
+
 	stage_hdl = open_stage(zpath, ".TMP", avoid, stage);
 	if	(stage_hdl < 0)
 		return(err_alert(stage_hdl));
-	Fattrib(stage, 1, xa->attr & ~F_RDONLY);
 	stage_reserved = TRUE;
 
 	/* benutzte Puffergröße ggf. verkleinern */
@@ -1382,9 +1421,19 @@ errcommand = "Fwrite";
 		}
 	if	(staged)
 		{
+		long attrerr;
+
+		if	(doserr == E_OK)
+			{
+			attrerr = Fattrib(stage, 1, (xa->attr & ~F_RDONLY) | F_ARCHIVE);
+			if	(attrerr < E_OK)
+				doserr = attrerr;
+			}
 		strcpy(alld, zpath);
 		strcat(alld, new_name);
-		if	(strcmp(stage, alld) != 0)
+		if	(doserr != E_OK && !err_file)
+			err_file = alld;
+		if	(!same_name(stage, alld))
 			{
 			if	(doserr == E_OK)
 				{
@@ -1495,6 +1544,7 @@ static long (*_before)(char *path, char *fname, XATTR *xa);
 static long (*_after) (char *path, char *fname, XATTR *xa);
 static int  depth;
 static int  _walk_skipped;
+static int  _no_delete;		/* Quellordner mit übersprungenen Einträgen behalten */
 static char *_path;
 
 
@@ -1505,6 +1555,7 @@ static long _walk_path( void )
 	int	dirlen;			/* Anzahl Einträge in diesem Verzeichnis */
 	long err;
 	long err_xr;
+	int  sub_skip;
 	char *endp;
 	char fname[MAX_NAMELEN+4+1];
 
@@ -1540,6 +1591,7 @@ static long _walk_path( void )
 	if	(qbreak())
 		return(EBREAK);
 	dirlen = 0;
+	sub_skip = FALSE;
 
 	dirhandle = Dopendir(_path, DOPEN_NORMAL);	/* Modus mit langen Namen */
 
@@ -1592,10 +1644,15 @@ errcommand = "Dxreaddir";
 			_folders++;
 			strcpy(endp, fname+4);
 			strcat(endp, "\\");
+			sub_skip = FALSE;
 			err = _walk_path();	/* REKURSION */
 			*endp = EOS;
 			if	(err == ESKIP)
-				err = E_OK;		/* bereits als übersprungen vermerkt */
+				{
+				_walk_skipped = TRUE;
+				sub_skip = TRUE;	/* Quellordner nicht löschen */
+				err = E_OK;
+				}
 			if	(err)
 				continue;
 			}
@@ -1622,7 +1679,10 @@ errcommand = "Dxreaddir";
 		if	(!err && _after != NULL)
 			{
 			*endp = EOS;
-			if	(E_OK != (err = _after(_path, fname+4, &xa)))
+			_no_delete = (((xa.mode & S_IFMT) == S_IFDIR) ? sub_skip : FALSE);
+			err = _after(_path, fname+4, &xa);
+			_no_delete = FALSE;
+			if	(E_OK != err)
 				{
 				if	(err == ESKIP)
 					{
@@ -1641,8 +1701,8 @@ errcommand = "Dxreaddir";
 
 	if	(err == EFILNF || err == ENMFIL)
 		err = E_OK;
-	if	(_walk_skipped)
-		err = ESKIP;
+	if	(_walk_skipped && err == E_OK)
+		err = ESKIP;		/* Abbruch/Fehler nicht als Skip maskieren */
 	Dclosedir(dirhandle);
 
 	depth--;
@@ -2070,7 +2130,7 @@ static long after_cpmv(char *path, char *fname, XATTR *xa)
 		return(EBREAK);
 	if	(((xa->mode) & S_IFMT) != S_IFDIR)
 		return(E_OK);
-	if	(_move_flag)
+	if	(_move_flag && !_no_delete)
 		doserr = GDdelete(path, fname);
 	else doserr = E_OK;
 

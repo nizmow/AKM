@@ -32,6 +32,9 @@
 #ifndef F_SYSTEM
 #define F_SYSTEM FA_SYSTEM
 #endif
+#ifndef F_ARCHIVE
+#define F_ARCHIVE 0x20
+#endif
 #ifndef S_IFMT
 #define S_IFMT 0170000
 #endif

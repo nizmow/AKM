@@ -623,13 +623,20 @@ successful action exits zero. `WINDOW MAIN`/`WINDOW PROGRESS` values are
 marshaled through four `int` fields instead of casting `GRECT`; a crafted INF
 round-tripped `10,20,300,150` and `30,40,320,120` unchanged. Native
 `SH_WDRAW`/`AK` and cancel messages now use zeroed `WORD[8]` records.
-Staging names are reserved with `Fopen(O_CREAT|O_EXCL)` before any dialog, and
-publication rechecks the destination's size, time and attribute snapshot so a
-late replacement is not silently overwritten. If restoring a backup fails
-because another process claims the name, the original remains as
-`~MGCPnn.BAK` and the operation reports the publication error against that
-path. Timestamp-granularity changes with identical size/time remain a residual
-race; a directory destination is never replaced by a file.
+Staging names are reserved with `Fopen(O_CREAT|O_EXCL)` before
+destination-conflict dialogs and compared case-insensitively against the
+resolved destination; a dialog that resolves to the staging name is treated as
+already published. Update-mode destinations that are not older are skipped
+before any staging file is created. Attributes (source bits minus read-only,
+plus archive) are applied after the staging file is closed. When the resolved
+destination name is unchanged,
+publication compares the size, time and attribute snapshot taken before the
+copy and refuses to replace a changed file. This is best effort: the check and
+the rename are separate GEMDOS operations, so a replacement or directory swap
+in that window, or a same-size/same-time change, remains possible. If restoring
+a backup fails because another process claims the name, the original remains as
+`~MGCPnn.BAK`; the error reported for that operation names the backup path
+unless a later dialog choice supersedes it.
 
 ### MGFORMAT
 
@@ -673,8 +680,10 @@ native routine takes the error in `D0` and returns the default text in `A0`;
 cancel and desktop-refresh messages use zeroed `WORD[8]` buffers. Disk copy
 validates A:/B: before locking or reading, lock failures still send a terminal
 result, and short or zero-byte spill `Fwrite`/`Fread` results are errors.
-`WINDOW FORMAT` values use the same four-`int` marshaling as MGCOPY; a short
-`WINDOW` record leaves the saved geometry unchanged. Disk-copy sector rotation
+`WINDOW FORMAT` values use the same four-`int` marshaling as MGCOPY; when fewer
+than four values parse, the saved geometry is left unchanged. `scan_values`
+still does not stop at the line boundary, so a value on the following line can
+complete a short record, as before. Disk-copy sector rotation
 is computed without unsigned underflow (IDs 1 and 2 wrap to the last IDs of the
 track). An unsupported copy drive is rejected before locking or refreshing the
 drive. The object code was checked for the 16-bit sector loop, `Rwabs`
