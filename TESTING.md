@@ -643,6 +643,26 @@ Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06 and host
 Only the MegaSTE mono profile is exercised; `MAGXBO32` and the resident path are
 not booted.
 
+## NeoST: HARDCOPY extension
+
+`mise run test:hardcopy-neost` builds `HARDCOPY.PRG` and `HCPROBE.PRG`, then
+boots three disposable clones:
+
+- the archived `MagiC/KERNEL/XTENSION/HARDCOPY.PRG`;
+- the rebuild from `build/atari/apps/hardcopy/HARDCOPY.PRG`;
+- a clone without the extension.
+
+The probe runs from `GEMSYS/MAGIC/START`, reads `scr_dump` ($502), launches
+`C:\GEMSYS\MAGIC\HCP\HARDCOPY.PRG`, and reads the hook again. Present builds
+must return status 0 and change `scr_dump`; the missing case must fail the launch
+and leave it unchanged. All three desktop screens must be pixel-identical.
+
+Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06 and host
+`mtools`. Evidence goes to `build/atari/neost-hardcopy-*`. This covers
+installation only: NeoST's `--printer` capture receives no bytes for this
+installation, and arming a dump raises a guest exception with the archived
+binary too, so the printer path is untested.
+
 ## NeoST: MagiC diagnostic tools
 
 `mise run test:diagnostic-tools-neost` builds `SHOWFREE.TOS`, `MAGXKERN.TTP`,
@@ -712,3 +732,24 @@ pixel-for-pixel. The fixture's booted MAGXCONF dialog supplies the visible
 window frame. Dragging, resizing, shading, scrollbar movement and unload
 behavior are not exercised. Evidence is written to a fresh
 `build/atari/neost-winframe-*` directory.
+
+## NeoST: WINFRAME.DEM example library
+
+`mise run test:winframe-demo-neost` builds the separate
+`MagiC/KERNEL/WINFRAME.DEM` example project, installs the demo's own
+16-object `WINFRAME.RSC` (not the Release production resource) beside the
+archived and rebuilt libraries, and boots a clone with
+`#_SLB 0 WINFRAME.SLB` disabled:
+
+```sh
+MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
+ python3 scripts/neost-winframe-demo-smoke.py
+```
+
+The fixture removes any `SLBPATH` override so `C:\GEMSYS\MAGIC\XTENSION` is
+the only library search path. The demo declares `wsizeof = 542` and reuses the
+production register-to-stack bridges; the booted MAGXDESK directory window must
+differ from the disabled control and match the archive pixel-for-pixel. Only
+that boot screen is covered; interactive resize, shade and scrollbar paths are
+not. Evidence is written to a fresh `build/atari/neost-winframe-demo-*`
+directory.

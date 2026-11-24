@@ -45,6 +45,7 @@ TARGETS = {
     "dis2": ("dis2", ["DIS2.TTP"]),
     "tslice-cpx": ("cpx", ["TSLICE.CPX"]),
     "winframe": ("winframe", ["WINFRAME.SLB", "WINFRAME.RSC"]),
+    "winframe-demo": ("winframe-demo", ["WINFRAME.SLB", "WINFRAME.RSC"]),
     "xp-rastr": ("xp-rastr", ["XP_RASTR.SLB"]),
     "load-img": ("load-img", ["LOAD_IMG.SLB"]),
     "showfree": ("showfree", ["SHOWFREE.TOS"]),
@@ -68,6 +69,7 @@ TARGETS = {
         f"KEYB_{name}.PRG" for name in ("CZ", "DEI", "FRA", "SWG", "UK", "US")
     ]),
     "magxboot": ("magxboot", ["MAGXBOOT.TOS", "MAGXBOOT.PRG", "MAGXBO32.PRG"]),
+    "hardcopy": ("hardcopy", ["HARDCOPY.PRG"]),
 }
 
 

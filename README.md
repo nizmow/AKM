@@ -130,6 +130,12 @@ variant `MAGXBO32.PRG`. `mise run test:magxboot-neost` boots the shipped
 loader, the rebuild and a missing-loader clone on disposable MagiC images and
 compares the MAGXDESK screen and the boot marker.
 
+Build the hardcopy extension with `mise run apps -- hardcopy` into
+`build/atari/apps/hardcopy/HARDCOPY.PRG`; `hardcopy-test-driver` builds the
+probe used by `mise run test:hardcopy-neost`, which checks that the archived and
+rebuilt extensions replace MagiC's `scr_dump` hook and that a missing extension
+does not. Printer output is not capturable in the NeoST fixture.
+
 Build the two-pass disassembler with `mise run apps -- dis` (or `dis1`/`dis2`)
 into `build/atari/apps/dis1/DIS1.TTP` and `build/atari/apps/dis2/DIS2.TTP`.
 `mise run test:dis-neost` runs both against the bundled `TST` corpus and a DRI

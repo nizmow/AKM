@@ -1463,6 +1463,39 @@ and six distinct layouts. Evidence:
 Limits: this proves the generated tables, not that MagiC's `READ_KTB` loads
 them at boot; no MagiC image or live keyboard driver is involved.
 
+### HARDCOPY extension
+
+`mise run apps -- hardcopy` assembles `build/atari/apps/hardcopy/HARDCOPY.PRG`
+from `MagiC/KERNEL/XTENSION/HARDCOPY.S` (normalized with `mas_to_vasm.py`) and
+the shared `MagiC/INC_AS/OSBIND.INC`, using VASM `-Ftos -tos-flags=1`. The
+archived `MagiC/KERNEL/XTENSION/HARDCOPY.PRG` and the Release
+`MagiC/Releases/MAGIC.A/EXTRAS/HARDCOPY.PRG` are byte-identical references.
+`mise run apps -- hardcopy-test-driver` builds `HCPROBE.PRG`, which reads
+`scr_dump` ($502), launches `C:\GEMSYS\MAGIC\HCP\HARDCOPY.PRG`, and reads the
+hook again.
+
+The rebuild's header is well-formed (TEXT 2652, DATA/BSS 0, flags 1, with a
+relocation stream). Against the archive's 2666-byte TEXT it is 14 bytes smaller,
+all of it inside TEXT. VASM replaces `suba.w #30,sp` and
+`adda.w #34,sp` with `lea` forms, two `adda.w #76,a0` with `lea 76(a0),a0`, and
+two `adda.w #-8,a0` with `subq.w #8,a0` (two bytes each). It also encodes label
+operands PC-relatively instead of absolute and `asl.w #1` as `add.w`, which do
+not change size. No assembler option disables these selections (`-no-opt` makes
+the text larger still), so byte parity is not claimed; the instruction sequences
+are otherwise identical.
+
+`mise run test:hardcopy-neost` boots archive, rebuild and missing-extension cases
+in separate clones. Present builds must return status 0 and replace the kernel's
+dummy `scr_dump`; the missing case must fail the launch and leave the hook
+unchanged. All three desktops must match pixel-for-pixel. Evidence:
+`build/atari/neost-hardcopy-*`.
+
+Limits: installation only. NeoST's `--printer` capture receives no bytes for
+this MagiC installation (a direct `Bconout(1)` test also captured nothing), and
+arming a dump through `_dumpflg` raises a 68000 exception in the archived binary
+as well, so the dump body, printer output and hardcopy key path remain
+unverified.
+
 ### MAGXBOOT loader
 
 `mise run apps -- magxboot` assembles `MAGXBOOT.TOS`, `MAGXBOOT.PRG` and the
@@ -1580,6 +1613,32 @@ requires the enabled/disabled booted dialog to differ, and compares the
 archived/rebuilt screens pixel-for-pixel. The fixture's booted MAGXCONF dialog
 provides the visible frame; the test does not drag, resize, shade or exercise
 scrollbar paths. Evidence: `build/atari/neost-winframe-20261122-141115/`.
+
+`MagiC/KERNEL/WINFRAME.DEM` is the separate 1.7.98 example project for the
+same manager. It produces the same `WINFRAME.SLB` filename but owns a
+16-object `WINFRAME.RSC` (the Release resource is the production 20-object
+tree and differs byte-for-byte) and declares `wsizeof = 542` for its `WININFO`;
+the kernel allocates each window created through `wind_create` from that
+value. Its 18-pixel title makes the
+booted frame visibly different from the production library. Build it with
+`mise run apps -- winframe-demo`, which writes
+`build/atari/apps/winframe-demo/` and reuses the production
+`WINFRAME_ENTRY.S` register-to-stack bridges; the kernel ABI is unchanged.
+
+The port replaces `mgx_dos.h`/`mt_aes.h` and `PARMDATA`/`_mt_aes` with public
+`AESPB`/`aes()`, maps `te_junk1`/`te_junk2` to GEMlib's
+`te_fontid`/`te_fontsize`, and writes `tree[O_FRAME]` geometry through
+`ob_x`/`ob_y`/`ob_width`/`ob_height` instead of a `GRECT` cast.
+`_Static_assert`s pin `OBJECT` at 24 bytes, the `WININFO` offsets
+94/478/486/514 and size 542, and the 40-byte handler table. Do not substitute
+the production resource or `wsizeof`.
+
+`test:winframe-demo-neost` installs the demo resource beside both binaries and
+boots a disabled control. The fixture removes any `SLBPATH` override so
+`C:\GEMSYS\MAGIC\XTENSION` remains the only library search path. The booted
+MAGXDESK directory window must differ from the disabled control and match the
+archive pixel-for-pixel. Only that boot screen is compared; dragging, resizing,
+shading, slider movement and unload remain untested.
 
 ### XP_RASTR.SLB and LOAD_IMG.SLB
 

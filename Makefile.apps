@@ -333,6 +333,34 @@ $(BUILD_DIR)/magxboot/MAGXBOOT.TOS $(BUILD_DIR)/magxboot/MAGXBO32.PRG: \
 $(BUILD_DIR)/magxboot/MAGXBOOT.PRG: $(BUILD_DIR)/magxboot/MAGXBOOT.TOS
 	cp "$<" "$@"
 
+HARDCOPY_DIR := MagiC/KERNEL/XTENSION
+HARDCOPY_SRC := $(BUILD_DIR)/hardcopy/src
+
+.PHONY: hardcopy hardcopy-test-driver
+hardcopy: $(BUILD_DIR)/hardcopy/HARDCOPY.PRG
+hardcopy-test-driver: $(BUILD_DIR)/hardcopy/HCPROBE.PRG
+
+$(HARDCOPY_SRC)/HARDCOPY.S: $(HARDCOPY_DIR)/HARDCOPY.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(HARDCOPY_SRC)/OSBIND.INC: MagiC/INC_AS/OSBIND.INC $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(BUILD_DIR)/hardcopy/HARDCOPY.PRG: $(HARDCOPY_SRC)/HARDCOPY.S \
+  $(HARDCOPY_SRC)/OSBIND.INC Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=1 \
+	  -I"$(HARDCOPY_SRC)/" -o "$@" "$<"
+
+$(BUILD_DIR)/hardcopy/HCPROBE.PRG: scripts/testdata/HCPROBE.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+-include $(BUILD_DIR)/hardcopy/HCPROBE.d
+
 .PHONY: mcmd mcmd-languages mcmd-test-driver
 mcmd: $(BUILD_DIR)/mcmd/$(MCMD_LANG)/MCMD.TOS
 mcmd-languages: $(foreach lang,de en fr,$(BUILD_DIR)/mcmd/$(lang)/MCMD.TOS)
@@ -397,7 +425,7 @@ $(BUILD_DIR)/magxconf/NEOSTART.PRG: MagiC/APPS/MAGXCONF/TESTDATA/NEOSTART.C Make
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 
-.PHONY: all applicat mod-app cmdline mac2st dump fc split dis dis1 dis2 showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver flp-par flp-par0 flp-par1 magxconf-cpx tslice-cpx cops winframe xp-rastr load-img slbtest mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 vt52-test-driver magxdesk abi-check console-test-driver
+.PHONY: all applicat mod-app cmdline mac2st dump fc split dis dis1 dis2 showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver flp-par flp-par0 flp-par1 magxconf-cpx tslice-cpx cops winframe winframe-demo xp-rastr load-img slbtest mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 vt52-test-driver magxdesk abi-check console-test-driver
 all: mod-app
 applicat: $(BUILD_DIR)/applicat/APPLICAT.APP $(BUILD_DIR)/applicat/applicat.rsc \
   $(BUILD_DIR)/applicat/applicat.inf
@@ -457,6 +485,8 @@ flp-par1: $(BUILD_DIR)/flp-par/FLP_PAR1.PRG
 magxconf-cpx: $(BUILD_DIR)/cpx/MAGXCONF.CPX
 tslice-cpx: $(BUILD_DIR)/cpx/TSLICE.CPX
 winframe: $(BUILD_DIR)/winframe/WINFRAME.SLB $(BUILD_DIR)/winframe/WINFRAME.RSC
+
+winframe-demo: $(BUILD_DIR)/winframe-demo/WINFRAME.SLB $(BUILD_DIR)/winframe-demo/WINFRAME.RSC
 xp-rastr: $(BUILD_DIR)/xp-rastr/XP_RASTR.SLB
 load-img: $(BUILD_DIR)/load-img/LOAD_IMG.SLB
 slbtest: $(BUILD_DIR)/slbtest/SLBTEST.PRG
@@ -932,6 +962,34 @@ $(BUILD_DIR)/winframe/WINFRAME.RSC: $(WINFRAME_DIR)/WINFRAME.RSC
 
 -include $(BUILD_DIR)/winframe/WIN_SLB.d
 -include $(BUILD_DIR)/winframe/WIN_OBJS.d
+
+WINFRAME_DEMO_DIR := MagiC/KERNEL/WINFRAME.DEM
+WINFRAME_DEMO_OBJECTS := $(addprefix $(BUILD_DIR)/winframe-demo/,WIN_SLB.o WIN_OBJS.o) \
+  $(BUILD_DIR)/winframe-demo/WINFRAME_ENTRY.o
+
+$(BUILD_DIR)/winframe-demo/%.o: $(WINFRAME_DEMO_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(WINFRAME_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/winframe-demo/WINFRAME_ENTRY.o: $(WINFRAME_DIR)/WINFRAME_ENTRY.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/winframe-demo/WINFRAME.elf: $(WINFRAME_DEMO_OBJECTS) \
+  MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld Makefile.apps
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld \
+	  $(WINFRAME_DEMO_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
+
+$(BUILD_DIR)/winframe-demo/WINFRAME.SLB: $(BUILD_DIR)/winframe-demo/WINFRAME.elf scripts/elf_to_slb.py
+	python3 scripts/elf_to_slb.py --name WINFRAME.SLB --version 1 "$<" "$@"
+
+$(BUILD_DIR)/winframe-demo/WINFRAME.RSC: $(WINFRAME_DEMO_DIR)/WINFRAME.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+-include $(BUILD_DIR)/winframe-demo/WIN_SLB.d
+-include $(BUILD_DIR)/winframe-demo/WIN_OBJS.d
 
 XPRASTR_DIR := MagiC/EXTENSIO/XP_RASTR.SLB/SRC
 XPRASTR_OBJECTS := $(BUILD_DIR)/xp-rastr/XP_RASTR.o \

@@ -91,8 +91,8 @@ framework or shared-library rewrite is required before these are attempted.
 
 ## Following batches
 
-The current core source-backed remainder is 25 build families: 13
-application/tool/extension families, 7 shared library/startup families and 5
+The current core source-backed remainder is 24 build families: 13
+application/tool/extension families, 7 shared library/startup families and 4
 system-component families. Historical, test-only, blocked, binary-only and KAOS
 entries are outside that count.
 
@@ -161,6 +161,9 @@ the remaining shared families ahead of their consumers.
   `test:tslice-cpx-neost` compares the COPS dialog with the archive.
 - [x] **WINFRAME.SLB** — independent library/resource build; the colour MagiC
   booted frame matches the archive. Interactive paths and unload are untested.
+- [x] **WINFRAME.SLB demo** — the separate example project builds beside the
+  production library with its own 16-object resource; the archived/rebuilt
+  booted frames match pixel-for-pixel.
 - [x] **XP_RASTR.SLB / LOAD_IMG.SLB** — independent builds with version-1
   packed C export records. Four-plane conversion and XIMG rendering match the
   source-tree archives. The shipped Release XIMG colours differ; see porting notes.
@@ -210,6 +213,14 @@ the remaining shared families ahead of their consumers.
   missing-loader clones; present loaders render an identical MAGXDESK screen and
   write the probe marker, and the missing case reaches neither. Other machines,
   TT-RAM starts and reset residency are untested.
+- [x] **HARDCOPY** — add `hardcopy` (archived TOS flags) and
+  `hardcopy-test-driver`; the rebuild matches the reference except six
+  `adda`/`suba` sites VASM shortens to `lea`/`subq` (14 bytes), plus size-neutral
+  PC-relative and `asl`/`add` encoding choices. `test:hardcopy-neost`
+  installs archived, rebuilt and missing cases in separate clones: present
+  builds replace `scr_dump`, the missing launch fails and leaves it intact, and
+  screens match. Printer output and the forced dump are untested (emulator
+  capture/printer limits).
 - [ ] **MFA/MFM screen drivers** — scope and reference binaries are in the
   [build catalogue](APPLICATION_BUILDS.md#2-system-components-outside-the-application-tree).
   - [x] Resolve the 12 canonical `.PRJ` inputs, includes and archived `.SYS`

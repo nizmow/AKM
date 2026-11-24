@@ -130,6 +130,11 @@ description = "Compare archived and rebuilt WINFRAME.SLB window frames under Mag
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-winframe-smoke.py"
 
+[tasks."test:winframe-demo-neost"]
+description = "Compare the archived and rebuilt WINFRAME.DEM example library under MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-winframe-demo-smoke.py"
+
 [tasks."test:osd-off002-neost"]
 description = "Build OFF002.OSD and prove NVDI draws into a 1-plane offscreen bitmap"
 dir = "{{ config_root }}"
@@ -204,6 +209,11 @@ run = "python3 scripts/neost-screen-driver-smoke.py"
 description = "Compare the shipped and rebuilt MAGXBOOT loaders on cloned MagiC images"
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-magxboot-smoke.py"
+
+[tasks."test:hardcopy-neost"]
+description = "Verify archived and rebuilt HARDCOPY installs the scr_dump hook on MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-hardcopy-smoke.py"
 
 [tasks."test:neost-server"]
 description = "Run NeoST server client protocol regression tests"
