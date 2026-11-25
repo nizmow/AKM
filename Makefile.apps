@@ -37,12 +37,14 @@ MAGXDESK_SOURCES := $(addprefix $(MAGXDESK_DIR)/,MAGXDESK.C SPEC.C \
   DEFAULTS.C DIALOGS.C DLG_INFO.C DWINDOWS.C FILES.C IMGLOAD.C KACHEL.C \
   KLICK.C ALLG.C DMENU.C DKLICK.C PATTERN.C LL.C SHELSORT.C)
 MAGXDESK_OBJECTS := $(patsubst $(MAGXDESK_DIR)/%.C,$(BUILD_DIR)/magxdesk/%.o,$(MAGXDESK_SOURCES))
-MGCOPY_DIR := MagiC/APPS/MGCOPY/SRC
+MGCOPY_ROOT := core/mgcopy
+MGCOPY_DIR := $(MGCOPY_ROOT)/SRC
 MGCOPY_GEMUT_DIR := MagiC/APPS/APPLICAT/SRC/IMPORT
-MGCOPY_INCLUDES := -I"$(MGCOPY_DIR)" -I"$(MGCOPY_GEMUT_DIR)"
+MGCOPY_INCLUDES := -I"$(MGCOPY_DIR)" -I"MagiC/APPS" -I"$(MGCOPY_GEMUT_DIR)"
 MGCOPY_SOURCES := $(addprefix $(MGCOPY_DIR)/,MGCOPY.C CPFILES.C BEG_DIAL.C DAT_DIAL.C)
-MGCOPY_OBJECTS := $(patsubst $(MGCOPY_DIR)/%.C,$(BUILD_DIR)/mgcopy/%.o,$(MGCOPY_SOURCES)) \
-  $(BUILD_DIR)/mgcopy/GEMUT_MT.o
+MGCOPY_OBJ_DIR := $(BUILD_DIR)/mgcopy/obj
+MGCOPY_OBJECTS := $(patsubst $(MGCOPY_DIR)/%.C,$(MGCOPY_OBJ_DIR)/%.o,$(MGCOPY_SOURCES)) \
+  $(MGCOPY_OBJ_DIR)/GEMUT_MT.o
 MGFORMAT_DIR := MagiC/APPS/MGFORMAT/SRC
 MGFORMAT_GEMUT_DIR := MagiC/APPS/APPLICAT/SRC/IMPORT
 MGFORMAT_INCLUDES := -I"$(MGFORMAT_DIR)" -I"$(MGFORMAT_GEMUT_DIR)"
@@ -613,12 +615,12 @@ $(KEYB_OUTPUTS): $(BUILD_DIR)/keyb-sys/%.PRG: $(KEYB_DIR)/%.C Makefile.apps
 
 -include $(KEYB_OUTPUTS:.PRG=.d)
 
-$(BUILD_DIR)/mgcopy/%.o: $(MGCOPY_DIR)/%.C Makefile.apps
+$(MGCOPY_OBJ_DIR)/%.o: $(MGCOPY_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(MGCOPY_INCLUDES) \
 	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
 
-$(BUILD_DIR)/mgcopy/GEMUT_MT.o: $(MGCOPY_GEMUT_DIR)/GEMUT_MT.C Makefile.apps
+$(MGCOPY_OBJ_DIR)/GEMUT_MT.o: $(MGCOPY_GEMUT_DIR)/GEMUT_MT.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGCOPY_GEMUT_DIR)" \
 	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
@@ -683,10 +685,10 @@ $(BUILD_DIR)/vt52/NEOSTART.PRG: MagiC/APPS/VT52/TESTDATA/NEOSTART.C Makefile.app
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
-$(BUILD_DIR)/mgcopy/NEOSTART.PRG: MagiC/APPS/MGCOPY/TESTDATA/NEOSTART.C Makefile.apps
-	mkdir -p "$(@D)"
+$(BUILD_DIR)/mgcopy/NEOSTART.PRG: $(MGCOPY_ROOT)/tests/NEOSTART.C Makefile.apps
+	mkdir -p "$(MGCOPY_OBJ_DIR)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
-	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+	  -MF "$(MGCOPY_OBJ_DIR)/NEOSTART.d" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/mgsearch/%.o: $(MGSEARCH_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
@@ -1135,7 +1137,7 @@ $(BUILD_DIR)/mgedit/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 -include $(MAGXDESK_OBJECTS:.o=.d)
 -include $(BUILD_DIR)/mgsearch/NEOSTART.d
 -include $(MGCOPY_OBJECTS:.o=.d)
--include $(BUILD_DIR)/mgcopy/NEOSTART.d
+-include $(MGCOPY_OBJ_DIR)/NEOSTART.d
 -include $(MGFORMAT_OBJECTS:.o=.d)
 -include $(BUILD_DIR)/mgformat/NEOSTART.d
 -include $(MGNOTICE_OBJECTS:.o=.d)

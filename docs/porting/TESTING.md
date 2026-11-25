@@ -245,7 +245,7 @@ Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
-  python3 scripts/neost-mgcopy-smoke.py --output build/atari/neost-mgcopy-check
+  mise run test:mgcopy-neost -- --output build/atari/neost-mgcopy-check
 ```
 
 Use `--partition-offset` for a different MagiC C: partition offset and

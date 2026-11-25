@@ -644,10 +644,11 @@ three MagiC dialog callbacks to the SDK's by-value `HNDL_OBJ_args` record.
 `MT_appl_init` becomes GEMlib's `mt_appl_init`. The shared `copy_mode` is the
 application global rather than an accidental file-static duplicate.
 
-`python3 scripts/neost-mgcopy-smoke.py` builds the application and delayed
-`NEOSTART.PRG` driver, then boots archived and rebuilt bundles in separate
-MagiC 6.20/TOS 2.06 clones. The driver waits for the desktop, invokes MGCOPY
-through `Pexec` with `-q`, and records child statuses. Cases copy, move, alias
+`mise run test:mgcopy-neost` runs the scenario in `core/mgcopy/tests/`. It
+builds the application and delayed `NEOSTART.PRG` driver, then boots archived
+and rebuilt bundles in separate MagiC 6.20/TOS 2.06 clones. The driver waits
+for the desktop, invokes MGCOPY through `Pexec` with `-q`, and records child
+statuses. Cases copy, move, alias
 and delete top-level files; copy and move nested trees; and move a file from
 `D:` to `C:` to exercise the cross-drive `ENSAME` fallback. The rebuilt and
 archived runs produced the same seven zero statuses and identical source/

@@ -101,7 +101,7 @@ run = "python3 scripts/neost-mod-app-smoke.py"
 [tasks."test:mgcopy-neost"]
 description = "Compare archived and rebuilt MGCOPY file operations under NeoST/MagiC"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-mgcopy-smoke.py"
+run = "python3 core/mgcopy/tests/neost-mgcopy-smoke.py"
 
 [tasks."test:mgformat-neost"]
 description = "Compare archived and rebuilt MGFORMAT startup dialog under NeoST/MagiC"

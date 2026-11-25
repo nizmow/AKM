@@ -347,8 +347,9 @@ Run `mise run test:mgsearch-neost` (or `python3 scripts/neost-mgsearch-smoke.py`
 to compare the archived and rebuilt MGSEARCH dialog and `*.ZZZ` search-result
 screens on identical cloned images.
 
-Run `mise run test:mgcopy-neost` (or `python3 scripts/neost-mgcopy-smoke.py`)
-to compare MGCOPY copy, move, alias and delete effects on cloned MagiC images.
+MGCOPY lives in [`core/mgcopy/`](core/mgcopy), with its NeoST scenario and
+guest probe in `tests/`. Run `mise run test:mgcopy-neost` to compare copy,
+move, alias and delete effects on cloned MagiC images.
 
 Run `mise run test:cops-neost` (or `python3 scripts/neost-cops-smoke.py`)
 to compare the COPS panel and its `MAGXCONF.CPX`/`TSLICE.CPX` dialogs with the
