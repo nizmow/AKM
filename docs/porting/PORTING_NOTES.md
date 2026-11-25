@@ -836,9 +836,10 @@ verify binding, relocation packaging and the client/library pair; a link-time
 
 ## Core Atari release bundle
 
-`scripts/make-release.py` assembles `build/atari/release/core-de.zip` from an
-explicit rebuilt map and retained Release patterns; `mise run release:core`
-runs it. Rebuilt inputs are the kernel, `MAGXBOOT.TOS`, MAGXDESK and its
+`mise run release:core` invokes `scripts/make-release.py`, which asks Make for
+the exact rebuilt file targets in its package map before assembling
+`build/atari/release/core-de.zip` with the retained Release inputs.
+Rebuilt inputs are the kernel, `MAGXBOOT.TOS`, MAGXDESK and its
 resources, APPLICAT, MGCOPY/MGSEARCH/MGEDIT/MGVIEW/MGNOTICE/MGFORMAT, VT52,
 VFATCONF, SHUTDOWN, WBDAEMON, MOD_APP, MCMD, SHOWFILE, COPS as `COPS.ACC`,
 MAGXCONF/TSLICE CPX modules, WINFRAME, LOAD_IMG, EDITOBJC, and the MFA/OSD
@@ -856,6 +857,11 @@ panel. The profile is German mono MegaSTE/TOS 2.06; TT/Falcon/MFM,
 Mac-specific programs, historical demos and ROMs are excluded. File operations
 and the SHUTDOWN confirmation were exercised separately on the produced
 payload with the MGCOPY suite and `SHUTDOWN.PRG`.
+
+The `release:minimal` profile selects only boot requirements plus the MCMD
+fallback from the same build map. Its `core/MAGX.INF` selects ST high/mono and
+does not reference optional programs or SLBs. Keep the broader `release:core`
+payload separate; `test:release-minimal-neost` checks boot without it.
 
 ## Kernel workflow
 

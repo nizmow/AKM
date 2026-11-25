@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the German core ZIP twice, install it cleanly and boot it on MagiC."""
+"""Build, install and cold-boot a German Atari/ST release profile."""
 from __future__ import annotations
 
 import argparse
@@ -18,32 +18,13 @@ from neost_screen import diff_stats
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / "build/atari"
-RELEASE = BUILD / "release"
 PACKAGE = ROOT / "scripts/make-release.py"
 PAYLOAD = ("AUTO", "BIN", "EXTRAS", "GEMSYS", "LANG")
 ROOT_FILES = ("MAGX.INF", "MAGIC.RAM", "AUTOEXEC.BAT", "INSTALL.TXT", "NEWDESK.INF")
-BUILD_TARGETS = [
-    "magxboot", "mfa", "mcmd", "magxdesk", "applicat", "mgcopy", "mgsearch",
-    "mgedit", "mgview", "mgnotice", "mgformat", "vt52", "vfatconf", "shutdown",
-    "wbdaemon",
-    "cops", "magxconf-cpx", "tslice-cpx", "winframe", "mod-app", "showfile",
-    "load-img", "off002", "off004ip", "off016ip", "off256ip", "osd-batch",
-]
+DESKTOP_APP = "::/GEMSYS/GEMDESK/MAGXDESK.APP"
 
 
-def build_payload() -> None:
-    steps = [
-        [str(ROOT / "scripts/atari-container"), "run", "make", "-j4", "-f",
-         "Makefile.atari", "magic"],
-        [str(ROOT / "scripts/atari-container"), "run", "make", "-j4", "-f",
-         "Makefile.apps", *BUILD_TARGETS],
-    ]
-    for command in steps:
-        result = run(command, cwd=ROOT, timeout=1200)
-        require(result.returncode == 0, f"build failed: {command[-3:]}\n{result.stdout[-2000:]}")
-
-
-def install(source: Path, folder: Path, offset: int) -> tuple[MagiCImage, Path]:
+def install(source: Path, folder: Path, offset: int, package: Path) -> MagiCImage:
     image = MagiCImage.clone(source, folder / "magic.img", partition_offset=offset)
     image.verify_magic()
     for name in PAYLOAD:
@@ -51,25 +32,52 @@ def install(source: Path, folder: Path, offset: int) -> tuple[MagiCImage, Path]:
     for name in ROOT_FILES:
         image.remove(f"::/{name}")
     extracted = folder / "extract"
-    with zipfile.ZipFile(RELEASE / "core-de-1.zip") as archive:
+    with zipfile.ZipFile(package) as archive:
         archive.extractall(extracted)
     result = run(["mcopy", "-s", "-o", "-i", image.image_spec,
                   *map(str, sorted(extracted.iterdir())), "::/"], timeout=300)
     require(result.returncode == 0, f"clean extraction failed: {result.stdout}")
-    return image, extracted
+    return image
 
 
-def verify_members(image: MagiCImage, folder: Path) -> None:
+def verify_members(image: MagiCImage, folder: Path, package: Path) -> None:
     restored = folder / "verify"
-    with zipfile.ZipFile(RELEASE / "core-de-1.zip") as archive:
+    with zipfile.ZipFile(package) as archive:
         members = sorted(archive.namelist())
         for name in members:
             target = restored / name
             target.parent.mkdir(parents=True, exist_ok=True)
-            result = run(["mcopy", "-o", "-i", image.image_spec, f"::/{name}", str(target)])
-            require(result.returncode == 0, f"installed member missing: {name}")
+            image.copy_out(f"::/{name}", target)
             expected = hashlib.sha256(archive.read(name)).hexdigest()
             require(sha256(target) == expected, f"installed member differs from ZIP: {name}")
+
+
+def boot(headless: Path, rom: Path, folder: Path, image: MagiCImage, *,
+         open_menu: bool, open_cops: bool = False) -> Path:
+    host = NeoSTHost(headless, rom, folder / "run", image=image,
+                     options=["--machine", "megaste", "--mem", "4m", "--mono", "--no-disk"],
+                     auto=r"C:\AUTO\MAGXBOOT.TOS", timeout=240)
+    with host:
+        host.boot(15000)
+        host.calibrate_mouse()
+        host.move_to(408, 384)
+        host.run_frames(10)
+        desktop = host.screenshot(folder / "desktop.ppm")
+        if open_menu:
+            host.move_to(40, 8)
+            host.run_frames(30)
+            host.click()
+            host.run_frames(60)
+            menu = host.screenshot(folder / "menu.ppm")
+            require(diff_stats(desktop, menu)[0] > 100, "desktop menu did not open")
+        if open_cops:
+            host.move_to(70, 65)
+            host.run_frames(20)
+            host.click()
+            host.run_frames(180)
+            panel = host.screenshot(folder / "panel.ppm")
+            require(diff_stats(desktop, panel)[0] > 1000, "COPS accessory panel did not open")
+    return desktop
 
 
 def main() -> int:
@@ -80,57 +88,52 @@ def main() -> int:
     parser.add_argument("--neost-headless", type=Path)
     parser.add_argument("--partition-offset", type=int, default=1024)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--profile", choices=("core", "minimal"), default="core")
+    parser.add_argument("--build-dir", type=Path, default=BUILD)
     parser.add_argument("--skip-build", action="store_true")
     args = parser.parse_args()
     if args.magic_image is None or args.tos is None:
         parser.error("supply --magic-image/--tos or MAGIC_IMAGE/TOS206_ROM")
     source, rom = (path.expanduser().resolve() for path in (args.magic_image, args.tos))
     try:
-        if not args.skip_build:
-            build_payload()
         output = create_output(args.output, parent=BUILD, prefix="neost-release").resolve()
         print(f"Evidence: {output}", flush=True)
-        (RELEASE).mkdir(exist_ok=True)
-        manifest = output / "core-de.manifest"
-        for name in ("core-de-1.zip", "core-de-2.zip"):
-            result = run([sys.executable, str(PACKAGE), "--output", str(RELEASE / name)] +
-                         (["--manifest", str(manifest)] if name.endswith("1.zip") else []),
-                         cwd=ROOT, timeout=300)
-            require(result.returncode == 0, result.stdout)
-        require(sha256(RELEASE / "core-de-1.zip") == sha256(RELEASE / "core-de-2.zip"),
-                "two package runs produced different ZIPs")
-        image, extracted = install(source, output, args.partition_offset)
-        verify_members(image, output)
+        stem = f"{args.profile}-de"
+        package = output / f"{stem}.zip"
+        repeat = output / f"{stem}-repeat.zip"
+        manifest = output / f"{stem}.manifest"
+        command = [sys.executable, str(PACKAGE), "--profile", args.profile,
+                   "--build-dir", str(args.build_dir)]
+        result = run([*command, "--output", str(package), "--manifest", str(manifest),
+                      *(["--skip-build"] if args.skip_build else [])], cwd=ROOT, timeout=1200)
+        require(result.returncode == 0, result.stdout)
+        result = run([*command, "--output", str(repeat), "--skip-build"], cwd=ROOT, timeout=300)
+        require(result.returncode == 0, result.stdout)
+        require(sha256(package) == sha256(repeat), "two package runs produced different ZIPs")
+        image = install(source, output, args.partition_offset, package)
+        verify_members(image, output, package)
+        minimal = args.profile == "minimal"
+        if minimal:
+            for guest in ("::/AUTO/ACCS", "::/GEMSYS/MAGIC/START", "::/GEMSYS/MAGIC/XTENSION"):
+                require(not image.exists(guest), f"unexpected optional payload: {guest}")
+            control_dir = output / "missing-desktop"
+            control_dir.mkdir()
+            control = MagiCImage.clone(image.path, control_dir / "magic.img",
+                                       partition_offset=args.partition_offset)
+            control.remove(DESKTOP_APP)
         with tempfile.TemporaryDirectory(prefix="neost-release-") as scratch:
             headless, _ = acquire_headless(args.neost_headless, args.neost, Path(scratch))
-            host = NeoSTHost(headless, rom, output / "run", image=image,
-                             options=["--machine", "megaste", "--mem", "4m", "--mono",
-                                      "--no-disk"],
-                             auto=r"C:\AUTO\MAGXBOOT.TOS", timeout=240)
-            (host.guest_root / "E").mkdir()
-            with host:
-                host.boot(15000)
-                host.calibrate_mouse()
-                host.move_to(408, 384)
-                host.run_frames(10)
-                desktop = host.screenshot(output / "desktop.ppm")
-                host.move_to(40, 8)
-                host.run_frames(30)
-                host.click()
-                host.run_frames(60)
-                menu = host.screenshot(output / "menu.ppm")
-                host.move_to(70, 65)
-                host.run_frames(20)
-                host.click()
-                host.run_frames(180)
-                panel = host.screenshot(output / "panel.ppm")
-        require(diff_stats(desktop, menu)[0] > 100, "MAGXDESK menu did not open")
-        require(diff_stats(desktop, panel)[0] > 1000, "COPS accessory panel did not open")
+            desktop = boot(headless, rom, output, image, open_menu=True, open_cops=not minimal)
+            if minimal:
+                missing = boot(headless, rom, control_dir, control, open_menu=False)
+                require(diff_stats(desktop, missing)[0] > 1000,
+                        "desktop indistinguishable from missing-MAGXDESK control")
         (output / "comparison.txt").write_text("PASS\n")
     except (OSError, RuntimeError) as error:
         print(f"FAIL: {error}")
         return 1
-    print("Core ZIP is deterministic, installs byte-for-byte and boots MAGXDESK plus COPS")
+    desktop_name = "MAGXDESK alone" if minimal else "MAGXDESK plus COPS"
+    print(f"{args.profile} ZIP is deterministic, installs byte-for-byte and boots {desktop_name}")
     return 0
 
 

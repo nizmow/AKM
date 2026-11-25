@@ -16,7 +16,11 @@ here or interpret an unchecked item as a missing stub to manufacture.
    verifies every member hash, and boots MAGXDESK plus COPS. The manifest
    records rebuilt versus retained inputs. File operations and the SHUTDOWN
    confirmation were checked separately on that payload.
-3. **Use manifest gaps for the next core port.** PDLG, CHGRES and other
+3. [x] **Minimal kernel + core ZIP.** `release:minimal` builds and packages the
+   mono MegaSTE boot profile without optional components.
+   `test:release-minimal-neost` verifies a clean install and MAGXDESK startup
+   against a missing-desktop control.
+4. **Use manifest gaps for the next core port.** PDLG, CHGRES and other
    retained files remain binary-only; choose the next source target from
    installed components whose rebuild is needed, not from unbuilt catalogue
    count. Keep optional demos, Mac/TT/Falcon variants and legacy mutators out of

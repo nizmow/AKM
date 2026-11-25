@@ -93,9 +93,9 @@ mise run toolchain:shell
 For example, `mise run make -- BUILD_DIR=build/atari/experiment magic` keeps a
 separate build. Invoke tasks from repository subdirectories too.
 
-Start with `kernel` or `apps` to build. `release:core` assembles existing
-build outputs; `test:release-neost` builds, installs and boots the core package
-on a disposable image. Run `test:abi`, `test:encoding` or the relevant
+Start with `kernel` or `apps` to build. `release:core` and `release:minimal`
+build and package their inputs; their NeoST tests install and boot the ZIPs on
+disposable images. Run `test:abi`, `test:encoding` or the relevant
 component regression when changing code; see the
 [test guide](docs/porting/TESTING.md) for coverage and the
 [MagiC disk fixture](docs/porting/TESTING.md#neost-magic-disk-fixture) for
@@ -428,6 +428,12 @@ installs only the ZIP on a cleaned MagiC clone and boots MAGXDESK and COPS.
 PDLG.SLB, Mac/TT/Falcon variants and historical demos are excluded; retained
 Release files and third-party boot drivers are recorded separately, not
 claimed as rebuilt.
+
+For the boot-only German mono MegaSTE profile, run `mise run release:minimal`
+to build `build/atari/release/minimal-de.zip` and its manifest. This profile
+ships the kernel, loader, MAGXDESK, MCMD fallback and mono VDI drivers without
+COPS, WBDAEMON, optional extensions or third-party CPXs.
+`mise run test:release-minimal-neost` checks the clean boot.
 
 The VDI `SETUP.C` listed in `MAGICVDI.PRJ` is linked alongside the `M.INP`
 modules. VASM's `-spaces` option is required for MAS expressions such as relative

@@ -50,7 +50,7 @@ run = "scripts/atari-container run make -f Makefile.apps"
 # Core package and install smoke
 
 [tasks."release:core"]
-description = "Assemble the deterministic German Atari/ST core installation ZIP"
+description = "Build and package the German Atari/ST distribution ZIP"
 dir = "{{ config_root }}"
 run = "python3 scripts/make-release.py --output build/atari/release/core-de.zip --manifest build/atari/release/core-de.manifest"
 
@@ -58,6 +58,16 @@ run = "python3 scripts/make-release.py --output build/atari/release/core-de.zip 
 description = "Build, install and boot the German core ZIP on a clean MagiC image"
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-release-smoke.py"
+
+[tasks."release:minimal"]
+description = "Build and package the boot-only German Atari/ST ZIP"
+dir = "{{ config_root }}"
+run = "python3 scripts/make-release.py --profile minimal --output build/atari/release/minimal-de.zip --manifest build/atari/release/minimal-de.manifest"
+
+[tasks."test:release-minimal-neost"]
+description = "Build, install and cold-boot the minimal ZIP without optional components"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-release-smoke.py --profile minimal"
 
 # ABI, encoding, and host-helper checks
 

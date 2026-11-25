@@ -595,9 +595,9 @@ untested. Evidence goes to `build/atari/neost-cops-accessory-*`.
 
 ## Release: German Atari/ST core ZIP
 
-`mise run release:core` runs `scripts/make-release.py`, writing
-`build/atari/release/core-de.zip` and a sorted SHA-256 manifest. The package
-combines rebuilt kernel, boot loader, MAGXDESK, applications, MFA/OSD drivers,
+`mise run release:core` builds the exact file targets listed in the package
+map, then writes `build/atari/release/core-de.zip` and a sorted SHA-256 manifest.
+The package combines rebuilt kernel, boot loader, MAGXDESK, applications, MFA/OSD drivers,
 COPS and CPX modules with retained Release data: `MAGX.INF`, desktop
 associations, help, patterns and localized German resources. The retained
 `MAGX.INF` has its `PDLG.SLB` line removed; PDLG is excluded as optional print
@@ -615,6 +615,18 @@ from the fixture's boot infrastructure; it and retained Release CPX/desktop
 files are not rebuilt. The profile is a mono MegaSTE/TOS 2.06 boot; file
 operations and shutdown are exercised separately against the produced payload
 (MGCOPY suite and `SHUTDOWN.PRG`), not by this runner.
+
+`mise run release:minimal` builds `build/atari/release/minimal-de.zip` for the
+same mono MegaSTE/TOS 2.06 fixture. It uses `core/MAGX.INF` and contains only
+the kernel, boot loader, MAGXDESK and its resources, MCMD as the startup
+fallback, MFA2, OFF002 and the license. The same install/hash checks run via
+`mise run test:release-minimal-neost`; the guest must open the desktop menu
+with accessory, autostart and extension directories absent, and its desktop
+must differ from a second boot with `MAGXDESK.APP` removed.
+
+Either smoke task accepts `-- --build-dir build/atari/<fresh-dir>` to build
+without cached outputs. ZIPs, manifest and screenshots are kept in the run's
+evidence directory.
 
 ## NeoST: image SLB ABI and rendering
 
