@@ -64,12 +64,13 @@ VT52_OBJECTS := $(patsubst $(VT52_DIR)/%.C,$(BUILD_DIR)/vt52/%.o,$(VT52_SOURCES)
   $(patsubst $(VT52_DIR)/%.S,$(BUILD_DIR)/vt52/%.o,$(VT52_ASM_SOURCES)) \
   $(BUILD_DIR)/vt52/DRAGDROP.o
 
-COPS_DIR := MagiC/APPS/COPS
+COPS_DIR := base/cops/SRC
 COPS_SOURCES := $(addprefix $(COPS_DIR)/,COPS.C CALLBACK.C CPX_BIND.C \
   ADAPTRSC.C FIX_RSC.C LIST.C PHSTUFF.C POPUP.C RC_INTER.C WLIB.C COPS_RSC.C)
-COPS_OBJECTS := $(patsubst $(COPS_DIR)/%.C,$(BUILD_DIR)/cops/%.o,$(COPS_SOURCES))
-COPS_ASM_OBJECTS := $(BUILD_DIR)/cops/CLEARCPU.o
-COPS_ASM_NORMALIZED := $(BUILD_DIR)/cops/CLEARCPU.s
+COPS_OBJECT_DIR := $(BUILD_DIR)/base/cops
+COPS_OBJECTS := $(patsubst $(COPS_DIR)/%.C,$(COPS_OBJECT_DIR)/%.o,$(COPS_SOURCES))
+COPS_ASM_OBJECTS := $(COPS_OBJECT_DIR)/CLEARCPU.o
+COPS_ASM_NORMALIZED := $(COPS_OBJECT_DIR)/CLEARCPU.s
 COPS_OUTPUT_DIR := $(abspath $(BUILD_DIR)/cops)
 COPS_SOURCE_DIR := $(abspath $(COPS_DIR))
 COPS_OUTPUT_LOWER := $(shell printf '%s' '$(COPS_OUTPUT_DIR)' | tr '[:upper:]' '[:lower:]')
@@ -500,20 +501,21 @@ slbtest: $(BUILD_DIR)/slbtest/SLBTEST.PRG
 wbdaemon-test-driver: $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG
 mod-app-test-driver: $(BUILD_DIR)/mod-app/NEOSTEST.PRG
 
-$(BUILD_DIR)/cops/%.o: $(COPS_DIR)/%.C Makefile.apps
+$(COPS_OBJECT_DIR)/%.o: $(COPS_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(COPS_DIR)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(COPS_DIR)" -I"MagiC/APPS" \
 	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
 
 $(COPS_ASM_NORMALIZED): $(COPS_DIR)/CLEARCPU.S $(MAS_NORMALIZER) Makefile.apps
 	mkdir -p "$(@D)"
 	python3 $(MAS_NORMALIZER) "$<" "$@"
 
-$(BUILD_DIR)/cops/CLEARCPU.o: $(COPS_ASM_NORMALIZED) Makefile.apps
+$(COPS_OBJECT_DIR)/CLEARCPU.o: $(COPS_ASM_NORMALIZED) Makefile.apps
 	mkdir -p "$(@D)"
 	$(VASM) -Felf -m68000 -o "$@" "$<"
 
 $(BUILD_DIR)/cops/COPS.APP: $(COPS_OBJECTS) $(COPS_ASM_OBJECTS) Makefile.apps
+	mkdir -p "$(@D)"
 	$(CC) $(APP_FLAGS) $(COPS_OBJECTS) $(COPS_ASM_OBJECTS) \
 	  $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 

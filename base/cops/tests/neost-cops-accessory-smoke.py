@@ -4,16 +4,19 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 from pathlib import Path
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
+
+ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "scripts"))
 
 from neost_common import acquire_headless, create_output, require, run, sha256
 from neost_host import NeoSTHost
 from neost_image import MagiCImage
 from neost_screen import bbox_inside, diff_stats
 
-ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / "build/atari"
 GUEST = "::/AUTO/ACCS/COPS.ACC"
 ARCHIVE = ROOT / "MagiC/Releases/MAGIC.A/AUTO/ACCS/COPS.ACC"

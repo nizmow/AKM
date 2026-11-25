@@ -1393,7 +1393,7 @@ untested. Evidence: `build/atari/neost-tslice-cpx-20261122-120331/`.
 ## COPS
 
 `mise run apps -- cops` builds `build/atari/apps/cops/COPS.APP` in application
-mode. The legacy `MagiC/APPS/COPS/INCLUDE` headers are not placed on the include
+mode. The legacy `base/cops/SRC/INCLUDE` headers are not placed on the include
 path: they supplied Pure C `MT_AES.H`/`MGX_DOS.H` declarations and would shadow
 the toolchain's `stdio.h`, `stdint.h` and GEMlib headers. The source now uses
 public `gem.h`/`gemx.h` and `mint/*.h`; `GLOBAL.H` keeps only the records MiNTLib
@@ -1420,8 +1420,11 @@ Contracts worth preserving:
   drops `SUPER`, converts `0x` literals and fixes directives. Verified object
   bytes contain `cpushl`, `cpusha`, `cinva` and both `movec %cacr` forms.
 - The build rejects a `BUILD_DIR` whose `cops` output directory aliases
-  `MagiC/APPS/COPS`; otherwise normalization or linking could overwrite the
+  `base/cops/SRC`; otherwise normalization or linking could overwrite the
   tracked source/archive on a case-insensitive checkout.
+- Relocated objects build under `build/atari/apps/base/cops/`, while the
+  executable remains `build/atari/apps/cops/COPS.APP`. This avoids stale
+  dependency files that still name the old `MagiC/APPS/COPS` source tree.
 
 `test:cops-neost` validates the `#_APP`/`#_ACC` paths, disables the accessory,
 removes inherited CPX modules and `COPS.INF` settings, and installs only

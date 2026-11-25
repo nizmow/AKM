@@ -266,7 +266,7 @@ MiNTLib/GEMlib dialog calls and an app-local DOS compatibility layer.
 AES bindings; physical floppy operations are not covered by the NeoST test.
 
 `mise run apps -- cops` builds `build/atari/apps/cops/COPS.APP`, the
-application-mode control-panel host, from the original sources with
+application-mode control-panel host, from [`base/cops`](base/cops) with
 MiNTLib/GEMlib. Its resource data is compiled in; no external RSC is needed.
 `mise run test:cops-neost` compares the panel and the `MAGXCONF.CPX` /
 `TSLICE.CPX` dialogs with the archive on cloned MagiC images. The accessory
@@ -351,7 +351,7 @@ MGCOPY lives in [`core/mgcopy/`](core/mgcopy), with its NeoST scenario and
 guest probe in `tests/`. Run `mise run test:mgcopy-neost` to check copy,
 move, alias and delete effects against the seeded files on a cloned MagiC image.
 
-Run `mise run test:cops-neost` (or `python3 scripts/neost-cops-smoke.py`)
+Run `mise run test:cops-neost` (or `python3 base/cops/tests/neost-cops-smoke.py`)
 to compare the COPS panel and its `MAGXCONF.CPX`/`TSLICE.CPX` dialogs with the
 archive on cloned MagiC images.
 

@@ -59,7 +59,7 @@
 #include "PHSTUFF.H"
 #include "VAPROTO.H"
 #include "WLIB.H"
-#include "../TOS_ARGS.H"
+#include "TOS_ARGS.H"
 
 /* #define EMU_PRINTF(args) emu_printf args */
 #define EMU_PRINTF(args)

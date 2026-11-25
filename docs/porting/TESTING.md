@@ -545,7 +545,7 @@ scheduler behavior under load remain outside the scenario.
 ## NeoST: COPS control-panel manager
 
 `mise run test:cops-neost` builds `build/atari/apps/cops/COPS.APP` and runs
-`scripts/neost-cops-smoke.py`. Each case clones the MagiC image and first
+`base/cops/tests/neost-cops-smoke.py`. Each case clones the MagiC image and first
 requires `MAGX.INF` to name `C:\GEMSYS\MAGIC\START` for `#_APP` and
 `C:\AUTO\ACCS` for `#_ACC`. It disables `AUTO\ACCS\COPS.ACC` by renaming it to
 `.ACX`, deletes inherited `C:\CPX\*.CPX`/`*.CPZ` and `COPS.INF` settings from
@@ -578,8 +578,9 @@ event-CPX callbacks and CPXs beyond the two fixtures remain untested.
 
 ## NeoST: COPS accessory mode
 
-`mise run test:cops-accessory-neost` builds `build/atari/apps/cops/COPS.APP`,
-clones the MagiC image, removes inherited `GEMSYS\MAGIC\START\COPS.*` and
+`mise run test:cops-accessory-neost` builds `build/atari/apps/cops/COPS.APP`
+through `base/cops/tests/neost-cops-accessory-smoke.py`, clones the MagiC image,
+removes inherited `GEMSYS\MAGIC\START\COPS.*` and
 `AUTO\ACCS\COPS.ACC`, then installs the Release accessory, the rebuilt
 executable under the same `COPS.ACC` guest name, or nothing for the control.
 It fixes `TSLICE.CPX` and requires `MAGX.INF` to keep `#_ACC C:\AUTO\ACCS` and

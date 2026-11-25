@@ -241,12 +241,12 @@ run = "python3 core/osd/tests/neost-osd-batch-smoke.py --driver off16mov"
 [tasks."test:cops-neost"]
 description = "Compare archived and rebuilt COPS panel and CPX dialogs on MagiC"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-cops-smoke.py"
+run = "python3 base/cops/tests/neost-cops-smoke.py"
 
 [tasks."test:cops-accessory-neost"]
 description = "Compare the shipped and rebuilt COPS accessory lifecycle on MagiC"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-cops-accessory-smoke.py"
+run = "python3 base/cops/tests/neost-cops-accessory-smoke.py"
 
 [tasks."test:keyb-sys-neost"]
 description = "Compare all six KEYB_SYS generators with their archives under NeoST"

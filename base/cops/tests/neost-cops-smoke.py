@@ -8,14 +8,17 @@ import sys
 import tempfile
 from pathlib import Path
 
+COMPONENT = Path(__file__).resolve().parents[1]
+ROOT = COMPONENT.parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+
 from neost_common import acquire_headless, create_output, require, run
 from neost_host import NeoSTHost
 from neost_image import MagiCImage
 from neost_screen import bbox_inside, diff_stats
 
-ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
-ARCHIVE = ROOT / "MagiC/APPS/COPS/COPS.APP"
+ARCHIVE = COMPONENT / "SRC/COPS.APP"
 REBUILT = BUILD / "apps/cops/COPS.APP"
 CPX_SOURCE = ROOT / "MagiC/APPS/CPX/BIN"
 CPX_MODULES = ("MAGXCONF", "TSLICE")
