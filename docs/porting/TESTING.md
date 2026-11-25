@@ -1,5 +1,37 @@
 # Testing
 
+## NeoST: MagiC disk fixture
+
+For the full set of MagiC smoke tests, use a known-bootable MagiC hard-disk
+image with two `mtools`-readable FAT partitions that the guest sees as `C:` and
+`D:`. Set `MAGIC_IMAGE` to the whole disk image and `TOS206_ROM` to your
+TOS 2.06 ROM. Install `mtools` on the host. The image must already have
+working hard-disk boot support; the reference fixture uses `HDDRIVER.SYS`.
+The runners do not partition a blank disk or install a boot driver.
+
+| Guest drive | Source | Default byte offset |
+|---|---|---:|
+| `C:` | MagiC boot volume; must contain `MAGX.INF` and `AUTO/MAGXBOOT.TOS` | `1024` |
+| `D:` | Second disk partition, required for the MGCOPY cross-drive case; not required by the release smoke | `34200576` |
+| `E:` | Host exchange directory where used; not a disk partition | — |
+
+The runners clone the source image, inject files into the clone with
+`mtools`, and attach the whole clone as an ACSI disk. Use
+`--partition-offset` for a different `C:` offset and MGCOPY's
+`--d-partition-offset` for `D:`. These options tell `mtools` where to read
+and write; they do not change the partition table or guest drive letters.
+To check the default offsets without writing or booting:
+
+```sh
+mdir -i "${MAGIC_IMAGE}@@1024" ::/MAGX.INF ::/AUTO/MAGXBOOT.TOS
+mdir -i "${MAGIC_IMAGE}@@34200576" ::/
+```
+
+Scenarios that use `E:` create `GEMDRIVE/E` under the run output and pass the
+parent `GEMDRIVE` directory to NeoST with `--gemdos`. Files written to guest
+`E:\` can then be read directly on the host. No `E:` partition or manual
+GEMDOS drive configuration is needed for those scenarios.
+
 ## NeoST: console tools
 
 `mise run test:console-tools-neost` builds `MAC2ST.TTP`, `DUMP.TTP`, `FC.TTP`,
