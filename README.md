@@ -248,7 +248,7 @@ New/Save As and quoted/ARGV paths. Binary-format regression checks:
 
 `mise run apps -- mgnotice` builds `build/atari/apps/mgnotice/`: `MGNOTICE.APP`,
 the German `mgnotice.rsc` and the rebuilt `EDITOBJC.SLB`. It reuses the shared
-`GEMUT_MT.C` helper and neutral `MagiC/APPS/GEMUT_MT_SDK.H`. Archived/rebuilt
+`GEMUT_MT.C` helper and neutral `shared/gemut/GEMUT_MT_SDK.H`. Archived/rebuilt
 NeoST/MagiC cases create, edit, save and reopen a note with identical screens
 and byte-identical `.NOT` output.
 

@@ -1,10 +1,10 @@
 #ifndef MGNOTICE_GEM_H
 #define MGNOTICE_GEM_H
 
-#include "../../GEMUT_MT_SDK.H"
+#include "GEMUT_MT_SDK.H"
 #include <mint/ostruct.h>
 #include <mint/slb.h>
-#include "../../APPLICAT/SRC/IMPORT/GEMUT_MT.H"
+#include "GEMUT_MT.H"
 
 /* MiNTLib names the Fsfirst/Fsnext record _DTA. */
 typedef _DTA DTA;

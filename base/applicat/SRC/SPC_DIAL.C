@@ -8,7 +8,7 @@
 #include "APPLICAT_GEM.H"
 #include <string.h>
 #include <stdlib.h>
-#include "IMPORT/GEMUT_MT.H"
+#include "GEMUT_MT.H"
 #include "APPLICAT.H"
 #include "APPL.H"
 #include "INF.H"

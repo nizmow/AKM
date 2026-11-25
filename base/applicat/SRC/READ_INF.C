@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <ctype.h>
-#include "IMPORT/GEMUT_MT.H"
+#include "GEMUT_MT.H"
 #include "WINDOWS.H"
 #include "APPL.H"
 #include "INF.H"

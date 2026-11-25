@@ -9,7 +9,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "IMPORT/GEMUT_MT.H"
+#include "GEMUT_MT.H"
 #include "APPLICAT.H"
 #include "WINDOWS.H"
 #include "APPL.H"

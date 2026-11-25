@@ -78,12 +78,12 @@
 ****************************************************************/
 
 #include "APPLICAT_GEM.H"
-#include "../../TOS_ARGS.H"
+#include "TOS_ARGS.H"
 #include <string.h>
 #include <stdlib.h>
 #include "WINDOWS.H"
 #include "APPLICAT.H"
-#include "IMPORT/GEMUT_MT.H"
+#include "GEMUT_MT.H"
 #include "APPL.H"
 #include "ANW_DIAL.H"
 #include "TYP_DIAL.H"

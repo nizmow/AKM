@@ -8,7 +8,7 @@
 #include "APPLICAT_GEM.H"
 #include <stdlib.h>
 #include <stddef.h>
-#include "IMPORT/GEMUT_MT.H"
+#include "GEMUT_MT.H"
 #include "WINDOWS.H"
 
 WINDOW *windows[NWINDOWS];

@@ -16,7 +16,7 @@ the GCC sysroot at `/usr/m68k-atari-mintelf/sys-root/usr/include`. In particular
 come from GEMlib. Use these public headers for ordinary application ports.
 
 Legacy headers are not part of that SDK. The repository has a Borland-era
-`TOS.H` snapshot under `MagiC/APPS/APPLICAT/SRC/IMPORT/`, plus MagiC-specific
+`TOS.H` snapshot under `base/applicat/SRC/IMPORT/`, plus MagiC-specific
 imports and libraries there. CMDLINE has no local `TOS.H`/`AES.H` or project
 file identifying its original include path, so the exact source of the
 `<tos.h>` and `<aes.h>` it once used is not established here. The similarly
@@ -389,8 +389,10 @@ and a daemon that ignores `AP_TERM`; a clock screenshot alone does not.
 ### APPLICAT
 
 `mise run apps -- applicat` compiles the eleven application modules plus the
-application's `IMPORT/GEMUT_MT.C` helper using public MiNTLib/GEMlib headers and
-`-lgem`. Output is `build/atari/apps/applicat/APPLICAT.APP`. The target also
+shared `shared/gemut/GEMUT_MT.C` helper using public MiNTLib/GEMlib headers and
+`-lgem`. Output is `build/atari/apps/applicat/APPLICAT.APP`. Objects build
+under `build/atari/apps/base/` so generated dependencies from the old
+`MagiC/APPS/APPLICAT` source tree cannot break populated builds. The target also
 copies the default German resource as `applicat.rsc` and the minimal association
 fixture from `BIN/MINIMAL` as `applicat.inf`. The source-tree INF is not a safe
 starter: it references external icon resources and old developer paths.
@@ -555,7 +557,7 @@ TOS image, not that ELF carrier. The separate `EDIT.PRG` demo is not rebuilt.
 `build/atari/apps/mgnotice/MGNOTICE.APP`, packages the default German
 `mgnotice.rsc`, and copies the independently built `EDITOBJC.SLB`. The source
 was converted to UTF-8 and adapted to public MiNTLib/GEMlib interfaces. It
-reuses the shared `GEMUT_MT.C` utility implementation; `MagiC/APPS/GEMUT_MT_SDK.H`
+reuses the shared `GEMUT_MT.C` utility implementation; `shared/gemut/GEMUT_MT_SDK.H`
 now holds the public-SDK definitions used by both APPLICAT and MGNOTICE, while
 `APPLICAT_GEM.H` remains a thin compatibility include. APPLICAT compiles again
 after that move; its earlier runtime evidence was not rerun.

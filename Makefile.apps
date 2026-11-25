@@ -9,19 +9,24 @@ CFLAGS ?= -O2 -g -Wall -Wextra
 APP_FLAGS := -std=gnu11 -m68000
 .DEFAULT_GOAL := all
 
-APPLICAT_DIR := MagiC/APPS/APPLICAT/SRC
+GEMUT_DIR := shared/gemut
+GEMUT_OBJECT := $(BUILD_DIR)/base/gemut/GEMUT_MT.o
+APPLICAT_DIR := base/applicat/SRC
+APPLICAT_OBJ_DIR := $(BUILD_DIR)/base/applicat
 APPLICAT_SOURCES := $(addprefix $(APPLICAT_DIR)/,APPLICAT.C ICONSEL.C ICA_DIAL.C \
   ANW_DIAL.C TYP_DIAL.C ICP_DIAL.C PTH_DIAL.C SPC_DIAL.C READ_INF.C INF.C \
-  WINDOWS.C IMPORT/GEMUT_MT.C)
-APPLICAT_OBJECTS := $(patsubst $(APPLICAT_DIR)/%.C,$(BUILD_DIR)/applicat/%.o,$(APPLICAT_SOURCES))
+  WINDOWS.C)
+APPLICAT_OBJECTS := $(patsubst $(APPLICAT_DIR)/%.C,$(APPLICAT_OBJ_DIR)/%.o,$(APPLICAT_SOURCES)) \
+  $(GEMUT_OBJECT)
+APPLICAT_INCLUDES := -I"$(APPLICAT_DIR)" -I"$(GEMUT_DIR)" -I"MagiC/APPS"
 MGVIEW_DIR := MagiC/APPS/MGVIEW/SRC
 MGVIEW_SOURCES := $(addprefix $(MGVIEW_DIR)/,MGVIEW.C WINDOWS.C MGWIND.C MEMCHAR2.C)
 MGVIEW_OBJECTS := $(patsubst $(MGVIEW_DIR)/%.C,$(BUILD_DIR)/mgview/%.o,$(MGVIEW_SOURCES))
 MGNOTICE_DIR := MagiC/APPS/MGNOTICE.2/SRC
-MGNOTICE_GEMUT_DIR := MagiC/APPS/APPLICAT/SRC/IMPORT
+MGNOTICE_OBJ_DIR := $(BUILD_DIR)/base/mgnotice
 MGNOTICE_SOURCES := $(addprefix $(MGNOTICE_DIR)/,MGNOTICE.C MGNWIND.C \
   OPT_DIAL.C WINDOWS.C)
-MGNOTICE_OBJECTS := $(patsubst $(MGNOTICE_DIR)/%.C,$(BUILD_DIR)/mgnotice/%.o,$(MGNOTICE_SOURCES))
+MGNOTICE_OBJECTS := $(patsubst $(MGNOTICE_DIR)/%.C,$(MGNOTICE_OBJ_DIR)/%.o,$(MGNOTICE_SOURCES))
 MGSEARCH_DIR := MagiC/APPS/MGSEARCH/SRC
 MGSEARCH_MYLIBS_DIR := MagiC/LIB/MYLIBS/SRC
 MGSEARCH_PATTERN_DIR := $(MGSEARCH_DIR)
@@ -40,18 +45,19 @@ MAGXDESK_SOURCES := $(addprefix $(MAGXDESK_DIR)/,MAGXDESK.C SPEC.C \
 MAGXDESK_OBJECTS := $(patsubst $(MAGXDESK_DIR)/%.C,$(MAGXDESK_OBJ_DIR)/%.o,$(MAGXDESK_SOURCES))
 MGCOPY_ROOT := core/mgcopy
 MGCOPY_DIR := $(MGCOPY_ROOT)/SRC
-MGCOPY_GEMUT_DIR := MagiC/APPS/APPLICAT/SRC/IMPORT
+MGCOPY_GEMUT_DIR := $(GEMUT_DIR)
 MGCOPY_INCLUDES := -I"$(MGCOPY_DIR)" -I"MagiC/APPS" -I"$(MGCOPY_GEMUT_DIR)"
 MGCOPY_SOURCES := $(addprefix $(MGCOPY_DIR)/,MGCOPY.C CPFILES.C BEG_DIAL.C DAT_DIAL.C)
-MGCOPY_OBJ_DIR := $(BUILD_DIR)/mgcopy/obj
+MGCOPY_OBJ_DIR := $(BUILD_DIR)/base/mgcopy/obj
 MGCOPY_OBJECTS := $(patsubst $(MGCOPY_DIR)/%.C,$(MGCOPY_OBJ_DIR)/%.o,$(MGCOPY_SOURCES)) \
-  $(MGCOPY_OBJ_DIR)/GEMUT_MT.o
+  $(GEMUT_OBJECT)
 MGFORMAT_DIR := MagiC/APPS/MGFORMAT/SRC
-MGFORMAT_GEMUT_DIR := MagiC/APPS/APPLICAT/SRC/IMPORT
+MGFORMAT_GEMUT_DIR := $(GEMUT_DIR)
 MGFORMAT_INCLUDES := -I"$(MGFORMAT_DIR)" -I"$(MGFORMAT_GEMUT_DIR)"
+MGFORMAT_OBJ_DIR := $(BUILD_DIR)/base/mgformat
 MGFORMAT_SOURCES := $(addprefix $(MGFORMAT_DIR)/,MGFORMAT.C FMT_DIAL.C CPY_DIAL.C FORMAT.C MGFORMAT_WDLG.C)
-MGFORMAT_OBJECTS := $(patsubst $(MGFORMAT_DIR)/%.C,$(BUILD_DIR)/mgformat/%.o,$(MGFORMAT_SOURCES)) \
-  $(BUILD_DIR)/mgformat/GEMUT_MT.o
+MGFORMAT_OBJECTS := $(patsubst $(MGFORMAT_DIR)/%.C,$(MGFORMAT_OBJ_DIR)/%.o,$(MGFORMAT_SOURCES)) \
+  $(GEMUT_OBJECT)
 VT52_DIR := MagiC/APPS/VT52/SRC/VT52
 VT52_INCLUDE_DIR := MagiC/APPS/VT52/SRC/INCLUDE
 VT52_RESOURCE_DIR := $(VT52_DIR)/RESOURCE/DEUTSCH
@@ -521,12 +527,18 @@ $(BUILD_DIR)/cops/COPS.APP: $(COPS_OBJECTS) $(COPS_ASM_OBJECTS) Makefile.apps
 
 -include $(COPS_OBJECTS:.o=.d)
 
-$(BUILD_DIR)/applicat/%.o: $(APPLICAT_DIR)/%.C Makefile.apps
+$(APPLICAT_OBJ_DIR)/%.o: $(APPLICAT_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(APPLICAT_DIR)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(APPLICAT_INCLUDES) \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(GEMUT_OBJECT): $(GEMUT_DIR)/GEMUT_MT.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(GEMUT_DIR)" \
 	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/applicat/APPLICAT.APP: $(APPLICAT_OBJECTS) Makefile.apps
+	mkdir -p "$(@D)"
 	$(CC) $(APP_FLAGS) $(APPLICAT_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/mgview/%.o: $(MGVIEW_DIR)/%.C Makefile.apps
@@ -627,29 +639,21 @@ $(MGCOPY_OBJ_DIR)/%.o: $(MGCOPY_DIR)/%.C Makefile.apps
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(MGCOPY_INCLUDES) \
 	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
 
-$(MGCOPY_OBJ_DIR)/GEMUT_MT.o: $(MGCOPY_GEMUT_DIR)/GEMUT_MT.C Makefile.apps
-	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGCOPY_GEMUT_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
-
 $(BUILD_DIR)/mgcopy/MGCOPY.APP: $(MGCOPY_OBJECTS) Makefile.apps
+	mkdir -p "$(@D)"
 	$(CC) $(APP_FLAGS) $(MGCOPY_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/mgcopy/MGCOPY.RSC: $(MGCOPY_DIR)/MGCOPY.RSC
 	mkdir -p "$(@D)"
 	cp "$<" "$@"
 
-$(BUILD_DIR)/mgformat/%.o: $(MGFORMAT_DIR)/%.C Makefile.apps
+$(MGFORMAT_OBJ_DIR)/%.o: $(MGFORMAT_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(MGFORMAT_INCLUDES) \
 	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
 
-$(BUILD_DIR)/mgformat/GEMUT_MT.o: $(MGFORMAT_GEMUT_DIR)/GEMUT_MT.C Makefile.apps
-	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGFORMAT_GEMUT_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
-
 $(BUILD_DIR)/mgformat/MGFORMAT.PRG: $(MGFORMAT_OBJECTS) Makefile.apps
+	mkdir -p "$(@D)"
 	$(CC) $(APP_FLAGS) $(MGFORMAT_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/mgformat/MGFORMAT.RSC: $(MGFORMAT_DIR)/MGFORMAT.RSC
@@ -729,19 +733,15 @@ $(BUILD_DIR)/mgsearch/NEOSTART.PRG: MagiC/APPS/MGSEARCH/TESTDATA/NEOSTART.C Make
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
-$(BUILD_DIR)/mgnotice/%.o: $(MGNOTICE_DIR)/%.C Makefile.apps
+$(MGNOTICE_OBJ_DIR)/%.o: $(MGNOTICE_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGNOTICE_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
-
-$(BUILD_DIR)/mgnotice/GEMUT_MT.o: $(MGNOTICE_GEMUT_DIR)/GEMUT_MT.C Makefile.apps
-	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGNOTICE_GEMUT_DIR)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGNOTICE_DIR)" -I"$(GEMUT_DIR)" \
 	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/mgnotice/MGNOTICE.APP: $(MGNOTICE_OBJECTS) \
-  $(BUILD_DIR)/mgnotice/GEMUT_MT.o Makefile.apps
-	$(CC) $(APP_FLAGS) $(MGNOTICE_OBJECTS) $(BUILD_DIR)/mgnotice/GEMUT_MT.o \
+  $(GEMUT_OBJECT) Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(APP_FLAGS) $(MGNOTICE_OBJECTS) $(GEMUT_OBJECT) \
 	  $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/mgnotice/mgnotice.rsc: $(MGNOTICE_DIR)/MGNOTICE.RSC
@@ -761,7 +761,7 @@ $(BUILD_DIR)/applicat/applicat.rsc: $(APPLICAT_DIR)/APPLICAT.RSC
 	mkdir -p "$(@D)"
 	cp "$<" "$@"
 
-$(BUILD_DIR)/applicat/applicat.inf: MagiC/APPS/APPLICAT/BIN/MINIMAL/APPLICAT.INF
+$(BUILD_DIR)/applicat/applicat.inf: base/applicat/BIN/MINIMAL/APPLICAT.INF
 	mkdir -p "$(@D)"
 	cp "$<" "$@"
 
@@ -1149,7 +1149,7 @@ $(BUILD_DIR)/mgedit/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 -include $(MGFORMAT_OBJECTS:.o=.d)
 -include $(BUILD_DIR)/mgformat/NEOSTART.d
 -include $(MGNOTICE_OBJECTS:.o=.d)
--include $(BUILD_DIR)/mgnotice/GEMUT_MT.d
+-include $(GEMUT_OBJECT:.o=.d)
 -include $(BUILD_DIR)/mgnotice/NEOSTART.d
 -include $(BUILD_DIR)/abi-check/ABI_CHECK.d
 -include $(BUILD_DIR)/console/RUNARG.d

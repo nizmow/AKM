@@ -8,7 +8,7 @@
 *
 *******************************************************/
 
-#include "../../../GEMUT_MT_SDK.H"
+#include "GEMUT_MT_SDK.H"
 #include <string.h>
 #include <stdlib.h>
 #include <stddef.h>

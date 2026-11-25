@@ -4,8 +4,8 @@
 /* Public MiNTLib/GEMlib types and the small MagiC DOS compatibility layer
  * used by MGFORMAT.  Keep this application-local; the shared GEMUT_MT_SDK.H
  * header owns only the common MT GEM utility contract. */
-#include "../../GEMUT_MT_SDK.H"
-#include "../../APPLICAT/SRC/IMPORT/GEMUT_MT.H"
+#include "GEMUT_MT_SDK.H"
+#include "GEMUT_MT.H"
 #include <mint/ostruct.h>
 
 #define RMODE_RD 0
