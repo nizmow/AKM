@@ -8,8 +8,8 @@ VDI_SRC := kernel/VDI/SRC/MAGICVDI.2
 VDI_BUILD := $(BUILD_DIR)/kernel/vdi
 VDI_ASM := $(VDI_BUILD)/asm
 VDI_INCLUDE := $(VDI_BUILD)/include
-VDI_COMPAT := MagiC/KERNEL/BUILD/GCC/vdi-include
-VDI_ASM_ADAPTER ?= MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py
+VDI_COMPAT := kernel/BUILD/GCC/vdi-include
+VDI_ASM_ADAPTER ?= kernel/BUILD/GCC/mas_to_vasm.py
 VDI_ATARI_UTF8 := NON-TOS/atari-utf8-conversion/atari-utf8.c
 
 VDI_CPPFLAGS := -I$(VDI_INCLUDE) -I$(VDI_COMPAT) -I$(VDI_SRC)
@@ -104,7 +104,7 @@ $(VDI_BUILD)/tos.o: $(VDI_ASM)/TOS.S $(VDI_GEN_HEADERS)
 	@mkdir -p $(@D)
 	$(VDI_VASM) $(VDI_VASM_FLAGS) -o $@ $<
 
-$(VDI_OBJECTS): Makefile.atari MagiC/KERNEL/BUILD/GCC/assembly.mk \
-                MagiC/KERNEL/BUILD/GCC/vdi.mk
+$(VDI_OBJECTS): Makefile.atari kernel/BUILD/GCC/assembly.mk \
+                kernel/BUILD/GCC/vdi.mk
 
 -include $(VDI_OBJECTS:.o=.o.d)

@@ -5,7 +5,7 @@ AES_C_DIR := $(BUILD_DIR)/kernel/aes-c
 AES_C_INCLUDE := $(abspath kernel/BUILD/GCC/AES_C_INCLUDE)
 AES_C_WRAP_DIR := kernel/BUILD/GCC
 AES_C_ASM_DIR := $(AES_C_DIR)/asm
-AES_C_ADAPTER := $(if $(ASM_ADAPTER),$(ASM_ADAPTER),MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py)
+AES_C_ADAPTER := $(if $(ASM_ADAPTER),$(ASM_ADAPTER),kernel/BUILD/GCC/mas_to_vasm.py)
 AES_C_VASM := $(if $(VASM),$(VASM),vasmm68k_mot)
 
 AES_C_OBJECTS := $(addprefix $(AES_C_DIR)/, \
@@ -91,4 +91,4 @@ $(AES_C_DIR)/wdintrfc.o: $(AES_C_ASM_DIR)/WDINTRFC.S \
 	$(AES_C_VASM) $(VASM_FLAGS) -I$(abspath kernel/AES/SRC/WDIALOG) -o $@ $<
 
 -include $(AES_C_OBJECTS:.o=.o.d)
-$(AES_C_OBJECTS): Makefile.atari MagiC/KERNEL/BUILD/GCC/aes-c.mk
+$(AES_C_OBJECTS): Makefile.atari kernel/BUILD/GCC/aes-c.mk

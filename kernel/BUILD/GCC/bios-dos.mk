@@ -13,8 +13,8 @@ BIOSDOS_BIOS_INC  := $(BIOSDOS_INC_DIR)/bios
 BIOSDOS_DOS_INC   := $(BIOSDOS_INC_DIR)/dos
 BIOSDOS_READ_INC  := $(BIOSDOS_INC_DIR)/read_inf
 
-BIOSDOS_ADAPTER    := MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py
-BIOSDOS_MK         := MagiC/KERNEL/BUILD/GCC/bios-dos.mk
+BIOSDOS_ADAPTER    := kernel/BUILD/GCC/mas_to_vasm.py
+BIOSDOS_MK         := kernel/BUILD/GCC/bios-dos.mk
 BIOSDOS_ATARI_TABLE := NON-TOS/atari-utf8-conversion/atari-utf8.c
 BIOSDOS_TOOLS      := $(BIOSDOS_ADAPTER) $(BIOSDOS_ATARI_TABLE) $(BIOSDOS_MK)
 

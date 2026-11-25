@@ -4,7 +4,7 @@ These notes cover the modern **German Atari/68000 kernel** and the first
 standalone GCC application port. Start with `README.md`, `Makefile.atari`
 (kernel), `Makefile.apps` (applications) and `TODO.md` (next tasks).
 Prefer small, reviewable source changes. Keep kernel compatibility work in
-`MagiC/KERNEL/BUILD/GCC/`; do not use those private headers or ABI flags as an
+`kernel/BUILD/GCC/`; do not use those private headers or ABI flags as an
 application SDK.
 
 ## Application SDK headers
@@ -1416,7 +1416,7 @@ Contracts worth preserving:
   debug calls out.
 - `CLEARCPU.S` keeps its Pure Assembler form (`EXPORT`, `SUPER`) so `COPS.PRJ`
   still assembles it. The modern build normalizes it with
-  `MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py`, which turns `EXPORT` into `XDEF`,
+  `kernel/BUILD/GCC/mas_to_vasm.py`, which turns `EXPORT` into `XDEF`,
   drops `SUPER`, converts `0x` literals and fixes directives. Verified object
   bytes contain `cpushl`, `cpusha`, `cinva` and both `movec %cacr` forms.
 - The build rejects a `BUILD_DIR` whose `cops` output directory aliases
@@ -1437,7 +1437,7 @@ Save/alerts, event-CPX callbacks and other CPXs remain untested.
 ### OFF002.OSD offscreen driver
 
 The OSD sources use Pure C/MAS syntax and Windows-style `INCLUDE` paths. Normalize
-them with `MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py`, including the
+them with `kernel/BUILD/GCC/mas_to_vasm.py`, including the
 `kernel/VDI/SRC/MAGICVDI.2` `INCLUDE` files, then link with VASM `-Ftos -m68000 -noesc -nosym
 -tos-flags=7`. `-nosym` prevents VASM from adding a symbol table where the
 archived TOS executable has `slen=0`; `-tos-flags=7` preserves the header flag

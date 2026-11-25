@@ -39,7 +39,7 @@ $(BUILD_DIR)/vfat-check.o: kernel/BUILD/GCC/VFAT_CHECK.C $(HEADERS)
 -include $(BUILD_DIR)/vfat.o.d $(BUILD_DIR)/vfat-check.o.d
 $(BUILD_DIR)/vfat.o $(BUILD_DIR)/vfat-check.o: Makefile.atari
 
-include MagiC/KERNEL/BUILD/GCC/assembly.mk
+include kernel/BUILD/GCC/assembly.mk
 
 .PHONY: filesystem
 all: filesystem
@@ -47,13 +47,13 @@ filesystem: $(BUILD_DIR)/filesystem.o
 
 $(BUILD_DIR)/filesystem.o: $(BUILD_DIR)/vfat.o $(BUILD_DIR)/vfat-glue.o \
                           $(BUILD_DIR)/std.o $(BUILD_DIR)/xfs-vdos.o \
-                          Makefile.atari MagiC/KERNEL/BUILD/GCC/assembly.mk
+                          Makefile.atari kernel/BUILD/GCC/assembly.mk
 	$(CROSS_COMPILE)ld -r -o $@ $(filter %.o,$^)
 
-include MagiC/KERNEL/BUILD/GCC/bios-dos.mk
-include MagiC/KERNEL/BUILD/GCC/vdi.mk
-include MagiC/KERNEL/BUILD/GCC/aes-asm.mk
-include MagiC/KERNEL/BUILD/GCC/aes-c.mk
+include kernel/BUILD/GCC/bios-dos.mk
+include kernel/BUILD/GCC/vdi.mk
+include kernel/BUILD/GCC/aes-asm.mk
+include kernel/BUILD/GCC/aes-c.mk
 
 # Preserve the legacy M.INP module order, particularly BIOS first and ENDE last.
 KERNEL_OBJECTS := \
@@ -72,13 +72,13 @@ all: magic
 magic: $(BUILD_DIR)/MAGIC.RAM
 kernel-objects: $(KERNEL_OBJECTS)
 
-$(BUILD_DIR)/kernel.elf: $(KERNEL_OBJECTS) MagiC/KERNEL/BUILD/GCC/kernel.ld Makefile.atari
-	$(CROSS_COMPILE)ld -m m68kelf --emit-relocs -T MagiC/KERNEL/BUILD/GCC/kernel.ld \
+$(BUILD_DIR)/kernel.elf: $(KERNEL_OBJECTS) kernel/BUILD/GCC/kernel.ld Makefile.atari
+	$(CROSS_COMPILE)ld -m m68kelf --emit-relocs -T kernel/BUILD/GCC/kernel.ld \
 	  -Map=$(BUILD_DIR)/kernel.map -o $@ $(KERNEL_OBJECTS) \
 	  $(shell $(CC) $(KERNEL_FLAGS) -print-libgcc-file-name)
 
-$(BUILD_DIR)/MAGIC.RAM: $(BUILD_DIR)/kernel.elf MagiC/KERNEL/BUILD/GCC/elf_to_magic.py
-	python3 MagiC/KERNEL/BUILD/GCC/elf_to_magic.py $< $@
+$(BUILD_DIR)/MAGIC.RAM: $(BUILD_DIR)/kernel.elf kernel/BUILD/GCC/elf_to_magic.py
+	python3 kernel/BUILD/GCC/elf_to_magic.py $< $@
 
 $(KERNEL_OBJECTS): Makefile.atari
-$(AES_ASM_OBJECTS) $(AES_C_DIR)/wdintrfc.o: MagiC/KERNEL/BUILD/GCC/assembly.mk
+$(AES_ASM_OBJECTS) $(AES_C_DIR)/wdintrfc.o: kernel/BUILD/GCC/assembly.mk

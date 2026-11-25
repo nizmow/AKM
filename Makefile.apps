@@ -81,7 +81,7 @@ endif
 MCMD_ROOT := core/mcmd
 MCMD_DIR := $(MCMD_ROOT)/SRC
 MCMD_LANG ?= de
-MAS_NORMALIZER := MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py
+MAS_NORMALIZER := kernel/BUILD/GCC/mas_to_vasm.py
 
 # First standalone OSD port. The archived MIN-ATARI binary is the structural
 # reference: it is the same V4.10 source and must match byte-for-byte.
