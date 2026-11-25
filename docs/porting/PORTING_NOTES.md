@@ -980,7 +980,7 @@ booted, and functionally tested.
 ## Link and loader invariants
 
 `kernel.ld` and `elf_to_magic.py` implement the contract read from
-`MagiC/KERNEL/BIOS/ATARI/BOOT/MAGXBOOT.S`:
+`core/magxboot/SRC/MAGXBOOT.S`:
 
 - The zero-based ELF starts with the BIOS entry/header, not C startup code.
 - `ENDE` terminates the loaded image. Keep its position deliberate.
@@ -1650,13 +1650,13 @@ unverified.
 
 `mise run apps -- magxboot` assembles `MAGXBOOT.TOS`, `MAGXBOOT.PRG` and the
 `OUTSIDE` variant `MAGXBO32.PRG` under `build/atari/apps/magxboot/` from
-`MAGXBOOT.S`, normalized with `mas_to_vasm.py --atari-strings`, and the shared
+`core/magxboot/SRC/MAGXBOOT.S`, normalized with `mas_to_vasm.py --atari-strings`, and the shared
 `MagiC/INC_AS/OSBIND.INC`. `OUTSIDE`, `RESIDENT` and `MODIFY` come from the
 source; the recipe passes `OUTSIDE` only for the `MAGXBO32` variant, whose
 32-KB page alignment and virtual-memory title lines are guarded by an `IFND`
 default so an unparameterized assembly still works. The shipped
 `MagiC/Releases/MAGIC.A/AUTO/MAGXBOOT.TOS` and the archived
-`MagiC/KERNEL/BIOS/ATARI/BOOT/MAGXBOOT.PRG` are byte-identical references.
+`core/magxboot/SRC/MAGXBOOT.PRG` are byte-identical references.
 The rebuilt `MAGXBOOT.PRG` is produced as a copy of the rebuilt TOS; that pair
 differs from the references only by the encodings noted below, so do not compare
 the rebuilt PRG against the shipped binary for byte equality.

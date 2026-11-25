@@ -801,8 +801,9 @@ generated tables, not that MagiC's keyboard driver loads them at boot.
 
 ## NeoST: MAGXBOOT loader
 
-`mise run test:magxboot-neost` builds the loader and the screen probe, then
-boots three disposable clones with an unchanged `MAGIC.RAM`:
+`mise run test:magxboot-neost` runs the scenario in `core/magxboot/tests/`.
+It builds the loader and shared screen probe, then boots three disposable
+clones with an unchanged `MAGIC.RAM`:
 
 - the shipped `MAGIC.A/AUTO/MAGXBOOT.TOS`;
 - the rebuild from `build/atari/apps/magxboot/MAGXBOOT.TOS`;

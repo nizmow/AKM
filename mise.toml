@@ -256,7 +256,7 @@ run = "python3 scripts/neost-screen-driver-smoke.py"
 [tasks."test:magxboot-neost"]
 description = "Compare the shipped and rebuilt MAGXBOOT loaders on cloned MagiC images"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-magxboot-smoke.py"
+run = "python3 core/magxboot/tests/neost-magxboot-smoke.py"
 
 [tasks."test:hardcopy-neost"]
 description = "Verify archived and rebuilt HARDCOPY installs the scr_dump hook on MagiC"
