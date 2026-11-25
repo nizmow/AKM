@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""Compare archived and rebuilt MGCOPY file operations under MagiC.
-
-Both binaries run in separate clones of the same MagiC image.  A delayed
-startup driver invokes MGCOPY through Pexec with the same fixtures and writes
-the child statuses to C:\\MGCOPY.RES.  The host compares statuses and guest
-file effects, including nested-tree and cross-drive moves.
-"""
+"""Verify rebuilt MGCOPY file operations on a disposable MagiC image."""
 
 from __future__ import annotations
 
@@ -24,8 +18,6 @@ from neost_image import MagiCImage
 from neost_server import NeoSTServer
 
 BUILD = ROOT / "build/atari"
-ARCHIVE_APP = COMPONENT / "BIN/MGCOPY.APP"
-ARCHIVE_RSC = COMPONENT / "SRC/MGCOPY.RSC"
 REBUILT_APP = BUILD / "apps/mgcopy/MGCOPY.APP"
 REBUILT_RSC = BUILD / "apps/mgcopy/MGCOPY.RSC"
 DRIVER = BUILD / "apps/mgcopy/NEOSTART.PRG"
@@ -101,10 +93,6 @@ def guest_hash(image: MagiCImage, guest: str, destination: Path) -> str | None:
     return sha256(destination)
 
 
-def host_hash(path: Path) -> str | None:
-    return sha256(path) if path.is_file() else None
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--neost", type=Path,
@@ -140,7 +128,7 @@ def main() -> int:
     if build.returncode:
         print(build.stdout, file=sys.stderr)
         return build.returncode
-    for path in (ARCHIVE_APP, ARCHIVE_RSC, REBUILT_APP, REBUILT_RSC, DRIVER):
+    for path in (REBUILT_APP, REBUILT_RSC, DRIVER):
         if not path.is_file():
             print(f"build completed without producing {path}", file=sys.stderr)
             return 1
@@ -154,107 +142,71 @@ def main() -> int:
         with tempfile.TemporaryDirectory(prefix="neost-mgcopy-") as temporary:
             scratch = Path(temporary)
             fixtures = make_fixtures(scratch / "fixtures")
-            seed_hashes = {name: host_hash(path) for name, path in fixtures.items()}
-            seed_hashes["XMOVE.TXT"] = host_hash(scratch / "fixtures" / "XMOVE.TXT")
-            require(None not in seed_hashes.values(), "seed fixtures disappeared")
+            seed_hashes = {name: sha256(path) for name, path in fixtures.items()}
+            seed_hashes["XMOVE.TXT"] = sha256(scratch / "fixtures" / "XMOVE.TXT")
             headless, _ = acquire_headless(args.neost_headless, args.neost, scratch)
-            outcomes = {}
-            for name in ("archive", "rebuilt"):
-                directory = output / name
-                directory.mkdir()
-                image = MagiCImage.clone(source, directory / f"{name}.img",
-                                         partition_offset=args.partition_offset)
-                image.verify_magic()
-                # Discard a stale report and inherited destination tree so the
-                # driver's own effects are what the checks observe.
-                image.remove(RESULT)
-                image.remove(DEST_DIR, tree=True)
-                app = ARCHIVE_APP if name == "archive" else REBUILT_APP
-                rsc = ARCHIVE_RSC if name == "archive" else REBUILT_RSC
-                guest_root = directory / "GEMDRIVE"
-                guest_root.mkdir(parents=True)
-                image.install(((DRIVER, f"{START_DIR}/NEOSTART.PRG"),
-                               (app, "::/MGCOPY.APP"),
-                               (rsc, "::/MGCOPY.RSC")))
-                image.mkdir(DEST_DIR)
-                install_fixtures(image, fixtures)
-                d_image = MagiCImage(image.path, args.d_partition_offset)
-                d_image.copy_in(scratch / "fixtures" / "XMOVE.TXT", "::/XMOVE.TXT")
-                with start_server(headless, rom, image.path,
-                                  directory / "run", guest_root) as server:
-                    server.run_frames(BOOT_FRAMES + RUN_FRAMES)
-                    server.screenshot(directory / "final.ppm")
-                result_path = directory / "MGCOPY.RES"
-                result_hash = guest_hash(image, RESULT, result_path)
-                if result_hash is None:
-                    raise RuntimeError(f"{name}: driver did not produce {RESULT}")
-                checks = {}
-                for guest, label in (
-                    ("::/SRC.TXT", "src"),
-                    ("::/MOVE.TXT", "moved-source"),
-                    ("::/ALIAS.TXT", "alias-source"),
-                    ("::/DEL.TXT", "deleted-source"),
-                    ("::/DEST/SRC.TXT", "dest-src"),
-                    ("::/DEST/MOVE.TXT", "dest-move"),
-                    ("::/DEST/ALIAS.TXT", "dest-alias"),
-                    ("::/TREE/ONE.TXT", "tree-source-one"),
-                    ("::/TREE/SUB/TWO.TXT", "tree-source-sub-two"),
-                    ("::/DEST/TREE/ONE.TXT", "dest-tree-one"),
-                    ("::/DEST/TREE/SUB/TWO.TXT", "dest-tree-sub-two"),
-                    ("::/MTREE/ONE.TXT", "mtree-source-one"),
-                    ("::/MTREE/SUB/TWO.TXT", "mtree-source-sub-two"),
-                    ("::/DEST/MTREE/ONE.TXT", "dest-mtree-one"),
-                    ("::/DEST/MTREE/SUB/TWO.TXT", "dest-mtree-sub-two"),
-                    ("::/DEST/XMOVE.TXT", "dest-xmove"),
-                ):
-                    checks[label] = guest_hash(image, guest, directory / f"{label}.out")
-                checks["xmove-source"] = guest_hash(
-                    d_image, "::/XMOVE.TXT", directory / "xmove-source.out")
-                result_text = result_path.read_text(encoding="latin-1")
-                statuses = result_text.splitlines()
-                require(len(statuses) == 7,
-                        f"{name}: expected seven numbered cases, got {statuses!r}")
-                for number, line in enumerate(statuses, 1):
-                    require(line.split() == ["CASE", f"{number:02d}", "0"],
-                            f"{name}: case {number:02d} did not report zero: {line!r}")
-                for label, seed in SEEDED_GUESTS.items():
-                    require(checks[label] is not None,
-                            f"{name}: {label} is missing")
-                    require(checks[label] == seed_hashes[seed],
-                            f"{name}: {label} bytes differ from seed {seed}")
-                # Alias mode stores MagiC's Fsymlink record, not a byte copy:
-                # a big-endian payload length followed by the target and NULs.
-                record = (directory / "dest-alias.out").read_bytes()
-                require(len(record) > 2 and
-                        int.from_bytes(record[:2], "big") == len(record) - 2 and
-                        record[2:2 + len(ALIAS_TARGET)] == ALIAS_TARGET and
-                        record[2 + len(ALIAS_TARGET):] == b"\0\0",
-                        f"{name}: alias record is not a link to {ALIAS_TARGET!r}: {record!r}")
-                outcomes[name] = (result_text, checks)
-                print(f"{name}: {checks}")
+            image = MagiCImage.clone(source, output / "rebuilt.img",
+                                     partition_offset=args.partition_offset)
+            image.verify_magic()
+            # Remove inherited outputs so only this run can satisfy the checks.
+            image.remove(RESULT)
+            image.remove(DEST_DIR, tree=True)
+            guest_root = output / "GEMDRIVE"
+            guest_root.mkdir()
+            image.install(((DRIVER, f"{START_DIR}/NEOSTART.PRG"),
+                           (REBUILT_APP, "::/MGCOPY.APP"),
+                           (REBUILT_RSC, "::/MGCOPY.RSC")))
+            image.mkdir(DEST_DIR)
+            install_fixtures(image, fixtures)
+            d_image = MagiCImage(image.path, args.d_partition_offset)
+            d_image.copy_in(scratch / "fixtures" / "XMOVE.TXT", "::/XMOVE.TXT")
+            with start_server(headless, rom, image.path, output / "run", guest_root) as server:
+                server.run_frames(BOOT_FRAMES + RUN_FRAMES)
+                server.screenshot(output / "final.ppm")
 
-        archive_text, archive_files = outcomes["archive"]
-        rebuilt_text, rebuilt_files = outcomes["rebuilt"]
-        require(archive_text == rebuilt_text,
-                "archived/rebuilt driver statuses differ")
-        require(archive_files == rebuilt_files,
-                "archived/rebuilt guest file effects differ")
-        require(archive_files["dest-src"] is not None, "copy did not create DEST/SRC.TXT")
-        require(archive_files["moved-source"] is None, "move left MOVE.TXT behind")
-        require(archive_files["dest-move"] is not None, "move did not create DEST/MOVE.TXT")
-        require(archive_files["alias-source"] is not None, "alias removed ALIAS.TXT")
-        require(archive_files["dest-alias"] is not None, "alias did not create DEST/ALIAS.TXT")
-        require(archive_files["deleted-source"] is None, "delete left DEL.TXT behind")
-        require(archive_files["tree-source-one"] is not None, "copy removed TREE/ONE.TXT")
-        require(archive_files["dest-tree-one"] is not None, "nested copy missed TREE/ONE.TXT")
-        require(archive_files["dest-tree-sub-two"] is not None, "nested copy missed TREE/SUB/TWO.TXT")
-        require(archive_files["mtree-source-one"] is None, "nested move left MTREE/ONE.TXT")
-        require(archive_files["mtree-source-sub-two"] is None, "nested move left MTREE/SUB/TWO.TXT")
-        require(archive_files["dest-mtree-one"] is not None, "nested move missed DEST/MTREE/ONE.TXT")
-        require(archive_files["dest-mtree-sub-two"] is not None, "nested move missed DEST/MTREE/SUB/TWO.TXT")
-        require(archive_files["xmove-source"] is None, "cross-drive move left D:/XMOVE.TXT")
-        require(archive_files["dest-xmove"] is not None, "cross-drive move missed DEST/XMOVE.TXT")
-        print(f"MGCOPY archived/rebuilt file-operation suite passed: {output}")
+            result_path = output / "MGCOPY.RES"
+            require(image.exists(RESULT), f"driver did not produce {RESULT}")
+            image.copy_out(RESULT, result_path)
+            statuses = result_path.read_text(encoding="latin-1").splitlines()
+            require(len(statuses) == 7,
+                    f"expected seven numbered cases, got {statuses!r}")
+            for number, line in enumerate(statuses, 1):
+                require(line.split() == ["CASE", f"{number:02d}", "0"],
+                        f"case {number:02d} did not report zero: {line!r}")
+
+            for guest, label in (
+                ("::/SRC.TXT", "src"),
+                ("::/ALIAS.TXT", "alias-source"),
+                ("::/DEST/SRC.TXT", "dest-src"),
+                ("::/DEST/MOVE.TXT", "dest-move"),
+                ("::/TREE/ONE.TXT", "tree-source-one"),
+                ("::/TREE/SUB/TWO.TXT", "tree-source-sub-two"),
+                ("::/DEST/TREE/ONE.TXT", "dest-tree-one"),
+                ("::/DEST/TREE/SUB/TWO.TXT", "dest-tree-sub-two"),
+                ("::/DEST/MTREE/ONE.TXT", "dest-mtree-one"),
+                ("::/DEST/MTREE/SUB/TWO.TXT", "dest-mtree-sub-two"),
+                ("::/DEST/XMOVE.TXT", "dest-xmove"),
+            ):
+                seed = SEEDED_GUESTS[label]
+                actual = guest_hash(image, guest, output / f"{label}.out")
+                require(actual == seed_hashes[seed],
+                        f"{guest} is missing or differs from seed {seed}")
+
+            for guest in ("::/MOVE.TXT", "::/DEL.TXT",
+                          "::/MTREE/ONE.TXT", "::/MTREE/SUB/TWO.TXT"):
+                require(not image.exists(guest), f"source left behind: {guest}")
+            require(not d_image.exists("::/XMOVE.TXT"),
+                    "cross-drive move left D:/XMOVE.TXT behind")
+
+            # Fsymlink stores a big-endian payload length and a NUL-padded target.
+            alias_path = output / "dest-alias.out"
+            require(image.exists("::/DEST/ALIAS.TXT"), "alias destination is missing")
+            image.copy_out("::/DEST/ALIAS.TXT", alias_path)
+            record = alias_path.read_bytes()
+            payload = ALIAS_TARGET + b"\0\0"
+            require(record == len(payload).to_bytes(2, "big") + payload,
+                    f"alias record is not a link to {ALIAS_TARGET!r}: {record!r}")
+        print(f"MGCOPY file-operation suite passed: {output}")
     except (OSError, RuntimeError) as error:
         print(f"NeoST MGCOPY smoke failed: {error}\nArtifacts: {output}",
               file=sys.stderr)

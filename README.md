@@ -348,8 +348,8 @@ to compare the archived and rebuilt MGSEARCH dialog and `*.ZZZ` search-result
 screens on identical cloned images.
 
 MGCOPY lives in [`core/mgcopy/`](core/mgcopy), with its NeoST scenario and
-guest probe in `tests/`. Run `mise run test:mgcopy-neost` to compare copy,
-move, alias and delete effects on cloned MagiC images.
+guest probe in `tests/`. Run `mise run test:mgcopy-neost` to check copy,
+move, alias and delete effects against the seeded files on a cloned MagiC image.
 
 Run `mise run test:cops-neost` (or `python3 scripts/neost-cops-smoke.py`)
 to compare the COPS panel and its `MAGXCONF.CPX`/`TSLICE.CPX` dialogs with the

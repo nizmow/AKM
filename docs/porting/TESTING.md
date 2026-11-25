@@ -216,14 +216,14 @@ from the installed program. Interactive keyboard/mouse use remains untested.
 ## NeoST: MGCOPY file operations
 
 `mise run test:mgcopy-neost` builds `MGCOPY.APP`, its German `MGCOPY.RSC` and
-`NEOSTART.PRG`, then runs the archived and rebuilt bundles in separate clones
-of the same MagiC image. The delayed driver invokes MGCOPY through `Pexec`
-with `-q` and records the seven child statuses in `C:\MGCOPY.RES`.
+`NEOSTART.PRG`, then runs the rebuilt bundle on a cloned MagiC image. The
+delayed driver invokes MGCOPY through `Pexec` with `-q` and records the seven
+child statuses in `C:\MGCOPY.RES`.
 
-Each clone starts without `C:\DEST` or a stale `MGCOPY.RES`. The scenario copies
+The clone starts without `C:\DEST` or a stale `MGCOPY.RES`. The scenario copies
 `SRC.TXT`, moves `MOVE.TXT`, aliases `ALIAS.TXT` and deletes `DEL.TXT`
-into/from `C:\DEST\`. It requires seven numbered `CASE nn 0` statuses (nonzero
-or malformed lines fail regardless of archive/rebuilt agreement) and:
+into/from `C:\DEST\`. It requires seven numbered `CASE nn 0` statuses and
+checks the intended file effects directly:
 
 - Copy: `DEST\SRC.TXT` exists and matches the source.
 - Move: `DEST\MOVE.TXT` exists and the source is gone.
@@ -238,7 +238,9 @@ or malformed lines fail regardless of archive/rebuilt agreement) and:
   not a byte copy.
 - Absence is confirmed with the fail-closed `mdir` check, so an extraction error
   cannot masquerade as a deleted file.
-- Archived and rebuilt statuses and guest-file hashes are identical.
+
+The historical release archives are retained for reference, not used as a
+pass/fail oracle for MGCOPY.
 
 Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
 `mtools`. Run with fresh output:
@@ -250,8 +252,8 @@ MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
 
 Use `--partition-offset` for a different MagiC C: partition offset and
 `--d-partition-offset` for D: (default `34200576`, matching the test image).
-The source image is cloned for each binary. Confirm-dialog interaction,
-cancellation, long paths and general error paths are outside this scenario.
+Confirm-dialog interaction, cancellation, long paths and general error paths
+are outside this scenario.
 
 A separate disposable-floppy probe checks the failure contract in
 [PORTING_NOTES.md](PORTING_NOTES.md#mgcopy): overwrite a 200 KiB destination

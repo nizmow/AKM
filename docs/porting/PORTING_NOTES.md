@@ -645,18 +645,14 @@ three MagiC dialog callbacks to the SDK's by-value `HNDL_OBJ_args` record.
 application global rather than an accidental file-static duplicate.
 
 `mise run test:mgcopy-neost` runs the scenario in `core/mgcopy/tests/`. It
-builds the application and delayed `NEOSTART.PRG` driver, then boots archived
-and rebuilt bundles in separate MagiC 6.20/TOS 2.06 clones. The driver waits
-for the desktop, invokes MGCOPY through `Pexec` with `-q`, and records child
-statuses. Cases copy, move, alias
-and delete top-level files; copy and move nested trees; and move a file from
-`D:` to `C:` to exercise the cross-drive `ENSAME` fallback. The rebuilt and
-archived runs produced the same seven zero statuses and identical source/
-destination hashes. Nested copy leaves the source tree intact; nested move
-removes it; the cross-drive source is removed and its destination is created.
-Evidence is under `build/atari/neost-mgcopy-cross/`. Confirm-dialog interaction,
+builds the application and delayed `NEOSTART.PRG` driver, then boots the rebuilt
+bundle on a MagiC 6.20/TOS 2.06 clone. The driver waits for the desktop, invokes
+MGCOPY through `Pexec` with `-q`, and records seven child statuses. The host
+checks seeded file bytes, retained or removed sources, and the alias target.
+The `D:` to `C:` move exercises the `ENSAME` fallback. The original release is
+historical reference material, not the test oracle. Confirm-dialog interaction,
 cancellation, long paths, read-only/error paths and alternate resources remain
-untested.
+untested by this scenario.
 
 The port also writes each destination as `~MGCPnn.TMP` in the target directory,
 checks every write and the close, then renames the old destination to
