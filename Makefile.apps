@@ -9,6 +9,7 @@ CFLAGS ?= -O2 -g -Wall -Wextra
 APP_FLAGS := -std=gnu11 -m68000
 .DEFAULT_GOAL := all
 
+SLB_LD := shared/slb/edit_slb.ld
 GEMUT_DIR := shared/gemut
 GEMUT_OBJECT := $(BUILD_DIR)/base/gemut/GEMUT_MT.o
 APPLICAT_DIR := base/applicat/SRC
@@ -22,8 +23,9 @@ APPLICAT_INCLUDES := -I"$(APPLICAT_DIR)" -I"$(GEMUT_DIR)" -I"MagiC/APPS"
 MGVIEW_DIR := MagiC/APPS/MGVIEW/SRC
 MGVIEW_SOURCES := $(addprefix $(MGVIEW_DIR)/,MGVIEW.C WINDOWS.C MGWIND.C MEMCHAR2.C)
 MGVIEW_OBJECTS := $(patsubst $(MGVIEW_DIR)/%.C,$(BUILD_DIR)/mgview/%.o,$(MGVIEW_SOURCES))
-MGNOTICE_DIR := MagiC/APPS/MGNOTICE.2/SRC
-MGNOTICE_OBJ_DIR := $(BUILD_DIR)/base/mgnotice
+MGNOTICE_DIR := base/mgnotice/SRC
+MGNOTICE_OBJ_DIR := $(BUILD_DIR)/base/mgnotice/obj
+MGNOTICE_NEOSTART_D := $(BUILD_DIR)/base/mgnotice-test/NEOSTART.d
 MGNOTICE_SOURCES := $(addprefix $(MGNOTICE_DIR)/,MGNOTICE.C MGNWIND.C \
   OPT_DIAL.C WINDOWS.C)
 MGNOTICE_OBJECTS := $(patsubst $(MGNOTICE_DIR)/%.C,$(MGNOTICE_OBJ_DIR)/%.o,$(MGNOTICE_SOURCES))
@@ -752,10 +754,10 @@ $(BUILD_DIR)/mgnotice/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 	mkdir -p "$(@D)"
 	cp "$<" "$@"
 
-$(BUILD_DIR)/mgnotice/NEOSTART.PRG: MagiC/APPS/MGNOTICE.2/TESTDATA/NEOSTART.C Makefile.apps
-	mkdir -p "$(@D)"
+$(BUILD_DIR)/mgnotice/NEOSTART.PRG: base/mgnotice/tests/NEOSTART.C Makefile.apps
+	mkdir -p "$(@D)" "$(MGNOTICE_NEOSTART_D:/NEOSTART.d=)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
-	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+	  -MF "$(MGNOTICE_NEOSTART_D)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/applicat/applicat.rsc: $(APPLICAT_DIR)/APPLICAT.RSC
 	mkdir -p "$(@D)"
@@ -959,8 +961,8 @@ $(BUILD_DIR)/winframe/WINFRAME_ENTRY.o: $(WINFRAME_DIR)/WINFRAME_ENTRY.S Makefil
 	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
 
 $(BUILD_DIR)/winframe/WINFRAME.elf: $(WINFRAME_OBJECTS) \
-  MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld Makefile.apps
-	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld \
+  $(SLB_LD) Makefile.apps
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,$(SLB_LD) \
 	  $(WINFRAME_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
 
 $(BUILD_DIR)/winframe/WINFRAME.SLB: $(BUILD_DIR)/winframe/WINFRAME.elf scripts/elf_to_slb.py
@@ -987,8 +989,8 @@ $(BUILD_DIR)/winframe-demo/WINFRAME_ENTRY.o: $(WINFRAME_DIR)/WINFRAME_ENTRY.S Ma
 	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
 
 $(BUILD_DIR)/winframe-demo/WINFRAME.elf: $(WINFRAME_DEMO_OBJECTS) \
-  MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld Makefile.apps
-	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld \
+  $(SLB_LD) Makefile.apps
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,$(SLB_LD) \
 	  $(WINFRAME_DEMO_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
 
 $(BUILD_DIR)/winframe-demo/WINFRAME.SLB: $(BUILD_DIR)/winframe-demo/WINFRAME.elf scripts/elf_to_slb.py
@@ -1027,8 +1029,8 @@ $(BUILD_DIR)/xp-rastr/XP_RASTR_ENTRY.o: $(XPRASTR_DIR)/XP_RASTR_ENTRY.S Makefile
 	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
 
 $(BUILD_DIR)/xp-rastr/XP_RASTR.elf: $(XPRASTR_OBJECTS) \
-  MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld Makefile.apps
-	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld \
+  $(SLB_LD) Makefile.apps
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,$(SLB_LD) \
 	  $(XPRASTR_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
 
 $(BUILD_DIR)/xp-rastr/XP_RASTR.SLB: $(BUILD_DIR)/xp-rastr/XP_RASTR.elf scripts/elf_to_slb.py
@@ -1072,8 +1074,8 @@ $(BUILD_DIR)/load-img/LOAD_IMG_ENTRY.o: $(LOADIMG_DIR)/LOAD_IMG_ENTRY.S Makefile
 	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
 
 $(BUILD_DIR)/load-img/LOAD_IMG.elf: $(LOADIMG_OBJECTS) \
-  MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld Makefile.apps
-	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld \
+  $(SLB_LD) Makefile.apps
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,$(SLB_LD) \
 	  $(LOADIMG_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
 
 $(BUILD_DIR)/load-img/LOAD_IMG.SLB: $(BUILD_DIR)/load-img/LOAD_IMG.elf scripts/elf_to_slb.py
@@ -1083,53 +1085,57 @@ $(BUILD_DIR)/load-img/LOAD_IMG.SLB: $(BUILD_DIR)/load-img/LOAD_IMG.elf scripts/e
 -include $(BUILD_DIR)/load-img/IMGLOAD.d
 -include $(APPLICAT_OBJECTS:.o=.d)
 -include $(MGVIEW_OBJECTS:.o=.d)
-EDIT_SLB_DIR := MagiC/EXTENSIO/EDIT_SLB/SRC
-EDIT_SLB_OBJECTS := $(BUILD_DIR)/edit-slb/EDIT_SLB.o $(BUILD_DIR)/edit-slb/EDITOB.o \
-  $(BUILD_DIR)/edit-slb/MEMCHAR2.o $(BUILD_DIR)/edit-slb/EDIT_ENTRY.o
+EDIT_SLB_DIR := base/edit-slb/SRC
+EDIT_SLB_OBJ_DIR := $(BUILD_DIR)/base/edit-slb
+EDIT_SLB_OBJECTS := $(EDIT_SLB_OBJ_DIR)/EDIT_SLB.o $(EDIT_SLB_OBJ_DIR)/EDITOB.o \
+  $(EDIT_SLB_OBJ_DIR)/MEMCHAR2.o $(EDIT_SLB_OBJ_DIR)/EDIT_ENTRY.o
 
 .PHONY: edit-slb
 edit-slb: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 
-$(BUILD_DIR)/edit-slb/%.o: $(EDIT_SLB_DIR)/%.C Makefile.apps
+$(EDIT_SLB_OBJ_DIR)/%.o: $(EDIT_SLB_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(EDIT_SLB_DIR)" \
 	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
 
-$(BUILD_DIR)/edit-slb/MEMCHAR2.o: MagiC/APPS/MGVIEW/SRC/MEMCHAR2.C Makefile.apps
+$(EDIT_SLB_OBJ_DIR)/MEMCHAR2.o: MagiC/APPS/MGVIEW/SRC/MEMCHAR2.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(EDIT_SLB_DIR)" \
 	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
 
-$(BUILD_DIR)/edit-slb/EDIT_ENTRY.o: $(EDIT_SLB_DIR)/EDIT_ENTRY.S Makefile.apps
+$(EDIT_SLB_OBJ_DIR)/EDIT_ENTRY.o: $(EDIT_SLB_DIR)/EDIT_ENTRY.S Makefile.apps
 	mkdir -p "$(@D)"
 	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
 
-$(BUILD_DIR)/edit-slb/EDITOBJC.elf: $(EDIT_SLB_OBJECTS) $(EDIT_SLB_DIR)/edit_slb.ld Makefile.apps
-	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,$(EDIT_SLB_DIR)/edit_slb.ld \
+$(BUILD_DIR)/edit-slb/EDITOBJC.elf: $(EDIT_SLB_OBJECTS) $(SLB_LD) Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,$(SLB_LD) \
 	  $(EDIT_SLB_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
 
 $(BUILD_DIR)/edit-slb/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.elf scripts/elf_to_slb.py
 	python3 scripts/elf_to_slb.py "$<" "$@"
 
--include $(BUILD_DIR)/edit-slb/EDIT_SLB.d
--include $(BUILD_DIR)/edit-slb/EDITOB.d
--include $(BUILD_DIR)/edit-slb/MEMCHAR2.d
+-include $(EDIT_SLB_OBJ_DIR)/EDIT_SLB.d
+-include $(EDIT_SLB_OBJ_DIR)/EDITOB.d
+-include $(EDIT_SLB_OBJ_DIR)/MEMCHAR2.d
 
-MGEDIT_DIR := MagiC/APPS/MGEDIT/SRC
+MGEDIT_DIR := base/mgedit/SRC
+MGEDIT_OBJ_DIR := $(BUILD_DIR)/base/mgedit
 MGEDIT_SOURCES := $(addprefix $(MGEDIT_DIR)/,MGEDIT.C MGEDWIND.C OPT_DIAL.C \
   MGEDIT_GEM.C)
-MGEDIT_OBJECTS := $(patsubst $(MGEDIT_DIR)/%.C,$(BUILD_DIR)/mgedit/%.o,$(MGEDIT_SOURCES))
+MGEDIT_OBJECTS := $(patsubst $(MGEDIT_DIR)/%.C,$(MGEDIT_OBJ_DIR)/%.o,$(MGEDIT_SOURCES))
 
 .PHONY: mgedit
 mgedit: $(BUILD_DIR)/mgedit/MGEDIT.APP $(BUILD_DIR)/mgedit/mgedit.rsc \
   $(BUILD_DIR)/mgedit/EDITOBJC.SLB
 
-$(BUILD_DIR)/mgedit/%.o: $(MGEDIT_DIR)/%.C Makefile.apps
+$(MGEDIT_OBJ_DIR)/%.o: $(MGEDIT_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGEDIT_DIR)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGEDIT_DIR)" -I"MagiC/APPS" \
 	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/mgedit/MGEDIT.APP: $(MGEDIT_OBJECTS) Makefile.apps
+	mkdir -p "$(@D)"
 	$(CC) $(APP_FLAGS) $(MGEDIT_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/mgedit/mgedit.rsc: $(MGEDIT_DIR)/MGEDIT.RSC
@@ -1150,7 +1156,7 @@ $(BUILD_DIR)/mgedit/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 -include $(BUILD_DIR)/mgformat/NEOSTART.d
 -include $(MGNOTICE_OBJECTS:.o=.d)
 -include $(GEMUT_OBJECT:.o=.d)
--include $(BUILD_DIR)/mgnotice/NEOSTART.d
+-include $(MGNOTICE_NEOSTART_D)
 -include $(BUILD_DIR)/abi-check/ABI_CHECK.d
 -include $(BUILD_DIR)/console/RUNARG.d
 -include $(BUILD_DIR)/mac2st/MAC2ST.d

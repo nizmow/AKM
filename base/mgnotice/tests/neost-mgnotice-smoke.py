@@ -26,16 +26,19 @@ import re
 import sys
 import tempfile
 
+COMPONENT = Path(__file__).resolve().parents[1]
+ROOT = COMPONENT.parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+
 from neost_common import acquire_headless, create_output, require, run
 from neost_image import MagiCImage
 from neost_screen import diff_stats
 from neost_server import NeoSTServer
 
-ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
-ARCHIVE_APP = ROOT / "MagiC/APPS/MGNOTICE.2/BIN/MGNOTICE.APP"
-ARCHIVE_RSC = ROOT / "MagiC/APPS/MGNOTICE.2/SRC/MGNOTICE.RSC"
-ARCHIVE_SLB = ROOT / "MagiC/EXTENSIO/EDIT_SLB/BIN/EDITOBJC.SLB"
+ARCHIVE_APP = COMPONENT / "BIN/MGNOTICE.APP"
+ARCHIVE_RSC = COMPONENT / "SRC/MGNOTICE.RSC"
+ARCHIVE_SLB = COMPONENT.parent / "edit-slb/BIN/EDITOBJC.SLB"
 REBUILT_DIR = BUILD / "apps/mgnotice"
 REBUILT_APP = REBUILT_DIR / "MGNOTICE.APP"
 REBUILT_RSC = REBUILT_DIR / "mgnotice.rsc"

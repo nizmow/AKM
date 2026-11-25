@@ -146,7 +146,7 @@ run = "python3 scripts/neost-mgclock-smoke.py"
 [tasks."test:mgnotice-neost"]
 description = "Compare archived and rebuilt MGNOTICE note lifecycle under NeoST"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-mgnotice-smoke.py"
+run = "python3 base/mgnotice/tests/neost-mgnotice-smoke.py"
 
 [tasks."test:mgsearch-neost"]
 description = "Compare archived and rebuilt MGSEARCH dialogs and results under NeoST"

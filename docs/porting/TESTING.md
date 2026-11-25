@@ -98,7 +98,7 @@ behavior under a different desktop/OS version.
 
 ## NeoST: MGNOTICE archived/rebuilt lifecycle
 
-`scripts/neost-mgnotice-smoke.py` builds `MGNOTICE.APP`, its German resource,
+`base/mgnotice/tests/neost-mgnotice-smoke.py` builds `MGNOTICE.APP`, its German resource,
 the rebuilt `EDITOBJC.SLB` and the `NEOSTART.PRG` test helper. It then runs the
 archived and rebuilt bundles in separate clones of the same MagiC image:
 
@@ -125,7 +125,7 @@ Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
-  python3 scripts/neost-mgnotice-smoke.py --output build/atari/neost-mgnotice-check
+  python3 base/mgnotice/tests/neost-mgnotice-smoke.py --output build/atari/neost-mgnotice-check
 ```
 
 Use `--partition-offset` for a different MagiC partition offset. The source

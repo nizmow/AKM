@@ -339,7 +339,7 @@ to verify the restored desktop clock and its coexistence with APPLICAT. The
 MagiC half needs `MAGIC_IMAGE`, `TOS206_ROM` and host `mtools`; see
 [testing](docs/porting/TESTING.md).
 
-Run `mise run test:mgnotice-neost` (or `python3 scripts/neost-mgnotice-smoke.py`)
+Run `mise run test:mgnotice-neost` (or `python3 base/mgnotice/tests/neost-mgnotice-smoke.py`)
 to compare the archived and rebuilt MGNOTICE note lifecycle. It uses the same
 MagiC image, TOS 2.06 and `mtools` inputs.
 

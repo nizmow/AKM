@@ -19,7 +19,7 @@
 #include <string.h>
 #include "GLOBALS.H"
 #include "MGEDIT.H"
-#include "../../TOS_ARGS.H"
+#include "TOS_ARGS.H"
 
 short	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
 int	ap_id;

@@ -553,7 +553,7 @@ TOS image, not that ELF carrier. The separate `EDIT.PRG` demo is not rebuilt.
 
 ### MGNOTICE
 
-`mise run apps -- mgnotice` builds `MagiC/APPS/MGNOTICE.2/SRC` as
+`mise run apps -- mgnotice` builds `base/mgnotice/SRC` as
 `build/atari/apps/mgnotice/MGNOTICE.APP`, packages the default German
 `mgnotice.rsc`, and copies the independently built `EDITOBJC.SLB`. The source
 was converted to UTF-8 and adapted to public MiNTLib/GEMlib interfaces. It
@@ -581,7 +581,7 @@ ABI boundaries that mattered:
 - `notice_path` is a writable array; the code changes its drive byte from
   `Dgetdrv()`. `sprintf` replaces the nonstandard `itoa`.
 
-`python3 scripts/neost-mgnotice-smoke.py` builds the application, test helper
+`python3 base/mgnotice/tests/neost-mgnotice-smoke.py` builds the application, test helper
 and SLB, then boots archived and rebuilt bundles in separate MagiC 6.20/TOS 2.06
 clones. It creates a note with Ctrl-N, types `hello`, leaves edit mode with Esc,
 quits with Ctrl-Q, compares every UI state, extracts the saved note, and reboots
