@@ -13,15 +13,12 @@ format = "raw"
 bin_path = "squashfs-root/usr/bin"
 postinstall = 'cd "$MISE_TOOL_INSTALL_PATH" && "./squashfs-root/usr/bin/NeoST-$MISE_TOOL_VERSION-x86_64.AppImage" --appimage-extract > /dev/null'
 
+# Toolchain and everyday builds
+
 [tasks."toolchain:build"]
 description = "Build the Atari cross-toolchain Podman image"
 dir = "{{ config_root }}"
 run = "scripts/atari-container build"
-
-[tasks."toolchain:publish"]
-description = "Build and push the Atari cross-toolchain image to GitLab"
-dir = "{{ config_root }}"
-run = "scripts/atari-container publish"
 
 [tasks."toolchain:shell"]
 description = "Open a shell in the Atari toolchain container"
@@ -49,6 +46,52 @@ run = "scripts/atari-container run make -f Makefile.atari magic"
 description = "Run Makefile.apps with application targets and options"
 dir = "{{ config_root }}"
 run = "scripts/atari-container run make -f Makefile.apps"
+
+# Core package and install smoke
+
+[tasks."release:core"]
+description = "Assemble the deterministic German Atari/ST core installation ZIP"
+dir = "{{ config_root }}"
+run = "python3 scripts/make-release.py --output build/atari/release/core-de.zip --manifest build/atari/release/core-de.manifest"
+
+[tasks."test:release-neost"]
+description = "Build, install and boot the German core ZIP on a clean MagiC image"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-release-smoke.py"
+
+# ABI, encoding, and host-helper checks
+
+[tasks."test:neost-server"]
+description = "Run NeoST server client protocol regression tests"
+dir = "{{ config_root }}"
+run = "python3 scripts/test_neost_server.py"
+
+[tasks."test:neost-helpers"]
+description = "Run NeoST host-side image, screen and session helper tests"
+dir = "{{ config_root }}/scripts"
+run = "python3 -m unittest test_neost_common test_neost_host test_neost_image test_neost_screen"
+
+[tasks."test:encoding"]
+description = "Verify strict Atari ST text conversion and C literal escapes"
+dir = "{{ config_root }}"
+run = "python3 -m unittest discover -s NON-TOS/atari-utf8-conversion -p 'test_*.py'"
+
+[tasks."test:abi"]
+description = "Compile the application ABI layout checks"
+dir = "{{ config_root }}"
+run = "scripts/atari-container run make -f Makefile.apps abi-check"
+
+[tasks."lint:cpx-abi"]
+description = "Reject CPX native callback access outside approved ABI bridges"
+dir = "{{ config_root }}"
+run = "python3 scripts/cpx_abi_lint.py"
+
+[tasks."test:cpx-abi"]
+description = "Lint CPX callbacks and execute bridge ABI regressions under QEMU"
+dir = "{{ config_root }}"
+run = "python3 scripts/cpx_abi_lint.py && python3 -m unittest discover -s scripts -p 'test_cpx_*.py'"
+
+# Component regressions (opt-in emulator scenarios)
 
 [tasks."test:mod-app-neost"]
 description = "Compare archived and GCC MOD_APP under NeoST"
@@ -195,16 +238,6 @@ description = "Compare the shipped and rebuilt COPS accessory lifecycle on MagiC
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-cops-accessory-smoke.py"
 
-[tasks."release:core"]
-description = "Assemble the deterministic German Atari/ST core installation ZIP"
-dir = "{{ config_root }}"
-run = "python3 scripts/make-release.py --output build/atari/release/core-de.zip --manifest build/atari/release/core-de.manifest"
-
-[tasks."test:release-neost"]
-description = "Build, install and boot the German core ZIP on a clean MagiC image"
-dir = "{{ config_root }}"
-run = "python3 scripts/neost-release-smoke.py"
-
 [tasks."test:keyb-sys-neost"]
 description = "Compare all six KEYB_SYS generators with their archives under NeoST"
 dir = "{{ config_root }}"
@@ -230,40 +263,14 @@ description = "Verify archived and rebuilt HARDCOPY installs the scr_dump hook o
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-hardcopy-smoke.py"
 
-[tasks."test:neost-server"]
-description = "Run NeoST server client protocol regression tests"
-dir = "{{ config_root }}"
-run = "python3 scripts/test_neost_server.py"
-
-[tasks."test:neost-helpers"]
-description = "Run NeoST host-side image, screen and session helper tests"
-dir = "{{ config_root }}/scripts"
-run = "python3 -m unittest test_neost_common test_neost_host test_neost_image test_neost_screen"
-
-[tasks."test:encoding"]
-description = "Verify strict Atari ST text conversion and C literal escapes"
-dir = "{{ config_root }}"
-run = "python3 -m unittest discover -s NON-TOS/atari-utf8-conversion -p 'test_*.py'"
-
-[tasks."test:abi"]
-description = "Compile the application ABI layout checks"
-dir = "{{ config_root }}"
-run = "scripts/atari-container run make -f Makefile.apps abi-check"
-
-[tasks."lint:cpx-abi"]
-description = "Reject CPX native callback access outside approved ABI bridges"
-dir = "{{ config_root }}"
-run = "python3 scripts/cpx_abi_lint.py"
-
-[tasks."test:cpx-abi"]
-description = "Lint CPX callbacks and execute bridge ABI regressions under QEMU"
-dir = "{{ config_root }}"
-run = "python3 scripts/cpx_abi_lint.py && python3 -m unittest discover -s scripts -p 'test_cpx_*.py'"
+# Artifact verification
 
 [tasks."verify:apps"]
 description = "Check expected application outputs; pass -- --build for a fresh build"
 dir = "{{ config_root }}"
 run = "python3 scripts/verify_builds.py"
+
+# Porting inventory and legacy project tools
 
 [tasks."ports:scan"]
 description = "Scan the port catalogue for remaining sources and legacy paths"
@@ -284,6 +291,13 @@ run = "python3 scripts/port_brief.py"
 description = "Run syntax-only probes over remaining sources"
 dir = "{{ config_root }}"
 run = "python3 scripts/compile_probe.py"
+
+# Special-purpose tasks: legacy registry and standalone test fixture
+
+[tasks."toolchain:publish"]
+description = "Build and push the Atari cross-toolchain image to GitLab"
+dir = "{{ config_root }}"
+run = "scripts/atari-container publish"
 
 [tasks."test:console-driver"]
 description = "Build the generic Pexec driver for console comparisons"

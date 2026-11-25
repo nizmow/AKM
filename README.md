@@ -93,6 +93,16 @@ mise run toolchain:shell
 For example, `mise run make -- BUILD_DIR=build/atari/experiment magic` keeps a
 separate build. Invoke tasks from repository subdirectories too.
 
+Start with `kernel` or `apps` to build. `release:core` assembles existing
+build outputs; `test:release-neost` builds, installs and boots the core package
+on a disposable image. Run `test:abi`, `test:encoding` or the relevant
+component regression when changing code; see the
+[test guide](docs/porting/TESTING.md) for fixtures and coverage.
+
+The `ports:*` tasks are for source inventory and migration, not prerequisites
+for normal builds. `toolchain:publish` targets the legacy GitLab registry;
+`test:console-driver` is only needed to build the test fixture on its own.
+
 ### Host tool versions
 
 | Tool | Version management |
