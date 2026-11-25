@@ -10,6 +10,7 @@
 #include <mint/osbind.h>
 #include <mint/mintbind.h>
 #include <mint/sysvars.h>
+#include <mint/trap14.h>
 #include <mint/errno.h>
 #include <signal.h>
 #include <stddef.h>
@@ -73,9 +74,9 @@ typedef struct
 
 /* MagiC's 'AnKr' XBIOS service.  The public MiNTLib bindings expose the
  * XBIOS trap directly, not Pure C's varargs xbios() helper. */
-static inline long vt_ankr_xbios(long code, void *arg)
+static inline long vt_ankr_xbios(short code, void *arg)
 {
-	return trap_14_wwll(39, (long) 'AnKr', code, (long) arg);
+	return trap_14_wlwl(39, 0x416e4b72L, code, (long) arg);
 }
 
 #endif

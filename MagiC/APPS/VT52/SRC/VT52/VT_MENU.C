@@ -268,11 +268,21 @@ WORD	clip_value( WORD value, WORD min, WORD max );
 void	scrap_clear( void );
 void	start_tos( BYTE *file );
 
-static LONG inherit( WORD dst_apid, WORD src_apid);
-static LONG uninherit( WORD apid);
-static LONG vt_app_Sconout( APPL *app, BYTE *str, LONG cnt );
-static LONG vt_app_Cconin( APPL *app);
-static LONG vt_getVDIESC( APPL *app);
+/* VT_BIOS.S marshals the kernel registers before calling these C bodies. */
+LONG vt_inherit(WORD dst_apid, WORD src_apid);
+LONG vt_uninherit(WORD apid);
+LONG vt_app_Sconout(APPL *app, BYTE *str, LONG cnt);
+LONG vt_app_Cconin(APPL *app);
+LONG vt_getVDIESC(APPL *app);
+
+LONG vt_inherit_entry(void);
+LONG vt_uninherit_entry(void);
+LONG vt_sout_entry(void);
+LONG vt_cin_entry(void);
+LONG vt_geometry_entry(void);
+
+static struct vtsys vtsys;
+static void *previous_vtsys;
 
 /*----------------------------------------------------------------------------------------*/
 /* Virtuelle Bildschirm-Workstation öffnen                                                */
@@ -1858,10 +1868,10 @@ void	init_rsrc( void )
 /*----------------------------------------------------------------------------------------*/
 void	set_vec( void )
 {
-	static struct vtsys vtsys;
+	/* Preserve a previously installed terminal provider on exit. */
 
 	vtsys.version = 0;
-	vtsys.getVDIESC = vt_getVDIESC;
+	vtsys.getVDIESC = vt_geometry_entry;
 /*
 	vtsys.winlist = (void *) app_window;
 	vtsys.interior_offs = (WORD) offsetof( WINDOW, interior );
@@ -1871,14 +1881,14 @@ void	set_vec( void )
 	vtsys.x_offs = (WORD) offsetof( TSCREEN, x );
 	vtsys.y_offs = (WORD) offsetof( TSCREEN, y );
 */
-	vtsys.sout_cooked = (void *) vt_app_Sconout;
-	vtsys.cin_cooked = (void *) vt_app_Cconin;
-	vtsys.inherit = (void *) inherit;
-	vtsys.uninherit = (void *) uninherit;
+	vtsys.sout_cooked = vt_sout_entry;
+	vtsys.cin_cooked = vt_cin_entry;
+	vtsys.inherit = vt_inherit_entry;
+	vtsys.uninherit = vt_uninherit_entry;
 	vtsys.bg = 0;
 	vtsys.fg = 0;
 
-	vt_ankr_xbios(6, &vtsys);
+	previous_vtsys = (void *) vt_ankr_xbios(6, &vtsys);
 /*
 	p_vt52_winlst = &app_window[0];
 	p_vt_interior_off = (WORD) offsetof( WINDOW, interior );
@@ -1943,7 +1953,8 @@ LONG	reset_vec( void )
 /*
 		p_vt52_winlst = 0L;
 */
-		vt_ankr_xbios(6, NULL);
+		if ((void *) vt_ankr_xbios(6, (void *) -1L) == &vtsys)
+			vt_ankr_xbios(6, previous_vtsys);
 		return( TRUE );
 	}
 	else
@@ -2666,9 +2677,9 @@ int main( int argc, char *argv[] )
 *
 ********************************************************************/
 
-static LONG vt_app_Sconout( APPL *app, BYTE *str, LONG cnt )
+LONG vt_app_Sconout( APPL *app, BYTE *str, LONG cnt )
 {
-	WINDOW *w = vtclients[app->apid].w;
+	WINDOW *w = app ? vtclients[app->apid].w : NULL;
 	return((w) ? vt_Cconout( w, str, cnt ) : -2L);
 }
 
@@ -2686,9 +2697,9 @@ static LONG vt_app_Sconout( APPL *app, BYTE *str, LONG cnt )
 *
 ********************************************************************/
 
-static LONG vt_app_Cconin( APPL *app)
+LONG vt_app_Cconin( APPL *app)
 {
-	WINDOW *w = vtclients[app->apid].w;
+	WINDOW *w = app ? vtclients[app->apid].w : NULL;
 	return((w) ? vt_Cconin( w ) : -2L);
 }
 
@@ -2705,7 +2716,7 @@ static LONG vt_app_Cconin( APPL *app)
 *
 ********************************************************************/
 
-static LONG inherit( WORD dst_apid, WORD src_apid)
+LONG vt_inherit( WORD dst_apid, WORD src_apid)
 {
 	VTCLIENT_INFO *vtis,*vtid;
 	WINDOW *window;
@@ -2736,7 +2747,7 @@ static LONG inherit( WORD dst_apid, WORD src_apid)
 *
 ********************************************************************/
 
-static LONG uninherit( WORD apid)
+LONG vt_uninherit( WORD apid)
 {
 	VTCLIENT_INFO *vti;
 	WINDOW *window;
@@ -2765,12 +2776,14 @@ static LONG uninherit( WORD apid)
 *
 ********************************************************************/
 
-static LONG vt_getVDIESC( APPL *app)
+LONG vt_getVDIESC( APPL *app)
 {
 	VTCLIENT_INFO *vti;
 	WINDOW *window;
 
 
+	if (!app)
+		return(ERROR);
 	vti = vtclients+app->apid;
 	window = vti->w;
 	if	(!window)

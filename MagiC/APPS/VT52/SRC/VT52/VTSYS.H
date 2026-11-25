@@ -28,12 +28,14 @@
 struct vtsys
 {
 	LONG	version;			/* Versionsnummer der Struktur */
-	LONG	(*getVDIESC)( APPL *app);
-	LONG	(*sout_cooked)( APPL *app, char *text, LONG len);
-	LONG	(*cin_cooked)( APPL *app );
-	/* neu: */
-	LONG	(*inherit)( WORD dst_apid, WORD src_apid);
-	LONG	(*uninherit)( WORD apid );
-	LONG	(*bg)( WORD apid );
-	LONG	(*fg)( WORD apid );
+	/* Native MagiC register entries, not C stack-callable functions. */
+	LONG	(*getVDIESC)(void);
+	LONG	(*sout_cooked)(void);
+	LONG	(*cin_cooked)(void);
+	LONG	(*inherit)(void);
+	LONG	(*uninherit)(void);
+	LONG	(*bg)(void);
+	LONG	(*fg)(void);
 };
+
+_Static_assert(sizeof(struct vtsys) == 32, "MagiC VTSYS table layout");

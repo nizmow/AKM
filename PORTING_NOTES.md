@@ -413,6 +413,12 @@ compile-time size/offset assertions guard the disk records. INF window
 coordinates are scanned as shorts, and fixed four-byte special-object keys
 are parsed through a separate NUL-terminated temporary buffer.
 
+Cached icon rows use the AES consumer's 16-bit-word-aligned stride
+`((w+15)>>4)*2*h` for both `G_ICON` and `G_CICON`. The fork-point `(w>>3)*h`
+matched only widths divisible by 16; existing 32/48-wide caches are unchanged.
+The stride change is source/arithmetic-verified; a non-16-wide CICON through
+the rebuilt desktop remains an untested boundary.
+
 Under NeoST 0.6.5, MegaSTE/4 MiB/monochrome, TOS 2.06 and a cloned MagiC disk:
 
 - The archived and GCC `-c` runs returned status 0. Their 2,256-byte starter
@@ -508,6 +514,8 @@ the SDK's native `long`, guarded at four bytes: `int32_t` is `int` here and is n
 a compatible `long *` target. INF scan/print helpers operate on shorts, including
 GRECT coordinates. The shared TOS-tail adapter preserves quoting and true ARGV.
 Edited source is UTF-8; RSC bytes and edited file contents remain Atari bytes.
+The word-separator literal keeps the original Atari bytes `F6-FA` as explicit
+octal escapes; UTF-8 characters would test different document bytes.
 
 Verification used NeoST 0.6.5, MegaSTE/4 MiB/monochrome/TOS 2.06 and disposable
 MagiC images. First, the rebuilt library passed edit/save, clipboard and options
@@ -525,6 +533,8 @@ Logs, screenshots and guest files are under
 `mise exec -- python -m unittest discover -s scripts -p 'test_elf_to_slb.py'`
 covers classic headers, base relocation including a 254-byte delta extension,
 BSS pointers, absolute/PC-relative exclusions and malformed relocation rejection.
+The linked SLB contains the separator bytes `F6 F7 F8 F9 FA`; word navigation
+against the archive was not rerun.
 
 | Component | TEXT | DATA | BSS | Symbols | File bytes |
 |---|---:|---:|---:|---:|---:|
@@ -1034,6 +1044,19 @@ C's register convention, including the BIOS output and XBIOS hooks. The
 terminal window is reopened and raised after `shel_write`; the public
 `shel_write` path leaves it below the desktop otherwise.
 
+`Puntaes` uses `trap_14_wlwl(39, 0x416e4b72L, subfn, arg)`; the `wwll` form
+truncates the magic to a word. The VTSYS table points at assembly entries in
+`VT_BIOS.S` that marshal MagiC's A0/A1/D0 arguments (and D0/D1 for inherit)
+into GCC stack arguments. Low-memory xconout vectors read their character as a
+word, and BIOS output without a VT52 window chains to the previous handler.
+
+A disposable TOS child launched through VT52 reported registration vector
+`0x001153fc`, `LINES=25`, `COLUMNS=80`, rendered cooked `Fwrite` output in the
+VT52 window and read one cooked input byte (`IN=1/67`), which also exercises
+window inheritance. The low-memory vector and non-client chain paths remain
+disassembly/source-verified: a non-AES child chains to the previous `rte`
+vector, so it cannot call those vectors safely for a guest check.
+
 `mise run test:vt52-neost` runs archived and rebuilt VT52 with the same German
 resource and a delayed TOS child. The child writes through the hooked BIOS
 console path, and the final terminal screens match pixel-for-pixel. Interactive
@@ -1058,11 +1081,25 @@ do not shrink that allocation with `realloc`: if it moves the buffer, the
 embedded pointers become stale. Keeping the loaded cache allocation intact
 restores the lower file icons and preserves a pixel-identical startup desktop.
 
+`APPLICAT.DAT` and the live `'AK'` attachment are GEMDOS `Malloc` blocks and
+must be released with `Mfree`, including rejected and replacement loads.
+`shel_get(NULL, -1)` returns an unsigned word despite GEMlib declaring a
+signed `short`; zero-extend it before allocating or indexing. Save bounds its
+`#_CTR` scan to the bytes actually read, rejects files above 65535 bytes,
+serializes through a bounded writer, and preserves the 128-byte opaque prefix.
+
 `mise run test:magxdesk-neost` clones the supplied MagiC image separately for
 the archived and rebuilt executables, installs the same resources and compares
 the desktop content region. The final run matched pixel-for-pixel; evidence is
 under `build/atari/neost-magxdesk-20261121-093550`. This covers only the
 initial desktop state, not the complete interaction surface.
+
+The cache and shell changes preserve that startup result. A `#_BUF 9000` boot
+produced no allocation alert, and 12 live APPLICAT `-c` saves left GEMDOS free
+memory unchanged (3,187,692 bytes before and after) with the desktop
+responsive. The >32 KiB Save and shell-buffer Save branches remain
+source-verified; the shipped INF is small and the desktop Save menu was not
+driven.
 
 Additional ABI boundaries:
 

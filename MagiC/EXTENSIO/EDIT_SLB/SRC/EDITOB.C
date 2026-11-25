@@ -553,7 +553,7 @@ static WORD open_scrap( WORD omode )
 
 static WORD c_is_sep( unsigned char c)
 {
-	return(NULL != strchr(" !..+-*/:..?[\\]{|}()~÷≈°•·" "\t", c));
+	return(NULL != strchr(" !..+-*/:..?[\\]{|}()~\366\367\370\371\372" "\t", c));
 }
 
 

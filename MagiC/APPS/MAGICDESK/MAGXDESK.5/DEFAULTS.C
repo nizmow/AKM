@@ -6,6 +6,17 @@
 
 #define  PGM_I_VERSION	1
 
+/*
+ * MAGX.INF layout as exposed through the AES shell buffer:
+ * the desktop status starts INF_DATA_OFFSET bytes after the '#_CTR'
+ * line.  Those bytes are the opaque control-field data, not text.
+ */
+#define INF_BUF_SIZE	65536U
+#define INF_READ_MAX	65535L
+#define INF_DATA_OFFSET	128U
+/* 0xffff is the kernel's "return the size" sentinel for shel_get(). */
+#define SHELL_IO_MAX	65534U
+
 #include "K.H"
 #include <stdlib.h>
 #include <string.h>
@@ -97,6 +108,11 @@ static void init_app_icons(void)
 *
 * Hilfsfunktion für load_app_icons()
 *
+* <buf> always belongs to the cache: APPLICAT allocates the live
+* 'AK' attachment with GEMDOS Malloc(), and load_app_icons() below
+* does the same for applicat.dat.  Release it with Mfree(), never
+* with libc free().
+*
 ****************************************************************/
 
 static int _load_app_icons(char *buf)
@@ -135,14 +151,14 @@ static int _load_app_icons(char *buf)
 
 	if ((ich->magic != 'AnKr') || (ich->version != 2))
 	{
-		free(buf);
+		(void) Mfree(buf);
 		return -1;
 	}
 
 	init_app_icons();		/* immer erst Standard-Icons */
 	if (apdatabuf)
 	{
-		free(apdatabuf);
+		(void) Mfree(apdatabuf);
 		n_apps = n_dfiles = n_paths = n_specs = 0L;
 	}
 
@@ -169,6 +185,12 @@ static int _load_app_icons(char *buf)
 	magic_rcfix.data = (char *) icons;
 	magic_rcfix.data += n_icons * sizeof(CICONBLK *);
 	rsrc_rcfix((RSHDR *) &magic_rcfix);
+
+	/*
+	 * Keep <buf> as the cache base and keep the GEMDOS block at the
+	 * size Malloc() returned.  rsrc_rcfix() stores absolute pointers
+	 * into this block, so Mshrink()/realloc() would make them stale.
+	 */
 
 	/* relozieren */
 
@@ -274,7 +296,10 @@ void load_app_icons(void)
 	else
 		goto err;
 
-	buf = malloc((size_t) flen);
+	if (flen < (long) sizeof(struct ico_head))
+		goto err;
+
+	buf = (char *) (uintptr_t) Malloc(flen);
 	if (!buf)
 	{
 		err:
@@ -286,7 +311,7 @@ void load_app_icons(void)
 	Fclose(fd);
 	if (retcode != flen)
 	{
-		free(buf);
+		(void) Mfree(buf);
 		return;
 	}
 
@@ -753,6 +778,10 @@ void set_desktop(void)
 ****************************************************************/
 
 static char *s;
+/* Only status_to_ascii() uses these; the scanner helpers above are
+   bounded by the trailing EOS in their input buffer. */
+static char *s_end;
+static int s_overflow;
 
 /*
 *  Liest eine Zeile bis zum Zeilenende.
@@ -828,6 +857,24 @@ static char scnflg(void)
 }
 
 
+/*
+*  Größe des AES- Shell- Puffers.
+*
+*  Der Wert -1 ist der MagiC- Sentinel "liefere die Puffergröße"
+*  (keine Byteanzahl).  GEMlib deklariert shel_get() mit einem
+*  vorzeichenbehafteten short, obwohl MagiC die Größe als unsigned
+*  int (0..65535) zurückgibt.  Daher das Ergebnis als unsigned short
+*  erweitern; 0 bedeutet nach MagiC- Dokumentation einen Fehler.
+*/
+
+static unsigned int shell_buf_size(void)
+{
+	int size = shel_get(NULL, (short) -1);
+
+	return (unsigned int) (unsigned short) size;
+}
+
+
 /****************************************************************
 *
 * Lädt bzw. setzt alle Defaults.
@@ -870,6 +917,7 @@ void load_status(int pass)
 
 	if (pass)
 	{
+		ln_icns = 0;	/* bei fehlenden INF- Daten alle Icons leeren */
 
 		/* zunächst sicherheitshalber Defaults setzen */
 		/* ------------------------------------------ */
@@ -945,16 +993,40 @@ void load_status(int pass)
 	/* Jetzt die Inf- Datei aus dem AES- Puffer holen */
 	/* ---------------------------------------------- */
 
-	len = shel_get(NULL, -1);	/* Länge des INF- Puffers ermitteln */
-	inf = malloc(len + 1);
+	len = shell_buf_size();		/* Länge des INF- Puffers ermitteln */
+	inf = malloc((size_t) len + 1);
 	if (inf == NULL)
 	{
 		err_alert(ENSMEM);
 		return;
 	}
-	inf[len] = EOS;
-	shel_get(inf, len);
-	s = inf + 128;			/* Beginn der Desktop- Daten */
+	inf[0] = EOS;
+	if (len >= INF_DATA_OFFSET)
+	{
+		unsigned int read_len =
+				(len > SHELL_IO_MAX) ? SHELL_IO_MAX : len;
+
+		/*
+		 * Eine Leselänge von 0xffff würde im 16-Bit- AES- Aufruf
+		 * wieder als Sentinel "liefere die Größe" ankommen.
+		 */
+		inf[read_len] = EOS;
+		if (!shel_get(inf, read_len))
+		{
+			inf[0] = EOS;
+			s = inf;		/* Lesefehler: Defaults verwenden */
+		}
+		else
+			s = inf + INF_DATA_OFFSET;	/* Beginn der Desktop- Daten */
+	}
+	else
+	{
+		/*
+		 * Ohne 128-Byte- Kontrollfeld gibt es keine Desktop- Daten;
+		 * nicht über <inf> hinaus lesen.
+		 */
+		s = inf;
+	}
 
 	ln_wind = 1;					/* erstes Fenster */
 	ln_pgms = 0;
@@ -1324,14 +1396,37 @@ void load_status(int pass)
 *
 * Hilfsfunktion für status_to_ascii()
 *
+* Hält immer ein Byte für das abschließende EOS frei.  Bei Überlauf
+* wird nicht weiter geschrieben; status_to_ascii() liefert dann -1.
+*
+****************************************************************/
+static void putchr(char c)
+{
+	if (s_overflow)
+		return;
+	if (s >= s_end - 1)
+	{
+		s_overflow = 1;
+		return;
+	}
+	*s++ = c;
+}
+
+
+/****************************************************************
+*
+* Hilfsfunktion für status_to_ascii()
+*
 ****************************************************************/
 static void prtdez(int i)
 {
-	*s++ = ' ';
-	sprintf(s, "%d", i);
-	while (*s++)
-		;
-	s--;
+	char buf[12];	/* Vorzeichen + 10 Ziffern + EOS */
+	const char *p;
+
+	sprintf(buf, "%d", i);
+	putchr(' ');
+	for (p = buf; *p; p++)
+		putchr(*p);
 }
 
 
@@ -1342,7 +1437,7 @@ static void prtdez(int i)
 ****************************************************************/
 static void prtflg(int i)
 {
-	*s++ = (i) ? '1' : '0';
+	putchr((i) ? '1' : '0');
 }
 
 
@@ -1353,9 +1448,8 @@ static void prtflg(int i)
 ****************************************************************/
 static void prtstr(const char *str)
 {
-	while ((*s++ = *str++) != '\0')
-		;
-	s--;
+	while (*str)
+		putchr(*str++);
 }
 
 
@@ -1365,7 +1459,7 @@ static void prtstr(const char *str)
 *
 ****************************************************************/
 
-static void status_to_ascii(char *inf)
+static int status_to_ascii(char *inf, unsigned int limit)
 {
 	register int i;
 	register WINDOW **pw,*w;
@@ -1374,7 +1468,12 @@ static void status_to_ascii(char *inf)
 	GRECT *g;
 
 
+	if (limit < 2)
+		return -1;
+
 	s = inf;
+	s_end = inf + limit;
+	s_overflow = 0;
 
 	/* 1. Zeile: "#_DSK MAGXDESK Vx.xx" */
 	/* -------------------------------- */
@@ -1410,7 +1509,7 @@ static void status_to_ascii(char *inf)
 	prtdez(desk_g.g_h);
 	prtdez(deflt_topwnr);
 	prtdez(settings.sort_mode - M_SNAME);
-	*s++ = ' ';
+	putchr(' ');
 	prtflg(settings.show_mode == M_ATEXT);
 /*
 	if (settings.points == M_8_PKT)
@@ -1421,16 +1520,16 @@ static void status_to_ascii(char *inf)
 	i = 10;
 
 	prtdez(i);
-	*s++ = ' ';
+	putchr(' ');
 	prtflg(settings.show_single_col);
 	prtflg(settings.show_file_size);
 	prtflg(settings.show_file_date);
 	prtflg(settings.show_file_time);
-	*s++ = ' ';
+	putchr(' ');
 	prtflg(settings.rtbutt_dclick);	/* Alt: blitstate */
 	prtflg(settings.cnfm_del);
 	prtflg(settings.cnfm_copy);
-	*s++ = settings.mode_ovwr + '0';
+	putchr(settings.mode_ovwr + '0');
 	prtflg(settings.check_free);
 	prtflg(settings.use_pp);
 	prtflg(settings.resident);
@@ -1439,7 +1538,7 @@ static void status_to_ascii(char *inf)
 	prtflg(settings.disk_extinfo);	/* V4: resvd0 */
 	prtflg(settings.dnam_init);
 	prtflg(settings.auto_reload_off);		/* v5.05, was resvd1 */
-	*s++ = '0';	/* resvd2 */
+	putchr('0');	/* resvd2 */
 
 	/* 3. Zeile: "#_DS2 aaaa b c x d e f g h i j"		*/
 	/* a	 settings.copy_resident						*/
@@ -1558,14 +1657,14 @@ static void status_to_ascii(char *inf)
 			else
 				prtdez(w->yscroll);
 
-			*s++ = ' ';
+			putchr(' ');
 			prtstr(w->path);
 			prtstr(w->maske);
 		}
 		else
 			prtdez(0);
-		*s++ = '\r';
-		*s++ = '\n';
+		putchr('\r');
+		putchr('\n');
 	}
 
 	/* "#_DIC typ c x y path" */
@@ -1579,17 +1678,17 @@ static void status_to_ascii(char *inf)
 		{
 			prtstr("#_DIC");
 			prtdez(ic->icon_type);
-			*s++ = ' ';
-			*s++ = (ic->isdisk) ? (ic->isdisk) : '@';
+			putchr(' ');
+			putchr((ic->isdisk) ? (ic->isdisk) : '@');
 			prtdez(o->ob_x - desk_g.g_x + o->ob_spec.iconblk->ib_xicon);
 			prtdez(o->ob_y - desk_g.g_y);
 			if (ic->icon_type >= ITYP_ORDNER)
 			{
-				*s++ = ' ';
+				putchr(' ');
 				prtstr(ic->text);
 			}
-			*s++ = '\r';
-			*s++ = '\n';
+			putchr('\r');
+			putchr('\n');
 		}
 	}
 
@@ -1604,8 +1703,8 @@ static void status_to_ascii(char *inf)
 	{
 		prtstr("#_DPG ");
 		prtstr(menuprograms[i].path);
-		*s++ = '\r';
-		*s++ = '\n';
+		putchr('\r');
+		putchr('\n');
 	}
 
 	/* "#_DPP line" */
@@ -1614,10 +1713,47 @@ static void status_to_ascii(char *inf)
 	prtstr("#_DPP ");
 	prtstr(tree_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext);
 	prtstr(tree_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext);
-	*s++ = '\r';
-	*s++ = '\n';
+	putchr('\r');
+	putchr('\n');
 
 	*s = '\0';
+	return s_overflow ? -1 : 0;
+}
+
+
+/*
+*  Sucht die Zeile "#_CTR" in den tatsächlich gelesenen <len> Bytes
+*  und liefert den Offset der darauffolgenden Daten.  Wie in den
+*  ausgelieferten MAGX.INF- Dateien darf ein Kommentar hinter #_CTR
+*  stehen; er wird bis zum Zeilenende übersprungen.  -1 bedeutet:
+*  Abschnitt fehlt oder eine Zeile endet nicht mit CR/LF.  Es wird nie
+*  über <inf> + <len> hinaus gelesen.
+*/
+
+static long find_ctr_data(const char *inf, long len)
+{
+	long pos = 0;
+
+	while (len - pos >= 5 && memcmp(inf + pos, "#_CTR", 5) != 0)
+	{
+		while (pos < len && inf[pos] != '\r')
+			pos++;
+		if (len - pos < 2 || inf[pos + 1] != '\n')
+			return -1;
+		pos += 2;
+	}
+
+	if (len - pos < 5)
+		return -1;
+
+	/* #_CTR gefunden: Rest der Zeile bis CR/LF überspringen. */
+	pos += 5;
+	while (pos < len && inf[pos] != '\r')
+		pos++;
+	if (len - pos < 2 || inf[pos + 1] != '\n')
+		return -1;
+
+	return pos + 2;
 }
 
 
@@ -1632,12 +1768,12 @@ void save_status(int is_inf)
 {
 	char *inf,*t;
 	int handle = 0;
-	long doserr;
+	long doserr,flen;
 	WINDOW *tw;
 
 
 	Mgraf_mouse(HOURGLASS);
-	inf = malloc(65536);
+	inf = malloc(INF_BUF_SIZE);
 	if (inf == NULL)
 	{
 		doserr = ENSMEM;
@@ -1668,48 +1804,114 @@ void save_status(int is_inf)
 		if (doserr < E_OK)
 			goto end_ret;
 
-		doserr = Fread(handle, 32768L, inf);
+		doserr = Fread(handle, INF_READ_MAX, inf);
 		if (doserr < E_OK)
 			goto end_ret;
+		flen = doserr;
 
-		s = inf;
-		while (strncmp(s, "#_CTR", 5))
+		if (flen == INF_READ_MAX)
 		{
-			if (!scnlin())
+			/*
+			 * Mehr als INF_READ_MAX Bytes: Beim Schreiben würde der
+			 * Rest verlorengehen.  Daher vor jeder Änderung ablehnen.
+			 */
+			char extra;
+
+			doserr = Fread(handle, 1L, &extra);
+			if (doserr < E_OK)
+				goto end_ret;
+			if (doserr > 0)
 			{
-				err2:
 				doserr = ERROR;
-				goto end_ret;			/* unerwartetes Dateiende */
+				goto end_ret;
 			}
 		}
-		if (!scnlin())
-			goto err2;
-		t = s;					/* Beginn der neuen Daten */
-		shel_get(s, 128);
+		inf[flen] = EOS;
+
+		doserr = find_ctr_data(inf, flen);
+		if (doserr < 0)
+		{
+			doserr = ERROR;
+			goto end_ret;		/* Abschnitt fehlt oder ist ungültig */
+		}
+
+		t = inf + doserr;			/* Beginn der neuen Daten */
+		if (t - inf > (long) (INF_BUF_SIZE - INF_DATA_OFFSET) ||
+				shell_buf_size() < INF_DATA_OFFSET)
+		{
+			doserr = ERROR;
+			goto end_ret;
+		}
+
+		if (!shel_get(t, INF_DATA_OFFSET))
+		{
+			doserr = ERROR;
+			goto end_ret;		/* Kontrollfeld nicht lesbar */
+		}
 		tw = top_window();
 		deflt_topwnr = (tw) ? tw->wnr : -1;
-		status_to_ascii(t + 128);
-		Fseek(t - inf, handle, SEEK_SET);	/* Dateizeiger auf Kontrollfeld */
-		doserr = Fwrite(handle, 128 + strlen(t + 128), t);
-		if (doserr != 128 + strlen(t + 128))
+		if (status_to_ascii(t + INF_DATA_OFFSET,
+				INF_BUF_SIZE -
+				(unsigned int) (t + INF_DATA_OFFSET - inf)) < 0)
 		{
-			if (doserr >= E_OK)
-				doserr = EWRITF;
-			goto end_ret;
+			doserr = ERROR;
+			goto end_ret;		/* Status paßt nicht in den Puffer */
+		}
+
+		Fseek(t - inf, handle, SEEK_SET);	/* Dateizeiger auf Kontrollfeld */
+		{
+			long outlen =
+					(long) INF_DATA_OFFSET +
+					(long) strlen(t + INF_DATA_OFFSET);
+
+			doserr = Fwrite(handle, outlen, t);
+			if (doserr != outlen)
+			{
+				if (doserr >= E_OK)
+					doserr = EWRITF;
+				goto end_ret;
+			}
 		}
 		(void) Fwrite(handle, 0L, (void *) (intptr_t) -1);
 	}
 	else
 	{
-		unsigned int len;
+		unsigned int len,read_len,put_len;
 
 		doserr = E_OK;
-		len = shel_get(NULL, -1);
-		shel_get(inf, len);
-		inf[len] = EOS;
+		len = shell_buf_size();
+		if (len < INF_DATA_OFFSET)
+		{
+			/*
+			 * Der Puffer kann das 128-Byte- Kontrollfeld nicht
+			 * aufnehmen; nichts überschreiben.
+			 */
+			Rform_alert(1, ALRT_OVL_AES_BUF);
+			goto end_ret;
+		}
+		read_len = (len > SHELL_IO_MAX) ? SHELL_IO_MAX : len;
+		if (!shel_get(inf, read_len))
+		{
+			Rform_alert(1, ALRT_OVL_AES_BUF);
+			goto end_ret;
+		}
+		inf[read_len] = EOS;
 		s = inf;
-		status_to_ascii(s + 128);
-		if (!shel_put(inf, 128 + ((unsigned int) strlen(inf+128) + 1)))
+		if (status_to_ascii(inf + INF_DATA_OFFSET,
+				INF_BUF_SIZE - INF_DATA_OFFSET) < 0)
+		{
+			Rform_alert(1, ALRT_OVL_AES_BUF);
+			goto end_ret;
+		}
+
+		put_len = INF_DATA_OFFSET +
+				((unsigned int) strlen(inf + INF_DATA_OFFSET) + 1);
+		if (put_len > len || put_len > SHELL_IO_MAX)
+		{
+			Rform_alert(1, ALRT_OVL_AES_BUF);
+			goto end_ret;
+		}
+		if (!shel_put(inf, put_len))
 			Rform_alert(1, ALRT_OVL_AES_BUF);
 	}
 
@@ -1753,7 +1955,7 @@ void reload_status(int drv)
 	olddrv = inf_name[0];
 	if (drv >= 0)
 		inf_name[0] = drv + 'A';
-	inf = malloc(65536);
+	inf = malloc(INF_BUF_SIZE);
 	if (inf == NULL)
 	{
 		doserr = ENSMEM;
@@ -1788,7 +1990,7 @@ void reload_status(int drv)
 		return;
 	}
 
-	doserr = Fread(handle, 65535L, inf);
+	doserr = Fread(handle, INF_READ_MAX, inf);
 	Fclose(handle);
 	if (doserr < E_OK)
 		goto err;

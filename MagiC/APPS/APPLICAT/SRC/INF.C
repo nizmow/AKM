@@ -296,6 +296,22 @@ static void calc_ic(int icn, int *o, char **rnam, char **inam)
 
 /****************************************************************
 *
+* Länge der Mono- bzw. einer Farbicon-Ebene.
+*
+* AESRSC rundet jede Bitmap-Zeile auf eine 16-Bit-Grenze auf.
+* Beide put_icondata-Durchläufe und der CICON-Fallback müssen
+* dieselbe Zeilenbreite verwenden.
+*
+****************************************************************/
+
+static long icon_bitmap_len(const ICONBLK *iblk)
+{
+	return (long) (((iblk->ib_wicon + 15) >> 4) * 2) * iblk->ib_hicon;
+}
+
+
+/****************************************************************
+*
 * Icon-Daten:
 *	action = 0:	Länge bestimmen
 *	action = 1:	Daten sichern
@@ -333,15 +349,13 @@ static long put_icondata(int action, int n_icn, int *ic, CICONBLK **cb,
 		{
 			case G_ICON:
 				ciblk.monoblk = *(o->ob_spec.iconblk);
-				mono_len = (ciblk.monoblk.ib_wicon >> 3) *
-						ciblk.monoblk.ib_hicon;
+				mono_len = icon_bitmap_len(&ciblk.monoblk);
 				cic = NULL;
 				break;
 
 			case G_CICON:
 				ciblk = *((CICONBLK *) (o->ob_spec.index));
-				mono_len = (ciblk.monoblk.ib_wicon >> 3) *
-					ciblk.monoblk.ib_hicon;
+				mono_len = icon_bitmap_len(&ciblk.monoblk);
 				/* Anzahl Icons berechnen */
 				cic = ciblk.mainlist;
 				if (!cic)	/* bin in Monochrom-Auflösung ? */
