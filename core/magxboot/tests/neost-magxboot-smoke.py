@@ -18,14 +18,17 @@ import subprocess
 import sys
 import tempfile
 
+COMPONENT = Path(__file__).resolve().parents[1]
+ROOT = COMPONENT.parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+
 from neost_common import acquire_headless, create_output, require, run, run_logged
 from neost_image import MagiCImage
 from neost_screen import diff_stats, read_ppm
 
-ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
 ARCHIVE = ROOT / "MagiC/Releases/MAGIC.A/AUTO/MAGXBOOT.TOS"
-ARCHIVED_PRG = ROOT / "MagiC/KERNEL/BIOS/ATARI/BOOT/MAGXBOOT.PRG"
+ARCHIVED_PRG = COMPONENT / "SRC/MAGXBOOT.PRG"
 REBUILT = BUILD / "apps/magxboot/MAGXBOOT.TOS"
 PROBE = BUILD / "apps/screen/SCREEN.PRG"
 LOADER_GUEST = "::/AUTO/MAGXBOOT.TOS"
@@ -142,7 +145,7 @@ def main() -> int:
             "normal PRG output is not the rebuilt TOS")
     check_rebuild(REBUILT, ARCHIVE)
     check_rebuild(BUILD / "apps/magxboot/MAGXBO32.PRG",
-                  ROOT / "MagiC/KERNEL/BIOS/ATARI/BOOT/MAGXBO32.PRG")
+                  COMPONENT / "SRC/MAGXBO32.PRG")
 
     try:
         output = create_output(args.output, parent=BUILD, prefix="neost-magxboot")

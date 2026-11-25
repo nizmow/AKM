@@ -20,11 +20,13 @@ import subprocess
 import sys
 import tempfile
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
+
 from neost_common import acquire_headless, create_output, require, run
 from neost_image import MagiCImage
 from neost_server import NeoSTServer
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[3]
 BUILD = ROOT / "build/atari"
 OSD = ROOT / "MagiC/KERNEL/VDI/DRIVERS/OSD"
 RELEASE = ROOT / "MagiC/Releases/MAGIC.A/GEMSYS"

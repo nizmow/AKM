@@ -21,11 +21,13 @@ import subprocess
 import sys
 import tempfile
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
+
 from neost_common import acquire_headless, create_output, require, run
 from neost_image import MagiCImage
 from neost_server import NeoSTServer
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[3]
 BUILD = ROOT / "build/atari"
 REBUILT = BUILD / "apps/osd/OFF016IP.OSD"
 PROBE = BUILD / "apps/off016ip/OFF016IP.PRG"

@@ -93,11 +93,13 @@ mise run toolchain:shell
 For example, `mise run make -- BUILD_DIR=build/atari/experiment magic` keeps a
 separate build. Invoke tasks from repository subdirectories too.
 
-Start with `kernel` or `apps` to build. `release:core` assembles existing
-build outputs; `test:release-neost` builds, installs and boots the core package
-on a disposable image. Run `test:abi`, `test:encoding` or the relevant
+Start with `kernel` or `apps` to build. `release:core` and `release:minimal`
+build and package their inputs; their NeoST tests install and boot the ZIPs on
+disposable images. Run `test:abi`, `test:encoding` or the relevant
 component regression when changing code; see the
-[test guide](docs/porting/TESTING.md) for fixtures and coverage.
+[test guide](docs/porting/TESTING.md) for coverage and the
+[MagiC disk fixture](docs/porting/TESTING.md#neost-magic-disk-fixture) for
+partition and host-drive setup.
 
 The `ports:*` tasks are for source inventory and migration, not prerequisites
 for normal builds. `toolchain:publish` targets the legacy GitLab registry;
@@ -141,7 +143,7 @@ Build the six keyboard-table generators with `mise run apps -- keyb-sys` into
 runs each archived/rebuilt pair in separate disposable EmuTOS guests and
 requires the generated `KEYTABLS.SYS` to match byte-for-byte.
 
-Build the MAGiC boot loader with `mise run apps -- magxboot` into
+Build the MAGiC boot loader from `core/magxboot/` with `mise run apps -- magxboot` into
 `build/atari/apps/magxboot/`: `MAGXBOOT.TOS`, `MAGXBOOT.PRG` and the `OUTSIDE`
 variant `MAGXBO32.PRG`. `mise run test:magxboot-neost` boots the shipped
 loader, the rebuild and a missing-loader clone on disposable MagiC images and
@@ -252,8 +254,8 @@ and byte-identical `.NOT` output.
 
 `mise run apps -- mgsearch` builds `build/atari/apps/mgsearch/`: `MGSEARCH.APP`
 and `MGSEARCH.RSC`. The target compiles the consumer-specific `GEMUTILS`/
-`WINDOWS` variant and an app-local copy of `MAGXDESK.5/PATTERN.C` against public
-GEMlib; the older `MAGXLIB.LIB` dependency is not linked.
+`WINDOWS` variant and an app-local copy of `core/magxdesk/SRC/PATTERN.C`
+against public GEMlib; the older `MAGXLIB.LIB` dependency is not linked.
 
 `mise run apps -- mgcopy` builds `build/atari/apps/mgcopy/`: `MGCOPY.APP` and
 its German `MGCOPY.RSC`. The port uses the shared `GEMUT_MT.C` helper, public
@@ -277,13 +279,13 @@ terminal session with a delayed TOS child; the final screens match
 pixel-for-pixel.
 
 `mise run apps -- magxdesk` builds `build/atari/apps/magxdesk/MAGXDESK.APP`
-from the version-5 C sources using MiNTLib/GEMlib and the default application
-ABI; it does not use archived Pure C objects. `mise run test:magxdesk-neost`
+from the version-5 C sources in `core/magxdesk/`, using MiNTLib/GEMlib and the
+default application ABI; it does not use archived Pure C objects. `mise run test:magxdesk-neost`
 compares the rebuilt and archived desktops on separate cloned MagiC images;
 the desktop content matches pixel-for-pixel. Version 4 remains separate.
 
-`mise run apps -- mcmd` builds the German command interpreter as
-`build/atari/apps/mcmd/de/MCMD.TOS`. Select `MCMD_LANG=en` or `MCMD_LANG=fr`,
+`mise run apps -- mcmd` builds the German command interpreter from `core/mcmd/`
+as `build/atari/apps/mcmd/de/MCMD.TOS`. Select `MCMD_LANG=en` or `MCMD_LANG=fr`,
 or build all three with `mise run apps -- mcmd-languages`. VASM emits the TOS
 executable directly from normalized assembly; no archived MAS/ALN tools or
 objects are used. `mise run test:mcmd-neost` compares batch execution and guest
@@ -345,8 +347,9 @@ Run `mise run test:mgsearch-neost` (or `python3 scripts/neost-mgsearch-smoke.py`
 to compare the archived and rebuilt MGSEARCH dialog and `*.ZZZ` search-result
 screens on identical cloned images.
 
-Run `mise run test:mgcopy-neost` (or `python3 scripts/neost-mgcopy-smoke.py`)
-to compare MGCOPY copy, move, alias and delete effects on cloned MagiC images.
+MGCOPY lives in [`core/mgcopy/`](core/mgcopy), with its NeoST scenario and
+guest probe in `tests/`. Run `mise run test:mgcopy-neost` to check copy,
+move, alias and delete effects against the seeded files on a cloned MagiC image.
 
 Run `mise run test:cops-neost` (or `python3 scripts/neost-cops-smoke.py`)
 to compare the COPS panel and its `MAGXCONF.CPX`/`TSLICE.CPX` dialogs with the
@@ -425,6 +428,12 @@ installs only the ZIP on a cleaned MagiC clone and boots MAGXDESK and COPS.
 PDLG.SLB, Mac/TT/Falcon variants and historical demos are excluded; retained
 Release files and third-party boot drivers are recorded separately, not
 claimed as rebuilt.
+
+For the boot-only German mono MegaSTE profile, run `mise run release:minimal`
+to build `build/atari/release/minimal-de.zip` and its manifest. This profile
+ships the kernel, loader, MAGXDESK, MCMD fallback and mono VDI drivers without
+COPS, WBDAEMON, optional extensions or third-party CPXs.
+`mise run test:release-minimal-neost` checks the clean boot.
 
 The VDI `SETUP.C` listed in `MAGICVDI.PRJ` is linked alongside the `M.INP`
 modules. VASM's `-spaces` option is required for MAS expressions such as relative

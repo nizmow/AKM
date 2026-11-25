@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""Assemble a deterministic German Atari/ST core installation ZIP."""
+"""Build and package a deterministic German Atari/ST installation ZIP."""
 from __future__ import annotations
 
 import argparse
 import hashlib
 import re
 import sys
+import subprocess
 import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-BUILD = ROOT / "build/atari"
-APPS = BUILD / "apps"
+APPS = Path("apps")
 RELEASE = ROOT / "MagiC/Releases/MAGIC.A"
 
 REBUILT = {
-    BUILD / "MAGIC.RAM": "MAGIC.RAM",
+    Path("MAGIC.RAM"): "MAGIC.RAM",
     APPS / "magxboot/MAGXBOOT.TOS": "AUTO/MAGXBOOT.TOS",
     APPS / "magxdesk/MAGXDESK.APP": "GEMSYS/GEMDESK/MAGXDESK.APP",
     APPS / "magxdesk/MAGXDESK.RSC": "GEMSYS/GEMDESK/MAGXDESK.RSC",
@@ -49,11 +49,11 @@ REBUILT = {
     APPS / "winframe/WINFRAME.RSC": "GEMSYS/MAGIC/XTENSION/WINFRAME.RSC",
     APPS / "load-img/LOAD_IMG.SLB": "GEMSYS/MAGIC/XTENSION/LOAD_IMG.SLB",
     APPS / "mgedit/EDITOBJC.SLB": "GEMSYS/MAGIC/XTENSION/EDITOBJC.SLB",
-    BUILD / "apps/screen/MFA2.SYS": "GEMSYS/MFA2.SYS",
-    BUILD / "apps/screen/MFA4.SYS": "GEMSYS/MFA4.SYS",
-    BUILD / "apps/screen/MFA16.SYS": "GEMSYS/MFA16.SYS",
-    BUILD / "apps/screen/MFA256.SYS": "GEMSYS/MFA256.SYS",
-    BUILD / "apps/screen/MFA32K.SYS": "GEMSYS/MFA32K.SYS",
+    APPS / "screen/MFA2.SYS": "GEMSYS/MFA2.SYS",
+    APPS / "screen/MFA4.SYS": "GEMSYS/MFA4.SYS",
+    APPS / "screen/MFA16.SYS": "GEMSYS/MFA16.SYS",
+    APPS / "screen/MFA256.SYS": "GEMSYS/MFA256.SYS",
+    APPS / "screen/MFA32K.SYS": "GEMSYS/MFA32K.SYS",
     APPS / "osd/OFF002.OSD": "GEMSYS/OFF002.OSD",
     APPS / "osd/OFF004IP.OSD": "GEMSYS/OFF004IP.OSD",
     APPS / "osd/OFF016IP.OSD": "GEMSYS/OFF016IP.OSD",
@@ -64,6 +64,12 @@ REBUILT = {
     APPS / "osd/OFF32KFL.OSD": "GEMSYS/OFF32KFL.OSD",
     APPS / "osd/OFF32KPK.OSD": "GEMSYS/OFF32KPK.OSD",
     APPS / "osd/OFF65KPK.OSD": "GEMSYS/OFF65KPK.OSD",
+}
+
+MINIMAL_FILES = {
+    "MAGIC.RAM", "AUTO/MAGXBOOT.TOS", "GEMSYS/GEMDESK/MCMD.TOS",
+    "GEMSYS/GEMDESK/MAGXDESK.APP", "GEMSYS/GEMDESK/MAGXDESK.RSC",
+    "GEMSYS/GEMDESK/MAGXDESL.RSC", "GEMSYS/MFA2.SYS", "GEMSYS/OFF002.OSD",
 }
 
 RETAINED = [
@@ -101,21 +107,35 @@ def sanitized_inf(path: Path) -> bytes:
     return data
 
 
-def collect() -> dict[str, tuple[bytes, str]]:
+def build(build_dir: Path, rebuilt: dict[Path, str]) -> None:
+    make = [str(ROOT / "scripts/atari-container"), "run", "make", "-j4", "-f"]
+    subprocess.run([*make, "Makefile.atari", f"BUILD_DIR={build_dir}",
+                    str(build_dir / "MAGIC.RAM")], cwd=ROOT, check=True)
+    subprocess.run([*make, "Makefile.apps", f"BUILD_DIR={build_dir / APPS}",
+                    *(str(build_dir / path) for path in rebuilt if path.parts[0] == "apps")],
+                   cwd=ROOT, check=True)
+
+
+def collect(build_dir: Path, rebuilt: dict[Path, str], *,
+            minimal: bool) -> dict[str, tuple[bytes, str]]:
     entries: dict[str, tuple[bytes, str]] = {}
-    for local, guest in REBUILT.items():
+    for relative, guest in rebuilt.items():
+        local = ROOT / build_dir / relative
         if not local.is_file():
             raise SystemExit(f"rebuilt input missing: {local}")
         data = local.read_bytes()
         if not data:
             raise SystemExit(f"rebuilt input empty: {local}")
         entries[guest] = (data, f"rebuilt {local.relative_to(ROOT)}")
-    for local in expand(RETAINED):
-        guest = str(local.relative_to(RELEASE)).replace("\\", "/")
-        if guest in entries:
-            continue
-        data = sanitized_inf(local) if guest == "MAGX.INF" else local.read_bytes()
-        entries[guest] = (data, f"retained MAGIC.A/{guest}")
+    if minimal:
+        entries["MAGX.INF"] = ((ROOT / "core/MAGX.INF").read_bytes(), "repository core/MAGX.INF")
+    else:
+        for local in expand(RETAINED):
+            guest = local.relative_to(RELEASE).as_posix()
+            if guest in entries:
+                continue
+            data = sanitized_inf(local) if guest == "MAGX.INF" else local.read_bytes()
+            entries[guest] = (data, f"retained MAGIC.A/{guest}")
     entries["LICENSE"] = ((ROOT / "LICENSE").read_bytes(), "repository GPLv3 text")
     return entries
 
@@ -134,10 +154,29 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--manifest", type=Path)
+    parser.add_argument("--profile", choices=("core", "minimal"), default="core")
+    parser.add_argument("--build-dir", type=Path, default=Path("build/atari"),
+                        help="build directory inside the repository")
+    parser.add_argument("--skip-build", action="store_true",
+                        help="pack already-built inputs without invoking Make")
     args = parser.parse_args()
-    entries = collect()
+    try:
+        build_dir = (ROOT / args.build_dir).resolve().relative_to(ROOT)
+    except ValueError:
+        parser.error("--build-dir must be inside the repository")
+    minimal = args.profile == "minimal"
+    rebuilt = {path: guest for path, guest in REBUILT.items()
+               if not minimal or guest in MINIMAL_FILES}
+    if not args.skip_build:
+        try:
+            build(build_dir, rebuilt)
+        except subprocess.CalledProcessError as error:
+            return error.returncode
+    entries = collect(build_dir, rebuilt, minimal=minimal)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
     write_zip(entries, args.output)
     if args.manifest:
+        args.manifest.parent.mkdir(parents=True, exist_ok=True)
         lines = [f"{hashlib.sha256(data).hexdigest()}  {name}  {source}"
                  for name, (data, source) in sorted(entries.items())]
         args.manifest.write_text("\n".join(lines) + "\n")

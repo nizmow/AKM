@@ -32,17 +32,20 @@ MGSEARCH_OBJECTS := $(patsubst $(MGSEARCH_DIR)/%.C,$(BUILD_DIR)/mgsearch/%.o,$(M
   $(BUILD_DIR)/mgsearch/GEMUTILS.o $(BUILD_DIR)/mgsearch/WINDOWS.o \
   $(BUILD_DIR)/mgsearch/PATTERN.o
 
-MAGXDESK_DIR := MagiC/APPS/MAGICDESK/MAGXDESK.5
+MAGXDESK_DIR := core/magxdesk/SRC
+MAGXDESK_OBJ_DIR := $(BUILD_DIR)/magxdesk/obj
 MAGXDESK_SOURCES := $(addprefix $(MAGXDESK_DIR)/,MAGXDESK.C SPEC.C \
   DEFAULTS.C DIALOGS.C DLG_INFO.C DWINDOWS.C FILES.C IMGLOAD.C KACHEL.C \
   KLICK.C ALLG.C DMENU.C DKLICK.C PATTERN.C LL.C SHELSORT.C)
-MAGXDESK_OBJECTS := $(patsubst $(MAGXDESK_DIR)/%.C,$(BUILD_DIR)/magxdesk/%.o,$(MAGXDESK_SOURCES))
-MGCOPY_DIR := MagiC/APPS/MGCOPY/SRC
+MAGXDESK_OBJECTS := $(patsubst $(MAGXDESK_DIR)/%.C,$(MAGXDESK_OBJ_DIR)/%.o,$(MAGXDESK_SOURCES))
+MGCOPY_ROOT := core/mgcopy
+MGCOPY_DIR := $(MGCOPY_ROOT)/SRC
 MGCOPY_GEMUT_DIR := MagiC/APPS/APPLICAT/SRC/IMPORT
-MGCOPY_INCLUDES := -I"$(MGCOPY_DIR)" -I"$(MGCOPY_GEMUT_DIR)"
+MGCOPY_INCLUDES := -I"$(MGCOPY_DIR)" -I"MagiC/APPS" -I"$(MGCOPY_GEMUT_DIR)"
 MGCOPY_SOURCES := $(addprefix $(MGCOPY_DIR)/,MGCOPY.C CPFILES.C BEG_DIAL.C DAT_DIAL.C)
-MGCOPY_OBJECTS := $(patsubst $(MGCOPY_DIR)/%.C,$(BUILD_DIR)/mgcopy/%.o,$(MGCOPY_SOURCES)) \
-  $(BUILD_DIR)/mgcopy/GEMUT_MT.o
+MGCOPY_OBJ_DIR := $(BUILD_DIR)/mgcopy/obj
+MGCOPY_OBJECTS := $(patsubst $(MGCOPY_DIR)/%.C,$(MGCOPY_OBJ_DIR)/%.o,$(MGCOPY_SOURCES)) \
+  $(MGCOPY_OBJ_DIR)/GEMUT_MT.o
 MGFORMAT_DIR := MagiC/APPS/MGFORMAT/SRC
 MGFORMAT_GEMUT_DIR := MagiC/APPS/APPLICAT/SRC/IMPORT
 MGFORMAT_INCLUDES := -I"$(MGFORMAT_DIR)" -I"$(MGFORMAT_GEMUT_DIR)"
@@ -75,15 +78,18 @@ ifeq ($(COPS_OUTPUT_LOWER),$(COPS_SOURCE_LOWER))
 $(error BUILD_DIR=$(BUILD_DIR) aliases the COPS source directory)
 endif
 
-MCMD_DIR := MagiC/APPS/CMD/SRC
+MCMD_ROOT := core/mcmd
+MCMD_DIR := $(MCMD_ROOT)/SRC
 MCMD_LANG ?= de
 MAS_NORMALIZER := MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py
 
 # First standalone OSD port. The archived MIN-ATARI binary is the structural
 # reference: it is the same V4.10 source and must match byte-for-byte.
-OSD002_DIR := MagiC/KERNEL/VDI/SRC/MAGIC.DRV/OSD
+OSD_ROOT := core/osd
+OSD_SOURCE_DIR := $(OSD_ROOT)/SRC
+OSD_TEST_DIR := $(OSD_ROOT)/tests
 OSD_INCLUDE_DIR := MagiC/KERNEL/VDI/SRC/MAGICVDI.2/INCLUDE
-OSD002_SOURCE := $(OSD002_DIR)/OFF002.S
+OSD002_SOURCE := $(OSD_SOURCE_DIR)/OFF002.S
 OSD002_NORMALIZED := $(BUILD_DIR)/osd/src/OFF002.S
 OSD002_INCLUDES := $(addprefix $(BUILD_DIR)/osd/src/,\
   LINEA.I TOS.I SEEDFILL.I NVDI_WK.I VDI.I DRIVER.I)
@@ -111,17 +117,17 @@ $(OSD002_OUTPUT): $(OSD002_NORMALIZED) $(OSD002_INCLUDES) Makefile.apps
 off002: $(OSD002_OUTPUT)
 off002-test-driver: $(BUILD_DIR)/off002/OFF002.PRG
 
-$(BUILD_DIR)/off002/OFF002.PRG: MagiC/KERNEL/VDI/TESTDATA/OFF002.C Makefile.apps
+$(BUILD_DIR)/off002/OFF002.PRG: $(OSD_TEST_DIR)/OFF002.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
-	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+	  -MF "$@.d" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 # Same V4.10 source family as OFF002, with a 4-colour/2-plane header. The
 # MIN-ATARI archive is the byte reference; the Release driver is V4.11.
 OSD004IP_NORMALIZED := $(BUILD_DIR)/osd/src/OFF004IP.S
 OSD004IP_OUTPUT := $(BUILD_DIR)/osd/OFF004IP.OSD
 
-$(OSD004IP_NORMALIZED): $(OSD002_DIR)/OFF004IP.S $(MAS_NORMALIZER) Makefile.apps
+$(OSD004IP_NORMALIZED): $(OSD_SOURCE_DIR)/OFF004IP.S $(MAS_NORMALIZER) Makefile.apps
 	mkdir -p "$(@D)"
 	python3 $(MAS_NORMALIZER) "$<" "$@"
 
@@ -134,16 +140,16 @@ $(OSD004IP_OUTPUT): $(OSD004IP_NORMALIZED) $(OSD002_INCLUDES) Makefile.apps
 off004ip: $(OSD004IP_OUTPUT)
 off004ip-test-driver: $(BUILD_DIR)/off004ip/OFF004IP.PRG
 
-$(BUILD_DIR)/off004ip/OFF004IP.PRG: MagiC/KERNEL/VDI/TESTDATA/OFF004IP.C Makefile.apps
+$(BUILD_DIR)/off004ip/OFF004IP.PRG: $(OSD_TEST_DIR)/OFF004IP.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
-	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+	  -MF "$@.d" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 # 16-colour, 4-plane interleaved offscreen driver from the same source family.
 OSD016IP_NORMALIZED := $(BUILD_DIR)/osd/src/OFF016IP.S
 OSD016IP_OUTPUT := $(BUILD_DIR)/osd/OFF016IP.OSD
 
-$(OSD016IP_NORMALIZED): $(OSD002_DIR)/OFF016IP.S $(MAS_NORMALIZER) Makefile.apps
+$(OSD016IP_NORMALIZED): $(OSD_SOURCE_DIR)/OFF016IP.S $(MAS_NORMALIZER) Makefile.apps
 	mkdir -p "$(@D)"
 	python3 $(MAS_NORMALIZER) "$<" "$@"
 
@@ -156,16 +162,16 @@ $(OSD016IP_OUTPUT): $(OSD016IP_NORMALIZED) $(OSD002_INCLUDES) Makefile.apps
 off016ip: $(OSD016IP_OUTPUT)
 off016ip-test-driver: $(BUILD_DIR)/off016ip/OFF016IP.PRG
 
-$(BUILD_DIR)/off016ip/OFF016IP.PRG: MagiC/KERNEL/VDI/TESTDATA/OFF016IP.C Makefile.apps
+$(BUILD_DIR)/off016ip/OFF016IP.PRG: $(OSD_TEST_DIR)/OFF016IP.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
-	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+	  -MF "$@.d" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 # 256-colour, 8-plane interleaved offscreen driver.
 OSD256IP_NORMALIZED := $(BUILD_DIR)/osd/src/OFF256IP.S
 OSD256IP_OUTPUT := $(BUILD_DIR)/osd/OFF256IP.OSD
 
-$(OSD256IP_NORMALIZED): $(OSD002_DIR)/OFF256IP.S $(MAS_NORMALIZER) Makefile.apps
+$(OSD256IP_NORMALIZED): $(OSD_SOURCE_DIR)/OFF256IP.S $(MAS_NORMALIZER) Makefile.apps
 	mkdir -p "$(@D)"
 	python3 $(MAS_NORMALIZER) "$<" "$@"
 
@@ -178,10 +184,10 @@ $(OSD256IP_OUTPUT): $(OSD256IP_NORMALIZED) $(OSD002_INCLUDES) Makefile.apps
 off256ip: $(OSD256IP_OUTPUT)
 off256ip-test-driver: $(BUILD_DIR)/off256ip/OFF256IP.PRG
 
-$(BUILD_DIR)/off256ip/OFF256IP.PRG: MagiC/KERNEL/VDI/TESTDATA/OFF256IP.C Makefile.apps
+$(BUILD_DIR)/off256ip/OFF256IP.PRG: $(OSD_TEST_DIR)/OFF256IP.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
-	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+	  -MF "$@.d" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 # Remaining packed/direct-colour OSD drivers. Their archived references span
 # different source versions, so parity is decided per target, not assumed.
@@ -193,7 +199,7 @@ OSD_BATCH_OUTPUTS := $(addprefix $(BUILD_DIR)/osd/,$(addsuffix .OSD,$(OSD_BATCH_
 OSD_BATCH_PROBES := $(addprefix $(BUILD_DIR)/osd-probes/,$(addsuffix .PRG,$(OSD_BATCH_NAMES))) \
   $(BUILD_DIR)/osd-probes/OFF65KPK.PRG
 
-$(OSD_BATCH_NORMALIZED): $(BUILD_DIR)/osd/src/%.S: $(OSD002_DIR)/%.S $(MAS_NORMALIZER) Makefile.apps
+$(OSD_BATCH_NORMALIZED): $(BUILD_DIR)/osd/src/%.S: $(OSD_SOURCE_DIR)/%.S $(MAS_NORMALIZER) Makefile.apps
 	mkdir -p "$(@D)"
 	python3 $(MAS_NORMALIZER) "$<" "$@"
 
@@ -213,7 +219,7 @@ $(BUILD_DIR)/osd/OFF256PK.OSD: $(BUILD_DIR)/osd/src/OFF256PK.S $(OSD002_INCLUDES
 # OFF65KPK.S comes from a checkout whose local `include\*.inc` tree is absent;
 # every other OSD source names the shared MAGICVDI.2 includes as `.I`. That
 # include tree also defined the `MD_*` write-mode aliases as VDI.I's names.
-$(BUILD_DIR)/osd/src/OFF65KPK.S: $(OSD002_DIR)/OFF65KPK.S $(MAS_NORMALIZER) Makefile.apps
+$(BUILD_DIR)/osd/src/OFF65KPK.S: $(OSD_SOURCE_DIR)/OFF65KPK.S $(MAS_NORMALIZER) Makefile.apps
 	mkdir -p "$(@D)"
 	python3 $(MAS_NORMALIZER) "$<" "$@"
 	sed -i -E -e 's/\.INC"/.I"/g' -e 's/\bMD_REPLACE\b/REPLACE/g' \
@@ -225,10 +231,10 @@ $(BUILD_DIR)/osd/OFF65KPK.OSD: $(BUILD_DIR)/osd/src/OFF65KPK.S $(OSD002_INCLUDES
 	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 \
 	  -I"$(BUILD_DIR)/osd/src/" -o "$@" "$<"
 
-$(OSD_BATCH_PROBES): $(BUILD_DIR)/osd-probes/%.PRG: MagiC/KERNEL/VDI/TESTDATA/%.C Makefile.apps
+$(OSD_BATCH_PROBES): $(BUILD_DIR)/osd-probes/%.PRG: $(OSD_TEST_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
-	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+	  -MF "$@.d" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 .PHONY: osd-batch off016pk off256pk off32kfl off32kpk off16mov off65kpk \
   off016pk-test-driver off256pk-test-driver off32kfl-test-driver \
@@ -250,7 +256,8 @@ off65kpk-test-driver: $(BUILD_DIR)/osd-probes/OFF65KPK.PRG
 # MFA (Atari) and MFM (MagiCMac) screen drivers. The older MFM sources still
 # name the NVDI field at offset 196 `_nvdi_PixMap_ptr`; the current include
 # calls the same field `_nvdi_vdi_setup_ptr`.
-SCREEN_DIR := MagiC/KERNEL/VDI/SRC/MAGIC.DRV
+SCREEN_MFA_DIR := core/mfa/SRC
+SCREEN_MFM_DIR := MagiC/KERNEL/VDI/SRC/MAGIC.DRV/MFM
 SCREEN_MFA_NAMES := MFA2 MFA4 MFA16 MFA256 MFA32K
 SCREEN_MFM_NAMES := MFM2 MFM16 MFM16IP MFM16M MFM256 MFM32K MFM4IP
 SCREEN_NAMES := $(SCREEN_MFA_NAMES) $(SCREEN_MFM_NAMES)
@@ -266,12 +273,12 @@ $(BUILD_DIR)/screen/src/%.I: $(OSD_INCLUDE_DIR)/%.I $(MAS_NORMALIZER) Makefile.a
 	python3 $(MAS_NORMALIZER) "$<" "$@"
 
 $(addprefix $(BUILD_DIR)/screen/src/,$(addsuffix .S,$(SCREEN_MFA_NAMES))): \
-  $(BUILD_DIR)/screen/src/%.S: $(SCREEN_DIR)/MFA/%.S $(MAS_NORMALIZER) Makefile.apps
+  $(BUILD_DIR)/screen/src/%.S: $(SCREEN_MFA_DIR)/%.S $(MAS_NORMALIZER) Makefile.apps
 	mkdir -p "$(@D)"
 	python3 $(MAS_NORMALIZER) "$<" "$@"
 
 $(addprefix $(BUILD_DIR)/screen/src/,$(addsuffix .S,$(SCREEN_MFM_NAMES))): \
-  $(BUILD_DIR)/screen/src/%.S: $(SCREEN_DIR)/MFM/%.S $(MAS_NORMALIZER) Makefile.apps
+  $(BUILD_DIR)/screen/src/%.S: $(SCREEN_MFM_DIR)/%.S $(MAS_NORMALIZER) Makefile.apps
 	mkdir -p "$(@D)"
 	python3 $(MAS_NORMALIZER) "$<" "$@"
 
@@ -308,7 +315,7 @@ mfm256: $(BUILD_DIR)/screen/MFM256.SYS
 mfm32k: $(BUILD_DIR)/screen/MFM32K.SYS
 mfm4ip: $(BUILD_DIR)/screen/MFM4IP.SYS
 
-MAGXBOOT_DIR := MagiC/KERNEL/BIOS/ATARI/BOOT
+MAGXBOOT_DIR := core/magxboot/SRC
 MAGXBOOT_SRC := $(BUILD_DIR)/magxboot/src
 MAGXBOOT_OUTPUTS := $(addprefix $(BUILD_DIR)/magxboot/,MAGXBOOT.TOS MAGXBOOT.PRG MAGXBO32.PRG)
 
@@ -379,14 +386,14 @@ $(BUILD_DIR)/mcmd/%/MCMD.TOS: $(MCMD_NORMALIZED) Makefile.apps
 	$(VASM) -Ftos -m68000 -noesc -DCOUNTRY=$$country \
 	  -I"$(BUILD_DIR)/mcmd/src/" -o "$@" "$(BUILD_DIR)/mcmd/src/CMD.S"
 
-$(BUILD_DIR)/mcmd/NEOSTART.PRG: MagiC/APPS/CMD/TESTDATA/NEOSTART.C Makefile.apps
+$(BUILD_DIR)/mcmd/NEOSTART.PRG: $(MCMD_ROOT)/tests/NEOSTART.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
-$(BUILD_DIR)/mcmd/CHILD.TTP: MagiC/APPS/CMD/TESTDATA/CHILD.C MagiC/APPS/TOS_ARGS.H Makefile.apps
+$(BUILD_DIR)/mcmd/CHILD.TTP: $(MCMD_ROOT)/tests/CHILD.C MagiC/APPS/TOS_ARGS.H Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"MagiC/APPS" -MMD -MP \
 	  -MF "$(@:.TTP=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
 MAGXCONF_DIR := MagiC/APPS/MAGXCONF/SRC
@@ -528,7 +535,7 @@ $(BUILD_DIR)/mgview/%.o: $(MGVIEW_DIR)/%.C Makefile.apps
 $(BUILD_DIR)/mgview/MGVIEW.APP: $(MGVIEW_OBJECTS) Makefile.apps
 	$(CC) $(APP_FLAGS) $(MGVIEW_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
-$(BUILD_DIR)/magxdesk/%.o: $(MAGXDESK_DIR)/%.C Makefile.apps
+$(MAGXDESK_OBJ_DIR)/%.o: $(MAGXDESK_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MAGXDESK_DIR)" \
 	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
@@ -613,12 +620,12 @@ $(KEYB_OUTPUTS): $(BUILD_DIR)/keyb-sys/%.PRG: $(KEYB_DIR)/%.C Makefile.apps
 
 -include $(KEYB_OUTPUTS:.PRG=.d)
 
-$(BUILD_DIR)/mgcopy/%.o: $(MGCOPY_DIR)/%.C Makefile.apps
+$(MGCOPY_OBJ_DIR)/%.o: $(MGCOPY_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(MGCOPY_INCLUDES) \
 	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
 
-$(BUILD_DIR)/mgcopy/GEMUT_MT.o: $(MGCOPY_GEMUT_DIR)/GEMUT_MT.C Makefile.apps
+$(MGCOPY_OBJ_DIR)/GEMUT_MT.o: $(MGCOPY_GEMUT_DIR)/GEMUT_MT.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGCOPY_GEMUT_DIR)" \
 	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
@@ -683,10 +690,10 @@ $(BUILD_DIR)/vt52/NEOSTART.PRG: MagiC/APPS/VT52/TESTDATA/NEOSTART.C Makefile.app
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
-$(BUILD_DIR)/mgcopy/NEOSTART.PRG: MagiC/APPS/MGCOPY/TESTDATA/NEOSTART.C Makefile.apps
-	mkdir -p "$(@D)"
+$(BUILD_DIR)/mgcopy/NEOSTART.PRG: $(MGCOPY_ROOT)/tests/NEOSTART.C Makefile.apps
+	mkdir -p "$(MGCOPY_OBJ_DIR)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
-	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+	  -MF "$(MGCOPY_OBJ_DIR)/NEOSTART.d" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/mgsearch/%.o: $(MGSEARCH_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
@@ -929,11 +936,12 @@ $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG: MagiC/APPS/WBDAEMON/TESTDATA/NEOSTEST.C Make
 -include $(BUILD_DIR)/flp-par/FLP_PAR1.d
 -include $(BUILD_DIR)/cpx/MAGXCONF.d
 -include $(BUILD_DIR)/cpx/TSLICE.d
--include $(BUILD_DIR)/off002/OFF002.d
--include $(BUILD_DIR)/off004ip/OFF004IP.d
--include $(BUILD_DIR)/off016ip/OFF016IP.d
--include $(BUILD_DIR)/off256ip/OFF256IP.d
--include $(OSD_BATCH_PROBES:.PRG=.d)
+# The .PRG.d names bypass stale pre-relocation dependencies on VDI/TESTDATA.
+-include $(BUILD_DIR)/off002/OFF002.PRG.d
+-include $(BUILD_DIR)/off004ip/OFF004IP.PRG.d
+-include $(BUILD_DIR)/off016ip/OFF016IP.PRG.d
+-include $(BUILD_DIR)/off256ip/OFF256IP.PRG.d
+-include $(addsuffix .d,$(OSD_BATCH_PROBES))
 
 WINFRAME_DIR := MagiC/KERNEL/WINFRAME
 WINFRAME_OBJECTS := $(BUILD_DIR)/winframe/WIN_SLB.o $(BUILD_DIR)/winframe/WIN_OBJS.o \
@@ -1135,7 +1143,7 @@ $(BUILD_DIR)/mgedit/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 -include $(MAGXDESK_OBJECTS:.o=.d)
 -include $(BUILD_DIR)/mgsearch/NEOSTART.d
 -include $(MGCOPY_OBJECTS:.o=.d)
--include $(BUILD_DIR)/mgcopy/NEOSTART.d
+-include $(MGCOPY_OBJ_DIR)/NEOSTART.d
 -include $(MGFORMAT_OBJECTS:.o=.d)
 -include $(BUILD_DIR)/mgformat/NEOSTART.d
 -include $(MGNOTICE_OBJECTS:.o=.d)

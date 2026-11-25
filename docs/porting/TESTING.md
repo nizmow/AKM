@@ -1,5 +1,37 @@
 # Testing
 
+## NeoST: MagiC disk fixture
+
+For the full set of MagiC smoke tests, use a known-bootable MagiC hard-disk
+image with two `mtools`-readable FAT partitions that the guest sees as `C:` and
+`D:`. Set `MAGIC_IMAGE` to the whole disk image and `TOS206_ROM` to your
+TOS 2.06 ROM. Install `mtools` on the host. The image must already have
+working hard-disk boot support; the reference fixture uses `HDDRIVER.SYS`.
+The runners do not partition a blank disk or install a boot driver.
+
+| Guest drive | Source | Default byte offset |
+|---|---|---:|
+| `C:` | MagiC boot volume; must contain `MAGX.INF` and `AUTO/MAGXBOOT.TOS` | `1024` |
+| `D:` | Second disk partition, required for the MGCOPY cross-drive case; not required by the release smoke | `34200576` |
+| `E:` | Host exchange directory where used; not a disk partition | — |
+
+The runners clone the source image, inject files into the clone with
+`mtools`, and attach the whole clone as an ACSI disk. Use
+`--partition-offset` for a different `C:` offset and MGCOPY's
+`--d-partition-offset` for `D:`. These options tell `mtools` where to read
+and write; they do not change the partition table or guest drive letters.
+To check the default offsets without writing or booting:
+
+```sh
+mdir -i "${MAGIC_IMAGE}@@1024" ::/MAGX.INF ::/AUTO/MAGXBOOT.TOS
+mdir -i "${MAGIC_IMAGE}@@34200576" ::/
+```
+
+Scenarios that use `E:` create `GEMDRIVE/E` under the run output and pass the
+parent `GEMDRIVE` directory to NeoST with `--gemdos`. Files written to guest
+`E:\` can then be read directly on the host. No `E:` partition or manual
+GEMDOS drive configuration is needed for those scenarios.
+
 ## NeoST: console tools
 
 `mise run test:console-tools-neost` builds `MAC2ST.TTP`, `DUMP.TTP`, `FC.TTP`,
@@ -184,14 +216,14 @@ from the installed program. Interactive keyboard/mouse use remains untested.
 ## NeoST: MGCOPY file operations
 
 `mise run test:mgcopy-neost` builds `MGCOPY.APP`, its German `MGCOPY.RSC` and
-`NEOSTART.PRG`, then runs the archived and rebuilt bundles in separate clones
-of the same MagiC image. The delayed driver invokes MGCOPY through `Pexec`
-with `-q` and records the seven child statuses in `C:\MGCOPY.RES`.
+`NEOSTART.PRG`, then runs the rebuilt bundle on a cloned MagiC image. The
+delayed driver invokes MGCOPY through `Pexec` with `-q` and records the seven
+child statuses in `C:\MGCOPY.RES`.
 
-Each clone starts without `C:\DEST` or a stale `MGCOPY.RES`. The scenario copies
+The clone starts without `C:\DEST` or a stale `MGCOPY.RES`. The scenario copies
 `SRC.TXT`, moves `MOVE.TXT`, aliases `ALIAS.TXT` and deletes `DEL.TXT`
-into/from `C:\DEST\`. It requires seven numbered `CASE nn 0` statuses (nonzero
-or malformed lines fail regardless of archive/rebuilt agreement) and:
+into/from `C:\DEST\`. It requires seven numbered `CASE nn 0` statuses and
+checks the intended file effects directly:
 
 - Copy: `DEST\SRC.TXT` exists and matches the source.
 - Move: `DEST\MOVE.TXT` exists and the source is gone.
@@ -206,20 +238,22 @@ or malformed lines fail regardless of archive/rebuilt agreement) and:
   not a byte copy.
 - Absence is confirmed with the fail-closed `mdir` check, so an extraction error
   cannot masquerade as a deleted file.
-- Archived and rebuilt statuses and guest-file hashes are identical.
+
+The historical release archives are retained for reference, not used as a
+pass/fail oracle for MGCOPY.
 
 Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
 `mtools`. Run with fresh output:
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
-  python3 scripts/neost-mgcopy-smoke.py --output build/atari/neost-mgcopy-check
+  mise run test:mgcopy-neost -- --output build/atari/neost-mgcopy-check
 ```
 
 Use `--partition-offset` for a different MagiC C: partition offset and
 `--d-partition-offset` for D: (default `34200576`, matching the test image).
-The source image is cloned for each binary. Confirm-dialog interaction,
-cancellation, long paths and general error paths are outside this scenario.
+Confirm-dialog interaction, cancellation, long paths and general error paths
+are outside this scenario.
 
 A separate disposable-floppy probe checks the failure contract in
 [PORTING_NOTES.md](PORTING_NOTES.md#mgcopy): overwrite a 200 KiB destination
@@ -344,7 +378,7 @@ of the supplied MagiC image:
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
-  python3 scripts/neost-mcmd-smoke.py
+  mise run test:mcmd-neost
 ```
 
 Host `mtools` is required. `--partition-offset` changes the default C: offset
@@ -561,9 +595,9 @@ untested. Evidence goes to `build/atari/neost-cops-accessory-*`.
 
 ## Release: German Atari/ST core ZIP
 
-`mise run release:core` runs `scripts/make-release.py`, writing
-`build/atari/release/core-de.zip` and a sorted SHA-256 manifest. The package
-combines rebuilt kernel, boot loader, MAGXDESK, applications, MFA/OSD drivers,
+`mise run release:core` builds the exact file targets listed in the package
+map, then writes `build/atari/release/core-de.zip` and a sorted SHA-256 manifest.
+The package combines rebuilt kernel, boot loader, MAGXDESK, applications, MFA/OSD drivers,
 COPS and CPX modules with retained Release data: `MAGX.INF`, desktop
 associations, help, patterns and localized German resources. The retained
 `MAGX.INF` has its `PDLG.SLB` line removed; PDLG is excluded as optional print
@@ -581,6 +615,18 @@ from the fixture's boot infrastructure; it and retained Release CPX/desktop
 files are not rebuilt. The profile is a mono MegaSTE/TOS 2.06 boot; file
 operations and shutdown are exercised separately against the produced payload
 (MGCOPY suite and `SHUTDOWN.PRG`), not by this runner.
+
+`mise run release:minimal` builds `build/atari/release/minimal-de.zip` for the
+same mono MegaSTE/TOS 2.06 fixture. It uses `core/MAGX.INF` and contains only
+the kernel, boot loader, MAGXDESK and its resources, MCMD as the startup
+fallback, MFA2, OFF002 and the license. The same install/hash checks run via
+`mise run test:release-minimal-neost`; the guest must open the desktop menu
+with accessory, autostart and extension directories absent, and its desktop
+must differ from a second boot with `MAGXDESK.APP` removed.
+
+Either smoke task accepts `-- --build-dir build/atari/<fresh-dir>` to build
+without cached outputs. ZIPs, manifest and screenshots are kept in the run's
+evidence directory.
 
 ## NeoST: image SLB ABI and rendering
 
@@ -730,7 +776,7 @@ mise run test:osd-off65kpk-neost   # 65536 colours, packed 16-bit words
 mise run test:osd-off16mov-neost   # TrueColor, 32-bit pixels
 ```
 
-`scripts/neost-osd-batch-smoke.py` builds the driver and probe, checks the
+`core/osd/tests/neost-osd-batch-smoke.py` builds the driver and probe, checks the
 header organisation, and records archive/Release comparisons. OFF016PK must
 match its source-tree archive and OFF32KFL the Release; the remaining four have
 no byte-identical reference and are compared structurally.
@@ -767,8 +813,9 @@ generated tables, not that MagiC's keyboard driver loads them at boot.
 
 ## NeoST: MAGXBOOT loader
 
-`mise run test:magxboot-neost` builds the loader and the screen probe, then
-boots three disposable clones with an unchanged `MAGIC.RAM`:
+`mise run test:magxboot-neost` runs the scenario in `core/magxboot/tests/`.
+It builds the loader and shared screen probe, then boots three disposable
+clones with an unchanged `MAGIC.RAM`:
 
 - the shipped `MAGIC.A/AUTO/MAGXBOOT.TOS`;
 - the rebuild from `build/atari/apps/magxboot/MAGXBOOT.TOS`;

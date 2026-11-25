@@ -50,7 +50,7 @@ run = "scripts/atari-container run make -f Makefile.apps"
 # Core package and install smoke
 
 [tasks."release:core"]
-description = "Assemble the deterministic German Atari/ST core installation ZIP"
+description = "Build and package the German Atari/ST distribution ZIP"
 dir = "{{ config_root }}"
 run = "python3 scripts/make-release.py --output build/atari/release/core-de.zip --manifest build/atari/release/core-de.manifest"
 
@@ -58,6 +58,16 @@ run = "python3 scripts/make-release.py --output build/atari/release/core-de.zip 
 description = "Build, install and boot the German core ZIP on a clean MagiC image"
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-release-smoke.py"
+
+[tasks."release:minimal"]
+description = "Build and package the boot-only German Atari/ST ZIP"
+dir = "{{ config_root }}"
+run = "python3 scripts/make-release.py --profile minimal --output build/atari/release/minimal-de.zip --manifest build/atari/release/minimal-de.manifest"
+
+[tasks."test:release-minimal-neost"]
+description = "Build, install and cold-boot the minimal ZIP without optional components"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-release-smoke.py --profile minimal"
 
 # ABI, encoding, and host-helper checks
 
@@ -99,9 +109,9 @@ dir = "{{ config_root }}"
 run = "python3 scripts/neost-mod-app-smoke.py"
 
 [tasks."test:mgcopy-neost"]
-description = "Compare archived and rebuilt MGCOPY file operations under NeoST/MagiC"
+description = "Verify rebuilt MGCOPY file operations under NeoST/MagiC"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-mgcopy-smoke.py"
+run = "python3 core/mgcopy/tests/neost-mgcopy-smoke.py"
 
 [tasks."test:mgformat-neost"]
 description = "Compare archived and rebuilt MGFORMAT startup dialog under NeoST/MagiC"
@@ -146,12 +156,12 @@ run = "python3 scripts/neost-mgsearch-smoke.py"
 [tasks."test:magxdesk-neost"]
 description = "Compare archived and rebuilt MAGXDESK v5 startup under NeoST"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-magxdesk-smoke.py"
+run = "python3 core/magxdesk/tests/neost-magxdesk-smoke.py"
 
 [tasks."test:mcmd-neost"]
 description = "Compare localized MCMD command execution under NeoST/MagiC"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-mcmd-smoke.py"
+run = "python3 core/mcmd/tests/neost-mcmd-smoke.py"
 
 [tasks."test:magxconf-neost"]
 description = "Compare localized MAGXCONF PRG/ACC dialog and saved configuration under MagiC"
@@ -181,52 +191,52 @@ run = "python3 scripts/neost-winframe-demo-smoke.py"
 [tasks."test:osd-off002-neost"]
 description = "Build OFF002.OSD and prove NVDI draws into a 1-plane offscreen bitmap"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-off002-smoke.py"
+run = "python3 core/osd/tests/neost-off002-smoke.py"
 
 [tasks."test:osd-off004ip-neost"]
 description = "Build OFF004IP.OSD and prove NVDI draws into a 2-plane offscreen bitmap"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-off004ip-smoke.py"
+run = "python3 core/osd/tests/neost-off004ip-smoke.py"
 
 [tasks."test:osd-off016ip-neost"]
 description = "Build OFF016IP.OSD and prove NVDI draws into a 4-plane offscreen bitmap"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-off016ip-smoke.py"
+run = "python3 core/osd/tests/neost-off016ip-smoke.py"
 
 [tasks."test:osd-off256ip-neost"]
 description = "Build OFF256IP.OSD and prove NVDI draws into an 8-plane offscreen bitmap"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-off256ip-smoke.py"
+run = "python3 core/osd/tests/neost-off256ip-smoke.py"
 
 [tasks."test:osd-off016pk-neost"]
 description = "Build OFF016PK.OSD and prove NVDI draws into a 16-colour packed bitmap"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-osd-batch-smoke.py --driver off016pk"
+run = "python3 core/osd/tests/neost-osd-batch-smoke.py --driver off016pk"
 
 [tasks."test:osd-off256pk-neost"]
 description = "Build OFF256PK.OSD and prove NVDI draws into a 256-colour packed bitmap"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-osd-batch-smoke.py --driver off256pk"
+run = "python3 core/osd/tests/neost-osd-batch-smoke.py --driver off256pk"
 
 [tasks."test:osd-off32kfl-neost"]
 description = "Build OFF32KFL.OSD and prove NVDI draws into a flat 15-bit bitmap"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-osd-batch-smoke.py --driver off32kfl"
+run = "python3 core/osd/tests/neost-osd-batch-smoke.py --driver off32kfl"
 
 [tasks."test:osd-off32kpk-neost"]
 description = "Build OFF32KPK.OSD and prove NVDI draws into a packed 15-bit bitmap"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-osd-batch-smoke.py --driver off32kpk"
+run = "python3 core/osd/tests/neost-osd-batch-smoke.py --driver off32kpk"
 
 [tasks."test:osd-off65kpk-neost"]
 description = "Build OFF65KPK.OSD and prove NVDI draws into a packed 16-bit bitmap"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-osd-batch-smoke.py --driver off65kpk"
+run = "python3 core/osd/tests/neost-osd-batch-smoke.py --driver off65kpk"
 
 [tasks."test:osd-off16mov-neost"]
 description = "Build OFF16MOV.OSD and prove NVDI draws into a 32-bit TrueColor bitmap"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-osd-batch-smoke.py --driver off16mov"
+run = "python3 core/osd/tests/neost-osd-batch-smoke.py --driver off16mov"
 
 [tasks."test:cops-neost"]
 description = "Compare archived and rebuilt COPS panel and CPX dialogs on MagiC"
@@ -256,7 +266,7 @@ run = "python3 scripts/neost-screen-driver-smoke.py"
 [tasks."test:magxboot-neost"]
 description = "Compare the shipped and rebuilt MAGXBOOT loaders on cloned MagiC images"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-magxboot-smoke.py"
+run = "python3 core/magxboot/tests/neost-magxboot-smoke.py"
 
 [tasks."test:hardcopy-neost"]
 description = "Verify archived and rebuilt HARDCOPY installs the scr_dump hook on MagiC"

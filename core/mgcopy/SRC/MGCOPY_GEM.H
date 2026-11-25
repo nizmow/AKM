@@ -2,8 +2,8 @@
 #define MGCOPY_GEM_H
 
 /* MagiC DOS/GEM types and constants for the MGCOPY port. */
-#include "../../GEMUT_MT_SDK.H"
-#include "../../APPLICAT/SRC/IMPORT/GEMUT_MT.H"
+#include "GEMUT_MT_SDK.H"
+#include "GEMUT_MT.H"
 #include <mint/ostruct.h>
 
 #define RMODE_RD 0
