@@ -227,7 +227,7 @@ port. Do not turn historical copies into duplicate default targets.
 | Atari/UTF-8 conversion | `NON-TOS/atari-utf8-conversion` | Host C tool plus shell scripts, not an Atari executable. Scripts use `recode`; the kernel normalizer also reads the canonical conversion table. |
 | FSORT / UNIQ | `NON-TOS/FSORT` | README classifies these as MS-DOS source, despite an old script naming `fsort.prg`. Keep host modernization separate from Atari application ports. |
 | OS/emulator test programs | `MagiC/TEST/TESTS` | Families `TEST_68K`, `BIOSTEST`, `DOSTEST`, `AESTEST`, `VDITEST`; separate test executables, not installed applications. Existing projects include TEST_68, TGOETSCH, TESTPOP and VDI RASTER/POLYGON/PIXEL/LINES/LINES2/TRNFM/RECFL tests. Inspect each source/PRJ for actual output and hardware requirements. |
-| Existing modern kernel regression | `MagiC/KERNEL/BUILD/GCC/VFAT_CHECK.C` | Already a separate QEMU-user test target; not an application-port backlog item. |
+| Existing modern kernel regression | `kernel/BUILD/GCC/VFAT_CHECK.C` | Already a separate QEMU-user test target; not an application-port backlog item. |
 | Release-only components not mapped to matching source projects here | `MagiC/Releases/MAGIC.A` | Examples: `AES_LUPE.APP`, `CLOCK.APP`, `CLOCKCOL.CPX`, `XCONTROL.ACC`, and CPXs such as GENERAL/COLOR/CONFIG/MODEM/PRINTER/SET_FLG/SI. Locate matching sources/provenance before creating claimed source builds; shipped files alone are not enough. |
 
 The release tree is an installation reference, **not** a list of fresh compiler

@@ -23,20 +23,20 @@ $(INCLUDE_DIR)/tosdefs.h: MagiC/INC_C/TOSDEFS.H
 $(INCLUDE_DIR)/magx.h: MagiC/INC_C/MAGX.H
 $(INCLUDE_DIR)/mgx_xfs.h: MagiC/INC_C/MGX_XFS.H
 $(INCLUDE_DIR)/mgx_dfs.h: MagiC/INC_C/MGX_DFS.H
-$(INCLUDE_DIR)/vfat_imp.h: MagiC/KERNEL/DOS/INC/VFAT_IMP.H
+$(INCLUDE_DIR)/vfat_imp.h: kernel/DOS/INC/VFAT_IMP.H
 $(HEADERS):
 	mkdir -p $(@D)
 	ln -sf $(abspath $<) $@
 
-$(BUILD_DIR)/vfat.o: MagiC/KERNEL/BUILD/GCC/VFAT.C $(HEADERS)
+$(BUILD_DIR)/vfat.o: kernel/BUILD/GCC/VFAT.C $(HEADERS)
 	$(CC) $(CPPFLAGS) -I$(INCLUDE_DIR) $(CFLAGS) $(KERNEL_FLAGS) \
-	  -MMD -MP -x c -c $< -o $@
+	  -MMD -MP -MF $@.d -x c -c $< -o $@
 
-$(BUILD_DIR)/vfat-check.o: MagiC/KERNEL/BUILD/GCC/VFAT_CHECK.C $(HEADERS)
+$(BUILD_DIR)/vfat-check.o: kernel/BUILD/GCC/VFAT_CHECK.C $(HEADERS)
 	$(CC) $(CPPFLAGS) -I$(INCLUDE_DIR) $(CFLAGS) $(KERNEL_FLAGS) \
-	  -ffunction-sections -fdata-sections -MMD -MP -x c -c $< -o $@
+	  -ffunction-sections -fdata-sections -MMD -MP -MF $@.d -x c -c $< -o $@
 
--include $(BUILD_DIR)/vfat.d $(BUILD_DIR)/vfat-check.d
+-include $(BUILD_DIR)/vfat.o.d $(BUILD_DIR)/vfat-check.o.d
 $(BUILD_DIR)/vfat.o $(BUILD_DIR)/vfat-check.o: Makefile.atari
 
 include MagiC/KERNEL/BUILD/GCC/assembly.mk

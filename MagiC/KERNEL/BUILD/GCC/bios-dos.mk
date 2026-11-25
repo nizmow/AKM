@@ -33,7 +33,7 @@ endef
 $(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/ERRNO.INC,MagiC/INC_AS/ERRNO.INC))
 $(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/KERNEL.INC,MagiC/KERNEL/INC/KERNEL.INC))
 $(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/DOS.INC,MagiC/KERNEL/INC/DOS.INC))
-$(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/STRUCTS.INC,MagiC/KERNEL/DOS/INC/STRUCTS.INC))
+$(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/STRUCTS.INC,kernel/DOS/INC/STRUCTS.INC))
 $(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/VTSYS.INC,MagiC/KERNEL/INC/VTSYS.INC))
 $(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/LOWMEM.INC,MagiC/KERNEL/BIOS/COMMON/LOWMEM.INC))
 $(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/BIOS.INC,MagiC/KERNEL/BIOS/COMMON/BIOS.INC))
@@ -50,23 +50,23 @@ $(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/AUTO.S,MagiC/KERNEL/BIOS/COMMON/
 $(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/PUNTAES.S,MagiC/KERNEL/BIOS/COMMON/PUNTAES.S))
 $(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/READ_KTB.S,MagiC/KERNEL/BIOS/COMMON/READ_KTB.S))
 $(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/HANDLKEY.S,MagiC/KERNEL/BIOS/COMMON/HANDLKEY.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/SCSI.S,MagiC/KERNEL/BIOS/ATARI/MODULES/SCSI.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/FDC.S,MagiC/KERNEL/BIOS/ATARI/MODULES/FDC.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/DRIVE.S,MagiC/KERNEL/BIOS/ATARI/MODULES/DRIVE.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/DSP.S,MagiC/KERNEL/BIOS/ATARI/MODULES/DSP.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/SERIAL.S,MagiC/KERNEL/BIOS/ATARI/MODULES/SERIAL.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/CLOCK.S,MagiC/KERNEL/BIOS/ATARI/MODULES/CLOCK.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/VIDEO.S,MagiC/KERNEL/BIOS/ATARI/MODULES/VIDEO.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/KEYB.S,MagiC/KERNEL/BIOS/ATARI/MODULES/KEYB.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/COOK.S,MagiC/KERNEL/BIOS/ATARI/MODULES/COOK.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/IVID.S,MagiC/KERNEL/BIOS/ATARI/MODULES/IVID.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/SCSI.S,kernel/BIOS/ATARI/MODULES/SCSI.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/FDC.S,kernel/BIOS/ATARI/MODULES/FDC.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/DRIVE.S,kernel/BIOS/ATARI/MODULES/DRIVE.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/DSP.S,kernel/BIOS/ATARI/MODULES/DSP.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/SERIAL.S,kernel/BIOS/ATARI/MODULES/SERIAL.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/CLOCK.S,kernel/BIOS/ATARI/MODULES/CLOCK.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/VIDEO.S,kernel/BIOS/ATARI/MODULES/VIDEO.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/KEYB.S,kernel/BIOS/ATARI/MODULES/KEYB.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/COOK.S,kernel/BIOS/ATARI/MODULES/COOK.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/IVID.S,kernel/BIOS/ATARI/MODULES/IVID.S))
 
 BIOSDOS_BIOS_FILES := $(addprefix $(BIOSDOS_BIOS_INC)/,DEBUG.INC AUTO.S PUNTAES.S \
                         READ_KTB.S HANDLKEY.S SCSI.S FDC.S DRIVE.S DSP.S SERIAL.S \
                         CLOCK.S VIDEO.S KEYB.S COOK.S IVID.S)
 
 # --- DOS slice (DEBUG.INC differs from the BIOS one: DEBLEVEL 0) ---------
-$(eval $(call biosdos_stage,$(BIOSDOS_DOS_INC)/DEBUG.INC,MagiC/KERNEL/DOS/INC/DEBUG.INC))
+$(eval $(call biosdos_stage,$(BIOSDOS_DOS_INC)/DEBUG.INC,kernel/DOS/INC/DEBUG.INC))
 BIOSDOS_DOS_FILES := $(BIOSDOS_DOS_INC)/DEBUG.INC
 
 # --- read_inf slice -------------------------------------------------------
@@ -74,17 +74,17 @@ $(eval $(call biosdos_stage,$(BIOSDOS_READ_INC)/DEBUG.INC,MagiC/KERNEL/ALLG/SRC/
 BIOSDOS_READ_FILES := $(BIOSDOS_READ_INC)/DEBUG.INC
 
 # --- top-level assembler sources -----------------------------------------
-$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/magibios.S,MagiC/KERNEL/BIOS/ATARI/MAGIBIOS.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/xfs95ini.S,MagiC/KERNEL/BIOS/ATARI/XFS95/XFS95INI.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/magibios.S,kernel/BIOS/ATARI/MAGIBIOS.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/xfs95ini.S,kernel/BIOS/ATARI/XFS95/XFS95INI.S))
 $(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/read_inf.S,MagiC/KERNEL/ALLG/SRC/READ_INF.S))
 $(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/ser_my.S,MagiC/KERNEL/SER_MY.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/magidos.S,MagiC/KERNEL/DOS/MAGIDOS.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/malloc.S,MagiC/KERNEL/DOS/MALLOC.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/dev_bios.S,MagiC/KERNEL/DOS/DEV_BIOS.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/dev_pipe.S,MagiC/KERNEL/DOS/DEV_PIPE.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/dev_mem.S,MagiC/KERNEL/DOS/DEV_MEM.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/dfs_u.S,MagiC/KERNEL/DOS/DFS_U.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/dfs_fat.S,MagiC/KERNEL/DOS/DFS_FAT.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/magidos.S,kernel/DOS/MAGIDOS.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/malloc.S,kernel/DOS/MALLOC.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/dev_bios.S,kernel/DOS/DEV_BIOS.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/dev_pipe.S,kernel/DOS/DEV_PIPE.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/dev_mem.S,kernel/DOS/DEV_MEM.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/dfs_u.S,kernel/DOS/DFS_U.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/dfs_fat.S,kernel/DOS/DFS_FAT.S))
 $(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/ende.S,MagiC/KERNEL/ENDE.S))
 
 BIOSDOS_STAGED := $(BIOSDOS_COMMON_FILES) $(BIOSDOS_BIOS_FILES) $(BIOSDOS_DOS_FILES) \
@@ -137,15 +137,15 @@ $(BIOSDOS_DIR)/%.o: $(BIOSDOS_ASM_DIR)/%.S $(BIOSDOS_STAGED) Makefile.atari
 # IDE.C comes from the original source tree; see the source-level fixes for
 # the header case and the two compile-time size checks. -mfastcall matches the
 # d0/d1/d2/a0/a1 register ABI used by DRIVE.S.
-$(BIOSDOS_DIR)/ide.o: MagiC/KERNEL/BIOS/ATARI/MODULES/IDE.C \
-                      MagiC/KERNEL/BIOS/ATARI/MODULES/IDE.H \
+$(BIOSDOS_DIR)/ide.o: kernel/BIOS/ATARI/MODULES/IDE.C \
+                      kernel/BIOS/ATARI/MODULES/IDE.H \
                       $(INCLUDE_DIR)/portab.h $(INCLUDE_DIR)/tos.h Makefile.atari
 	@mkdir -p $(@D)
 	$(CC) $(CPPFLAGS) -I$(abspath $(INCLUDE_DIR)) \
-	  -I$(abspath MagiC/KERNEL/BIOS/ATARI/MODULES) \
-	  $(CFLAGS) $(KERNEL_FLAGS) -MMD -MP -x c -c $< -o $@
+	  -I$(abspath kernel/BIOS/ATARI/MODULES) \
+	  $(CFLAGS) $(KERNEL_FLAGS) -MMD -MP -MF $@.d -x c -c $< -o $@
 
 .PHONY: bios-dos
 bios-dos: $(BIOS_DOS_OBJECTS)
 
--include $(BIOSDOS_DIR)/ide.d
+-include $(BIOSDOS_DIR)/ide.o.d

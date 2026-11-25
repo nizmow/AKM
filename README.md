@@ -449,8 +449,8 @@ podman run --rm --userns=keep-id -v "$PWD:/work" -w /work \
 
 This produces `build/atari/filesystem.o`, a relocatable 68000 ELF component linking:
 
-- GCC-built `DOS/VFAT.C` (long-filename record creation and directory reading);
-- assembly `DOS/VFAT_S.S` (device-call glue and LFN checksum);
+- GCC-built `kernel/DOS/VFAT.C` (long-filename record creation and directory reading);
+- assembly `kernel/DOS/VFAT_S.S` (device-call glue and LFN checksum);
 - assembly `DOS/XFS_VDOS.S` (DOS filesystem driver);
 - assembly `ALLG/SRC/STD.S` (kernel memory, string and other runtime routines).
 
