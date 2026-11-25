@@ -64,6 +64,25 @@ class MagiCImage:
         if result.returncode and "exists" not in result.stdout.lower():
             raise RuntimeError(f"could not create {guest}: {result.stdout}")
 
+    def exists(self, guest: str, timeout: int = 30) -> bool:
+        """Test a literal guest path without treating media errors as absence."""
+        result = run(["env", "LC_ALL=C", "mdir", "-i", self.image_spec, guest],
+                     timeout=timeout)
+        if result.returncode == 0:
+            return True
+        if result.returncode == 1 and result.stdout.strip() == f'mdir: File "{guest}" not found':
+            return False
+        raise RuntimeError(f"could not inspect {guest}: {result.stdout}")
+
+    def remove(self, guest: str, *, tree: bool = False) -> None:
+        """Ensure a guest path is absent before installing or running a case."""
+        if not self.exists(guest):
+            return
+        result = run(["mdeltree" if tree else "mdel", "-i", self.image_spec, guest],
+                     timeout=60)
+        if result.returncode or self.exists(guest):
+            raise RuntimeError(f"could not remove {guest}: {result.stdout}")
+
     def copy_in(self, local: Path, guest: str, timeout: int = 60) -> None:
         """Copy one host file into the image."""
         local = Path(local)

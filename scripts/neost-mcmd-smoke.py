@@ -61,6 +61,11 @@ EXPECTED = {
     "INPUT.TXT": b"input bytes\r\n",
 }
 
+# Outputs and absence probes owned by this batch.  INPUT.TXT is a seeded input
+# and is installed fresh, so it is not removed from the clone.
+INHERITED_RESULTS = tuple(name for name in EXPECTED if name != "INPUT.TXT") + (
+    "CHILD.RES", "MCMD.RES", "BAD.TXT")
+
 
 def capture(headless: Path, rom: Path, source: Path, app: Path,
             output: Path, partition_offset: int) -> dict[str, bytes]:
@@ -68,6 +73,11 @@ def capture(headless: Path, rom: Path, source: Path, app: Path,
     image = MagiCImage.clone(source, output / "magic.img",
                              partition_offset=partition_offset)
     image.verify_magic()
+    # A working base image can already hold batch outputs; clear them so every
+    # result and absence probe describes this run.
+    for name in INHERITED_RESULTS:
+        image.remove(f"::/{name}")
+    image.remove("::/WORK", tree=True)
     fixture = output / "fixture"
     fixture.mkdir()
     (fixture / "CASE.BAT").write_bytes(BATCH.replace("\n", "\r\n").encode("ascii"))
@@ -90,6 +100,9 @@ def capture(headless: Path, rom: Path, source: Path, app: Path,
         server.screenshot(output / "desktop.ppm")
     results = output / "results"
     results.mkdir()
+    for name in ("CHILD.RES", "MCMD.RES"):
+        require(image.exists(f"::/{name}"),
+                f"{output.name}: run did not create fresh {name}")
     contents = {}
     for name in (*EXPECTED, "CHILD.RES", "MCMD.RES"):
         destination = results / name
@@ -98,14 +111,14 @@ def capture(headless: Path, rom: Path, source: Path, app: Path,
     for name, expected in EXPECTED.items():
         require(contents[name] == expected,
                 f"{output.name}: {name}: expected {expected!r}, got {contents[name]!r}")
-    require(contents["MCMD.RES"].decode("ascii").split() == ["STATUS", "0"],
-            f"{output.name}: MCMD did not return successfully")
+    require(contents["MCMD.RES"] == b"STATUS 0\r\n",
+            f"{output.name}: MCMD did not return status zero: {contents['MCMD.RES']!r}")
     child = contents["CHILD.RES"].decode("ascii").strip()
     require(child == "argc=4 arg1=two arg2=words arg3=plain env=expanded input=13 valid=1",
             f"{output.name}: child arguments/environment/stdin differ: {child}")
     for absent in ("BAD.TXT", "WORK"):
-        found = run(["mdir", "-i", image.image_spec, f"::/{absent}"], timeout=30)
-        require(found.returncode != 0, f"{output.name}: unexpected {absent}")
+        require(not image.exists(f"::/{absent}"),
+                f"{output.name}: unexpected {absent}")
     return contents
 
 

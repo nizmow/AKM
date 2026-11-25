@@ -31,7 +31,22 @@ DEST_DIR = r"::/DEST"
 BOOT_FRAMES = 15000
 RUN_FRAMES = 9000
 RESULT = "::/MGCOPY.RES"
+ALIAS_TARGET = b"C:\\ALIAS.TXT"
 D_PARTITION_OFFSET = 34200576
+# Guest labels the suite must leave byte-identical to the installed seed.
+SEEDED_GUESTS = {
+    "src": "SRC.TXT",
+    "alias-source": "ALIAS.TXT",
+    "dest-src": "SRC.TXT",
+    "dest-move": "MOVE.TXT",
+    "tree-source-one": "TREE/ONE.TXT",
+    "tree-source-sub-two": "TREE/SUB/TWO.TXT",
+    "dest-tree-one": "TREE/ONE.TXT",
+    "dest-tree-sub-two": "TREE/SUB/TWO.TXT",
+    "dest-mtree-one": "MTREE/ONE.TXT",
+    "dest-mtree-sub-two": "MTREE/SUB/TWO.TXT",
+    "dest-xmove": "XMOVE.TXT",
+}
 
 
 def start_server(headless: Path, rom: Path, image: Path, output: Path,
@@ -77,10 +92,9 @@ def install_fixtures(image: MagiCImage, fixtures: dict[str, Path]) -> None:
 
 
 def guest_hash(image: MagiCImage, guest: str, destination: Path) -> str | None:
-    try:
-        image.copy_out(guest, destination)
-    except RuntimeError:
+    if not image.exists(guest):
         return None
+    image.copy_out(guest, destination)
     return sha256(destination)
 
 
@@ -137,6 +151,9 @@ def main() -> int:
         with tempfile.TemporaryDirectory(prefix="neost-mgcopy-") as temporary:
             scratch = Path(temporary)
             fixtures = make_fixtures(scratch / "fixtures")
+            seed_hashes = {name: host_hash(path) for name, path in fixtures.items()}
+            seed_hashes["XMOVE.TXT"] = host_hash(scratch / "fixtures" / "XMOVE.TXT")
+            require(None not in seed_hashes.values(), "seed fixtures disappeared")
             headless, _ = acquire_headless(args.neost_headless, args.neost, scratch)
             outcomes = {}
             for name in ("archive", "rebuilt"):
@@ -145,6 +162,10 @@ def main() -> int:
                 image = MagiCImage.clone(source, directory / f"{name}.img",
                                          partition_offset=args.partition_offset)
                 image.verify_magic()
+                # Discard a stale report and inherited destination tree so the
+                # driver's own effects are what the checks observe.
+                image.remove(RESULT)
+                image.remove(DEST_DIR, tree=True)
                 app = ARCHIVE_APP if name == "archive" else REBUILT_APP
                 rsc = ARCHIVE_RSC if name == "archive" else REBUILT_RSC
                 guest_root = directory / "GEMDRIVE"
@@ -186,7 +207,27 @@ def main() -> int:
                     checks[label] = guest_hash(image, guest, directory / f"{label}.out")
                 checks["xmove-source"] = guest_hash(
                     d_image, "::/XMOVE.TXT", directory / "xmove-source.out")
-                outcomes[name] = (result_path.read_text(encoding="latin-1"), checks)
+                result_text = result_path.read_text(encoding="latin-1")
+                statuses = result_text.splitlines()
+                require(len(statuses) == 7,
+                        f"{name}: expected seven numbered cases, got {statuses!r}")
+                for number, line in enumerate(statuses, 1):
+                    require(line.split() == ["CASE", f"{number:02d}", "0"],
+                            f"{name}: case {number:02d} did not report zero: {line!r}")
+                for label, seed in SEEDED_GUESTS.items():
+                    require(checks[label] is not None,
+                            f"{name}: {label} is missing")
+                    require(checks[label] == seed_hashes[seed],
+                            f"{name}: {label} bytes differ from seed {seed}")
+                # Alias mode stores MagiC's Fsymlink record, not a byte copy:
+                # a big-endian payload length followed by the target and NULs.
+                record = (directory / "dest-alias.out").read_bytes()
+                require(len(record) > 2 and
+                        int.from_bytes(record[:2], "big") == len(record) - 2 and
+                        record[2:2 + len(ALIAS_TARGET)] == ALIAS_TARGET and
+                        record[2 + len(ALIAS_TARGET):] == b"\0\0",
+                        f"{name}: alias record is not a link to {ALIAS_TARGET!r}: {record!r}")
+                outcomes[name] = (result_text, checks)
                 print(f"{name}: {checks}")
 
         archive_text, archive_files = outcomes["archive"]

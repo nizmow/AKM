@@ -2,10 +2,10 @@
 """Compare all six KEYB_SYS generators with their archived binaries under NeoST.
 
 Each generator writes a single `KEYTABLS.SYS`. The runner reuses the generic
-Pexec comparator: archive and rebuild run in separate disposable guest trees,
-and child status, console output and generated files must match. Independent
-checks then require the nine 128-byte tables plus the locale's dead-key trailer
-and six distinct layouts.
+Pexec comparator: archive and rebuild run in separate disposable guest trees
+and must report child status 0, create exactly `KEYTABLS.SYS`, and match console
+output. Independent checks then require the nine 128-byte tables plus the
+locale's dead-key trailer and six distinct layouts.
 """
 from __future__ import annotations
 
@@ -72,6 +72,8 @@ def main() -> int:
             command = [sys.executable, str(COMPARE),
                        "--archived", str(ARCHIVE / f"KEYB_{name}.PRG"),
                        "--rebuilt", str(REBUILT / f"KEYB_{name}.PRG"),
+                       "--expect-status", "0",
+                       "--expect-file", "KEYTABLS.SYS",
                        "--compare", "all",
                        "--frames", str(args.frames),
                        "--timeout", str(args.timeout),

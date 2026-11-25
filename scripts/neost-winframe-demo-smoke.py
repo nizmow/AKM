@@ -62,12 +62,9 @@ def run_case(headless: Path, rom: Path, source: Path, slb: Path, rsc: Path,
     configure_inf(image, output, disable=disable)
 
     host = session(headless, rom, image, output / "run")
-    try:
-        host.start()
+    with host:
         host.boot(15000)
         return host.screenshot(output / "window.ppm")
-    finally:
-        host.close()
 
 
 def main() -> int:

@@ -2,9 +2,12 @@
 """Compare archived and rebuilt DIS1/DIS2 against the bundled TST corpus.
 
 DIS1 is compared on its own, then its archived workfiles feed both DIS2
-binaries. Each case gets identical guest fixtures and is checked for child
-status and guest file hashes. The shared console log contains only the
-driver's ``STATUS`` line; child banners, usage and diagnostics are not captured.
+binaries. Each case gets identical guest fixtures and declares its expected
+child status plus the generated guest outputs; fixture inputs are not outputs.
+The shared console log contains only the driver's ``STATUS`` line; child
+banners, usage and diagnostics are not captured. Missing or absent arguments
+are intentional errors: DIS1/DIS2 exit through ``Pterm(1)`` after ``Fsfirst``
+fails.
 """
 
 from __future__ import annotations
@@ -34,22 +37,32 @@ class Case:
     name: str
     tool: str
     tail: str
+    status: int
+    outputs: tuple[str, ...]
     fixtures: tuple[Path, ...]
 
 
 CASES = (
-    Case("dis1-t", "dis1", "T.PRG", (TST / "T.PRG",)),
-    Case("dis1-u", "dis1", "U.PRG", (TST / "U.PRG",)),
-    Case("dis1-o", "dis1", "T.O", (TST / "T.O",)),
-    Case("dis1-68030", "dis1", "-3 T.PRG", (TST / "T.PRG",)),
-    Case("dis1-object", "dis1", "PCMXSTRT.O", (DRI_OBJECT,)),
-    Case("dis1-noarg", "dis1", "", ()),
-    Case("dis2-raw", "dis2", "-e T.PRG", (TST / "T.PRG",)),
-    Case("dis2-raw-info", "dis2", "-e -c -a -z T.PRG", (TST / "T.PRG",)),
-    Case("dis2-raw-68030", "dis2", "-e -3 T.PRG", (TST / "T.PRG",)),
-    Case("dis2-raw-mas", "dis2", "-e -u -s T.PRG", (TST / "T.PRG",)),
-    Case("dis2-range", "dis2", "-e 10-40 T.PRG", (TST / "T.PRG",)),
-    Case("dis2-missing", "dis2", "MISSING.PRG", ()),
+    Case("dis1-t", "dis1", "T.PRG", 0, ("T.lbl", "T.rlo"), (TST / "T.PRG",)),
+    Case("dis1-u", "dis1", "U.PRG", 0, ("U.lbl", "U.rlo"), (TST / "U.PRG",)),
+    Case("dis1-o", "dis1", "T.O", 0, ("T.lbl",), (TST / "T.O",)),
+    Case("dis1-68030", "dis1", "-3 T.PRG", 0, ("T.lbl", "T.rlo"),
+         (TST / "T.PRG",)),
+    Case("dis1-object", "dis1", "PCMXSTRT.O", 0,
+         ("PCMXSTRT.lbl", "PCMXSTRT.rlo", "PCMXSTRT.sym"), (DRI_OBJECT,)),
+    # No argument: usage path exits through Pterm(1).
+    Case("dis1-noarg", "dis1", "", 1, (), ()),
+    Case("dis2-raw", "dis2", "-e T.PRG", 0, ("T.s",), (TST / "T.PRG",)),
+    Case("dis2-raw-info", "dis2", "-e -c -a -z T.PRG", 0, ("T.s",),
+         (TST / "T.PRG",)),
+    Case("dis2-raw-68030", "dis2", "-e -3 T.PRG", 0, ("T.s",),
+         (TST / "T.PRG",)),
+    Case("dis2-raw-mas", "dis2", "-e -u -s T.PRG", 0, ("T.s",),
+         (TST / "T.PRG",)),
+    Case("dis2-range", "dis2", "-e 10-40 T.PRG", 0, ("T.s",),
+         (TST / "T.PRG",)),
+    # Missing input: Fsfirst fails and the tool exits through Pterm(1).
+    Case("dis2-missing", "dis2", "MISSING.PRG", 1, (), ()),
 )
 
 
@@ -63,6 +76,7 @@ def compare_case(case: Case, output: Path, args: argparse.Namespace) -> int:
         "--archived", str(archived),
         "--rebuilt", str(rebuilt),
         "--tail", case.tail,
+        "--expect-status", str(case.status),
         "--compare", "status-files",
         "--frames", str(args.frames),
         "--timeout", str(args.timeout),
@@ -73,6 +87,8 @@ def compare_case(case: Case, output: Path, args: argparse.Namespace) -> int:
         command.extend(["--neost-headless", str(args.neost_headless)])
     if args.rom:
         command.extend(["--rom", str(args.rom)])
+    for expected in case.outputs:
+        command.extend(["--expect-file", expected])
     for fixture in case.fixtures:
         command.extend(["--fixture", str(fixture)])
     result = run(command, cwd=ROOT, timeout=args.timeout + 120)
@@ -166,8 +182,8 @@ def main() -> int:
         movem = Path(temporary) / "MOVEM.BIN"
         movem.write_bytes(bytes.fromhex("48e70001"))
         cases = list(CASES) + [
-            Case("dis2-neg-word", "dis2", "-e NEG.BIN", (neg,)),
-            Case("dis2-movem", "dis2", "-e MOVEM.BIN", (movem,)),
+            Case("dis2-neg-word", "dis2", "-e NEG.BIN", 0, ("NEG.s",), (neg,)),
+            Case("dis2-movem", "dis2", "-e MOVEM.BIN", 0, ("MOVEM.s",), (movem,)),
         ]
         for case in cases:
             status = compare_case(case, output, args)
@@ -179,9 +195,9 @@ def main() -> int:
                 make_objectfixture(output, objwork)
 
         work_cases = (
-            Case("dis2-work", "dis2", "T.PRG",
+            Case("dis2-work", "dis2", "T.PRG", 0, ("T.s",),
                  (work / "T.PRG", work / "T.lbl", work / "T.rlo")),
-            Case("dis2-object", "dis2", "PCMXSTRT.O",
+            Case("dis2-object", "dis2", "PCMXSTRT.O", 0, ("PCMXSTRT.s",),
                  (objwork / "PCMXSTRT.O", objwork / "PCMXSTRT.lbl",
                   objwork / "PCMXSTRT.rlo", objwork / "PCMXSTRT.sym")),
         )

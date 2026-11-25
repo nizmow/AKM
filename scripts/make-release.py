@@ -106,7 +106,10 @@ def collect() -> dict[str, tuple[bytes, str]]:
     for local, guest in REBUILT.items():
         if not local.is_file():
             raise SystemExit(f"rebuilt input missing: {local}")
-        entries[guest] = (local.read_bytes(), f"rebuilt {local.relative_to(ROOT)}")
+        data = local.read_bytes()
+        if not data:
+            raise SystemExit(f"rebuilt input empty: {local}")
+        entries[guest] = (data, f"rebuilt {local.relative_to(ROOT)}")
     for local in expand(RETAINED):
         guest = str(local.relative_to(RELEASE)).replace("\\", "/")
         if guest in entries:

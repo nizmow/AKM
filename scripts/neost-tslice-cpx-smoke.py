@@ -45,8 +45,7 @@ def run_case(headless: Path, rom: Path, source: Path, cpx: Path, output: Path,
     image.copy_in(cpx, GUEST_CPX)
 
     host = session(headless, rom, image, output / "run")
-    try:
-        host.start()
+    with host:
         host.boot(15000)
         host.calibrate_mouse()
         host.move_to(40, 8)
@@ -65,8 +64,6 @@ def run_case(headless: Path, rom: Path, source: Path, cpx: Path, output: Path,
         host.run_frames(180)
         dialog = host.screenshot(output / "dialog.ppm")
         return panel, dialog
-    finally:
-        host.close()
 
 
 def main() -> int:

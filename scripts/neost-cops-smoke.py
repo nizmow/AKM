@@ -90,8 +90,7 @@ def run_case(headless: Path, rom: Path, source: Path, app: Path, output: Path,
 
     host = session(headless, rom, image, output / "run")
     shots: dict[str, Path] = {}
-    try:
-        host.start()
+    with host:
         host.boot(15000)
         host.calibrate_mouse()
         host.click(*PANEL_AT)
@@ -113,8 +112,6 @@ def run_case(headless: Path, rom: Path, source: Path, app: Path, output: Path,
         host.run_frames(180)
         shots["tslice"] = settled(host, output / "tslice.ppm")
         return shots
-    finally:
-        host.close()
 
 
 def main() -> int:

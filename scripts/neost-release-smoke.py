@@ -27,7 +27,7 @@ BUILD_TARGETS = [
     "mgedit", "mgview", "mgnotice", "mgformat", "vt52", "vfatconf", "shutdown",
     "wbdaemon",
     "cops", "magxconf-cpx", "tslice-cpx", "winframe", "mod-app", "showfile",
-    "load-img", "osd-batch",
+    "load-img", "off002", "off004ip", "off016ip", "off256ip", "osd-batch",
 ]
 
 
@@ -47,9 +47,9 @@ def install(source: Path, folder: Path, offset: int) -> tuple[MagiCImage, Path]:
     image = MagiCImage.clone(source, folder / "magic.img", partition_offset=offset)
     image.verify_magic()
     for name in PAYLOAD:
-        run(["mdeltree", "-i", image.image_spec, f"::/{name}"])
+        image.remove(f"::/{name}", tree=True)
     for name in ROOT_FILES:
-        run(["mdel", "-i", image.image_spec, f"::/{name}"])
+        image.remove(f"::/{name}")
     extracted = folder / "extract"
     with zipfile.ZipFile(RELEASE / "core-de-1.zip") as archive:
         archive.extractall(extracted)

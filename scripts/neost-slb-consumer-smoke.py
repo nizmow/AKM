@@ -5,12 +5,18 @@ Each pair runs the same GCC probe against a fresh image clone and the same
 PAT6 fixture. The probe checks the known XP conversion, then exercises
 LOAD_IMG exports #0, #2, #3 and #1 and hashes rendered colours rather than
 descriptor or framebuffer storage.
+
+The probe names a dedicated guest directory explicitly, while inherited
+same-name libraries are removed from MagiC's default search directory and
+SLBPATH/#_SLB overrides are stripped. Control runs with one library absent
+must report a guest Slbopen failure instead of silently loading a copy.
 """
 from __future__ import annotations
 
 import argparse
 import os
 from pathlib import Path
+import re
 import sys
 import tempfile
 
@@ -29,44 +35,92 @@ XP = BUILD / "apps/xp-rastr/XP_RASTR.SLB"
 LOAD = BUILD / "apps/load-img/LOAD_IMG.SLB"
 PROBE = BUILD / "apps/slbtest/SLBTEST.PRG"
 
+XP_NAME = "XP_RASTR.SLB"
+LOAD_NAME = "LOAD_IMG.SLB"
+SLB_NAMES = (XP_NAME, LOAD_NAME)
+# Slbopen searches the loaded list, SLBPATH/the default XTENSION directory and
+# any explicit path.  Test copies live in a dedicated directory named by the
+# probe; inherited same-name copies are removed from the default directory.
+SLB_AUDIT_DIR = "::/SLBAUDIT"
+INHERITED_SLB_DIR = "::/GEMSYS/MAGIC/XTENSION"
 
-def run_probe(name: str, pair: tuple[Path, Path], source: Path,
-              output: Path, headless: Path, rom: Path) -> str:
+
+def configure_inf(image: MagiCImage, output: Path) -> None:
+    """Remove every way the image could load an inherited same-name library."""
+    inf = output / "MAGX.INF"
+    image.copy_out("::/MAGX.INF", inf)
+    data = inf.read_bytes()
+    data = data.replace(b"#_DEV 1 0", b"#_DEV 2 0")
+    require(b"#_DEV 2 0" in data, "MAGX.INF does not select a colour mode")
+    # Slbopen always also searches SLBPATH (or the default XTENSION directory)
+    # in addition to an explicit path, so drop any override that would point at
+    # an inherited copy.
+    data = re.sub(rb"(?im)^[ \t]*#_ENV[ \t]+SLBPATH=.*(?:\r?\n|$)", b"", data)
+    require(not re.search(rb"(?im)^[ \t]*#_ENV[ \t]+SLBPATH=", data),
+            "MAGX.INF still declares SLBPATH")
+    # #_SLB entries load a library before the probe runs; Slbopen returns an
+    # already-loaded library by name regardless of the path it is given.
+    for library in SLB_NAMES:
+        active = re.compile(rb"(?im)^[ \t]*#_SLB[ \t]+\d+[ \t]+" +
+                            re.escape(library.encode()) + rb"[ \t]*\r?\n?")
+        data = active.sub(b"", data)
+        require(not active.search(data),
+                f"MAGX.INF still preloads {library}")
+    inf.write_bytes(data)
+    image.copy_in(inf, "::/MAGX.INF")
+
+
+def prepare_case(name: str, pair: tuple[Path, Path], source: Path,
+                 output: Path, *, missing: frozenset[str] = frozenset()
+                 ) -> MagiCImage:
     directory = output / name
     directory.mkdir()
     image = MagiCImage.clone(source, directory / "magic.img", partition_offset=1024)
     image.verify_magic()
-    image.install(((pair[0], "::/GEMSYS/MAGIC/XTENSION/XP_RASTR.SLB"),
-                   (pair[1], "::/GEMSYS/MAGIC/XTENSION/LOAD_IMG.SLB"),
-                   (PAT6, "::/GEMSYS/GEMDESK/PAT/16/PAT6.IMG"),
+    configure_inf(image, directory)
+    for library in SLB_NAMES:
+        inherited = f"{INHERITED_SLB_DIR}/{library}"
+        image.remove(inherited)
+        require(not image.exists(inherited),
+                f"{name}: inherited {inherited} survived removal")
+    image.remove(SLB_AUDIT_DIR, tree=True)
+    image.mkdir(SLB_AUDIT_DIR)
+    for local, library in ((pair[0], XP_NAME), (pair[1], LOAD_NAME)):
+        target = f"{SLB_AUDIT_DIR}/{library}"
+        if library in missing:
+            require(not image.exists(target),
+                    f"{name}: missing {target} is present in the clone")
+            continue
+        image.copy_in(local, target)
+        require(image.exists(target), f"{name}: {target} was not installed")
+    image.install(((PAT6, "::/GEMSYS/GEMDESK/PAT/16/PAT6.IMG"),
                    (PROBE, "::/GEMSYS/MAGIC/START/ZCNFTEST.PRG")))
     # Never accept a marker left in the input image as proof of execution.
-    run(["mdel", "-i", image.image_spec, "::/SLBTEST.TXT"], timeout=30)
-    stale = directory / "stale-marker.txt"
-    stale_check = run(["mcopy", "-i", image.image_spec, "::/SLBTEST.TXT",
-                       str(stale)], timeout=30)
-    require(stale_check.returncode != 0,
+    image.remove("::/SLBTEST.TXT")
+    require(not image.exists("::/SLBTEST.TXT"),
             f"{name}: stale SLBTEST.TXT marker survived removal")
-    inf = directory / "MAGX.INF"
-    image.copy_out("::/MAGX.INF", inf)
-    inf.write_bytes(inf.read_bytes().replace(b"#_DEV 1 0", b"#_DEV 2 0"))
-    image.copy_in(inf, "::/MAGX.INF")
+    return image
+
+
+def run_probe(name: str, pair: tuple[Path, Path], source: Path,
+              output: Path, headless: Path, rom: Path, *,
+              missing: frozenset[str] = frozenset()) -> str:
+    directory = output / name
+    image = prepare_case(name, pair, source, output, missing=missing)
 
     host = NeoSTHost(headless, rom, directory / "run", image=image,
                      options=["--machine", "megaste", "--mem", "4m", "--no-disk"],
                      auto=r"C:\AUTO\MAGXBOOT.TOS", timeout=240)
-    try:
-        host.start()
+    with host:
         host.boot(15000)
         host.screenshot(directory / "screen.ppm")
-        result = directory / "SLBTEST.TXT"
-        image.copy_out("::/SLBTEST.TXT", result)
-        require(result.is_file(), f"{name}: probe did not write SLBTEST.TXT")
-        text = result.read_text(errors="replace").strip()
-        print(f"{name} SLB consumer result: {text}")
-        return text
-    finally:
-        host.close()
+    require(image.exists("::/SLBTEST.TXT"),
+            f"{name}: probe did not write SLBTEST.TXT")
+    result = directory / "SLBTEST.TXT"
+    image.copy_out("::/SLBTEST.TXT", result)
+    text = result.read_text(errors="replace").strip()
+    print(f"{name} SLB consumer result: {text}")
+    return text
 
 
 def main() -> int:
@@ -114,15 +168,37 @@ def main() -> int:
         archived = run_probe(args.baseline, (ARCHIVE_XP, archive_load), source,
                              output, headless, rom)
         rebuilt = run_probe("rebuilt", (XP, LOAD), source, output, headless, rom)
+        # Controls: with one library absent from the clone (and no inherited
+        # copy anywhere on the search paths) Slbopen must report a guest load
+        # failure instead of silently reusing another same-name library.
+        missing_xp = run_probe("missing-xp", (XP, LOAD), source, output,
+                               headless, rom, missing=frozenset({XP_NAME}))
+        missing_load = run_probe("missing-load", (XP, LOAD), source, output,
+                                 headless, rom, missing=frozenset({LOAD_NAME}))
     expected_suffix = "72246d45"
     for name, text in ((args.baseline, archived), ("rebuilt", rebuilt)):
         require(text.startswith("ok 64 64 ") and text.endswith(expected_suffix),
                 f"{name}: probe failed or XP conversion differed: {text}")
+    for name, text, prefix in (("missing-xp", missing_xp, "xp open"),
+                               ("missing-load", missing_load, "load open")):
+        fields = text.split()
+        require(text.startswith(prefix + " "),
+                f"{name}: expected {prefix} failure, got: {text}")
+        try:
+            code = int(fields[2])
+        except (IndexError, ValueError):
+            raise RuntimeError(
+                f"{name}: malformed guest failure report: {text}") from None
+        require(code < 0,
+                f"{name}: missing library did not report a load failure: {text}")
     (output / "comparison.txt").write_text(
-        f"{args.baseline}={archived}\nrebuilt={rebuilt}\n", encoding="utf-8")
+        f"{args.baseline}={archived}\nrebuilt={rebuilt}\n"
+        f"missing-xp={missing_xp}\nmissing-load={missing_load}\n",
+        encoding="utf-8")
     require(archived == rebuilt,
             f"rendered IMG colours differ from {args.baseline}: {archived} != {rebuilt}")
     print(f"{args.baseline} and rebuilt IMG colours: identical")
+    print("missing-library controls: guest Slbopen failure observed for each")
     return 0
 
 

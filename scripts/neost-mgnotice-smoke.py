@@ -7,6 +7,12 @@ note with Ctrl-N, types "hello", leaves edit mode with Esc, quits with Ctrl-Q,
 compares the saved note and every UI state, then reboots the same image to
 verify that the note reopens.
 
+MGNOTICE opens EDITOBJC.SLB with a NULL path, so the tested library is installed
+in MagiC's default XTENSION search directory after removing SLBPATH overrides
+and preload entries; inherited notes are cleared before each run.  A control
+run with the library removed must produce neither a note nor the application
+window.
+
 The delayed startup helper is required because MagiC starts #_APP entries
 before MAGXDESK owns the menu bar; MGNOTICE needs foreground windows for input.
 """
@@ -16,10 +22,11 @@ from __future__ import annotations
 import argparse
 import os
 from pathlib import Path
+import re
 import sys
 import tempfile
 
-from neost_common import acquire_headless, create_output, require, resolve_rom, run
+from neost_common import acquire_headless, create_output, require, run
 from neost_image import MagiCImage
 from neost_screen import diff_stats
 from neost_server import NeoSTServer
@@ -39,6 +46,12 @@ BOOT_FRAMES = 15000
 NOTE_DIR = r"::/GEMSYS/GEMDESK/NOTICE"
 START_DIR = r"::/GEMSYS/MAGIC/START"
 STATES = ("initial", "new", "typed", "escaped", "quit")
+EDITOBJC = "EDITOBJC.SLB"
+# MGNOTICE calls Slbopen with a NULL path, so MagiC searches SLBPATH (or the
+# default XTENSION directory). The tested library must live there, not in
+# START, and no inherited copy may be preloaded or found on another path.
+SLB_DIR = r"::/GEMSYS/MAGIC/XTENSION"
+SLB_PATH = f"{SLB_DIR}/{EDITOBJC}"
 
 
 def start_server(headless: Path, rom: Path, image: Path, output: Path,
@@ -50,6 +63,57 @@ def start_server(headless: Path, rom: Path, image: Path, output: Path,
         "--auto", r"C:\AUTO\MAGXBOOT.TOS",
     ]
     return NeoSTServer(headless, rom, output, options=options, timeout=180.0)
+
+
+def configure_inf(image: MagiCImage, output: Path) -> None:
+    """Pin the library lookup to a cleaned default search directory."""
+    inf = output / "MAGX.INF"
+    image.copy_out("::/MAGX.INF", inf)
+    data = inf.read_bytes()
+    # A declared SLBPATH replaces the default XTENSION directory and could
+    # supply an inherited same-name library, so remove it.
+    data = re.sub(rb"(?im)^[ \t]*#_ENV[ \t]+SLBPATH=.*(?:\r?\n|$)", b"", data)
+    require(not re.search(rb"(?im)^[ \t]*#_ENV[ \t]+SLBPATH=", data),
+            "MAGX.INF still declares SLBPATH")
+    # A preloaded library is returned by name before any search path is used.
+    active = re.compile(rb"(?im)^[ \t]*#_SLB[ \t]+\d+[ \t]+" +
+                        re.escape(EDITOBJC.encode()) + rb"[ \t]*\r?\n?")
+    data = active.sub(b"", data)
+    require(not active.search(data), f"MAGX.INF still preloads {EDITOBJC}")
+    inf.write_bytes(data)
+    image.copy_in(inf, "::/MAGX.INF")
+
+
+def clear_notes(image: MagiCImage, directory: Path) -> None:
+    """Start each case without note files inherited from the input image."""
+    image.remove(NOTE_DIR, tree=True)
+    image.mkdir(NOTE_DIR)
+    require(not image.exists(f"{NOTE_DIR}/0.NOT"),
+            f"{directory.name}: inherited note evidence survived removal")
+
+
+def prepare_case(source: Path, directory: Path, app: Path, rsc: Path,
+                 slb: Path | None, partition_offset: int) -> MagiCImage:
+    directory.mkdir()
+    image = MagiCImage.clone(source, directory / "magic.img",
+                             partition_offset=partition_offset)
+    image.verify_magic()
+    configure_inf(image, directory)
+    files = [(app, f"{START_DIR}/MGNOTICE.APP"),
+             (rsc, f"{START_DIR}/mgnotice.rsc"),
+             (DRIVER, f"{START_DIR}/NEOSTART.PRG")]
+    if slb is None:
+        image.remove(SLB_PATH)
+        require(not image.exists(SLB_PATH),
+                "inherited EDITOBJC.SLB survived removal")
+    else:
+        files.append((slb, SLB_PATH))
+    image.install(files)
+    if slb is not None:
+        require(image.exists(SLB_PATH),
+                "EDITOBJC.SLB was not installed on the lookup path")
+    clear_notes(image, directory)
+    return image
 
 
 def run_lifecycle(headless: Path, rom: Path, image: Path,
@@ -85,6 +149,22 @@ def run_reopen(headless: Path, rom: Path, image: Path,
         server.run_frames(BOOT_FRAMES)
         server.screenshot(shot)
     return shot
+
+
+def run_missing_library(headless: Path, rom: Path, image: Path,
+                        output: Path) -> dict[str, Path]:
+    """Attempt note creation while EDITOBJC.SLB is absent from every path."""
+    guest_root = output / "GEMDRIVE"
+    (guest_root / "E").mkdir(parents=True)
+    shots = {"initial": output / "initial.ppm",
+             "attempt": output / "attempt.ppm"}
+    with start_server(headless, rom, image, output / "server", guest_root) as server:
+        server.run_frames(BOOT_FRAMES)
+        server.screenshot(shots["initial"])
+        server.chord([0x1D, 0x31], frames=2)  # Ctrl-N saves a new note at once
+        server.run_frames(800)
+        server.screenshot(shots["attempt"])
+    return shots
 
 
 def extract_note(image: MagiCImage, destination: Path) -> None:
@@ -154,15 +234,8 @@ def main() -> int:
                 ("rebuilt", REBUILT_APP, REBUILT_RSC, REBUILT_SLB),
             ):
                 directory = output / name
-                directory.mkdir()
-                image = MagiCImage.clone(source, directory / "magic.img",
-                                         partition_offset=args.partition_offset)
-                image.verify_magic()
-                image.install(((app, f"{START_DIR}/MGNOTICE.APP"),
-                               (rsc, f"{START_DIR}/mgnotice.rsc"),
-                               (slb, f"{START_DIR}/EDITOBJC.SLB"),
-                               (DRIVER, f"{START_DIR}/NEOSTART.PRG")))
-                image.mkdir(NOTE_DIR)
+                image = prepare_case(source, directory, app, rsc, slb,
+                                     args.partition_offset)
                 shots[name] = run_lifecycle(headless, rom, image.path,
                                             directory / "lifecycle")
                 notes[name] = directory / "0.NOT"
@@ -170,6 +243,14 @@ def main() -> int:
                 reopen = run_reopen(headless, rom, image.path, directory / "reopen")
                 shots[name]["reopen"] = reopen
                 print(f"{name}: lifecycle and reopen captured")
+
+            # Control: the same app and input with the library removed from
+            # every lookup path must not produce a note or its window.
+            control_dir = output / "missing-library"
+            control = prepare_case(source, control_dir, REBUILT_APP,
+                                   REBUILT_RSC, None, args.partition_offset)
+            shots["missing-library"] = run_missing_library(
+                headless, rom, control.path, control_dir / "run")
 
         compare_states(shots["archive"], shots["rebuilt"])
         # compare_states also checked reopen; compare note side effects separately.
@@ -188,6 +269,18 @@ def main() -> int:
                                  shots["rebuilt"]["reopen"])
         require(count == 0, f"reopen screens differ in {count} pixels, bbox {bbox}")
         print("reopen: note window visible and screens identical")
+
+        require(not control.exists(f"{NOTE_DIR}/0.NOT"),
+                "missing EDITOBJC.SLB still produced a note")
+        count, bbox = diff_stats(shots["archive"]["initial"],
+                                 shots["missing-library"]["initial"])
+        # With the library the initial screen carries MGNOTICE's menu; without
+        # it the desktop menu remains.  The saved-note check above is the
+        # primary control; this confirms the application UI is also absent.
+        require(count > 100,
+                f"missing EDITOBJC.SLB still showed MGNOTICE UI "
+                f"({count} pixels differ, bbox {bbox})")
+        print("missing library: no note and no application UI")
 
         print(f"MGNOTICE archived/rebuilt lifecycle passed; artifacts: {output}")
     except (OSError, RuntimeError) as error:

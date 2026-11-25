@@ -13,6 +13,14 @@ typedef unsigned char UBYTE;
 typedef void *SLB_HANDLE;
 typedef long (*SLB_EXEC)(SLB_HANDLE, long, ...);
 
+/*
+ * Slbopen consults already-loaded libraries by name before any path and always
+ * also searches SLBPATH/the default XTENSION directory.  Both opens therefore
+ * name this dedicated directory explicitly; the scenario installs only the
+ * library under test there and removes inherited copies from the search paths.
+ */
+#define SLB_AUDIT_DIR "C:\\SLBAUDIT"
+
 typedef struct {
     VDIPB *vdipb;
     WORD nplanes;
@@ -123,7 +131,7 @@ int main(void)
     v_opnvwk(win, &vh, wout);
     if (!vh) { out("vdi open\n"); return 1; }
     control[6] = vh;
-    ret = trap_1_wllllll(0x16, (long)"XP_RASTR.SLB", 0L, 1L,
+    ret = trap_1_wllllll(0x16, (long)"XP_RASTR.SLB", (long)SLB_AUDIT_DIR, 1L,
                          (long)&xsl, (long)&xexec, (long)&xip);
     if (ret < 0) { outf("xp open %ld %ld\n", ret, 0); return 2; }
     if (legacy_xp0(xexec, xsl, &raster_ass, &raster_c) < 0 ||
@@ -141,8 +149,7 @@ int main(void)
     memset(&lip, 0, sizeof(lip));
     lip.xp_raster = (void *)raster_c;
     lip.nplanes = 4;
-    ret = trap_1_wllllll(0x16, (long)"LOAD_IMG.SLB",
-                         (long)"C:\\GEMSYS\\MAGIC\\XTENSION", 1L,
+    ret = trap_1_wllllll(0x16, (long)"LOAD_IMG.SLB", (long)SLB_AUDIT_DIR, 1L,
                          (long)&lsl, (long)&lexec, (long)&lip);
     if (ret < 0) { outf("load open %ld %ld\n", ret, 0); return 5; }
     lr = legacy_load0(lexec, lsl,

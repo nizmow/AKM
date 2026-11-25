@@ -5,8 +5,10 @@
 `mise run test:console-tools-neost` builds `MAC2ST.TTP`, `DUMP.TTP`, `FC.TTP`,
 `SPLIT.TTP` and the generic Pexec driver, then runs
 `scripts/neost-console-tools-smoke.py`. Every case gives the archived and rebuilt
-binary the same disposable `C:` fixture and compares child status, console
-output and guest file hashes.
+binary the same disposable `C:` fixture and checks the case's declared child
+status and generated guest outputs, plus console output. Fixture inputs are not
+counted as outputs. Missing-file cases declare the tools' intentional
+`Pterm(ENOENT)` status 65503; a negative Pexec loader status fails the case.
 
 Cases cover:
 
@@ -75,6 +77,14 @@ archived and rebuilt bundles in separate clones of the same MagiC image:
 3. Compare every UI state and the saved `0.NOT` file.
 4. Reboot the same image and compare the reopened note window.
 
+MGNOTICE opens `EDITOBJC.SLB` with a NULL search path, so each variant's library
+is installed in the default `GEMSYS\MAGIC\XTENSION` directory after removing any
+`SLBPATH` override and `#_SLB` preload of that name; inherited `0.NOT` files are
+cleared before the run. A third boot with the library removed from the clone
+must produce neither the application UI nor a saved note. This control proves
+the lifecycle used the library selected for that variant; the archived and
+rebuilt `EDITOBJC.SLB` files are different builds.
+
 The delayed launcher is required because MagiC starts `#_APP` entries before
 MAGXDESK owns the menu bar; MGNOTICE needs foreground windows for input.
 
@@ -118,10 +128,14 @@ messages, font variants and long-term operation are outside this scenario.
 
 `mise run test:mgformat-neost` builds `MGFORMAT.PRG`, its German resource and
 `NEOSTART.PRG`, then boots archived and rebuilt bundles in separate clones of
-the same MagiC image. The helper is installed in `GEMSYS\MAGIC\START` and
-invokes MGFORMAT with `-f A:` after the desktop is ready. The scenario compares
-the format dialogs; the only expected difference is the desktop free-bytes
-status line.
+the same MagiC image. `MAGX.INF` is pinned to load `GEMSYS\MAGIC\START` (any
+`#_AUT` is removed) so the helper cannot be skipped by an inherited startup
+path; the helper invokes `C:\MGFORMAT.PRG` with `-f A:` after the desktop is
+ready. The scenario compares the dialog title, name label, name field and body,
+excluding the desktop free-bytes status line and the blinking caret column, and
+requires two settled captures to agree. A third boot with only
+`C:\MGFORMAT.PRG` removed must differ substantially in those regions, proving
+the archived/rebuilt dialog came from the installed program.
 
 Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
 `mtools`. Run with fresh output:
@@ -136,15 +150,48 @@ reports a write fault when MGFORMAT starts a format operation. Those paths are
 covered by the real-hardware matrix in [MANUAL_TESTING.md](MANUAL_TESTING.md);
 cancellation, alternate resources and long-term threading remain unverified.
 
+## NeoST: MAGXDESK v5 desktop
+
+`mise run test:magxdesk-neost` builds the version-5 desktop and boots the
+archived and rebuilt `MAGXDESK.APP` with the same German resources on separate
+clones of the supplied MagiC image. `MAGX.INF` is pinned to
+`#_SHL C:\GEMSYS\GEMDESK\MAGXDESK.APP` and any `#_AUT` entry is removed, so the
+installed program is the tested shell rather than an inherited desktop path.
+
+Each boot runs 15000 frames, parks the mouse outside the compared areas, and
+takes two captures 600 frames apart. The desktop window title, window content
+and icon area must be identical between the two captures and between archived
+and rebuilt runs; the menu-bar clock and free-space status line are excluded. A
+third boot with only `MAGXDESK.APP` removed must still boot and differ in the
+compared regions (`>= 500` primary pixels, `>= 1000` total), proving the desktop
+came from the installed program. Coordinates assume the pinned 640x400 mono
+profile; interaction, dragging and alternate desktop layouts remain untested.
+
+## NeoST: VT52 terminal session
+
+`mise run test:vt52-neost` builds `VT52.PRG` with the source-built `DRAGDROP`,
+its German resource and a delayed launcher. `MAGX.INF` is pinned to load
+`GEMSYS\MAGIC\START` (any `#_AUT` is removed), and the archive or rebuild is
+installed at `C:\VT52.PRG` beside `VT52.RSC` and `VT52DEMO.TOS`. The launcher
+starts VT52 and the child writes a fixed line through the BIOS console path.
+
+Two settled captures, 600 frames apart, must agree in the window title and both
+output lines; the cursor and scrollbar columns and the mouse are excluded. A
+third boot with only `C:\VT52.PRG` removed must differ from both positive runs
+(`>= 200` primary pixels, `>= 1000` total), proving the terminal window came
+from the installed program. Interactive keyboard/mouse use remains untested.
+
 ## NeoST: MGCOPY file operations
 
 `mise run test:mgcopy-neost` builds `MGCOPY.APP`, its German `MGCOPY.RSC` and
 `NEOSTART.PRG`, then runs the archived and rebuilt bundles in separate clones
 of the same MagiC image. The delayed driver invokes MGCOPY through `Pexec`
-with `-q` and records the four child statuses in `C:\MGCOPY.RES`.
+with `-q` and records the seven child statuses in `C:\MGCOPY.RES`.
 
-The scenario copies `SRC.TXT`, moves `MOVE.TXT`, aliases `ALIAS.TXT` and
-deletes `DEL.TXT` into/from `C:\DEST\`. It requires:
+Each clone starts without `C:\DEST` or a stale `MGCOPY.RES`. The scenario copies
+`SRC.TXT`, moves `MOVE.TXT`, aliases `ALIAS.TXT` and deletes `DEL.TXT`
+into/from `C:\DEST\`. It requires seven numbered `CASE nn 0` statuses (nonzero
+or malformed lines fail regardless of archive/rebuilt agreement) and:
 
 - Copy: `DEST\SRC.TXT` exists and matches the source.
 - Move: `DEST\MOVE.TXT` exists and the source is gone.
@@ -154,6 +201,11 @@ deletes `DEL.TXT` into/from `C:\DEST\`. It requires:
   the move removes the source tree, while the copy leaves it.
 - Cross-drive move: `D:\XMOVE.TXT` is copied to `C:\DEST\XMOVE.TXT` and
   removed from D:.
+- Every copied, moved or retained file is byte-identical to its seeded source;
+  the alias destination is a MagiC `Fsymlink` record naming `C:\ALIAS.TXT`,
+  not a byte copy.
+- Absence is confirmed with the fail-closed `mdir` check, so an extraction error
+  cannot masquerade as a deleted file.
 - Archived and rebuilt statuses and guest-file hashes are identical.
 
 Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
@@ -180,11 +232,16 @@ cancel/rename/skip remain untested.
 ## Shared host-side helpers
 
 `scripts/neost_image.py` wraps disposable image cloning, `MAGX.INF`
-verification, guest directory creation and `mcopy` in/out operations.
+verification, guest directory creation, fail-closed presence/removal checks and
+`mcopy` in/out operations. `exists()` reports a missing guest path only for
+mtools' explicit not-found result and raises on media errors; `remove()` proves
+the path is gone, so stale guest state cannot satisfy a scenario.
 `scripts/neost_screen.py` parses NeoST PPM screenshots and computes pixel diffs
 and bounding boxes. `scripts/neost_host.py` combines those helpers with
 `NeoSTServer` for one booted session; its API and limits are documented in
-[NeoST_HOST.md](NeoST_HOST.md). Scenario runners keep their own machine profile,
+[NeoST_HOST.md](NeoST_HOST.md). A clean session requires NeoST to acknowledge
+`quit` and exit zero; context-manager shutdown preserves an earlier scenario
+error instead of masking it. Scenario runners keep their own machine profile,
 input timing, fixtures and assertions.
 
 Run the helper regression checks with:
@@ -296,11 +353,16 @@ MegaSTE/4 MiB/monochrome, with a delayed launcher installed in the image's
 `GEMSYS\MAGIC\START` folder. Results, console logs and screenshots remain in a
 fresh `build/atari/neost-mcmd-*` directory.
 
-Checks cover batch argument/variable substitution, internal quoting, output
-and append redirection, an external child's stdin/stdout/environment and raw
-tail interpretation, copy/rename/delete and directory effects, conditionals,
-GOTO, missing commands, and return to the launcher. Guest contents are checked
-independently and compared byte-for-byte between archived and rebuilt runs.
+Each clone clears the outputs the batch creates (including `BAD.TXT`, `CHILD.RES`
+and `WORK`) but keeps the seeded `INPUT.TXT`, so inherited files cannot satisfy
+a result. `CHILD.RES` and `MCMD.RES` must be freshly written, with
+`MCMD.RES` byte-equal to `STATUS 0\r\n`; absence probes use the fail-closed
+`mdir` check. Checks cover batch argument/variable substitution, internal
+quoting, output and append redirection, an external child's
+stdin/stdout/environment and raw tail interpretation, copy/rename/delete and
+directory effects, conditionals, GOTO, missing commands, and return to the
+launcher. Guest contents are checked independently and compared byte-for-byte
+between archived and rebuilt runs.
 `PORTING_NOTES.md` records the retained external-quote and trailing-directory
 behaviors. Interactive editing, pipes, long filenames and AUTOEXEC/BOOT startup
 remain untested.
@@ -402,8 +464,10 @@ corpus under NeoST's EmuTOS:
 python3 scripts/neost-dis-smoke.py
 ```
 
-Each case gets its own disposable GEMDOS C: tree. The runner compares child
-status and all generated guest files. Child console text is not checked:
+Each case gets its own disposable GEMDOS C: tree and declares its expected child
+status and generated guest outputs; fixture inputs are excluded. The no-argument
+and missing-file cases declare the tools' intentional `Pterm(1)` status, and a
+negative Pexec loader status fails the case. Child console text is not checked:
 NeoST's console log contains only the driver's `STATUS` line, and its screenshot
 is taken after the driver returns to the desktop. Banners, usage and diagnostics
 remain a documented gap.
@@ -506,10 +570,12 @@ associations, help, patterns and localized German resources. The retained
 support. TT/Falcon/MFM, Mac-specific programs, historical demos and ROMs are
 outside this profile.
 
-`mise run test:release-neost` builds the selected outputs, packs twice and
-requires byte-identical ZIPs. It then clones a MagiC image, removes `AUTO`,
+`mise run test:release-neost` builds the selected outputs, including every packaged
+OSD driver, packs twice and requires byte-identical ZIPs. The packager rejects a
+missing or empty rebuilt input. It then clones a MagiC image, removes `AUTO`,
 `BIN`, `EXTRAS`, `GEMSYS`, `LANG` and the root MagiC files, extracts only the
-ZIP, and verifies every installed member's hash. The clean payload must boot to
+ZIP, and verifies every installed member's hash; a failed removal stops the run
+before any member is copied. The clean payload must boot to
 MAGXDESK, open its menu and open the COPS panel. Only `HDDRIVER.SYS` remains
 from the fixture's boot infrastructure; it and retained Release CPX/desktop
 files are not rebuilt. The profile is a mono MegaSTE/TOS 2.06 boot; file
@@ -519,9 +585,11 @@ operations and shutdown are exercised separately against the produced payload
 ## NeoST: image SLB ABI and rendering
 
 `mise run test:slb-consumer-neost` builds `XP_RASTR.SLB`, `LOAD_IMG.SLB` and a
-small GCC consumer (`SLBTEST.PRG`), installs the libraries in a disposable
-MagiC clone's `GEMSYS\MAGIC\XTENSION`, and runs the consumer from
-`GEMSYS\MAGIC\START\ZCNFTEST.PRG`:
+small GCC consumer (`SLBTEST.PRG`), installs the two libraries in a dedicated
+`C:\SLBAUDIT` directory named explicitly by both `Slbopen` calls, and runs the
+consumer from `GEMSYS\MAGIC\START\ZCNFTEST.PRG`. Inherited copies in
+`GEMSYS\MAGIC\XTENSION` are removed, `SLBPATH` and `#_SLB` preloads for these
+names are stripped, and the stale `SLBTEST.TXT` marker is cleared:
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
@@ -529,10 +597,13 @@ MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
 ```
 
 The same probe runs against archived and rebuilt libraries on separate
-MegaSTE/ST-low clones. It calls the packed legacy XP export, checks an exact
-four-plane expansion, and calls LOAD_IMG exports 0 → 2 → 3 → 1 to load,
-convert, draw and free `PAT6.IMG`. It checks that drawing changes the screen
-and compares the realized VDI colours of the 64×64 image, not palette indices,
+MegaSTE/ST-low clones. Two further boots omit one library from `C:\SLBAUDIT`
+(and from every inherited search path); the probe must report a negative
+`Slbopen` status for that name instead of silently using another copy. It calls
+the packed legacy XP export, checks an exact four-plane expansion, and calls
+LOAD_IMG exports 0 → 2 → 3 → 1 to load, convert, draw and free `PAT6.IMG`. It
+checks that drawing changes the screen and compares the realized VDI colours
+of the 64×64 image, not palette indices,
 bitmap storage or private descriptor fields. The success marker is written
 after closing both libraries. Evidence goes to `build/atari/neost-slb-consumer-*`.
 
@@ -683,9 +754,10 @@ scenarios.
 `KEYB_{CZ,DEI,FRA,SWG,UK,US}.PRG`) runs through the generic Pexec driver in its
 own disposable GEMDOS tree and must produce:
 
-- matching child status and console output (both status 0 and empty output in
-  the recorded run);
-- a byte-identical `KEYTABLS.SYS` (the 9×128-byte table block plus the
+- declared child status 0 and matching console output (empty in the recorded
+  run);
+- exactly one generated `KEYTABLS.SYS`, byte-identical across archive and
+  rebuild (the 9×128-byte table block plus the
   locale's dead-key trailer: 116 bytes for CZ, 42 for the rest);
 - six distinct layouts across the locales.
 

@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from neost_image import MagiCImage
-from neost_server import NeoSTServer
+from neost_server import NeoSTError, NeoSTServer
 
 
 class NeoSTHost:
@@ -124,13 +124,17 @@ class NeoSTHost:
         return self.server.load(slot)
 
     def close(self) -> None:
-        if self._server is not None:
-            self._server.close()
-            self._server = None
+        server, self._server = self._server, None
+        if server is not None:
+            server.close()
 
     def __enter__(self) -> "NeoSTHost":
         self.start()
         return self
 
     def __exit__(self, exc_type, exc, traceback) -> None:
-        self.close()
+        try:
+            self.close()
+        except NeoSTError:
+            if exc_type is None:
+                raise

@@ -80,8 +80,7 @@ def lifecycle(headless: Path, rom: Path, source: Path, app: Path, mode: str,
     shots = {}
     values = []
     host = session(headless, rom, image, output / "lifecycle")
-    try:
-        host.start()
+    with host:
         host.boot(15000)
         host.calibrate_mouse()
         values.append(sample(host.guest_root / "E/BEFORE.RES"))
@@ -108,8 +107,6 @@ def lifecycle(headless: Path, rom: Path, source: Path, app: Path, mode: str,
                 (host.output / f"{step}.RES").write_bytes(probe.read_bytes())
         expected = [values[0], values[0], values[0] ^ 0x10, values[0] ^ 0x90]
         require(values == expected, f"{output}: configuration transitions {values} != {expected}")
-    finally:
-        host.close()
     original = app.read_bytes()
     saved_file = output / ("saved.prg" if mode == "p" else "saved.acc")
     image.copy_out(guest_app, saved_file)
@@ -123,8 +120,7 @@ def lifecycle(headless: Path, rom: Path, source: Path, app: Path, mode: str,
         mode_file.write_text("r")
         image.copy_in(mode_file, "::/CNFMODE.TXT")
         reboot = session(headless, rom, image, output / "reboot")
-        try:
-            reboot.start()
+        with reboot:
             reboot.boot(15000)
             restored = sample(reboot.guest_root / "E/BEFORE.RES")
             require(restored == values[-1],
@@ -135,8 +131,6 @@ def lifecycle(headless: Path, rom: Path, source: Path, app: Path, mode: str,
             shots["restored"] = reboot.screenshot("restored.ppm")
             reboot.click(411, 299)
             reboot.run_frames(80)
-        finally:
-            reboot.close()
     return shots, values
 
 

@@ -96,8 +96,12 @@ with host:
 For an image passed in the constructor, `with NeoSTHost(...) as host:` is
 sufficient.
 
-`close()` is idempotent. Context-manager exit closes the server but keeps the
-output artifacts.
+`close()` is idempotent. Closing requires NeoST to acknowledge `quit` and exit
+with status zero within two seconds; otherwise it raises `NeoSTTransportError`,
+so a clean scenario cannot pass after an emulator crash during shutdown. Use the
+context manager or call `close()` from an `else` branch, not a bare `finally`
+that would replace an earlier scenario failure. Context-manager exit preserves
+the original exception and keeps the output artifacts.
 
 ## Mouse coordinates
 

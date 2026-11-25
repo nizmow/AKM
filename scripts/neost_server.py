@@ -341,17 +341,12 @@ class NeoSTServer:
             raise ValueError("drive must be A or B")
         self._request(f"eject {drive}")
 
-    def _terminate(self, graceful: bool = False) -> None:
+    def _terminate(self) -> None:
         if self._closed:
             return
         self._closed = True
         proc = self._proc
         if proc is not None:
-            if proc.poll() is None and graceful:
-                try:
-                    proc.wait(timeout=2)
-                except subprocess.TimeoutExpired:
-                    graceful = False
             if proc.poll() is None:
                 try:
                     proc.kill()
@@ -379,17 +374,27 @@ class NeoSTServer:
     def close(self) -> None:
         if self._closed:
             return
-        graceful = False
+        proc = self._proc
+        if proc is None:
+            self._closed = True
+            return
         try:
             self._request("quit", timeout=2)
-            graceful = True
-        except NeoSTError:
-            pass
+            try:
+                status = proc.wait(timeout=2)
+            except subprocess.TimeoutExpired as error:
+                raise NeoSTTransportError("NeoST did not exit after quit") from error
+            if status:
+                raise NeoSTTransportError(f"NeoST exited {status} after quit")
         finally:
-            self._terminate(graceful=graceful)
+            self._terminate()
 
     def __enter__(self) -> "NeoSTServer":
         return self
 
-    def __exit__(self, *_: object) -> None:
-        self.close()
+    def __exit__(self, exc_type, exc, traceback) -> None:
+        try:
+            self.close()
+        except NeoSTError:
+            if exc_type is None:
+                raise

@@ -59,8 +59,7 @@ def run_case(headless: Path, rom: Path, source: Path, cpx: Path, output: Path,
     image.copy_in(output / "CNFMODE.TXT", "::/CNFMODE.TXT")
 
     host = session(headless, rom, image, output / "run")
-    try:
-        host.start()
+    with host:
         host.boot(15000)
         host.calibrate_mouse()
         result = host.guest_root / "E/BEFORE.RES"
@@ -81,8 +80,6 @@ def run_case(headless: Path, rom: Path, source: Path, cpx: Path, output: Path,
         host.click(205, 195)
         host.run_frames(150)
         return host.screenshot("dialog.ppm")
-    finally:
-        host.close()
 
 
 def main() -> int:

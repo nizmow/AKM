@@ -587,12 +587,20 @@ the same image to compare the reopened note. The delayed `NEOSTART.PRG` helper
 is needed because MagiC starts `#_APP` entries before MAGXDESK owns the menu bar;
 MGNOTICE needs foreground windows for input.
 
+MGNOTICE opens `EDITOBJC.SLB` with a NULL path, so the tested library is
+installed in `GEMSYS\MAGIC\XTENSION` after stripping `SLBPATH` and `#_SLB`
+overrides; a third boot with the library removed must produce neither the
+application UI nor a saved note. This control distinguishes the tested SLB from
+the image's inherited copy (18 KB archive versus the 132 KB GCC build).
+
 Verified results: initial, new, typed, escaped and quit screens are pixel-identical;
 the 75-byte `0.NOT` files are byte-identical and contain `hello`; the reopened
-screens are identical and the note window occupies `(98,98)-(141,117)`. Evidence
-is under `build/atari/neost-mgnotice-refactor/`. Delete, font/colour/options,
-multiple-window operation, window resize and French/US resources remain
-unverified.
+screens are identical and the note window occupies `(98,98)-(141,117)`; the
+missing-library control produced no note and no application UI. Audit evidence
+is under `build/atari/neost-mgnotice-20261125-134503`; the earlier refactor
+evidence is under `build/atari/neost-mgnotice-refactor/`. Delete,
+font/colour/options, multiple-window operation, window resize and French/US
+resources remain unverified.
 
 ### MGSEARCH
 

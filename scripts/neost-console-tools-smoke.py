@@ -2,7 +2,11 @@
 """Compare archived and rebuilt MagiC console tools under NeoST.
 
 Each case runs both binaries through the generic Pexec driver, with identical
-fixtures, and compares child status, console output and guest file effects.
+fixtures, and compares console output and guest file hashes. Every case declares
+the child status and generated guest files it expects; fixture inputs are not
+counted as outputs. Missing argument files are intentional errors, so the tools
+exit through ``Pterm`` with ``ENOENT`` (0x0000ffdf = 65503) rather than failing
+to load.
 """
 
 from __future__ import annotations
@@ -36,27 +40,30 @@ class Case:
     name: str
     tool: str
     tail: str
+    status: int
+    outputs: tuple[str, ...]
     fixtures: tuple[str, ...]
 
 
 CASES = (
-    Case("mac2st", "mac2st", "MAC2ST.TXT", ("MAC2ST.TXT",)),
-    Case("dump", "dump", "DUMP.TXT", ("DUMP.TXT",)),
-    Case("dump-c", "dump", "-c DUMP.TXT", ("DUMP.TXT",)),
-    Case("fc-equal", "fc", "EQUAL-A.TXT EQUAL-B.TXT",
+    Case("mac2st", "mac2st", "MAC2ST.TXT", 0, (), ("MAC2ST.TXT",)),
+    Case("dump", "dump", "DUMP.TXT", 0, (), ("DUMP.TXT",)),
+    Case("dump-c", "dump", "-c DUMP.TXT", 0, (), ("DUMP.TXT",)),
+    Case("fc-equal", "fc", "EQUAL-A.TXT EQUAL-B.TXT", 0, (),
          ("EQUAL-A.TXT", "EQUAL-B.TXT")),
-    Case("fc-diff", "fc", "DIFF-A.TXT DIFF-B.TXT",
+    Case("fc-diff", "fc", "DIFF-A.TXT DIFF-B.TXT", 0, (),
          ("DIFF-A.TXT", "DIFF-B.TXT")),
-    Case("fc-word", "fc", "-w DIFF-A.TXT DIFF-B.TXT",
+    Case("fc-word", "fc", "-w DIFF-A.TXT DIFF-B.TXT", 0, (),
          ("DIFF-A.TXT", "DIFF-B.TXT")),
-    Case("fc-long", "fc", "-l DIFF-A.TXT DIFF-B.TXT",
+    Case("fc-long", "fc", "-l DIFF-A.TXT DIFF-B.TXT", 0, (),
          ("DIFF-A.TXT", "DIFF-B.TXT")),
-    Case("split", "split", "-10 SPLIT.TXT OUT1.TXT OUT2.TXT",
-         ("SPLIT.TXT",)),
-    Case("mac2st-missing", "mac2st", "MISSING.TXT", ()),
-    Case("dump-missing", "dump", "MISSING.TXT", ()),
-    Case("fc-missing", "fc", "MISSING-A.TXT MISSING-B.TXT", ()),
-    Case("split-missing", "split", "MISSING.TXT OUT1.TXT OUT2.TXT", ()),
+    Case("split", "split", "-10 SPLIT.TXT OUT1.TXT OUT2.TXT", 0,
+         ("OUT1.TXT", "OUT2.TXT"), ("SPLIT.TXT",)),
+    # Missing argument files are intentional Pterm(-33) exits.
+    Case("mac2st-missing", "mac2st", "MISSING.TXT", 65503, (), ()),
+    Case("dump-missing", "dump", "MISSING.TXT", 65503, (), ()),
+    Case("fc-missing", "fc", "MISSING-A.TXT MISSING-B.TXT", 65503, (), ()),
+    Case("split-missing", "split", "MISSING.TXT OUT1.TXT OUT2.TXT", 65503, (), ()),
 )
 
 
@@ -126,10 +133,13 @@ def main() -> int:
                        "--archived", str(archived),
                        "--rebuilt", str(rebuilt),
                        "--tail", case.tail,
+                       "--expect-status", str(case.status),
                        "--compare", "all",
                        "--frames", str(args.frames),
                        "--timeout", str(args.timeout),
                        "--output", str(output / case.name)]
+            for expected in case.outputs:
+                command.extend(["--expect-file", expected])
             command.extend(["--neost", str(args.neost)])
             if args.neost_headless:
                 command.extend(["--neost-headless", str(args.neost_headless)])
