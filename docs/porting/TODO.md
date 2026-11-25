@@ -145,7 +145,7 @@ framework or shared-library rewrite is required before these are attempted.
   reopen states match on a cloned MagiC image.
 - [x] **MGSEARCH** — add `mgsearch` producing `MGSEARCH.APP` and its German
   resource; compile the older `GEMUTILS`/`WINDOWS` contract and an app-local
-  `MAGXDESK.5/PATTERN.C` copy, relying on modern GEMlib instead of `MAGIXLIB`.
+  `core/magxdesk/SRC/PATTERN.C` copy, relying on modern GEMlib instead of `MAGIXLIB`.
   Archived/rebuilt dialog and `*.ZZZ` result screens match on a cloned MagiC
   image, including a nested fixture directory.
 - [x] **MAC2ST, DUMP, FC, SPLIT** — add independent console targets using

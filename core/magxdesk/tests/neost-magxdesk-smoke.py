@@ -22,14 +22,17 @@ from pathlib import Path
 import sys
 import tempfile
 
+COMPONENT = Path(__file__).resolve().parents[1]
+ROOT = COMPONENT.parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+
 from neost_common import acquire_headless, create_output, require, run
 from neost_host import NeoSTHost
 from neost_image import MagiCImage
 from neost_screen import diff_stats
 
-ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
-SOURCE_DIR = ROOT / "MagiC/APPS/MAGICDESK/MAGXDESK.5"
+SOURCE_DIR = COMPONENT / "SRC"
 ARCHIVE_APP = SOURCE_DIR / "MAGXDESK.APP"
 RESOURCE = SOURCE_DIR / "MAGXDESK.RSC"
 RESOURCE_LANGUAGE = SOURCE_DIR / "MAGXDESL.RSC"

@@ -254,8 +254,8 @@ and byte-identical `.NOT` output.
 
 `mise run apps -- mgsearch` builds `build/atari/apps/mgsearch/`: `MGSEARCH.APP`
 and `MGSEARCH.RSC`. The target compiles the consumer-specific `GEMUTILS`/
-`WINDOWS` variant and an app-local copy of `MAGXDESK.5/PATTERN.C` against public
-GEMlib; the older `MAGXLIB.LIB` dependency is not linked.
+`WINDOWS` variant and an app-local copy of `core/magxdesk/SRC/PATTERN.C`
+against public GEMlib; the older `MAGXLIB.LIB` dependency is not linked.
 
 `mise run apps -- mgcopy` builds `build/atari/apps/mgcopy/`: `MGCOPY.APP` and
 its German `MGCOPY.RSC`. The port uses the shared `GEMUT_MT.C` helper, public
@@ -279,13 +279,13 @@ terminal session with a delayed TOS child; the final screens match
 pixel-for-pixel.
 
 `mise run apps -- magxdesk` builds `build/atari/apps/magxdesk/MAGXDESK.APP`
-from the version-5 C sources using MiNTLib/GEMlib and the default application
-ABI; it does not use archived Pure C objects. `mise run test:magxdesk-neost`
+from the version-5 C sources in `core/magxdesk/`, using MiNTLib/GEMlib and the
+default application ABI; it does not use archived Pure C objects. `mise run test:magxdesk-neost`
 compares the rebuilt and archived desktops on separate cloned MagiC images;
 the desktop content matches pixel-for-pixel. Version 4 remains separate.
 
-`mise run apps -- mcmd` builds the German command interpreter as
-`build/atari/apps/mcmd/de/MCMD.TOS`. Select `MCMD_LANG=en` or `MCMD_LANG=fr`,
+`mise run apps -- mcmd` builds the German command interpreter from `core/mcmd/`
+as `build/atari/apps/mcmd/de/MCMD.TOS`. Select `MCMD_LANG=en` or `MCMD_LANG=fr`,
 or build all three with `mise run apps -- mcmd-languages`. VASM emits the TOS
 executable directly from normalized assembly; no archived MAS/ALN tools or
 objects are used. `mise run test:mcmd-neost` compares batch execution and guest

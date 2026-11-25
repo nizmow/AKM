@@ -378,7 +378,7 @@ of the supplied MagiC image:
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
-  python3 scripts/neost-mcmd-smoke.py
+  mise run test:mcmd-neost
 ```
 
 Host `mtools` is required. `--partition-offset` changes the default C: offset

@@ -146,12 +146,12 @@ run = "python3 scripts/neost-mgsearch-smoke.py"
 [tasks."test:magxdesk-neost"]
 description = "Compare archived and rebuilt MAGXDESK v5 startup under NeoST"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-magxdesk-smoke.py"
+run = "python3 core/magxdesk/tests/neost-magxdesk-smoke.py"
 
 [tasks."test:mcmd-neost"]
 description = "Compare localized MCMD command execution under NeoST/MagiC"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-mcmd-smoke.py"
+run = "python3 core/mcmd/tests/neost-mcmd-smoke.py"
 
 [tasks."test:magxconf-neost"]
 description = "Compare localized MAGXCONF PRG/ACC dialog and saved configuration under MagiC"

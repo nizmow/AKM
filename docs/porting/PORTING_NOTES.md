@@ -607,7 +607,7 @@ resources remain unverified.
 `mise run apps -- mgsearch` builds `build/atari/apps/mgsearch/MGSEARCH.APP`
 and copies the default German `MGSEARCH.RSC`. It compiles the consumer-specific
 `GEMUTILS`/`WINDOWS` sources from `MagiC/LIB/MYLIBS/SRC` and an app-local copy
-of `MAGXDESK.5/PATTERN.C`; the pattern helper is `mg_toupper` because MiNTLib's
+of `core/magxdesk/SRC/PATTERN.C`; the pattern helper is `mg_toupper` because MiNTLib's
 libc already exports `toupper`. The old `MAGXLIB.LIB` is not linked: modern
 GEMlib supplies `form_xdo`, `form_xdial`, `objc_sysvar` and `wind_find`.
 

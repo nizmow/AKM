@@ -32,11 +32,12 @@ MGSEARCH_OBJECTS := $(patsubst $(MGSEARCH_DIR)/%.C,$(BUILD_DIR)/mgsearch/%.o,$(M
   $(BUILD_DIR)/mgsearch/GEMUTILS.o $(BUILD_DIR)/mgsearch/WINDOWS.o \
   $(BUILD_DIR)/mgsearch/PATTERN.o
 
-MAGXDESK_DIR := MagiC/APPS/MAGICDESK/MAGXDESK.5
+MAGXDESK_DIR := core/magxdesk/SRC
+MAGXDESK_OBJ_DIR := $(BUILD_DIR)/magxdesk/obj
 MAGXDESK_SOURCES := $(addprefix $(MAGXDESK_DIR)/,MAGXDESK.C SPEC.C \
   DEFAULTS.C DIALOGS.C DLG_INFO.C DWINDOWS.C FILES.C IMGLOAD.C KACHEL.C \
   KLICK.C ALLG.C DMENU.C DKLICK.C PATTERN.C LL.C SHELSORT.C)
-MAGXDESK_OBJECTS := $(patsubst $(MAGXDESK_DIR)/%.C,$(BUILD_DIR)/magxdesk/%.o,$(MAGXDESK_SOURCES))
+MAGXDESK_OBJECTS := $(patsubst $(MAGXDESK_DIR)/%.C,$(MAGXDESK_OBJ_DIR)/%.o,$(MAGXDESK_SOURCES))
 MGCOPY_ROOT := core/mgcopy
 MGCOPY_DIR := $(MGCOPY_ROOT)/SRC
 MGCOPY_GEMUT_DIR := MagiC/APPS/APPLICAT/SRC/IMPORT
@@ -77,7 +78,8 @@ ifeq ($(COPS_OUTPUT_LOWER),$(COPS_SOURCE_LOWER))
 $(error BUILD_DIR=$(BUILD_DIR) aliases the COPS source directory)
 endif
 
-MCMD_DIR := MagiC/APPS/CMD/SRC
+MCMD_ROOT := core/mcmd
+MCMD_DIR := $(MCMD_ROOT)/SRC
 MCMD_LANG ?= de
 MAS_NORMALIZER := MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py
 
@@ -381,14 +383,14 @@ $(BUILD_DIR)/mcmd/%/MCMD.TOS: $(MCMD_NORMALIZED) Makefile.apps
 	$(VASM) -Ftos -m68000 -noesc -DCOUNTRY=$$country \
 	  -I"$(BUILD_DIR)/mcmd/src/" -o "$@" "$(BUILD_DIR)/mcmd/src/CMD.S"
 
-$(BUILD_DIR)/mcmd/NEOSTART.PRG: MagiC/APPS/CMD/TESTDATA/NEOSTART.C Makefile.apps
+$(BUILD_DIR)/mcmd/NEOSTART.PRG: $(MCMD_ROOT)/tests/NEOSTART.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
-$(BUILD_DIR)/mcmd/CHILD.TTP: MagiC/APPS/CMD/TESTDATA/CHILD.C MagiC/APPS/TOS_ARGS.H Makefile.apps
+$(BUILD_DIR)/mcmd/CHILD.TTP: $(MCMD_ROOT)/tests/CHILD.C MagiC/APPS/TOS_ARGS.H Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"MagiC/APPS" -MMD -MP \
 	  -MF "$(@:.TTP=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
 MAGXCONF_DIR := MagiC/APPS/MAGXCONF/SRC
@@ -530,7 +532,7 @@ $(BUILD_DIR)/mgview/%.o: $(MGVIEW_DIR)/%.C Makefile.apps
 $(BUILD_DIR)/mgview/MGVIEW.APP: $(MGVIEW_OBJECTS) Makefile.apps
 	$(CC) $(APP_FLAGS) $(MGVIEW_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
-$(BUILD_DIR)/magxdesk/%.o: $(MAGXDESK_DIR)/%.C Makefile.apps
+$(MAGXDESK_OBJ_DIR)/%.o: $(MAGXDESK_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MAGXDESK_DIR)" \
 	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
