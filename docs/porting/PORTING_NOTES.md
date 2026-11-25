@@ -1437,8 +1437,8 @@ Save/alerts, event-CPX callbacks and other CPXs remain untested.
 ### OFF002.OSD offscreen driver
 
 The OSD sources use Pure C/MAS syntax and Windows-style `INCLUDE` paths. Normalize
-them with `MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py`, including the MAGICVDI.2
-`INCLUDE` files, then link with VASM `-Ftos -m68000 -noesc -nosym
+them with `MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py`, including the
+`kernel/VDI/SRC/MAGICVDI.2` `INCLUDE` files, then link with VASM `-Ftos -m68000 -noesc -nosym
 -tos-flags=7`. `-nosym` prevents VASM from adding a symbol table where the
 archived TOS executable has `slen=0`; `-tos-flags=7` preserves the header flag
 word. The resulting V4.10 `OFF002.OSD` is byte-identical to the archived

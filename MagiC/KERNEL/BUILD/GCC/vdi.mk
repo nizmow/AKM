@@ -4,7 +4,7 @@
 # The generated assembly tree is kept per slice so the VDI INCLUDE\*.I
 # namespace cannot collide with the filesystem build.
 
-VDI_SRC := MagiC/KERNEL/VDI/SRC/MAGICVDI.2
+VDI_SRC := kernel/VDI/SRC/MAGICVDI.2
 VDI_BUILD := $(BUILD_DIR)/kernel/vdi
 VDI_ASM := $(VDI_BUILD)/asm
 VDI_INCLUDE := $(VDI_BUILD)/include
@@ -86,7 +86,7 @@ $(VDI_BUILD)/drivers.o $(VDI_BUILD)/filediv.o $(VDI_BUILD)/init_res.o \
                   $(VDI_INCLUDE)/PORTAB.H $(VDI_INCLUDE)/target.h \
                   $(VDI_INCLUDE)/MXVDI.h
 	@mkdir -p $(@D)
-	$(CC) $(VDI_CFLAGS) -MMD -MP -x c -c $(filter %.C,$^) -o $@
+	$(CC) $(VDI_CFLAGS) -MMD -MP -MF $@.d -x c -c $(filter %.C,$^) -o $@
 
 $(VDI_BUILD)/mxvdiknl.o: $(VDI_ASM)/MXVDIKNL.S $(VDI_GEN_ASM) $(VDI_GEN_HEADERS)
 	@mkdir -p $(@D)
@@ -107,4 +107,4 @@ $(VDI_BUILD)/tos.o: $(VDI_ASM)/TOS.S $(VDI_GEN_HEADERS)
 $(VDI_OBJECTS): Makefile.atari MagiC/KERNEL/BUILD/GCC/assembly.mk \
                 MagiC/KERNEL/BUILD/GCC/vdi.mk
 
--include $(VDI_OBJECTS:.o=.d)
+-include $(VDI_OBJECTS:.o=.o.d)
