@@ -20,7 +20,7 @@ Legacy headers are not part of that SDK. The repository has a Borland-era
 imports and libraries there. CMDLINE has no local `TOS.H`/`AES.H` or project
 file identifying its original include path, so the exact source of the
 `<tos.h>` and `<aes.h>` it once used is not established here. The similarly
-named `tos.h` and `aes.h` under `MagiC/KERNEL/BUILD/GCC/AES_C_INCLUDE/` are
+named `tos.h` and `aes.h` under `kernel/BUILD/GCC/AES_C_INCLUDE/` are
 private kernel compatibility headers, not an application SDK.
 
 For CMDLINE, the port replaces those unavailable include expectations with
@@ -1810,7 +1810,7 @@ the projects reference kernel dialog infrastructure absent from this tree:
 `ph.h`, `pdlg_slb.h`, `popup.c`, `list.c`, `readfile.c`, `filestat.c`,
 `adaptrsc.c`, `cookies.c`, `vdi.s`, `mac_api.s` and `wdtos.s`. COPS contains
 `LIST.C`/`POPUP.C`/`ADAPTRSC.C`, but those are application adapters, not the
-kernel copies named by the PRJ. `MagiC/KERNEL/AES/SRC/WDIALOG/WDIALOG.H`,
+kernel copies named by the PRJ. `kernel/AES/SRC/WDIALOG/WDIALOG.H`,
 `LISTBOX.H`, `MagiC/LIB/MT_AES/SRC/PRDIALOG.H` and the WINFRAME SLB entry
 pattern cover part of the ABI, so reconstruction is plausible; the missing
 files are not obtainable verbatim from the repository or its release archives.
