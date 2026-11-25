@@ -1444,12 +1444,12 @@ and entry offsets; do not treat this source as a byte-identical V4.11 rebuild.
 pointer in `contrl[7/8]`. A caller-owned 64x64 one-plane MFDB with
 `fd_wdwidth=4`, `fd_stand=0` and `fd_nplanes=1` selects `OFF002.OSD` on a
 colour MagiC screen. The test probe fills a rectangle and checks pixel 1 and the
-bitmap hash; see `MagiC/KERNEL/VDI/TESTDATA/OFF002.C`.
+bitmap hash; see `core/osd/tests/OFF002.C`.
 
 ### OFF004IP.OSD offscreen driver
 
 `mise run apps -- off004ip` builds `build/atari/apps/osd/OFF004IP.OSD` from
-`MagiC/KERNEL/VDI/SRC/MAGIC.DRV/OSD/OFF004IP.S` through the same MAS-to-VASM
+`core/osd/SRC/OFF004IP.S` through the same MAS-to-VASM
 normalization and include set as OFF002. It is byte-identical to the archived
 V4.10 `MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF004IP.OSD`. VASM's default
 optimization rewrites `movem.l (sp)+,a0/a2` as two `movea.l` instructions; the
@@ -1458,7 +1458,7 @@ Release driver is V4.11 with different text/data sizes and entry offsets; it is
 not a byte reference.
 
 `mise run test:osd-off004ip-neost` builds the driver and a probe
-(`MagiC/KERNEL/VDI/TESTDATA/OFF004IP.C`), then runs the archived and rebuilt
+(`core/osd/tests/OFF004IP.C`), then runs the archived and rebuilt
 files as `C:\GEMSYS\OFF004IP.OSD` in separate cloned MagiC 6.20/TOS 2.06 images.
 The probe opens a caller-owned 64x64 two-plane interleaved MFDB
 (`fd_wdwidth=4`, `fd_stand=0`, `fd_nplanes=2`) through `v_opnbm()`, fills bars
@@ -1477,14 +1477,14 @@ untested.
 ### OFF016IP.OSD offscreen driver
 
 `mise run apps -- off016ip` builds `build/atari/apps/osd/OFF016IP.OSD` from
-`MagiC/KERNEL/VDI/SRC/MAGIC.DRV/OSD/OFF016IP.S`. It is byte-identical to the
+`core/osd/SRC/OFF016IP.S`. It is byte-identical to the
 archived V4.10 `MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF016IP.OSD`; like
 OFF004IP it needs `-no-opt` so VASM keeps the archive's `movem` restores. The
 shipped Release driver also reports header version 4.10 but has different
 text/data sizes and entry offsets, so it is a structural comparison only.
 
 `mise run test:osd-off016ip-neost` builds the driver and
-`MagiC/KERNEL/VDI/TESTDATA/OFF016IP.C`. The probe requests the 16-colour,
+`core/osd/tests/OFF016IP.C`. The probe requests the 16-colour,
 4-plane, non-packed interleaved format explicitly (`intin[15..19]` = colour
 count high/low words, planes, format, organisation), because a default request
 inherits the screen organisation. It opens a caller-owned 64x64 MFDB
@@ -1504,7 +1504,7 @@ stability remain untested.
 ### OFF256IP.OSD offscreen driver
 
 `mise run apps -- off256ip` builds `build/atari/apps/osd/OFF256IP.OSD` from
-`MagiC/KERNEL/VDI/SRC/MAGIC.DRV/OSD/OFF256IP.S` with the same includes and
+`core/osd/SRC/OFF256IP.S` with the same includes and
 `-no-opt` as OFF016IP. It is byte-identical to both the archived V4.10
 `MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF256IP.OSD` and the shipped Release
 copy (same SHA-256, 22,558 bytes, text length 0x5798). The source uses
@@ -1514,7 +1514,7 @@ assembler folded the zero displacement while VASM `-no-opt` does not. Without
 the folded spelling the text is two bytes longer and every later entry shifts.
 
 `mise run test:osd-off256ip-neost` builds the driver and
-`MagiC/KERNEL/VDI/TESTDATA/OFF256IP.C`. The probe requests the 256-colour,
+`core/osd/tests/OFF256IP.C`. The probe requests the 256-colour,
 8-plane, non-packed interleaved format explicitly (`intin[15..19]` = 0, 256,
 8, 0, 1), opens a caller-owned 64x64 MFDB (`fd_wdwidth=4`, `fd_stand=0`,
 `fd_nplanes=8`; 64 bytes per row, 4096 bytes), draws ten bars with pens 2, 3,
@@ -1566,7 +1566,7 @@ have no byte-identical reference, so their structure and runtime behavior are
 verified instead.
 
 `mise run test:osd-<driver>-neost` runs the shared
-`scripts/neost-osd-batch-smoke.py --driver <driver>` scenario. Each probe
+`core/osd/tests/neost-osd-batch-smoke.py --driver <driver>` scenario. Each probe
 requests its exact tuple through VDI 100/1, draws four-pixel bars crossing the
 x=15/16 boundary, samples both sides, dumps the bitmap and checks an untouched
 pixel. Indexed drivers use NVDI's colour map; direct-colour probes set pens

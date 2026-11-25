@@ -764,7 +764,7 @@ mise run test:osd-off65kpk-neost   # 65536 colours, packed 16-bit words
 mise run test:osd-off16mov-neost   # TrueColor, 32-bit pixels
 ```
 
-`scripts/neost-osd-batch-smoke.py` builds the driver and probe, checks the
+`core/osd/tests/neost-osd-batch-smoke.py` builds the driver and probe, checks the
 header organisation, and records archive/Release comparisons. OFF016PK must
 match its source-tree archive and OFF32KFL the Release; the remaining four have
 no byte-identical reference and are compared structurally.
