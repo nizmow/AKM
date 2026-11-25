@@ -9,4 +9,4 @@
 extern LONG mfree( void *block );
 #define Mfree( p ) mfree( (void *) (p) )
 
-#include "../../AES/SRC/WDIALOG/WDIALOG.C"
+#include "../SRC/WDIALOG/WDIALOG.C"

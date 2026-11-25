@@ -88,7 +88,7 @@ mise run atari -- m68k-atari-mintelf-gcc --version
 mise run toolchain:shell
 ```
 
-`make` forwards arbitrary targets, options and assignments to `Makefile.atari`;
+`make` forwards arbitrary targets, options and assignments to the root `Makefile`;
 `atari` forwards an arbitrary command and its arguments into the container.
 For example, `mise run make -- BUILD_DIR=build/atari/experiment magic` keeps a
 separate build. Invoke tasks from repository subdirectories too.
@@ -198,7 +198,7 @@ wrapper mounts the repository at `/work`, preserves the caller's user ID and
 stdin, and allocates a terminal only for interactive use. Override the image for
 both build and run with `ATARI_TOOLCHAIN_IMAGE=localhost/my-atari-toolchain:tag`.
 
-Mise is not required: `scripts/atari-container run make -f Makefile.atari magic`
+Mise is not required: `scripts/atari-container run make magic`
 uses the same wrapper directly, and the original Podman commands still work.
 
 ## Standalone application builds
@@ -400,7 +400,7 @@ Build the German Atari/68000 kernel from the repository root:
 
 ```sh
 podman run --rm --network=none --userns=keep-id -v "$PWD:/work" -w /work \
-  localhost/magic-atari-toolchain:latest make -j4 -f Makefile.atari magic
+  localhost/magic-atari-toolchain:latest make -j4 magic
 ```
 
 The output is `build/atari/MAGIC.RAM`. `kernel.elf` retains symbols and relocations;
@@ -444,17 +444,17 @@ Build the filesystem kernel component from the repository root:
 
 ```sh
 podman run --rm --userns=keep-id -v "$PWD:/work" -w /work \
-  localhost/magic-atari-toolchain:latest make -f Makefile.atari filesystem
+  localhost/magic-atari-toolchain:latest make filesystem
 ```
 
 This produces `build/atari/filesystem.o`, a relocatable 68000 ELF component linking:
 
-- GCC-built `DOS/VFAT.C` (long-filename record creation and directory reading);
-- assembly `DOS/VFAT_S.S` (device-call glue and LFN checksum);
+- GCC-built `kernel/DOS/VFAT.C` (long-filename record creation and directory reading);
+- assembly `kernel/DOS/VFAT_S.S` (device-call glue and LFN checksum);
 - assembly `DOS/XFS_VDOS.S` (DOS filesystem driver);
 - assembly `ALLG/SRC/STD.S` (kernel memory, string and other runtime routines).
 
-`make -f Makefile.atari vfat` still builds only `build/atari/vfat.o`.
+`make vfat` still builds only `build/atari/vfat.o`.
 The C flags retain 16-bit integers and register calls:
 `-std=gnu11 -mshort -mfastcall -ffreestanding -fno-builtin -fno-strict-aliasing`.
 Both C and assembly compilation check shared structure offsets.
@@ -474,7 +474,7 @@ container, then link and run on a host with M68k GNU binutils and QEMU user emul
 ```sh
 podman run --rm --userns=keep-id -v "$PWD:/work" -w /work \
   localhost/magic-atari-toolchain:latest \
-  make -f Makefile.atari filesystem build/atari/vfat-check.o
+  make filesystem build/atari/vfat-check.o
 m68k-linux-gnu-ld -Ttext=0x10000 --gc-sections -z noexecstack -e _start \
   build/atari/vfat-check.o build/atari/vfat-glue.o build/atari/std.o \
   -o build/atari/vfat-check.elf

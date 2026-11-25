@@ -3,7 +3,7 @@
 struct _mx_dmd;
 struct _mx_fd;
 struct _mx_dosfd;
-#include "../../DOS/VFAT.C"
+#include "../VFAT.C"
 
 _Static_assert(sizeof(WORD) == 2 && sizeof(UWORD) == 2, "kernel words must be 16-bit");
 _Static_assert(sizeof(LONG) == 4 && sizeof(void *) == 4, "kernel longs and pointers must be 32-bit");

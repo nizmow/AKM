@@ -38,8 +38,8 @@ aes-asm-objects: $(AES_OBJECTS)
 
 # Normalized module sources: one directory per module.
 define AES_ASM_SOURCE_RULE
-$(AES_ASM_DIR)/$(1)/$(1).S: MagiC/KERNEL/AES/SRC/$(1).S $(ASM_ADAPTER) \
-                             $(AES_ATARI_UTF8) MagiC/KERNEL/BUILD/GCC/aes-asm.mk
+$(AES_ASM_DIR)/$(1)/$(1).S: kernel/AES/SRC/$(1).S $(ASM_ADAPTER) \
+                             $(AES_ATARI_UTF8) kernel/mk/aes-asm.mk
 	$(AES_NORMALIZE) $$< $$@
 endef
 $(foreach m,$(AES_ASM_MODULES),$(eval $(call AES_ASM_SOURCE_RULE,$(m))))
@@ -47,7 +47,7 @@ $(foreach m,$(AES_ASM_MODULES),$(eval $(call AES_ASM_SOURCE_RULE,$(m))))
 # Normalized includes. The same rules populate every module directory; the
 # adapter rewrites INCLUDE to a bare uppercase basename, so the directory is
 # selected with -I when assembling.
-$(AES_ASM_DIR)/%/AESINC.S: MagiC/KERNEL/AES/SRC/AESINC.S $(ASM_ADAPTER) $(AES_ATARI_UTF8)
+$(AES_ASM_DIR)/%/AESINC.S: kernel/AES/SRC/AESINC.S $(ASM_ADAPTER) $(AES_ATARI_UTF8)
 	$(AES_NORMALIZE) $< $@
 
 $(AES_ASM_DIR)/%/KERNEL.INC: MagiC/KERNEL/INC/KERNEL.INC $(ASM_ADAPTER) $(AES_ATARI_UTF8)
@@ -56,19 +56,19 @@ $(AES_ASM_DIR)/%/KERNEL.INC: MagiC/KERNEL/INC/KERNEL.INC $(ASM_ADAPTER) $(AES_AT
 $(AES_ASM_DIR)/%/DOS.INC: MagiC/KERNEL/INC/DOS.INC $(ASM_ADAPTER) $(AES_ATARI_UTF8)
 	$(AES_NORMALIZE) $< $@
 
-$(AES_ASM_DIR)/%/DEBUG.INC: MagiC/KERNEL/AES/SRC/DEBUG.INC $(ASM_ADAPTER) $(AES_ATARI_UTF8)
+$(AES_ASM_DIR)/%/DEBUG.INC: kernel/AES/SRC/DEBUG.INC $(ASM_ADAPTER) $(AES_ATARI_UTF8)
 	$(AES_NORMALIZE) $< $@
 
 $(AES_ASM_DIR)/%/VTSYS.INC: MagiC/KERNEL/INC/VTSYS.INC $(ASM_ADAPTER) $(AES_ATARI_UTF8)
 	$(AES_NORMALIZE) $< $@
 
-$(AES_ASM_DIR)/%/FARBICON.S: MagiC/KERNEL/AES/SRC/FARBICON.S $(ASM_ADAPTER) $(AES_ATARI_UTF8)
+$(AES_ASM_DIR)/%/FARBICON.S: kernel/AES/SRC/FARBICON.S $(ASM_ADAPTER) $(AES_ATARI_UTF8)
 	$(AES_NORMALIZE) $< $@
 
 define AES_ASM_OBJECT_RULE
 $(AES_ASM_DIR)/$(1).o: $(AES_ASM_DIR)/$(1)/$(1).S \
                        $(addprefix $(AES_ASM_DIR)/$(1)/,$(AES_ASM_SHARED) $(AES_ASM_DEPS_$(1))) \
-                       MagiC/KERNEL/BUILD/GCC/aes-asm.mk
+                       kernel/mk/aes-asm.mk
 	$(VASM) $(VASM_FLAGS) $(AES_ASM_DEFS) -I$(AES_ASM_DIR)/$(1) -o $$@ $$<
 endef
 $(foreach m,$(AES_ASM_MODULES),$(eval $(call AES_ASM_OBJECT_RULE,$(m))))
@@ -78,9 +78,9 @@ $(foreach m,$(AES_ASM_MODULES),$(eval $(call AES_ASM_OBJECT_RULE,$(m))))
 # not define it, so map it to the GCC attribute the rest of the kernel uses.
 AES_MTSMN_CPPFLAGS := -D'cdecl=__attribute__((cdecl))'
 
-$(AES_ASM_DIR)/mtsmn.o: MagiC/KERNEL/AES/SRC/XMEN_MGR/MTSMN.C \
-                        $(INCLUDE_DIR)/portab.h MagiC/KERNEL/BUILD/GCC/aes-asm.mk
+$(AES_ASM_DIR)/mtsmn.o: kernel/AES/SRC/XMEN_MGR/MTSMN.C \
+                        $(INCLUDE_DIR)/portab.h kernel/mk/aes-asm.mk
 	$(CC) $(CPPFLAGS) $(AES_MTSMN_CPPFLAGS) -I$(INCLUDE_DIR) $(CFLAGS) \
-	  $(KERNEL_FLAGS) -MMD -MP -x c -c $< -o $@
+	  $(KERNEL_FLAGS) -MMD -MP -MF $@.dep -x c -c $< -o $@
 
--include $(AES_MTSMN_OBJECT:.o=.d)
+-include $(addsuffix .dep,$(AES_MTSMN_OBJECT))

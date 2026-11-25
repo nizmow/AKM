@@ -1,15 +1,15 @@
 # MagiC VDI kernel objects (Atari/German build).
-# Included from Makefile.atari after the shared kernel and assembly rules.
+# Included from Makefile after the shared kernel and assembly rules.
 #
 # The generated assembly tree is kept per slice so the VDI INCLUDE\*.I
 # namespace cannot collide with the filesystem build.
 
-VDI_SRC := MagiC/KERNEL/VDI/SRC/MAGICVDI.2
+VDI_SRC := kernel/VDI/SRC/MAGICVDI.2
 VDI_BUILD := $(BUILD_DIR)/kernel/vdi
 VDI_ASM := $(VDI_BUILD)/asm
 VDI_INCLUDE := $(VDI_BUILD)/include
-VDI_COMPAT := MagiC/KERNEL/BUILD/GCC/vdi-include
-VDI_ASM_ADAPTER ?= MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py
+VDI_COMPAT := kernel/VDI/compat
+VDI_ASM_ADAPTER ?= $(ASM_ADAPTER)
 VDI_ATARI_UTF8 := NON-TOS/atari-utf8-conversion/atari-utf8.c
 
 VDI_CPPFLAGS := -I$(VDI_INCLUDE) -I$(VDI_COMPAT) -I$(VDI_SRC)
@@ -86,7 +86,7 @@ $(VDI_BUILD)/drivers.o $(VDI_BUILD)/filediv.o $(VDI_BUILD)/init_res.o \
                   $(VDI_INCLUDE)/PORTAB.H $(VDI_INCLUDE)/target.h \
                   $(VDI_INCLUDE)/MXVDI.h
 	@mkdir -p $(@D)
-	$(CC) $(VDI_CFLAGS) -MMD -MP -x c -c $(filter %.C,$^) -o $@
+	$(CC) $(VDI_CFLAGS) -MMD -MP -MF $@.dep -x c -c $(filter %.C,$^) -o $@
 
 $(VDI_BUILD)/mxvdiknl.o: $(VDI_ASM)/MXVDIKNL.S $(VDI_GEN_ASM) $(VDI_GEN_HEADERS)
 	@mkdir -p $(@D)
@@ -104,7 +104,6 @@ $(VDI_BUILD)/tos.o: $(VDI_ASM)/TOS.S $(VDI_GEN_HEADERS)
 	@mkdir -p $(@D)
 	$(VDI_VASM) $(VDI_VASM_FLAGS) -o $@ $<
 
-$(VDI_OBJECTS): Makefile.atari MagiC/KERNEL/BUILD/GCC/assembly.mk \
-                MagiC/KERNEL/BUILD/GCC/vdi.mk
+$(VDI_OBJECTS): Makefile kernel/mk/assembly.mk kernel/mk/vdi.mk
 
--include $(VDI_OBJECTS:.o=.d)
+-include $(addsuffix .dep,$(VDI_OBJECTS))

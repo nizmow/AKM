@@ -1,3 +1,5 @@
+.DEFAULT_GOAL := all
+
 CROSS_COMPILE ?= m68k-atari-mintelf-
 CC := $(CROSS_COMPILE)gcc
 BUILD_DIR := build/atari
@@ -13,7 +15,7 @@ HEADERS := $(addprefix $(INCLUDE_DIR)/,portab.h tos.h tosdefs.h magx.h \
            mgx_xfs.h mgx_dfs.h vfat_imp.h)
 
 .PHONY: all vfat
-all: vfat
+all: magic
 vfat: $(BUILD_DIR)/vfat.o
 
 # Provide DOS-era lowercase include names without renaming the original files.
@@ -23,37 +25,36 @@ $(INCLUDE_DIR)/tosdefs.h: MagiC/INC_C/TOSDEFS.H
 $(INCLUDE_DIR)/magx.h: MagiC/INC_C/MAGX.H
 $(INCLUDE_DIR)/mgx_xfs.h: MagiC/INC_C/MGX_XFS.H
 $(INCLUDE_DIR)/mgx_dfs.h: MagiC/INC_C/MGX_DFS.H
-$(INCLUDE_DIR)/vfat_imp.h: MagiC/KERNEL/DOS/INC/VFAT_IMP.H
+$(INCLUDE_DIR)/vfat_imp.h: kernel/DOS/INC/VFAT_IMP.H
 $(HEADERS):
 	mkdir -p $(@D)
 	ln -sf $(abspath $<) $@
 
-$(BUILD_DIR)/vfat.o: MagiC/KERNEL/BUILD/GCC/VFAT.C $(HEADERS)
+$(BUILD_DIR)/vfat.o: kernel/DOS/compat/VFAT.C $(HEADERS)
 	$(CC) $(CPPFLAGS) -I$(INCLUDE_DIR) $(CFLAGS) $(KERNEL_FLAGS) \
-	  -MMD -MP -x c -c $< -o $@
+	  -MMD -MP -MF $@.dep -x c -c $< -o $@
 
-$(BUILD_DIR)/vfat-check.o: MagiC/KERNEL/BUILD/GCC/VFAT_CHECK.C $(HEADERS)
+$(BUILD_DIR)/vfat-check.o: kernel/DOS/compat/VFAT_CHECK.C $(HEADERS)
 	$(CC) $(CPPFLAGS) -I$(INCLUDE_DIR) $(CFLAGS) $(KERNEL_FLAGS) \
-	  -ffunction-sections -fdata-sections -MMD -MP -x c -c $< -o $@
+	  -ffunction-sections -fdata-sections -MMD -MP -MF $@.dep -x c -c $< -o $@
 
--include $(BUILD_DIR)/vfat.d $(BUILD_DIR)/vfat-check.d
-$(BUILD_DIR)/vfat.o $(BUILD_DIR)/vfat-check.o: Makefile.atari
+-include $(BUILD_DIR)/vfat.o.dep $(BUILD_DIR)/vfat-check.o.dep
+$(BUILD_DIR)/vfat.o $(BUILD_DIR)/vfat-check.o: Makefile
 
-include MagiC/KERNEL/BUILD/GCC/assembly.mk
+include kernel/mk/assembly.mk
 
 .PHONY: filesystem
-all: filesystem
 filesystem: $(BUILD_DIR)/filesystem.o
 
 $(BUILD_DIR)/filesystem.o: $(BUILD_DIR)/vfat.o $(BUILD_DIR)/vfat-glue.o \
                           $(BUILD_DIR)/std.o $(BUILD_DIR)/xfs-vdos.o \
-                          Makefile.atari MagiC/KERNEL/BUILD/GCC/assembly.mk
+                          Makefile kernel/mk/assembly.mk
 	$(CROSS_COMPILE)ld -r -o $@ $(filter %.o,$^)
 
-include MagiC/KERNEL/BUILD/GCC/bios-dos.mk
-include MagiC/KERNEL/BUILD/GCC/vdi.mk
-include MagiC/KERNEL/BUILD/GCC/aes-asm.mk
-include MagiC/KERNEL/BUILD/GCC/aes-c.mk
+include kernel/mk/bios-dos.mk
+include kernel/mk/vdi.mk
+include kernel/mk/aes-asm.mk
+include kernel/mk/aes-c.mk
 
 # Preserve the legacy M.INP module order, particularly BIOS first and ENDE last.
 KERNEL_OBJECTS := \
@@ -68,17 +69,16 @@ KERNEL_OBJECTS := \
   $(AES_MTSMN_OBJECT) $(BIOSDOS_DIR)/ende.o
 
 .PHONY: magic kernel-objects
-all: magic
 magic: $(BUILD_DIR)/MAGIC.RAM
 kernel-objects: $(KERNEL_OBJECTS)
 
-$(BUILD_DIR)/kernel.elf: $(KERNEL_OBJECTS) MagiC/KERNEL/BUILD/GCC/kernel.ld Makefile.atari
-	$(CROSS_COMPILE)ld -m m68kelf --emit-relocs -T MagiC/KERNEL/BUILD/GCC/kernel.ld \
+$(BUILD_DIR)/kernel.elf: $(KERNEL_OBJECTS) kernel/mk/kernel.ld Makefile
+	$(CROSS_COMPILE)ld -m m68kelf --emit-relocs -T kernel/mk/kernel.ld \
 	  -Map=$(BUILD_DIR)/kernel.map -o $@ $(KERNEL_OBJECTS) \
 	  $(shell $(CC) $(KERNEL_FLAGS) -print-libgcc-file-name)
 
-$(BUILD_DIR)/MAGIC.RAM: $(BUILD_DIR)/kernel.elf MagiC/KERNEL/BUILD/GCC/elf_to_magic.py
-	python3 MagiC/KERNEL/BUILD/GCC/elf_to_magic.py $< $@
+$(BUILD_DIR)/MAGIC.RAM: $(BUILD_DIR)/kernel.elf kernel/tools/elf_to_magic.py
+	python3 kernel/tools/elf_to_magic.py $< $@
 
-$(KERNEL_OBJECTS): Makefile.atari
-$(AES_ASM_OBJECTS) $(AES_C_DIR)/wdintrfc.o: MagiC/KERNEL/BUILD/GCC/assembly.mk
+$(KERNEL_OBJECTS): Makefile
+$(AES_ASM_OBJECTS) $(AES_C_DIR)/wdintrfc.o: kernel/mk/assembly.mk
