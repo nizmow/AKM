@@ -134,7 +134,7 @@ resize and alternate resources are outside this scenario.
 
 ## NeoST: MGSEARCH archived/rebuilt dialog and search
 
-`scripts/neost-mgsearch-smoke.py` builds `MGSEARCH.APP`, its German resource and
+`base/mgsearch/tests/neost-mgsearch-smoke.py` builds `MGSEARCH.APP`, its German resource and
 the delayed `NEOSTART.PRG` helper, then runs the archived and rebuilt bundles in
 separate clones of the same MagiC image:
 
@@ -149,7 +149,7 @@ Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
-  python3 scripts/neost-mgsearch-smoke.py --output build/atari/neost-mgsearch-check
+  python3 base/mgsearch/tests/neost-mgsearch-smoke.py --output build/atari/neost-mgsearch-check
 ```
 
 Use `--partition-offset` for a different MagiC partition offset. The source
@@ -174,7 +174,7 @@ Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
-  python3 scripts/neost-mgformat-smoke.py --output build/atari/neost-mgformat-check
+  python3 base/mgformat/tests/neost-mgformat-smoke.py --output build/atari/neost-mgformat-check
 ```
 
 Physical formatting and disk-copy effects are outside this scenario: NeoST
@@ -436,7 +436,7 @@ of the same MagiC image:
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
-  python3 scripts/neost-magxconf-cpx-smoke.py
+  python3 base/cpx/tests/neost-magxconf-cpx-smoke.py
 ```
 
 The runner installs a scratch CPX copy with `SCB_NFAST` as its saved default, so
@@ -454,7 +454,7 @@ mise run lint:cpx-abi
 mise run test:cpx-abi
 ```
 
-The lint defaults to `MagiC/APPS/CPX/MAGXCONF.C` and `TSLICE.C`. Explicit
+The lint defaults to `base/cpx/MAGXCONF.C` and `TSLICE.C`. Explicit
 source paths can be passed to `python3 scripts/cpx_abi_lint.py`. Known XCPB
 callback members may only be used as the first argument to their approved
 bridge; direct calls, pointer extraction and the wrong bridge are rejected.
@@ -532,7 +532,7 @@ Panels through the desktop menu:
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
- python3 scripts/neost-tslice-cpx-smoke.py
+ python3 base/cpx/tests/neost-tslice-cpx-smoke.py
 ```
 
 It double-clicks the `MagiC Timeslice` CPX, requires the dialog to differ from
@@ -912,7 +912,7 @@ a clone with `#_SLB 0 WINFRAME.SLB` disabled:
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
- python3 scripts/neost-winframe-smoke.py
+ python3 base/winframe/tests/neost-winframe-smoke.py
 ```
 
 The scenario switches `MAGX.INF` to ST-low colour (`#_DEV 2 0`) because

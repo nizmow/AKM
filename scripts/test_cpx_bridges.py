@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-BRIDGE = ROOT / "MagiC/APPS/CPX/cpx_entry.S"
+BRIDGE = ROOT / "base/cpx/cpx_entry.S"
 FIXTURE = ROOT / "scripts/testdata/CPX_ABI.S"
 FAILURES = {
     1: "xform callback arguments or word widths",

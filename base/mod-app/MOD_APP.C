@@ -79,7 +79,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <osbind.h>
-#include "../TOS_ARGS.H"
+#include "TOS_ARGS.H"
 
 _Static_assert(sizeof(int) == 4 && sizeof(long) == 4,
 			   "Build MOD_APP with the default MiNTLib integer ABI");

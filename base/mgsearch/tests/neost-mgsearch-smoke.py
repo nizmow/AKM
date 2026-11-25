@@ -16,15 +16,18 @@ from pathlib import Path
 import sys
 import tempfile
 
+COMPONENT = Path(__file__).resolve().parents[1]
+ROOT = COMPONENT.parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+
 from neost_common import acquire_headless, create_output, require, resolve_rom, run
 from neost_image import MagiCImage
 from neost_screen import diff_stats
 from neost_server import NeoSTServer
 
-ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
-ARCHIVE_APP = ROOT / "MagiC/APPS/MGSEARCH/BIN/MGSEARCH.APP"
-RESOURCE = ROOT / "MagiC/APPS/MGSEARCH/SRC/MGSEARCH.RSC"
+ARCHIVE_APP = COMPONENT / "BIN/MGSEARCH.APP"
+RESOURCE = COMPONENT / "SRC/MGSEARCH.RSC"
 REBUILT_DIR = BUILD / "apps/mgsearch"
 REBUILT_APP = REBUILT_DIR / "MGSEARCH.APP"
 DRIVER = REBUILT_DIR / "NEOSTART.PRG"

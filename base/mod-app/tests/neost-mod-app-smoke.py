@@ -11,10 +11,13 @@ import shutil
 import sys
 import tempfile
 
+COMPONENT = Path(__file__).resolve().parents[1]
+ROOT = COMPONENT.parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+
 from neost_common import acquire_headless, create_output, resolve_rom, run, sha256
 from neost_server import NeoSTServer
 
-ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
 APP_BUILD = BUILD / "apps/mod-app"
 FIXTURES = BUILD / "mod-app-smoke"

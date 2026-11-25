@@ -20,7 +20,7 @@ APPLICAT_SOURCES := $(addprefix $(APPLICAT_DIR)/,APPLICAT.C ICONSEL.C ICA_DIAL.C
 APPLICAT_OBJECTS := $(patsubst $(APPLICAT_DIR)/%.C,$(APPLICAT_OBJ_DIR)/%.o,$(APPLICAT_SOURCES)) \
   $(GEMUT_OBJECT)
 APPLICAT_INCLUDES := -I"$(APPLICAT_DIR)" -I"$(GEMUT_DIR)" -I"MagiC/APPS"
-MGVIEW_DIR := MagiC/APPS/MGVIEW/SRC
+MGVIEW_DIR := base/mgview/SRC
 MGVIEW_SOURCES := $(addprefix $(MGVIEW_DIR)/,MGVIEW.C WINDOWS.C MGWIND.C MEMCHAR2.C)
 MGVIEW_OBJECTS := $(patsubst $(MGVIEW_DIR)/%.C,$(BUILD_DIR)/mgview/%.o,$(MGVIEW_SOURCES))
 MGNOTICE_DIR := base/mgnotice/SRC
@@ -29,7 +29,7 @@ MGNOTICE_NEOSTART_D := $(BUILD_DIR)/base/mgnotice-test/NEOSTART.d
 MGNOTICE_SOURCES := $(addprefix $(MGNOTICE_DIR)/,MGNOTICE.C MGNWIND.C \
   OPT_DIAL.C WINDOWS.C)
 MGNOTICE_OBJECTS := $(patsubst $(MGNOTICE_DIR)/%.C,$(MGNOTICE_OBJ_DIR)/%.o,$(MGNOTICE_SOURCES))
-MGSEARCH_DIR := MagiC/APPS/MGSEARCH/SRC
+MGSEARCH_DIR := base/mgsearch/SRC
 MGSEARCH_MYLIBS_DIR := MagiC/LIB/MYLIBS/SRC
 MGSEARCH_PATTERN_DIR := $(MGSEARCH_DIR)
 MGSEARCH_INCLUDES := -I"$(MGSEARCH_DIR)" -I"$(MGSEARCH_MYLIBS_DIR)" \
@@ -53,17 +53,17 @@ MGCOPY_SOURCES := $(addprefix $(MGCOPY_DIR)/,MGCOPY.C CPFILES.C BEG_DIAL.C DAT_D
 MGCOPY_OBJ_DIR := $(BUILD_DIR)/base/mgcopy/obj
 MGCOPY_OBJECTS := $(patsubst $(MGCOPY_DIR)/%.C,$(MGCOPY_OBJ_DIR)/%.o,$(MGCOPY_SOURCES)) \
   $(GEMUT_OBJECT)
-MGFORMAT_DIR := MagiC/APPS/MGFORMAT/SRC
+MGFORMAT_DIR := base/mgformat/SRC
 MGFORMAT_GEMUT_DIR := $(GEMUT_DIR)
 MGFORMAT_INCLUDES := -I"$(MGFORMAT_DIR)" -I"$(MGFORMAT_GEMUT_DIR)"
 MGFORMAT_OBJ_DIR := $(BUILD_DIR)/base/mgformat
 MGFORMAT_SOURCES := $(addprefix $(MGFORMAT_DIR)/,MGFORMAT.C FMT_DIAL.C CPY_DIAL.C FORMAT.C MGFORMAT_WDLG.C)
 MGFORMAT_OBJECTS := $(patsubst $(MGFORMAT_DIR)/%.C,$(MGFORMAT_OBJ_DIR)/%.o,$(MGFORMAT_SOURCES)) \
   $(GEMUT_OBJECT)
-VT52_DIR := MagiC/APPS/VT52/SRC/VT52
-VT52_INCLUDE_DIR := MagiC/APPS/VT52/SRC/INCLUDE
+VT52_DIR := base/vt52/SRC/VT52
+VT52_INCLUDE_DIR := base/vt52/SRC/INCLUDE
 VT52_RESOURCE_DIR := $(VT52_DIR)/RESOURCE/DEUTSCH
-VT52_DRAGDROP_DIR := MagiC/APPS/VT52/SRC/LIB/QUELLEN/DRAGDROP
+VT52_DRAGDROP_DIR := base/vt52/SRC/LIB/QUELLEN/DRAGDROP
 VT52_INCLUDES := -I"$(VT52_DIR)" -I"$(VT52_INCLUDE_DIR)" -I"$(VT52_RESOURCE_DIR)"
 VT52_SOURCES := $(addprefix $(VT52_DIR)/,VT_MENU.C VT_EMU.C WLIB.C LIST_NEW.C)
 VT52_ASM_SOURCES := $(addprefix $(VT52_DIR)/,VT_AES.S VT_VDI.S VT_BIOS.S \
@@ -512,7 +512,7 @@ mod-app-test-driver: $(BUILD_DIR)/mod-app/NEOSTEST.PRG
 $(COPS_OBJECT_DIR)/%.o: $(COPS_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(COPS_DIR)" -I"MagiC/APPS" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(COPS_ASM_NORMALIZED): $(COPS_DIR)/CLEARCPU.S $(MAS_NORMALIZER) Makefile.apps
 	mkdir -p "$(@D)"
@@ -527,17 +527,17 @@ $(BUILD_DIR)/cops/COPS.APP: $(COPS_OBJECTS) $(COPS_ASM_OBJECTS) Makefile.apps
 	$(CC) $(APP_FLAGS) $(COPS_OBJECTS) $(COPS_ASM_OBJECTS) \
 	  $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
--include $(COPS_OBJECTS:.o=.d)
+-include $(addsuffix .d,$(COPS_OBJECTS))
 
 $(APPLICAT_OBJ_DIR)/%.o: $(APPLICAT_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(APPLICAT_INCLUDES) \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(GEMUT_OBJECT): $(GEMUT_DIR)/GEMUT_MT.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(GEMUT_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/applicat/APPLICAT.APP: $(APPLICAT_OBJECTS) Makefile.apps
 	mkdir -p "$(@D)"
@@ -545,8 +545,8 @@ $(BUILD_DIR)/applicat/APPLICAT.APP: $(APPLICAT_OBJECTS) Makefile.apps
 
 $(BUILD_DIR)/mgview/%.o: $(MGVIEW_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGVIEW_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGVIEW_DIR)" -I"MagiC/APPS" \
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/mgview/MGVIEW.APP: $(MGVIEW_OBJECTS) Makefile.apps
 	$(CC) $(APP_FLAGS) $(MGVIEW_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
@@ -554,7 +554,7 @@ $(BUILD_DIR)/mgview/MGVIEW.APP: $(MGVIEW_OBJECTS) Makefile.apps
 $(MAGXDESK_OBJ_DIR)/%.o: $(MAGXDESK_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MAGXDESK_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/magxdesk/MAGXDESK.APP: $(MAGXDESK_OBJECTS) Makefile.apps
 	$(CC) $(APP_FLAGS) $(MAGXDESK_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
@@ -570,8 +570,8 @@ abi-check: $(BUILD_DIR)/abi-check/ABI_CHECK.o
 
 $(BUILD_DIR)/abi-check/ABI_CHECK.o: MagiC/APPS/ABI_CHECK.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"MagiC/APPS/MGVIEW/SRC" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGVIEW_DIR)" \
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 .PHONY: showfree crashdmp memexamn magxkern
 showfree: $(BUILD_DIR)/showfree/SHOWFREE.TOS
@@ -639,7 +639,7 @@ $(KEYB_OUTPUTS): $(BUILD_DIR)/keyb-sys/%.PRG: $(KEYB_DIR)/%.C Makefile.apps
 $(MGCOPY_OBJ_DIR)/%.o: $(MGCOPY_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(MGCOPY_INCLUDES) \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/mgcopy/MGCOPY.APP: $(MGCOPY_OBJECTS) Makefile.apps
 	mkdir -p "$(@D)"
@@ -652,7 +652,7 @@ $(BUILD_DIR)/mgcopy/MGCOPY.RSC: $(MGCOPY_DIR)/MGCOPY.RSC
 $(MGFORMAT_OBJ_DIR)/%.o: $(MGFORMAT_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(MGFORMAT_INCLUDES) \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/mgformat/MGFORMAT.PRG: $(MGFORMAT_OBJECTS) Makefile.apps
 	mkdir -p "$(@D)"
@@ -662,15 +662,15 @@ $(BUILD_DIR)/mgformat/MGFORMAT.RSC: $(MGFORMAT_DIR)/MGFORMAT.RSC
 	mkdir -p "$(@D)"
 	cp "$<" "$@"
 
-$(BUILD_DIR)/mgformat/NEOSTART.PRG: MagiC/APPS/MGFORMAT/TESTDATA/NEOSTART.C Makefile.apps
+$(BUILD_DIR)/mgformat/NEOSTART.PRG: base/mgformat/tests/NEOSTART.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
-	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+	  -MF "$@.d" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/vt52/%.o: $(VT52_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(VT52_INCLUDES) \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/vt52/%.o: $(VT52_DIR)/%.S Makefile.apps
 	mkdir -p "$(@D)"
@@ -679,7 +679,7 @@ $(BUILD_DIR)/vt52/%.o: $(VT52_DIR)/%.S Makefile.apps
 $(BUILD_DIR)/vt52/DRAGDROP.o: $(VT52_DRAGDROP_DIR)/DRAGDROP.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(VT52_INCLUDES) \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/vt52/VT52.PRG: $(VT52_OBJECTS) Makefile.apps
 	$(CC) $(APP_FLAGS) $(VT52_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
@@ -688,12 +688,12 @@ $(BUILD_DIR)/vt52/VT52.RSC: $(VT52_RESOURCE_DIR)/VT52.RSC
 	mkdir -p "$(@D)"
 	cp "$<" "$@"
 
-$(BUILD_DIR)/vt52/VT52DEMO.TOS: MagiC/APPS/VT52/TESTDATA/VT52DEMO.C Makefile.apps
+$(BUILD_DIR)/vt52/VT52DEMO.TOS: base/vt52/tests/VT52DEMO.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.TOS=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
-$(BUILD_DIR)/vt52/NEOSTART.PRG: MagiC/APPS/VT52/TESTDATA/NEOSTART.C Makefile.apps
+$(BUILD_DIR)/vt52/NEOSTART.PRG: base/vt52/tests/NEOSTART.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
@@ -706,22 +706,22 @@ $(BUILD_DIR)/mgcopy/NEOSTART.PRG: $(MGCOPY_ROOT)/tests/NEOSTART.C Makefile.apps
 $(BUILD_DIR)/mgsearch/%.o: $(MGSEARCH_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(MGSEARCH_INCLUDES) \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/mgsearch/GEMUTILS.o: $(MGSEARCH_MYLIBS_DIR)/GEMUTILS.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGSEARCH_MYLIBS_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/mgsearch/WINDOWS.o: $(MGSEARCH_MYLIBS_DIR)/WINDOWS.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGSEARCH_MYLIBS_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/mgsearch/PATTERN.o: $(MGSEARCH_PATTERN_DIR)/PATTERN.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGSEARCH_PATTERN_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/mgsearch/MGSEARCH.APP: $(MGSEARCH_OBJECTS) Makefile.apps
 	$(CC) $(APP_FLAGS) $(MGSEARCH_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
@@ -730,15 +730,15 @@ $(BUILD_DIR)/mgsearch/MGSEARCH.RSC: $(MGSEARCH_DIR)/MGSEARCH.RSC
 	mkdir -p "$(@D)"
 	cp "$<" "$@"
 
-$(BUILD_DIR)/mgsearch/NEOSTART.PRG: MagiC/APPS/MGSEARCH/TESTDATA/NEOSTART.C Makefile.apps
+$(BUILD_DIR)/mgsearch/NEOSTART.PRG: base/mgsearch/tests/NEOSTART.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
-	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+	  -MF "$@.d" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(MGNOTICE_OBJ_DIR)/%.o: $(MGNOTICE_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGNOTICE_DIR)" -I"$(GEMUT_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/mgnotice/MGNOTICE.APP: $(MGNOTICE_OBJECTS) \
   $(GEMUT_OBJECT) Makefile.apps
@@ -767,14 +767,14 @@ $(BUILD_DIR)/applicat/applicat.inf: base/applicat/BIN/MINIMAL/APPLICAT.INF
 	mkdir -p "$(@D)"
 	cp "$<" "$@"
 
-$(BUILD_DIR)/mod-app/NEOSTEST.PRG: MagiC/APPS/MOD_APP/TESTDATA/NEOSTEST.C Makefile.apps
+$(BUILD_DIR)/mod-app/NEOSTEST.PRG: base/mod-app/tests/NEOSTEST.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
-$(BUILD_DIR)/mod-app/MOD_APP.TTP: MagiC/APPS/MOD_APP/MOD_APP.C Makefile.apps
+$(BUILD_DIR)/mod-app/MOD_APP.TTP: base/mod-app/MOD_APP.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"MagiC/APPS" -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
 $(BUILD_DIR)/cmdline/CMDLINE.PRG: MagiC/TOOLS/CMDLINE/SRC/CMDLINE.C Makefile.apps
@@ -806,7 +806,7 @@ DIS2_OBJECTS := $(patsubst $(DIS_DIR)/DIS2/%.C,$(BUILD_DIR)/dis2/%.o,$(DIS2_SOUR
 $(BUILD_DIR)/dis1/%.o: $(DIS_DIR)/DIS1/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(DIS_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/dis1/DIS1.TTP: $(DIS1_OBJECTS) Makefile.apps
 	$(CC) $(APP_FLAGS) $(DIS1_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS)
@@ -814,7 +814,7 @@ $(BUILD_DIR)/dis1/DIS1.TTP: $(DIS1_OBJECTS) Makefile.apps
 $(BUILD_DIR)/dis2/%.o: $(DIS_DIR)/DIS2/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(DIS_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/dis2/DIS2.TTP: $(DIS2_OBJECTS) Makefile.apps
 	$(CC) $(APP_FLAGS) $(DIS2_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS)
@@ -824,9 +824,9 @@ $(BUILD_DIR)/split/SPLIT.TTP: MagiC/TOOLS/SPLIT/SRC/SPLIT.C Makefile.apps
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
-$(BUILD_DIR)/showfile/SHOWFILE.TTP: MagiC/APPS/SHOWFILE/SRC/SHOWFILE.C Makefile.apps
+$(BUILD_DIR)/showfile/SHOWFILE.TTP: base/showfile/SRC/SHOWFILE.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
 
@@ -854,24 +854,24 @@ $(BUILD_DIR)/mgxclock/NEOSTEST.PRG: MagiC/APPS/MGXCLOCK/TESTDATA/NEOSTEST.C Make
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
-$(BUILD_DIR)/vfatconf/VFATCONF.PRG: MagiC/APPS/VFATCONF/SRC/VFATCONF.C MagiC/APPS/VFATCONF/SRC/VFATCONF_GEM.C MagiC/APPS/VFATCONF/SRC/VFATCONF_GEM.H Makefile.apps
+$(BUILD_DIR)/vfatconf/VFATCONF.PRG: base/vfatconf/SRC/VFATCONF.C base/vfatconf/SRC/VFATCONF_GEM.C base/vfatconf/SRC/VFATCONF_GEM.H Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -finput-charset=UTF-8 \
-	  -MMD -MP -MF "$(@:.PRG=.d)" -x c MagiC/APPS/VFATCONF/SRC/VFATCONF.C \
-	  -x c MagiC/APPS/VFATCONF/SRC/VFATCONF_GEM.C -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+	  -MMD -MP -MF "$@.d" -x c base/vfatconf/SRC/VFATCONF.C \
+	  -x c base/vfatconf/SRC/VFATCONF_GEM.C -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
-$(BUILD_DIR)/vfatconf/vfatconf.rsc: MagiC/APPS/VFATCONF/SRC/VFATCONF.RSC
+$(BUILD_DIR)/vfatconf/vfatconf.rsc: base/vfatconf/SRC/VFATCONF.RSC
 	mkdir -p "$(@D)"
 	cp "$<" "$@"
 
-$(BUILD_DIR)/shutdown/SHUTDOWN.PRG: MagiC/APPS/SHUTDOWN/SRC/SHUTDOWN.C Makefile.apps
+$(BUILD_DIR)/shutdown/SHUTDOWN.PRG: base/shutdown/SRC/SHUTDOWN.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) \
-	  -MMD -MP -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+	  -MMD -MP -MF "$@.d" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
-$(BUILD_DIR)/wbdaemon/WBDAEMON.PRG: MagiC/APPS/WBDAEMON/SRC/WBDAEMON.C Makefile.apps
+$(BUILD_DIR)/wbdaemon/WBDAEMON.PRG: base/wbdaemon/SRC/WBDAEMON.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/flp-par/FLP_PAR0.PRG: MagiC/APPS/FLP_PAR/SRC/FLP_PAR0.C Makefile.apps
@@ -884,7 +884,7 @@ $(BUILD_DIR)/flp-par/FLP_PAR1.PRG: MagiC/APPS/FLP_PAR/SRC/FLP_PAR1.C Makefile.ap
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
-CPX_DIR := MagiC/APPS/CPX
+CPX_DIR := base/cpx
 CPX_OBJECTS := $(BUILD_DIR)/cpx/MAGXCONF.o $(BUILD_DIR)/cpx/CPX_ENTRY.o
 CPX_TSLICE_OBJECTS := $(BUILD_DIR)/cpx/TSLICE.o $(BUILD_DIR)/cpx/CPX_ENTRY.o
 
@@ -898,7 +898,7 @@ $(BUILD_DIR)/cpx/TSLICE.o: | cpx-abi-lint
 $(BUILD_DIR)/cpx/%.o: $(CPX_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(CPX_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/cpx/CPX_ENTRY.o: $(CPX_DIR)/cpx_entry.S Makefile.apps
 	mkdir -p "$(@D)"
@@ -920,26 +920,26 @@ $(BUILD_DIR)/cpx/TSLICE.CPX: $(BUILD_DIR)/cpx/TSLICE.elf \
   $(CPX_DIR)/TSLICE.HDR scripts/elf_to_cpx.py
 	python3 scripts/elf_to_cpx.py "$<" "$(CPX_DIR)/TSLICE.HDR" "$@"
 
-$(BUILD_DIR)/wbdaemon/NEOSTEST.PRG: MagiC/APPS/WBDAEMON/TESTDATA/NEOSTEST.C Makefile.apps
+$(BUILD_DIR)/wbdaemon/NEOSTEST.PRG: base/wbdaemon/tests/NEOSTEST.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
--include $(BUILD_DIR)/mod-app/MOD_APP.d
+-include $(BUILD_DIR)/mod-app/MOD_APP.TTP.d
 -include $(BUILD_DIR)/cmdline/CMDLINE.d
--include $(BUILD_DIR)/showfile/SHOWFILE.d
+-include $(BUILD_DIR)/showfile/SHOWFILE.TTP.d
 -include $(BUILD_DIR)/limitmem/LIMITMEM.d
 -include $(BUILD_DIR)/limitmem/NEOSTEST.d
 -include $(BUILD_DIR)/mgclock/MGCLOCK.d
 -include $(BUILD_DIR)/mgxclock/MGXCLOCK.d
 -include $(BUILD_DIR)/mgxclock/NEOSTEST.d
--include $(BUILD_DIR)/vfatconf/VFATCONF.d
--include $(BUILD_DIR)/shutdown/SHUTDOWN.d
--include $(BUILD_DIR)/wbdaemon/WBDAEMON.d
--include $(BUILD_DIR)/wbdaemon/NEOSTEST.d
+-include $(BUILD_DIR)/vfatconf/VFATCONF.PRG.d
+-include $(BUILD_DIR)/shutdown/SHUTDOWN.PRG.d
+-include $(BUILD_DIR)/wbdaemon/WBDAEMON.PRG.d
+-include $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG.d
 -include $(BUILD_DIR)/flp-par/FLP_PAR0.d
 -include $(BUILD_DIR)/flp-par/FLP_PAR1.d
--include $(BUILD_DIR)/cpx/MAGXCONF.d
--include $(BUILD_DIR)/cpx/TSLICE.d
+-include $(BUILD_DIR)/cpx/MAGXCONF.o.d
+-include $(BUILD_DIR)/cpx/TSLICE.o.d
 # The .PRG.d names bypass stale pre-relocation dependencies on VDI/TESTDATA.
 -include $(BUILD_DIR)/off002/OFF002.PRG.d
 -include $(BUILD_DIR)/off004ip/OFF004IP.PRG.d
@@ -947,14 +947,14 @@ $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG: MagiC/APPS/WBDAEMON/TESTDATA/NEOSTEST.C Make
 -include $(BUILD_DIR)/off256ip/OFF256IP.PRG.d
 -include $(addsuffix .d,$(OSD_BATCH_PROBES))
 
-WINFRAME_DIR := MagiC/KERNEL/WINFRAME
+WINFRAME_DIR := base/winframe
 WINFRAME_OBJECTS := $(BUILD_DIR)/winframe/WIN_SLB.o $(BUILD_DIR)/winframe/WIN_OBJS.o \
   $(BUILD_DIR)/winframe/WINFRAME_ENTRY.o
 
 $(BUILD_DIR)/winframe/%.o: $(WINFRAME_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(WINFRAME_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/winframe/WINFRAME_ENTRY.o: $(WINFRAME_DIR)/WINFRAME_ENTRY.S Makefile.apps
 	mkdir -p "$(@D)"
@@ -972,8 +972,8 @@ $(BUILD_DIR)/winframe/WINFRAME.RSC: $(WINFRAME_DIR)/WINFRAME.RSC
 	mkdir -p "$(@D)"
 	cp "$<" "$@"
 
--include $(BUILD_DIR)/winframe/WIN_SLB.d
--include $(BUILD_DIR)/winframe/WIN_OBJS.d
+-include $(BUILD_DIR)/winframe/WIN_SLB.o.d
+-include $(BUILD_DIR)/winframe/WIN_OBJS.o.d
 
 WINFRAME_DEMO_DIR := MagiC/KERNEL/WINFRAME.DEM
 WINFRAME_DEMO_OBJECTS := $(addprefix $(BUILD_DIR)/winframe-demo/,WIN_SLB.o WIN_OBJS.o) \
@@ -982,7 +982,7 @@ WINFRAME_DEMO_OBJECTS := $(addprefix $(BUILD_DIR)/winframe-demo/,WIN_SLB.o WIN_O
 $(BUILD_DIR)/winframe-demo/%.o: $(WINFRAME_DEMO_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(WINFRAME_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/winframe-demo/WINFRAME_ENTRY.o: $(WINFRAME_DIR)/WINFRAME_ENTRY.S Makefile.apps
 	mkdir -p "$(@D)"
@@ -1000,8 +1000,8 @@ $(BUILD_DIR)/winframe-demo/WINFRAME.RSC: $(WINFRAME_DEMO_DIR)/WINFRAME.RSC
 	mkdir -p "$(@D)"
 	cp "$<" "$@"
 
--include $(BUILD_DIR)/winframe-demo/WIN_SLB.d
--include $(BUILD_DIR)/winframe-demo/WIN_OBJS.d
+-include $(BUILD_DIR)/winframe-demo/WIN_SLB.o.d
+-include $(BUILD_DIR)/winframe-demo/WIN_OBJS.o.d
 
 XPRASTR_DIR := MagiC/EXTENSIO/XP_RASTR.SLB/SRC
 XPRASTR_OBJECTS := $(BUILD_DIR)/xp-rastr/XP_RASTR.o \
@@ -1011,7 +1011,7 @@ XPRASTR_OBJECTS := $(BUILD_DIR)/xp-rastr/XP_RASTR.o \
 $(BUILD_DIR)/xp-rastr/XP_RASTR.o: $(XPRASTR_DIR)/XP_RASTR.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(XPRASTR_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/xp-rastr/FARBICON.s: $(XPRASTR_DIR)/FARBICON.S $(MAS_NORMALIZER) Makefile.apps
 	mkdir -p "$(@D)"
@@ -1036,7 +1036,7 @@ $(BUILD_DIR)/xp-rastr/XP_RASTR.elf: $(XPRASTR_OBJECTS) \
 $(BUILD_DIR)/xp-rastr/XP_RASTR.SLB: $(BUILD_DIR)/xp-rastr/XP_RASTR.elf scripts/elf_to_slb.py
 	python3 scripts/elf_to_slb.py --name XP_RASTR.SLB --version 1 --exports 2 "$<" "$@"
 
--include $(BUILD_DIR)/xp-rastr/XP_RASTR.d
+-include $(BUILD_DIR)/xp-rastr/XP_RASTR.o.d
 
 $(BUILD_DIR)/slbtest/LEGACY_CALLS.o: scripts/testdata/LEGACY_CALLS.S Makefile.apps
 	mkdir -p "$(@D)"
@@ -1050,7 +1050,7 @@ $(BUILD_DIR)/slbtest/SLBTEST.PRG: scripts/testdata/SLBTEST.C \
 	  $(BUILD_DIR)/slbtest/LEGACY_CALLS.o $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 -include $(BUILD_DIR)/slbtest/SLBTEST.d
 
-LOADIMG_DIR := MagiC/TOOLS/LOAD_IMG.SLB/SRC
+LOADIMG_DIR := base/load-img/SRC
 LOADIMG_OBJECTS := $(BUILD_DIR)/load-img/LOAD_IMG.o \
   $(BUILD_DIR)/load-img/IMGLOAD.o $(BUILD_DIR)/load-img/LOAD_IMG_RASTER.o \
   $(BUILD_DIR)/load-img/LOAD_IMG_ENTRY.o
@@ -1058,12 +1058,12 @@ LOADIMG_OBJECTS := $(BUILD_DIR)/load-img/LOAD_IMG.o \
 $(BUILD_DIR)/load-img/LOAD_IMG.o: $(LOADIMG_DIR)/LOAD_IMG.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(LOADIMG_DIR)" -I"MagiC/INC_C" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/load-img/IMGLOAD.o: $(LOADIMG_DIR)/IMGLOAD.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(LOADIMG_DIR)" -I"MagiC/INC_C" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/load-img/LOAD_IMG_RASTER.o: $(LOADIMG_DIR)/LOAD_IMG_RASTER.S Makefile.apps
 	mkdir -p "$(@D)"
@@ -1081,10 +1081,10 @@ $(BUILD_DIR)/load-img/LOAD_IMG.elf: $(LOADIMG_OBJECTS) \
 $(BUILD_DIR)/load-img/LOAD_IMG.SLB: $(BUILD_DIR)/load-img/LOAD_IMG.elf scripts/elf_to_slb.py
 	python3 scripts/elf_to_slb.py --name LOAD_IMG.SLB --version 1 --exports 5 "$<" "$@"
 
--include $(BUILD_DIR)/load-img/LOAD_IMG.d
--include $(BUILD_DIR)/load-img/IMGLOAD.d
--include $(APPLICAT_OBJECTS:.o=.d)
--include $(MGVIEW_OBJECTS:.o=.d)
+-include $(BUILD_DIR)/load-img/LOAD_IMG.o.d
+-include $(BUILD_DIR)/load-img/IMGLOAD.o.d
+-include $(addsuffix .d,$(APPLICAT_OBJECTS))
+-include $(addsuffix .d,$(MGVIEW_OBJECTS))
 EDIT_SLB_DIR := base/edit-slb/SRC
 EDIT_SLB_OBJ_DIR := $(BUILD_DIR)/base/edit-slb
 EDIT_SLB_OBJECTS := $(EDIT_SLB_OBJ_DIR)/EDIT_SLB.o $(EDIT_SLB_OBJ_DIR)/EDITOB.o \
@@ -1096,12 +1096,12 @@ edit-slb: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 $(EDIT_SLB_OBJ_DIR)/%.o: $(EDIT_SLB_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(EDIT_SLB_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
-$(EDIT_SLB_OBJ_DIR)/MEMCHAR2.o: MagiC/APPS/MGVIEW/SRC/MEMCHAR2.C Makefile.apps
+$(EDIT_SLB_OBJ_DIR)/MEMCHAR2.o: $(MGVIEW_DIR)/MEMCHAR2.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(EDIT_SLB_DIR)" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(EDIT_SLB_OBJ_DIR)/EDIT_ENTRY.o: $(EDIT_SLB_DIR)/EDIT_ENTRY.S Makefile.apps
 	mkdir -p "$(@D)"
@@ -1115,9 +1115,9 @@ $(BUILD_DIR)/edit-slb/EDITOBJC.elf: $(EDIT_SLB_OBJECTS) $(SLB_LD) Makefile.apps
 $(BUILD_DIR)/edit-slb/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.elf scripts/elf_to_slb.py
 	python3 scripts/elf_to_slb.py "$<" "$@"
 
--include $(EDIT_SLB_OBJ_DIR)/EDIT_SLB.d
--include $(EDIT_SLB_OBJ_DIR)/EDITOB.d
--include $(EDIT_SLB_OBJ_DIR)/MEMCHAR2.d
+-include $(EDIT_SLB_OBJ_DIR)/EDIT_SLB.o.d
+-include $(EDIT_SLB_OBJ_DIR)/EDITOB.o.d
+-include $(EDIT_SLB_OBJ_DIR)/MEMCHAR2.o.d
 
 MGEDIT_DIR := base/mgedit/SRC
 MGEDIT_OBJ_DIR := $(BUILD_DIR)/base/mgedit
@@ -1132,7 +1132,7 @@ mgedit: $(BUILD_DIR)/mgedit/MGEDIT.APP $(BUILD_DIR)/mgedit/mgedit.rsc \
 $(MGEDIT_OBJ_DIR)/%.o: $(MGEDIT_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGEDIT_DIR)" -I"MagiC/APPS" \
-	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/mgedit/MGEDIT.APP: $(MGEDIT_OBJECTS) Makefile.apps
 	mkdir -p "$(@D)"
@@ -1146,22 +1146,22 @@ $(BUILD_DIR)/mgedit/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 	mkdir -p "$(@D)"
 	cp "$<" "$@"
 
--include $(MGEDIT_OBJECTS:.o=.d)
--include $(MGSEARCH_OBJECTS:.o=.d)
--include $(MAGXDESK_OBJECTS:.o=.d)
--include $(BUILD_DIR)/mgsearch/NEOSTART.d
--include $(MGCOPY_OBJECTS:.o=.d)
+-include $(addsuffix .d,$(MGEDIT_OBJECTS))
+-include $(addsuffix .d,$(MGSEARCH_OBJECTS))
+-include $(addsuffix .d,$(MAGXDESK_OBJECTS))
+-include $(BUILD_DIR)/mgsearch/NEOSTART.PRG.d
+-include $(addsuffix .d,$(MGCOPY_OBJECTS))
 -include $(MGCOPY_OBJ_DIR)/NEOSTART.d
--include $(MGFORMAT_OBJECTS:.o=.d)
--include $(BUILD_DIR)/mgformat/NEOSTART.d
--include $(MGNOTICE_OBJECTS:.o=.d)
--include $(GEMUT_OBJECT:.o=.d)
+-include $(addsuffix .d,$(MGFORMAT_OBJECTS))
+-include $(BUILD_DIR)/mgformat/NEOSTART.PRG.d
+-include $(addsuffix .d,$(MGNOTICE_OBJECTS))
+-include $(addsuffix .d,$(GEMUT_OBJECT))
 -include $(MGNOTICE_NEOSTART_D)
--include $(BUILD_DIR)/abi-check/ABI_CHECK.d
+-include $(BUILD_DIR)/abi-check/ABI_CHECK.o.d
 -include $(BUILD_DIR)/console/RUNARG.d
 -include $(BUILD_DIR)/mac2st/MAC2ST.d
 -include $(BUILD_DIR)/dump/DUMP.d
 -include $(BUILD_DIR)/fc/FC.d
 -include $(BUILD_DIR)/split/SPLIT.d
--include $(DIS1_OBJECTS:.o=.d)
--include $(DIS2_OBJECTS:.o=.d)
+-include $(addsuffix .d,$(DIS1_OBJECTS))
+-include $(addsuffix .d,$(DIS2_OBJECTS))

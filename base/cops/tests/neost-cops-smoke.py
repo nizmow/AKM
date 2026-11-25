@@ -20,7 +20,7 @@ from neost_screen import bbox_inside, diff_stats
 BUILD = ROOT / "build/atari"
 ARCHIVE = COMPONENT / "SRC/COPS.APP"
 REBUILT = BUILD / "apps/cops/COPS.APP"
-CPX_SOURCE = ROOT / "MagiC/APPS/CPX/BIN"
+CPX_SOURCE = ROOT / "base/cpx/BIN"
 CPX_MODULES = ("MAGXCONF", "TSLICE")
 GUEST_APP = "::/GEMSYS/MAGIC/START/COPS.APP"
 GUEST_CPX = "::/CPX"

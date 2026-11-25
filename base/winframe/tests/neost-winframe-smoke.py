@@ -1,85 +1,67 @@
 #!/usr/bin/env python3
-"""Compare archived and rebuilt MAGXCONF.CPX boot init and dialog on MagiC."""
+"""Compare archived and rebuilt WINFRAME.SLB window rendering on MagiC."""
 from __future__ import annotations
 
 import argparse
 import os
-import struct
 import sys
 import tempfile
 from pathlib import Path
+
+COMPONENT = Path(__file__).resolve().parents[1]
+ROOT = COMPONENT.parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
 
 from neost_common import acquire_headless, create_output, require, run
 from neost_host import NeoSTHost
 from neost_image import MagiCImage
 from neost_screen import diff_stats
 
-ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
-APPS = BUILD / "apps"
-ARCHIVE = ROOT / "MagiC/APPS/CPX/BIN/MAGXCONF.CPX"
-REBUILT = APPS / "cpx/MAGXCONF.CPX"
-PROBE = APPS / "magxconf/NEOSTART.PRG"
-GUEST_CPX = "::/AUTO/ACCS/CPX/MAGXCONF.CPX"
-GUEST_CPZ = "::/AUTO/ACCS/CPX/MAGXCONF.CPZ"
-EXPECTED = 0x10
-
-
-def saved_default(cpx: Path, destination: Path, value: int) -> Path:
-    """Place a known saved default in a scratch CPX copy."""
-    data = bytearray(cpx.read_bytes())
-    tlen = struct.unpack_from(">I", data, 512 + 2)[0]
-    offset = 512 + 28 + tlen
-    struct.pack_into(">I", data, offset, value)
-    destination.write_bytes(data)
-    return destination
+ARCHIVE = ROOT / "MagiC/Releases/MAGIC.A/GEMSYS/MAGIC/XTENSION/WINFRAME.SLB"
+ARCHIVE_RSC = ROOT / "MagiC/Releases/MAGIC.A/GEMSYS/MAGIC/XTENSION/WINFRAME.RSC"
+REBUILT = BUILD / "apps/winframe/WINFRAME.SLB"
+REBUILT_RSC = BUILD / "apps/winframe/WINFRAME.RSC"
+GUEST_SLB = "::/GEMSYS/MAGIC/XTENSION/WINFRAME.SLB"
+GUEST_RSC = "::/GEMSYS/MAGIC/XTENSION/WINFRAME.RSC"
 
 
 def session(headless: Path, rom: Path, image: MagiCImage, output: Path) -> NeoSTHost:
     host = NeoSTHost(headless, rom, output, image=image,
-                     options=["--machine", "megaste", "--mem", "4m", "--mono",
+                     options=["--machine", "megaste", "--mem", "4m",
                               "--no-disk"],
                      auto=r"C:\AUTO\MAGXBOOT.TOS", timeout=240)
     (host.guest_root / "E").mkdir()
     return host
 
 
-def run_case(headless: Path, rom: Path, source: Path, cpx: Path, output: Path,
-             offset: int) -> Path:
+def configure_inf(image: MagiCImage, output: Path, *, disable: bool) -> None:
+    inf = output / "MAGX.INF"
+    image.copy_out("::/MAGX.INF", inf)
+    data = inf.read_bytes()
+    data = data.replace(b"#_DEV 1 0", b"#_DEV 2 0")
+    require(b"#_DEV 2 0" in data, "MAGX.INF does not select a colour mode")
+    if disable:
+        data = data.replace(b"#_SLB 0 WINFRAME.SLB", b"; #_SLB 0 WINFRAME.SLB")
+        require(b"; #_SLB 0 WINFRAME.SLB" in data,
+                "MAGX.INF does not load WINFRAME.SLB")
+    inf.write_bytes(data)
+    image.copy_in(inf, "::/MAGX.INF")
+
+
+def run_case(headless: Path, rom: Path, source: Path, slb: Path, rsc: Path,
+             output: Path, offset: int, *, disable: bool = False) -> Path:
     output.mkdir()
     image = MagiCImage.clone(source, output / "magic.img", partition_offset=offset)
     image.verify_magic()
-    if run(["mdir", "-i", image.image_spec, GUEST_CPZ]).returncode == 0:
-        moved = run(["mren", "-o", "-i", image.image_spec, GUEST_CPZ, GUEST_CPX])
-        require(moved.returncode == 0, f"cannot enable CPX: {moved.stdout}")
-    patched = saved_default(cpx, output / "test.cpx", EXPECTED)
-    image.copy_in(patched, GUEST_CPX)
-    image.copy_in(PROBE, "::/GEMSYS/MAGIC/START/ZCPXTEST.PRG")
-    (output / "CNFMODE.TXT").write_text("r")
-    image.copy_in(output / "CNFMODE.TXT", "::/CNFMODE.TXT")
+    image.copy_in(slb, GUEST_SLB)
+    image.copy_in(rsc, GUEST_RSC)
+    configure_inf(image, output, disable=disable)
 
     host = session(headless, rom, image, output / "run")
     with host:
         host.boot(15000)
-        host.calibrate_mouse()
-        result = host.guest_root / "E/BEFORE.RES"
-        require(result.is_file(), f"no boot probe result: {result}")
-        value = int(result.read_text(encoding="ascii").split()[0], 16)
-        require(value == EXPECTED, f"boot initializer set {value:08x}, expected {EXPECTED:08x}")
-        host.move_to(40, 8)
-        host.run_frames(30)
-        host.click(40, 8)
-        host.run_frames(60)
-        host.move_to(70, 65)
-        host.run_frames(20)
-        host.click(70, 65)
-        host.run_frames(180)
-        host.move_to(205, 195)
-        host.run_frames(20)
-        host.click(205, 195)
-        host.click(205, 195)
-        host.run_frames(150)
-        return host.screenshot("dialog.ppm")
+        return host.screenshot(output / "window.ppm")
 
 
 def main() -> int:
@@ -101,26 +83,30 @@ def main() -> int:
             parser.error(f"input not found: {path}")
 
     build = run([str(ROOT / "scripts/atari-container"), "run", "make", "-f",
-                 "Makefile.apps", "magxconf-cpx", "magxconf-test-driver"],
+                 "Makefile.apps", "winframe"],
                 cwd=ROOT, timeout=900)
     if build.returncode:
         print(build.stdout, file=sys.stderr)
         return build.returncode
     try:
         output = create_output(args.output, parent=BUILD,
-                               prefix="neost-magxconf-cpx").resolve()
+                               prefix="neost-winframe").resolve()
         print(f"Evidence: {output}", flush=True)
-        with tempfile.TemporaryDirectory(prefix="neost-magxconf-cpx-") as temporary:
+        with tempfile.TemporaryDirectory(prefix="neost-winframe-") as temporary:
             headless, _ = acquire_headless(args.neost_headless, args.neost,
                                            Path(temporary))
-            archived = run_case(headless, rom, source, ARCHIVE,
+            archived = run_case(headless, rom, source, ARCHIVE, ARCHIVE_RSC,
                                 output / "archive", args.partition_offset)
-            rebuilt = run_case(headless, rom, source, REBUILT,
+            rebuilt = run_case(headless, rom, source, REBUILT, REBUILT_RSC,
                                output / "rebuilt", args.partition_offset)
+            noframe = run_case(headless, rom, source, ARCHIVE, ARCHIVE_RSC,
+                               output / "noframe", args.partition_offset, disable=True)
+        changed, _ = diff_stats(archived, noframe)
+        require(changed > 1000, "WINFRAME did not change the booted window frame")
         count, bbox = diff_stats(archived, rebuilt)
-        require(count == 0, f"CPX dialog differs at {bbox} ({count} pixels)")
+        require(count == 0, f"WINFRAME window differs at {bbox} ({count} pixels)")
         (output / "comparison.txt").write_text("PASS\n")
-        print("boot initializer and CPX dialog match the archive", flush=True)
+        print("WINFRAME window frames match the archive", flush=True)
     except (OSError, RuntimeError) as error:
         print(f"FAIL: {error}", file=sys.stderr)
         return 1

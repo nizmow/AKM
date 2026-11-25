@@ -112,7 +112,7 @@ framework or shared-library rewrite is required before these are attempted.
 
 ## Repeatable runtime verification
 
-- [x] Add an explicitly invoked MOD_APP smoke runner. `scripts/neost-mod-app-smoke.py`
+- [x] Add an explicitly invoked MOD_APP smoke runner. `base/mod-app/tests/neost-mod-app-smoke.py`
   runs the archived and GCC binaries through NeoST's headless TOS autostart.
 - [x] Fix the NeoST profile at ST/4 MiB with bundled EmuTOS 1.04 by default;
   each binary gets a separate disposable GEMDOS C: tree. Capture logs, results

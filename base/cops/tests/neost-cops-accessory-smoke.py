@@ -21,7 +21,7 @@ BUILD = ROOT / "build/atari"
 GUEST = "::/AUTO/ACCS/COPS.ACC"
 ARCHIVE = ROOT / "MagiC/Releases/MAGIC.A/AUTO/ACCS/COPS.ACC"
 REBUILT = BUILD / "apps/cops/COPS.APP"
-TSLICE = ROOT / "MagiC/APPS/CPX/BIN/TSLICE.CPX"
+TSLICE = ROOT / "base/cpx/BIN/TSLICE.CPX"
 
 
 def run_case(headless, rom, source, offset, folder, accessory):

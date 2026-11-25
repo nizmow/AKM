@@ -26,7 +26,7 @@
 #include "GLOBALS.H"
 #include "WINDOWS.H"
 #include "MGWIND.H"
-#include "../../TOS_ARGS.H"
+#include "TOS_ARGS.H"
 
 #define AV_STARTED 0x4738
 

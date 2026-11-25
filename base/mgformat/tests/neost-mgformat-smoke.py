@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
-"""Compare archived and rebuilt VT52 terminal sessions under MagiC.
+"""Compare archived and rebuilt MGFORMAT startup dialogs under MagiC.
 
-Both binaries run from the pinned ``C:\\VT52.PRG`` guest path with the German
-resource and a delayed launcher in MagiC's startup folder. The image's
-``MAGX.INF`` is pinned to load that startup folder (any ``#_AUT`` is removed),
-so a source image with a different autostart or app path cannot silently skip
-the launcher.
+Both binaries run from the pinned ``C:\\MGFORMAT.PRG`` guest path with the same
+German resource. The delayed helper is installed in MagiC's START folder, and
+the image's ``MAGX.INF`` is pinned to load that folder (any ``#_AUT`` is
+removed), so the launcher cannot be skipped by a different source-image
+startup path. The check proves the native MagiC wdlg binding and the format
+dialog.
 
-A child writes a fixed line through the BIOS console path; the host compares
-the terminal title and the two output lines. The blinking terminal cursor, the
-mouse and the scrollbar column are outside the compared regions. A control boot
-with only ``C:\\VT52.PRG`` removed must still boot but differ substantially in
-those regions. This covers startup, the hooked console path and the child
-lifecycle, but not interactive keyboard/mouse terminal use.
+The compared regions are limited to the dialog title and controls; the
+desktop's free-space status line and the editable name field's blinking caret
+are excluded. A control boot with only ``C:\\MGFORMAT.PRG`` removed must still
+boot but differ substantially in the dialog regions. NeoST's floppy formatter
+reports a write fault for this disposable image, so physical formatting and
+disk-copy effects remain a manual-hardware test.
 """
 
 from __future__ import annotations
@@ -20,45 +21,46 @@ from __future__ import annotations
 import argparse
 import os
 from pathlib import Path
-import subprocess
 import sys
 import tempfile
 
-from neost_common import acquire_headless, create_output, require
+COMPONENT = Path(__file__).resolve().parents[1]
+ROOT = COMPONENT.parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+
+from neost_common import acquire_headless, create_output, require, run
 from neost_host import NeoSTHost
 from neost_image import MagiCImage
 from neost_screen import diff_stats
 
-ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
-ARCHIVE_APP = ROOT / "MagiC/APPS/VT52/BIN/VT52.PRG"
-ARCHIVE_RSC = ROOT / "MagiC/APPS/VT52/SRC/VT52/RESOURCE/DEUTSCH/VT52.RSC"
-REBUILT_APP = BUILD / "apps/vt52/VT52.PRG"
-REBUILT_RSC = BUILD / "apps/vt52/VT52.RSC"
-DRIVER = BUILD / "apps/vt52/NEOSTART.PRG"
-CHILD = BUILD / "apps/vt52/VT52DEMO.TOS"
+ARCHIVE_APP = COMPONENT / "BIN/MGFORMAT.PRG"
+ARCHIVE_RSC = COMPONENT / "SRC/MGFORMAT.RSC"
+REBUILT_APP = BUILD / "apps/mgformat/MGFORMAT.PRG"
+REBUILT_RSC = BUILD / "apps/mgformat/MGFORMAT.RSC"
+DRIVER = BUILD / "apps/mgformat/NEOSTART.PRG"
 START_DIR = r"::/GEMSYS/MAGIC/START"
 LAUNCHER_GUEST = f"{START_DIR}/NEOSTART.PRG"
-# Keep in sync with MagiC/APPS/VT52/TESTDATA/NEOSTART.C: it Pexecs
-# C:\VT52.PRG with a C:\VT52DEMO.TOS command tail.
-APP_GUEST = r"::/VT52.PRG"
-RSC_GUEST = r"::/VT52.RSC"
-CHILD_GUEST = r"::/VT52DEMO.TOS"
+# Keep in sync with base/mgformat/tests/NEOSTART.C: it Pexecs
+# C:\MGFORMAT.PRG with the "-f A:" command tail.
+APP_GUEST = r"::/MGFORMAT.PRG"
+RSC_GUEST = r"::/MGFORMAT.RSC"
 STARTUP_CONFIG_PATH = "C:\\GEMSYS\\MAGIC\\START\\"
 AUTO_BOOT = r"C:\AUTO\MAGXBOOT.TOS"
 BOOT_FRAMES = 15000
 SETTLE_FRAMES = 600
 SCREEN = (640, 400)
 
-# The exit line deliberately stops before the blinking cursor cell at x>=129.
+# The name field's caret at x=316 blinks, so its column (314..321) is split out.
 REGIONS = {
-    "window-title": (0, 17, 620, 40),
-    "ready-line": (2, 54, 615, 70),
-    "exit-line": (2, 100, 128, 120),
+    "dialog-title": (163, 54, 479, 106),
+    "name-label": (163, 106, 314, 136),
+    "name-field": (322, 106, 479, 136),
+    "dialog-body": (163, 136, 479, 316),
 }
-PRIMARY_REGION = "ready-line"
-MIN_CONTROL_DIFF = 1000
-MIN_PRIMARY_DIFF = 200
+PRIMARY_REGION = "dialog-body"
+MIN_CONTROL_DIFF = 2000
+MIN_PRIMARY_DIFF = 1000
 
 
 def pin_launcher_config(image: MagiCImage, scratch: Path) -> None:
@@ -106,7 +108,7 @@ def remove_if_present(image: MagiCImage, guest: str) -> None:
 def capture(headless: Path, rom: Path, source: Path, directory: Path, *,
             app: Path | None, rsc: Path,
             partition_offset: int) -> tuple[Path, Path]:
-    """Boot one case and return settled and final terminal screenshots."""
+    """Boot one case and return settled and final dialog screenshots."""
     directory.mkdir()
     host = NeoSTHost(
         headless, rom, directory,
@@ -115,8 +117,7 @@ def capture(headless: Path, rom: Path, source: Path, directory: Path, *,
     image = host.prepare_image(source, partition_offset=partition_offset)
     pin_launcher_config(image, directory)
     (host.guest_root / "E").mkdir(parents=True, exist_ok=True)
-    files = [(DRIVER, LAUNCHER_GUEST), (rsc, RSC_GUEST),
-             (CHILD, CHILD_GUEST)]
+    files = [(DRIVER, LAUNCHER_GUEST), (rsc, RSC_GUEST)]
     if app is not None:
         files.append((app, APP_GUEST))
     image.install(files)
@@ -126,9 +127,9 @@ def capture(headless: Path, rom: Path, source: Path, directory: Path, *,
         host.boot(BOOT_FRAMES)
         host.server.move(-SCREEN[0], SCREEN[1], step=8, frames=1)
         host.run_frames(SETTLE_FRAMES)
-        settled = host.screenshot("terminal.ppm")
+        settled = host.screenshot("format-dialog.ppm")
         host.run_frames(SETTLE_FRAMES)
-        final = host.screenshot("terminal-stable.ppm")
+        final = host.screenshot("format-dialog-stable.ppm")
     return settled, final
 
 
@@ -159,26 +160,24 @@ def main() -> int:
         if not path.is_file():
             parser.error(f"input not found: {path}")
 
-    build = subprocess.run(
-        [str(ROOT / "scripts/atari-container"), "run", "make", "-f",
-         "Makefile.apps", "vt52", "vt52-test-driver"],
-        cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    build = run([str(ROOT / "scripts/atari-container"), "run", "make", "-f",
+                 "Makefile.apps", "mgformat", "mgformat-test-driver"],
+                cwd=ROOT, timeout=900)
     if build.returncode:
         print(build.stdout, file=sys.stderr)
         return build.returncode
-    for path in (ARCHIVE_APP, ARCHIVE_RSC, REBUILT_APP, REBUILT_RSC,
-                 DRIVER, CHILD):
+    for path in (ARCHIVE_APP, ARCHIVE_RSC, REBUILT_APP, REBUILT_RSC, DRIVER):
         if not path.is_file():
             print(f"build completed without producing {path}", file=sys.stderr)
             return 1
 
     try:
-        output = create_output(args.output, parent=BUILD, prefix="neost-vt52")
+        output = create_output(args.output, parent=BUILD, prefix="neost-mgformat")
     except OSError as error:
         parser.error(str(error))
 
     try:
-        with tempfile.TemporaryDirectory(prefix="neost-vt52-") as temporary:
+        with tempfile.TemporaryDirectory(prefix="neost-mgformat-") as temporary:
             headless, _ = acquire_headless(args.neost_headless, args.neost,
                                            Path(temporary))
             shots: dict[str, tuple[Path, Path]] = {}
@@ -196,14 +195,14 @@ def main() -> int:
             for region_name, region in REGIONS.items():
                 changed, bbox = diff_stats(settled, final, region=region)
                 require(changed == 0,
-                        f"{name} terminal changed between settled captures in "
+                        f"{name} dialog changed between settled captures in "
                         f"{region_name}: {changed} pixels (bbox {bbox})")
 
         for region_name, region in REGIONS.items():
             changed, bbox = diff_stats(shots["archive"][1], shots["rebuilt"][1],
                                        region=region)
             require(changed == 0,
-                    f"terminal {region_name} differs in {changed} pixels "
+                    f"dialog {region_name} differs in {changed} pixels "
                     f"(bbox {bbox})")
 
         control = shots["missing"][1]
@@ -215,24 +214,24 @@ def main() -> int:
             }
             total = sum(counts.values())
             require(counts[PRIMARY_REGION] >= MIN_PRIMARY_DIFF,
-                    f"{name} terminal and missing-APP control differ by only "
+                    f"{name} dialog and missing-APP control differ by only "
                     f"{counts[PRIMARY_REGION]} pixels in {PRIMARY_REGION}")
             require(total >= MIN_CONTROL_DIFF,
-                    f"{name} terminal and missing-APP control differ by only "
+                    f"{name} dialog and missing-APP control differ by only "
                     f"{total} pixels in the compared regions")
             print(f"{name}: missing-APP control differs in {total} pixels "
                   f"({counts[PRIMARY_REGION]} in {PRIMARY_REGION})")
 
-        print("VT52 terminal screen matches archive in the compared regions")
+        print("MGFORMAT startup dialog matches archive in the compared regions")
         (output / "comparison.txt").write_text(
             "PASS\n"
             f"archive={shots['archive'][1]}\n"
             f"rebuilt={shots['rebuilt'][1]}\n"
             f"missing-app-control={control}\n",
             encoding="utf-8")
-        print(f"VT52 screen verified; artifacts: {output}")
+        print(f"MGFORMAT dialog verified; artifacts: {output}")
     except (OSError, RuntimeError) as error:
-        print(f"NeoST VT52 smoke failed: {error}\nArtifacts: {output}",
+        print(f"NeoST MGFORMAT smoke failed: {error}\nArtifacts: {output}",
               file=sys.stderr)
         return 1
     return 0
