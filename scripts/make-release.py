@@ -108,10 +108,10 @@ def sanitized_inf(path: Path) -> bytes:
 
 
 def build(build_dir: Path, rebuilt: dict[Path, str]) -> None:
-    make = [str(ROOT / "scripts/atari-container"), "run", "make", "-j4", "-f"]
-    subprocess.run([*make, "Makefile.atari", f"BUILD_DIR={build_dir}",
+    make = [str(ROOT / "scripts/atari-container"), "run", "make", "-j4"]
+    subprocess.run([*make, f"BUILD_DIR={build_dir}",
                     str(build_dir / "MAGIC.RAM")], cwd=ROOT, check=True)
-    subprocess.run([*make, "Makefile.apps", f"BUILD_DIR={build_dir / APPS}",
+    subprocess.run([*make, "-f", "Makefile.apps", f"BUILD_DIR={build_dir / APPS}",
                     *(str(build_dir / path) for path in rebuilt if path.parts[0] == "apps")],
                    cwd=ROOT, check=True)
 

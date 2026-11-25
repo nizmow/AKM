@@ -33,14 +33,14 @@ raw = true
 run = "scripts/atari-container run"
 
 [tasks.make]
-description = "Run Makefile.atari with arbitrary targets and options"
+description = "Run the default Atari kernel Makefile with arbitrary targets and options"
 dir = "{{ config_root }}"
-run = "scripts/atari-container run make -f Makefile.atari"
+run = "scripts/atari-container run make"
 
 [tasks.kernel]
 description = "Build the German Atari/68000 MAGIC.RAM kernel"
 dir = "{{ config_root }}"
-run = "scripts/atari-container run make -f Makefile.atari magic"
+run = "scripts/atari-container run make magic"
 
 [tasks.apps]
 description = "Run Makefile.apps with application targets and options"

@@ -2,10 +2,10 @@
 # Original sources stay in place; wrappers add the attributes and local
 # standard-library bindings that Pure C supplied from its GEMLIB.
 AES_C_DIR := $(BUILD_DIR)/kernel/aes-c
-AES_C_INCLUDE := $(abspath kernel/BUILD/GCC/AES_C_INCLUDE)
-AES_C_WRAP_DIR := kernel/BUILD/GCC
+AES_C_WRAP_DIR := kernel/AES/compat
+AES_C_INCLUDE := $(abspath $(AES_C_WRAP_DIR)/include)
 AES_C_ASM_DIR := $(AES_C_DIR)/asm
-AES_C_ADAPTER := $(if $(ASM_ADAPTER),$(ASM_ADAPTER),kernel/BUILD/GCC/mas_to_vasm.py)
+AES_C_ADAPTER := $(ASM_ADAPTER)
 AES_C_VASM := $(if $(VASM),$(VASM),vasmm68k_mot)
 
 AES_C_OBJECTS := $(addprefix $(AES_C_DIR)/, \
@@ -26,7 +26,7 @@ aes-c-objects: $(AES_C_OBJECTS)
 $(AES_C_DIR)/farbic.o: $(AES_C_WRAP_DIR)/AES_FARBIC.C \
                        kernel/AES/SRC/FARBIC.C $(AES_C_HEADERS)
 	@mkdir -p $(@D)
-	$(CC) $(AES_C_CFLAGS) -MMD -MP -MF $@.d -x c -c $< -o $@
+	$(CC) $(AES_C_CFLAGS) -MMD -MP -MF $@.dep -x c -c $< -o $@
 
 $(AES_C_DIR)/fsel.o: $(AES_C_WRAP_DIR)/AES_FSEL.C \
                      kernel/AES/SRC/FSEL/FSEL.C \
@@ -38,14 +38,14 @@ $(AES_C_DIR)/fsel.o: $(AES_C_WRAP_DIR)/AES_FSEL.C \
                      kernel/AES/SRC/WDIALOG/SHELSORT.H \
                      $(AES_C_HEADERS)
 	@mkdir -p $(@D)
-	$(CC) $(AES_C_CFLAGS) -MMD -MP -MF $@.d -x c -c $< -o $@
+	$(CC) $(AES_C_CFLAGS) -MMD -MP -MF $@.dep -x c -c $< -o $@
 
 $(AES_C_DIR)/wdialog.o: $(AES_C_WRAP_DIR)/AES_WDIALOG.C \
                         kernel/AES/SRC/WDIALOG/WDIALOG.C \
                         kernel/AES/SRC/WDIALOG/WDIALOG.H \
                         $(AES_C_HEADERS)
 	@mkdir -p $(@D)
-	$(CC) $(AES_C_LEGACY_CFLAGS) -MMD -MP -MF $@.d -x c -c $< -o $@
+	$(CC) $(AES_C_LEGACY_CFLAGS) -MMD -MP -MF $@.dep -x c -c $< -o $@
 
 $(AES_C_DIR)/listbox.o: $(AES_C_WRAP_DIR)/AES_LISTBOX.C \
                         kernel/AES/SRC/WDIALOG/LISTBOX.C \
@@ -53,7 +53,7 @@ $(AES_C_DIR)/listbox.o: $(AES_C_WRAP_DIR)/AES_LISTBOX.C \
                         kernel/AES/SRC/WDIALOG/LISTBOX.H \
                         $(AES_C_HEADERS)
 	@mkdir -p $(@D)
-	$(CC) $(AES_C_LEGACY_CFLAGS) -MMD -MP -MF $@.d -x c -c $< -o $@
+	$(CC) $(AES_C_LEGACY_CFLAGS) -MMD -MP -MF $@.dep -x c -c $< -o $@
 
 $(AES_C_DIR)/fnt_menu.o: $(AES_C_WRAP_DIR)/AES_FNT_MENU.C \
                          kernel/AES/SRC/WDIALOG/FNT_MENU.C \
@@ -68,13 +68,13 @@ $(AES_C_DIR)/fnt_menu.o: $(AES_C_WRAP_DIR)/AES_FNT_MENU.C \
                          kernel/AES/SRC/WDIALOG/GER/FNTS_RSC.H \
                          $(AES_C_HEADERS)
 	@mkdir -p $(@D)
-	$(CC) $(AES_C_LEGACY_CFLAGS) -MMD -MP -MF $@.d -x c -c $< -o $@
+	$(CC) $(AES_C_LEGACY_CFLAGS) -MMD -MP -MF $@.dep -x c -c $< -o $@
 
 $(AES_C_DIR)/shelsort.o: $(AES_C_WRAP_DIR)/AES_SHELSORT.C \
                          kernel/AES/SRC/WDIALOG/SHELSORT.C \
                          $(AES_C_HEADERS)
 	@mkdir -p $(@D)
-	$(CC) $(AES_C_LEGACY_CFLAGS) -MMD -MP -MF $@.d -x c -c $< -o $@
+	$(CC) $(AES_C_LEGACY_CFLAGS) -MMD -MP -MF $@.dep -x c -c $< -o $@
 
 # WDINTRFC.S keeps its Motorola instructions; the shared normalizer only
 # rewrites MAS directives, comments and include/string syntax.
@@ -90,5 +90,5 @@ $(AES_C_DIR)/wdintrfc.o: $(AES_C_ASM_DIR)/WDINTRFC.S \
 	@mkdir -p $(@D)
 	$(AES_C_VASM) $(VASM_FLAGS) -I$(abspath kernel/AES/SRC/WDIALOG) -o $@ $<
 
--include $(AES_C_OBJECTS:.o=.o.d)
-$(AES_C_OBJECTS): Makefile.atari kernel/BUILD/GCC/aes-c.mk
+-include $(addsuffix .dep,$(AES_C_OBJECTS))
+$(AES_C_OBJECTS): Makefile kernel/mk/aes-c.mk

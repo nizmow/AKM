@@ -1,4 +1,4 @@
-/* Compile the original listbox implementation with the kernel ABI. */
+/* Compile the original font selector, including VDI_BIND.C and OBJ_TOOL.C. */
 #ifndef cdecl
 #define cdecl __attribute__((cdecl))
 #endif
@@ -8,4 +8,5 @@
 extern LONG mfree( void *block );
 #define Mfree( p ) mfree( (void *) (p) )
 
-#include "../../AES/SRC/WDIALOG/LISTBOX.C"
+
+#include "../SRC/WDIALOG/FNT_MENU.C"

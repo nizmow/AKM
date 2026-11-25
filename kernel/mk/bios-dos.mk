@@ -1,6 +1,6 @@
 # BIOS/DOS kernel modules for the Atari (Falcon-capable, German) MAGIC.RAM.
 #
-# Included from Makefile.atari.  All intermediate files live under
+# Included from Makefile. All intermediate files live under
 # build/atari/kernel/bios-dos; original sources are never modified in place.
 #
 # Every MAS source uses the shared syntax adapter and canonical Atari strings.
@@ -13,8 +13,8 @@ BIOSDOS_BIOS_INC  := $(BIOSDOS_INC_DIR)/bios
 BIOSDOS_DOS_INC   := $(BIOSDOS_INC_DIR)/dos
 BIOSDOS_READ_INC  := $(BIOSDOS_INC_DIR)/read_inf
 
-BIOSDOS_ADAPTER    := kernel/BUILD/GCC/mas_to_vasm.py
-BIOSDOS_MK         := kernel/BUILD/GCC/bios-dos.mk
+BIOSDOS_ADAPTER    := $(ASM_ADAPTER)
+BIOSDOS_MK         := kernel/mk/bios-dos.mk
 BIOSDOS_ATARI_TABLE := NON-TOS/atari-utf8-conversion/atari-utf8.c
 BIOSDOS_TOOLS      := $(BIOSDOS_ADAPTER) $(BIOSDOS_ATARI_TABLE) $(BIOSDOS_MK)
 
@@ -130,7 +130,7 @@ $(BIOSDOS_DIR)/dev_pipe.o: BIOSDOS_ASINCLUDES := $(BIOSDOS_DOS_INCLUDES)
 $(BIOSDOS_DIR)/dev_mem.o:  BIOSDOS_ASINCLUDES := $(BIOSDOS_DOS_INCLUDES)
 $(BIOSDOS_DIR)/read_inf.o: BIOSDOS_ASINCLUDES := $(BIOSDOS_READ_INCLUDES)
 
-$(BIOSDOS_DIR)/%.o: $(BIOSDOS_ASM_DIR)/%.S $(BIOSDOS_STAGED) Makefile.atari
+$(BIOSDOS_DIR)/%.o: $(BIOSDOS_ASM_DIR)/%.S $(BIOSDOS_STAGED) Makefile
 	@mkdir -p $(@D)
 	$(BIOSDOS_VASM) $(BIOSDOS_ASFLAGS) $(BIOSDOS_ASINCLUDES) $(BIOSDOS_ASDEFS) -o $@ $<
 
@@ -139,13 +139,13 @@ $(BIOSDOS_DIR)/%.o: $(BIOSDOS_ASM_DIR)/%.S $(BIOSDOS_STAGED) Makefile.atari
 # d0/d1/d2/a0/a1 register ABI used by DRIVE.S.
 $(BIOSDOS_DIR)/ide.o: kernel/BIOS/ATARI/MODULES/IDE.C \
                       kernel/BIOS/ATARI/MODULES/IDE.H \
-                      $(INCLUDE_DIR)/portab.h $(INCLUDE_DIR)/tos.h Makefile.atari
+                      $(INCLUDE_DIR)/portab.h $(INCLUDE_DIR)/tos.h Makefile
 	@mkdir -p $(@D)
 	$(CC) $(CPPFLAGS) -I$(abspath $(INCLUDE_DIR)) \
 	  -I$(abspath kernel/BIOS/ATARI/MODULES) \
-	  $(CFLAGS) $(KERNEL_FLAGS) -MMD -MP -MF $@.d -x c -c $< -o $@
+	  $(CFLAGS) $(KERNEL_FLAGS) -MMD -MP -MF $@.dep -x c -c $< -o $@
 
 .PHONY: bios-dos
 bios-dos: $(BIOS_DOS_OBJECTS)
 
--include $(BIOSDOS_DIR)/ide.o.d
+-include $(BIOSDOS_DIR)/ide.o.dep

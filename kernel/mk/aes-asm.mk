@@ -39,7 +39,7 @@ aes-asm-objects: $(AES_OBJECTS)
 # Normalized module sources: one directory per module.
 define AES_ASM_SOURCE_RULE
 $(AES_ASM_DIR)/$(1)/$(1).S: kernel/AES/SRC/$(1).S $(ASM_ADAPTER) \
-                             $(AES_ATARI_UTF8) kernel/BUILD/GCC/aes-asm.mk
+                             $(AES_ATARI_UTF8) kernel/mk/aes-asm.mk
 	$(AES_NORMALIZE) $$< $$@
 endef
 $(foreach m,$(AES_ASM_MODULES),$(eval $(call AES_ASM_SOURCE_RULE,$(m))))
@@ -68,7 +68,7 @@ $(AES_ASM_DIR)/%/FARBICON.S: kernel/AES/SRC/FARBICON.S $(ASM_ADAPTER) $(AES_ATAR
 define AES_ASM_OBJECT_RULE
 $(AES_ASM_DIR)/$(1).o: $(AES_ASM_DIR)/$(1)/$(1).S \
                        $(addprefix $(AES_ASM_DIR)/$(1)/,$(AES_ASM_SHARED) $(AES_ASM_DEPS_$(1))) \
-                       kernel/BUILD/GCC/aes-asm.mk
+                       kernel/mk/aes-asm.mk
 	$(VASM) $(VASM_FLAGS) $(AES_ASM_DEFS) -I$(AES_ASM_DIR)/$(1) -o $$@ $$<
 endef
 $(foreach m,$(AES_ASM_MODULES),$(eval $(call AES_ASM_OBJECT_RULE,$(m))))
@@ -79,8 +79,8 @@ $(foreach m,$(AES_ASM_MODULES),$(eval $(call AES_ASM_OBJECT_RULE,$(m))))
 AES_MTSMN_CPPFLAGS := -D'cdecl=__attribute__((cdecl))'
 
 $(AES_ASM_DIR)/mtsmn.o: kernel/AES/SRC/XMEN_MGR/MTSMN.C \
-                        $(INCLUDE_DIR)/portab.h kernel/BUILD/GCC/aes-asm.mk
+                        $(INCLUDE_DIR)/portab.h kernel/mk/aes-asm.mk
 	$(CC) $(CPPFLAGS) $(AES_MTSMN_CPPFLAGS) -I$(INCLUDE_DIR) $(CFLAGS) \
-	  $(KERNEL_FLAGS) -MMD -MP -MF $@.d -x c -c $< -o $@
+	  $(KERNEL_FLAGS) -MMD -MP -MF $@.dep -x c -c $< -o $@
 
--include $(AES_MTSMN_OBJECT:.o=.o.d)
+-include $(addsuffix .dep,$(AES_MTSMN_OBJECT))

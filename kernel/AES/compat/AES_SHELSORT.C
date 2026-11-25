@@ -3,4 +3,4 @@
 #define cdecl __attribute__((cdecl))
 #endif
 
-#include "../../AES/SRC/WDIALOG/SHELSORT.C"
+#include "../SRC/WDIALOG/SHELSORT.C"

@@ -1,10 +1,10 @@
 # GCC/VASM porting notes
 
 These notes cover the modern **German Atari/68000 kernel** and the first
-standalone GCC application port. Start with `README.md`, `Makefile.atari`
+standalone GCC application port. Start with `README.md`, `Makefile`
 (kernel), `Makefile.apps` (applications) and `TODO.md` (next tasks).
 Prefer small, reviewable source changes. Keep kernel compatibility work in
-`kernel/BUILD/GCC/`; do not use those private headers or ABI flags as an
+`kernel/`; do not use those private headers or ABI flags as an
 application SDK.
 
 ## Application SDK headers
@@ -20,7 +20,7 @@ Legacy headers are not part of that SDK. The repository has a Borland-era
 imports and libraries there. CMDLINE has no local `TOS.H`/`AES.H` or project
 file identifying its original include path, so the exact source of the
 `<tos.h>` and `<aes.h>` it once used is not established here. The similarly
-named `tos.h` and `aes.h` under `kernel/BUILD/GCC/AES_C_INCLUDE/` are
+named `tos.h` and `aes.h` under `kernel/AES/compat/include/` are
 private kernel compatibility headers, not an application SDK.
 
 For CMDLINE, the port replaces those unavailable include expectations with
@@ -56,7 +56,7 @@ to make old includes resolve.
 
 Use `mise run apps -- mod-app`, or invoke `Makefile.apps` through the existing
 container wrapper. Output: `build/atari/apps/mod-app/MOD_APP.TTP`.
-Applications are separate from `Makefile.atari`: default stack calls, 32-bit
+Applications are separate from the kernel `Makefile`: default stack calls, 32-bit
 `int`/`long`, and the toolchain's MiNTLib, without the kernel's ABI flags.
 The source asserts that integer ABI to prevent accidentally mixing libraries.
 
@@ -876,7 +876,7 @@ atari() {
     scripts/atari-container run "$@"
 }
 
-atari make -j4 -f Makefile.atari magic
+atari make -j4 magic
 ```
 
 Keep `MAGIC.RAM`, `kernel.elf` and `kernel.map` from the **same build**.
@@ -893,8 +893,8 @@ listed in `MAGICVDI.PRJ`.
 Examples of narrow build targets:
 
 ```sh
-atari make -f Makefile.atari build/atari/kernel/aes-c/fsel.o
-atari make -f Makefile.atari kernel-objects
+atari make build/atari/kernel/aes-c/fsel.o
+atari make kernel-objects
 ```
 
 Compilation proves syntax/types for that slice, not successful integration.
@@ -922,12 +922,12 @@ options and shared inputs are dependencies of their consumers.
 For filesystem/register-ABI changes, the existing runtime regression is:
 
 ```sh
-atari make -f Makefile.atari filesystem build/atari/vfat-check.o
+atari make filesystem build/atari/vfat-check.o
 m68k-linux-gnu-ld -Ttext=0x10000 --gc-sections -z noexecstack -e _start \
     build/atari/vfat-check.o build/atari/vfat-glue.o build/atari/std.o \
     -o build/atari/vfat-check.elf
 qemu-m68k build/atari/vfat-check.elf
-atari make -j4 -f Makefile.atari magic
+atari make -j4 magic
 ```
 
 The host needs M68k Linux binutils and QEMU user emulation. Exit zero is success.
@@ -1014,9 +1014,9 @@ Compare optimization settings in separate build directories: Make does not
 reliably notice changed command-line flags on existing objects.
 
 ```sh
-atari make -j4 -f Makefile.atari BUILD_DIR=build/atari/o2 \
+atari make -j4 BUILD_DIR=build/atari/o2 \
     'CFLAGS=-O2 -g -Wall -Wextra' magic
-atari make -j4 -f Makefile.atari BUILD_DIR=build/atari/os \
+atari make -j4 BUILD_DIR=build/atari/os \
     'CFLAGS=-Os -g -Wall -Wextra' magic
 ```
 
@@ -1416,7 +1416,7 @@ Contracts worth preserving:
   debug calls out.
 - `CLEARCPU.S` keeps its Pure Assembler form (`EXPORT`, `SUPER`) so `COPS.PRJ`
   still assembles it. The modern build normalizes it with
-  `kernel/BUILD/GCC/mas_to_vasm.py`, which turns `EXPORT` into `XDEF`,
+  `scripts/mas_to_vasm.py`, which turns `EXPORT` into `XDEF`,
   drops `SUPER`, converts `0x` literals and fixes directives. Verified object
   bytes contain `cpushl`, `cpusha`, `cinva` and both `movec %cacr` forms.
 - The build rejects a `BUILD_DIR` whose `cops` output directory aliases
@@ -1437,7 +1437,7 @@ Save/alerts, event-CPX callbacks and other CPXs remain untested.
 ### OFF002.OSD offscreen driver
 
 The OSD sources use Pure C/MAS syntax and Windows-style `INCLUDE` paths. Normalize
-them with `kernel/BUILD/GCC/mas_to_vasm.py`, including the
+them with `scripts/mas_to_vasm.py`, including the
 `kernel/VDI/SRC/MAGICVDI.2` `INCLUDE` files, then link with VASM `-Ftos -m68000 -noesc -nosym
 -tos-flags=7`. `-nosym` prevents VASM from adding a symbol table where the
 archived TOS executable has `slen=0`; `-tos-flags=7` preserves the header flag
