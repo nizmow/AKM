@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-CATALOGUE = ROOT / "APPLICATION_BUILDS.md"
+CATALOGUE = ROOT / "docs/porting/APPLICATION_BUILDS.md"
 TEXT_SUFFIXES = {".c", ".h", ".s", ".asm"}
 SOURCE_SUFFIXES = TEXT_SUFFIXES | {".prj"}
 TICK_RE = re.compile(r"`([^`]+)`")

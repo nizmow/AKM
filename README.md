@@ -13,6 +13,9 @@ The upstream repository contains sources for Atari and related computers:
 * MagicMac X for MacOS X on PPC
 * AtariX for macOS on intel computers
 
+For AKM's build and porting work, see the [project roadmap](docs/ROADMAP.md)
+and the [Atari porting guide](docs/porting/README.md).
+
 
 # Included (among others)
 
@@ -206,8 +209,8 @@ GCC-built kernel in Hatari. Return codes matched, as did 48 pairs of captured
 INF/BAK/DAT files: application/file-type/special-object registration, duplicate
 and error handling, backups/cache invalidation, quoted/empty arguments and long
 ARGV paths. Tests used disposable D: files; the real installation was untouched.
-See [PORTING_NOTES.md](PORTING_NOTES.md) and [TODO.md](TODO.md) for the startup
-compatibility finding and the next application tasks.
+See the [porting notes](docs/porting/PORTING_NOTES.md) for the startup
+compatibility finding and the [work list](docs/porting/TODO.md) for next tasks.
 
 `mise run apps -- applicat` builds the association editor bundle in
 `build/atari/apps/applicat/`: `APPLICAT.APP`, `applicat.rsc` (German) and
@@ -301,8 +304,8 @@ behavior remain untested.
 `mise run lint:cpx-abi` checks native CPX callback access; the MAGXCONF and
 TSLICE CPX builds run it automatically. `mise run test:cpx-abi` also runs source-lint
 regressions and executable bridge tests using the Atari toolchain container
-and host `qemu-m68k`, without a ROM or MagiC image. See [TESTING.md](TESTING.md)
-for scope and limits.
+and host `qemu-m68k`, without a ROM or MagiC image. See
+[testing](docs/porting/TESTING.md) for scope and limits.
 
 `mise run apps -- flp-par` builds `FLP_PAR0.PRG` and `FLP_PAR1.PRG` in
 `build/atari/apps/flp-par/`. The individual `flp-par0` and `flp-par1`
@@ -322,7 +325,7 @@ Hatari.
 Run `mise run test:mgclock-neost` (or `python3 scripts/neost-mgclock-smoke.py`)
 to verify the restored desktop clock and its coexistence with APPLICAT. The
 MagiC half needs `MAGIC_IMAGE`, `TOS206_ROM` and host `mtools`; see
-[TESTING.md](TESTING.md).
+[testing](docs/porting/TESTING.md).
 
 Run `mise run test:mgnotice-neost` (or `python3 scripts/neost-mgnotice-smoke.py`)
 to compare the archived and rebuilt MGNOTICE note lifecycle. It uses the same
@@ -351,7 +354,7 @@ screen pixel-for-pixel.
 Run `mise run test:mgformat-neost` (or `python3 scripts/neost-mgformat-smoke.py`)
 to compare the archived and rebuilt MGFORMAT format dialog on cloned MagiC
 images. Physical floppy formatting and disk copy are covered by
-[MANUAL_TESTING.md](MANUAL_TESTING.md).
+[hardware testing](docs/porting/MANUAL_TESTING.md).
 
 The `scripts/neost-*-smoke.py` runners use `scripts/neost_common.py` for
 executable/AppImage discovery, ROM selection, bounded subprocess execution,
@@ -365,9 +368,9 @@ host log, with partial process output retained on timeout.
 verification, guest directory creation and `mcopy` in/out operations.
 `scripts/neost_screen.py` owns PPM parsing, pixel-diff bounding boxes and
 region containment. `scripts/neost_host.py` is the optional session layer over
-those helpers and `NeoSTServer`; see [NeoST_HOST.md](NeoST_HOST.md). Keep
-machine/ROM choices, frame budgets, mouse/key input, fixtures and application
-assertions in each runner; use the shared modules for the host mechanics.
+those helpers and `NeoSTServer`; see the [host contract](docs/porting/NeoST_HOST.md).
+Keep machine/ROM choices, frame budgets, inputs, fixtures and assertions in
+each runner; use the shared modules for the host mechanics.
 Shared-host-helper checks:
 
 ```sh

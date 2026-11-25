@@ -10,75 +10,9 @@
 
 ## Start here
 
-- Read `README.md` for commands and tooling, `ROADMAP.md` for phase boundaries
-  and `TESTING.md` for verification limits. Before choosing work, read `TODO.md`
-  and the relevant row in `APPLICATION_BUILDS.md`; distinguish compiled,
-  launched and functionally tested. An unchecked runtime path is not evidence
-  of a missing implementation.
-- Before porting an application, follow “Application porting workflow” in
-  `PORTING_NOTES.md`, then its encoding guidance and boundary checklist.
-  Map contracts and capture a baseline before broad edits; prove a representative
-  boundary before parallelizing the remaining migration.
+- Read [README.md](README.md) for build commands and [the roadmap](docs/ROADMAP.md)
+  for project goals and phase boundaries.
+- For Atari porting work, start with the [porting guide](docs/porting/README.md)
+  and follow its [workflow and pitfalls](docs/porting/WORKFLOW.md).
 - Keep documentation useful to someone returning in 12 months. Record durable
   contracts and verification limits, not a transcript of the latest session.
-
-## Application porting traps
-
-- `Makefile.apps` uses MiNTLib's default stack ABI and 32-bit `int`. Do not borrow
-  kernel `-mshort`/`-mfastcall` flags or archived Pure C libraries. AES/VDI words,
-  output pointers, message buffers and persisted fields can still be 16-bit.
-  Check `scanf` formats as well as declarations; guard disk layouts with size
-  and offset assertions.
-  Match pointer target types, not just widths: this SDK uses `long *` for long
-  outputs, while its `int32_t` is `int`. Guard native `long` width when using it.
-- Use public `gem.h`/`gemx.h` callback definitions. MagiC dialog/listbox callbacks
-  need the SDK's by-value argument structures; changing separate parameters to
-  `short` does not establish the correct callback stack layout.
-- Trace the callee's actual trap layout for MagiC extensions. For example,
-  `SC_WBACK` takes a word subcommand, unlike generic MiNTLib `Sconfig`'s long
-  argument. A successful return can be a query, not the requested state change.
-- For SLBs, read the library-specific porting notes before linking. Registered
-  editor AES handlers receive `AESPB *` in A0; SLB lifecycle entries use the stack.
-  An ordinary MiNT ELF startup wrapper cannot precede the SLB's TEXT header.
-  Preserve linked constructors and BSS relocations when supplying custom startup.
-- Distinguish fixed-width binary keys from NUL-terminated strings. A four-byte
-  key needs a separate five-byte buffer when passed through a string scanner.
-- Use `NON-TOS/atari-utf8-conversion/atari_text.py` for known Atari ST text.
-  Keep canonical edited source UTF-8 and preserve Atari runtime bytes explicitly.
-  CP850 is not an Atari ST substitute; never transcode binary RSC files.
-
-## Reuse and verification
-
-- Run `mise tasks` before adding tooling. Reuse `scripts/port_scan.py` and
-  `scripts/port_deps.py` for inventory and legacy PRJ resolution,
-  `scripts/elf_to_slb.py` for SLB packaging, and `scripts/atari-container` for
-  container commands.
-- Reuse `MagiC/APPS/TOS_ARGS.H` for the established PCMXSTRT-style raw-tail
-  quoting contract, retaining MiNTLib's extended ARGV vector.
-- Reuse `scripts/neost_common.py` for emulator discovery, ROM lookup and fresh
-  artifact directories, `scripts/neost_image.py` for disposable image setup,
-  `scripts/neost_screen.py` for PPM parsing/comparison, and
-  `scripts/neost_server.py` as the canonical reusable NeoST server client.
-  `scripts/neost_host.py` is the optional one-session lifecycle layer; see
-  `NeoST_HOST.md`. Keep scenario machine profiles, fixtures, input timing and
-  success assertions application-specific. Scenario runners are
-  `scripts/neost-*-smoke.py`, their regressions are `scripts/test_*.py`, and
-  `.agents/skills/neost/SKILL.md` documents the workflow.
-- Reuse only helpers whose contracts match the new consumer. Do not copy another
-  application's compatibility header wholesale or build a universal AES shim
-  merely because legacy symbols have similar names.
-- Establish shared ABI contracts before splitting a port among disjoint file
-  owners. The integration owner checks a stable source snapshot, not files still
-  being edited. A representative compile is a gate, not proof that the entire
-  application is ported.
-- Use fresh numbered snapshots for edits; never guess offsets. Legacy parsers
-  and automated preprocessor rewrites can fail or alter line boundaries—check
-  the actual affected text rather than trusting a preview.
-- Follow `.agents/skills/neost/SKILL.md` for emulator work. Clone writable MagiC
-  images and association files; saving an editor can also update the running
-  desktop. Verify guest effects, not just emulator exit status.
-- In GEM mouse automation, do not clamp through `(0,0)`: that can open the system
-  menu and consume later input. Clamp below the menu bar, then move to the target.
-- Compare meaningful cache fields, not process addresses. APPLICAT version-2
-  caches contain runtime ICONBLK pointers; document precisely which fields are
-  excluded from a comparison and verify geometry, tables and bitmap data.

@@ -1,7 +1,7 @@
 # Phase 1 TODO
 
 Concrete next work after the first standalone application port. Direction and
-phase boundaries remain in [ROADMAP.md](ROADMAP.md); the full component list is
+phase boundaries remain in the [roadmap](../ROADMAP.md); the full component list is
 [APPLICATION_BUILDS.md](APPLICATION_BUILDS.md). Do not duplicate that inventory
 here or interpret an unchecked item as a missing stub to manufacture.
 

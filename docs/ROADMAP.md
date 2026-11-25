@@ -23,16 +23,16 @@ reconstruct missing source or silently replace unavailable dependencies.
   rebuilding the kernel did not rebuild the distribution.
 
 - MOD_APP is now an independently built GCC/MiNTLib application, with 17 Hatari
-  comparison cases matching the original executable. See [TODO.md](TODO.md) for
-  the concrete phase-1 work list informed by that port.
+  comparison cases matching the original executable. The [porting work list](porting/TODO.md)
+  tracks the concrete phase-1 work informed by that port.
 
 Supporting documents:
 
-- [APPLICATION_BUILDS.md](APPLICATION_BUILDS.md): component inventory, outputs,
+- [Build catalogue](porting/APPLICATION_BUILDS.md): component inventory, outputs,
   variants, dependencies and proposed porting order.
-- [PORTING_NOTES.md](PORTING_NOTES.md): practical workflow, ABI/encoding issues,
+- [Porting notes](porting/PORTING_NOTES.md): practical workflow, ABI/encoding issues,
   verification and emulator baseline.
-- [README.md](README.md): current toolchain and build commands.
+- [Root README](../README.md): current toolchain and build commands.
 
 ## Phase 1 — Build the source-backed components
 

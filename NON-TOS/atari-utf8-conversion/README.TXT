@@ -34,7 +34,8 @@ Reference: https://www.unicode.org/Public/MAPPINGS/VENDORS/MISC/ATARIST.TXT
 Use only for known text files, never .RSC, .PRG, images or other binary data.
 For C ports, keep reviewed UTF-8 source as canonical and use explicit byte
 escapes for Atari runtime strings. Do not convert an entire C source back to
-raw Atari bytes and feed it to a compiler expecting UTF-8. See PORTING_NOTES.md.
+raw Atari bytes and feed it to a compiler expecting UTF-8. See
+docs/porting/PORTING_NOTES.md from the repository root.
 
 Regression checks:
   python3 -m unittest discover -s NON-TOS/atari-utf8-conversion -p 'test_*.py'
