@@ -12,3 +12,7 @@ extern void _vq_scrninfo( VDIPB *vpb, WORD *work_out );
 extern void _vq_color( VDIPB *vpb, WORD index, WORD setflag );
 extern void *xp_raster;
 extern void *xp_rasterC;
+extern void xp_vq_scrninfo( VDIPB *vpb, WORD *work_out );
+extern void xp_vq_color( VDIPB *vpb, WORD index, WORD setflag );
+extern ULONG xp_wmul( UWORD a, UWORD b );
+extern WORD xp_ldiv( ULONG a, UWORD b );

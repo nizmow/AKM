@@ -132,7 +132,7 @@ WORD	init_offscreen_drivers( BYTE *tmp_path )
 
 WORD	load_mono_NOD( void )
 {
-	ORGANISATION	info = { 2, 1, 2, 1, 0, 0, 0 };
+	ORGANISATION	info = { 2, 1, 2, 1, { 0, 0, 0 } };
 	DRIVER	*drv;
 
 	drv = load_NOD_driver( &info );
@@ -276,7 +276,7 @@ void	*load_prg( BYTE *name )
 											code_ptr += 254;
 										else
 										{
-											(UBYTE *)code_ptr += relo_val;
+											code_ptr += relo_val;
 											*(ULONG *)code_ptr += (ULONG) addr;
 										}
 									}

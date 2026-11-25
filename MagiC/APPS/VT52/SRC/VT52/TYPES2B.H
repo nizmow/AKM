@@ -69,7 +69,7 @@
 
 
 /*----------------------------------------------------------------------------------------*/
-/* Umgebungsspezifische SchlÅsselworte (nicht ANSI-konform)											*/
+/* Umgebungsspezifische Schl√ºsselworte (nicht ANSI-konform)											*/
 /*----------------------------------------------------------------------------------------*/
 #if IS_MACOS
 	#define	cdecl
@@ -79,17 +79,17 @@
 /*----------------------------------------------------------------------------------------*/
 /* Strukturanordnung/Alignment																				*/
 /*----------------------------------------------------------------------------------------*/
-#if INTEL																	/* MSVC, CW fÅr x86, ... */
+#if INTEL																	/* MSVC, CW f√ºr x86, ... */
 
 #define	PRAGMA_PACKED_ALIGN	pack(push,1)						/* Strukturelemente auf Bytegrenze packen */
-#define	PRAGMA_NATIVE_ALIGN	pack(push,8)						/* 8 Byte ist fÅr MSVC die normale Einstellung */
-#define	PRAGMA_RESET_ALIGN	pack(pop)							/* Anordnung zurÅcksetzen */
+#define	PRAGMA_NATIVE_ALIGN	pack(push,8)						/* 8 Byte ist f√ºr MSVC die normale Einstellung */
+#define	PRAGMA_RESET_ALIGN	pack(pop)							/* Anordnung zur√ºcksetzen */
 
-#elif __MWERKS__															/* CW fÅr 68k, PPC, ... */
+#elif __MWERKS__															/* CW f√ºr 68k, PPC, ... */
 
 #define	PRAGMA_PACKED_ALIGN	options align=packed				/* Strukturelemente auf Bytegrenze packen */
 #define	PRAGMA_NATIVE_ALIGN	options align=native				/* Strukturelemente auf sinnvolle Positionen packen */
-#define	PRAGMA_RESET_ALIGN	options align=reset				/* Anordnung zurÅccksetzen */
+#define	PRAGMA_RESET_ALIGN	options align=reset				/* Anordnung zur√ºccksetzen */
 
 #else																			/* unbekannter Compiler mit Byte-Alignment */
 
@@ -99,11 +99,11 @@
 
 #endif
 
-#define	VARIABLE_ARRAY_SIZE	1										/* Konstante fÅr variabel groûe Felder (muû wegen C++ bzw. Ansi-Strict >= 1 sein) */
+#define	VARIABLE_ARRAY_SIZE	1										/* Konstante f√ºr variabel gro√üe Felder (mu√ü wegen C++ bzw. Ansi-Strict >= 1 sein) */
 
 
 /*----------------------------------------------------------------------------------------*/
-/* Standarddatentypen fÅr 8, 16, 32 und 64 Bit															*/
+/* Standarddatentypen f√ºr 8, 16, 32 und 64 Bit															*/
 /*----------------------------------------------------------------------------------------*/
 typedef signed char		int8;											/* 8 Bit vorzeichenbehaftet */
 typedef unsigned char	uint8;										/* 8 Bit vorzeichenlos */
@@ -117,17 +117,17 @@ typedef unsigned long	uint32;										/* 32 Bit vorzeichenlos */
 
 #if __MWERKS__ >= 0x0710												/* CodeWarrior 11 mit C-Compiler >= 7.1 ? */
 
-#define	__2B_HAS64_SUPPORT											/* Compiler unterstÅtzt int64/uint64 */
+#define	__2B_HAS64_SUPPORT											/* Compiler unterst√ºtzt int64/uint64 */
 typedef signed long long	int64;									/* 64 Bit vorzeichenbehaftet */
 typedef unsigned long long	uint64;									/* 64 Bit vorzeichenlos */
 
 #elif _MSC_VER >= 900													/* MSVC 2.0? */
 
-#define	__2B_HAS64_SUPPORT											/* Compiler unterstÅtzt int64/uint64 */
+#define	__2B_HAS64_SUPPORT											/* Compiler unterst√ºtzt int64/uint64 */
 typedef signed __int64	int64;										/* 64 Bit vorzeichenbehaftet */
 typedef unsigned __int64	uint64;									/* 64 Bit vorzeichenlos */
 
-#else																			/* Compiler ohne UnterstÅtzung von 64 Bit Integers */
+#else																			/* Compiler ohne Unterst√ºtzung von 64 Bit Integers */
 #pragma	PRAGMA_PACKED_ALIGN
 
 typedef struct
@@ -195,15 +195,15 @@ typedef uint8	boolean;
 /*----------------------------------------------------------------------------------------*/
 typedef int32	fixed32;													/* 16.16 vorzeichenbehaftet */
 typedef int64	fixed64;													/* 32.32 vorzeichenbehaftet */
-typedef int32	fixed2p30;												/* 2.30 vorzeichenbehaftet (fÅr Berechnungen im Zahlenbereich von -1.0 bis +1.0) */
+typedef int32	fixed2p30;												/* 2.30 vorzeichenbehaftet (f√ºr Berechnungen im Zahlenbereich von -1.0 bis +1.0) */
 #define	fixed	fixed32
 
 
 /*----------------------------------------------------------------------------------------*/
-/* Wandelmakros fÅr Festpunktformate																		*/
+/* Wandelmakros f√ºr Festpunktformate																		*/
 /*----------------------------------------------------------------------------------------*/
 
-/* Makros fÅr 16.16 */
+/* Makros f√ºr 16.16 */
 #define	int_to_fixed( i )				(((fixed) i ) << 16 )
 #define	double_to_fixed( f )			((fixed) ( f * ( 1L << 16 )))
 
@@ -211,8 +211,8 @@ typedef int32	fixed2p30;												/* 2.30 vorzeichenbehaftet (fÅr Berechnungen
 #define	fixed_to_int32( x )			((int32) ( x >> 16 ))
 #define	fixed_to_double( x )			(((double) x ) / ( 1L << 16 ))
 
-/* Makros fÅr 32.32 */
-#ifdef	__2B_HAS64_SUPPORT											/* nur fÅr Compiler mit UnterstÅtzung von int64 */
+/* Makros f√ºr 32.32 */
+#ifdef	__2B_HAS64_SUPPORT											/* nur f√ºr Compiler mit Unterst√ºtzung von int64 */
 
 #define	int_to_fixed64( i )			(((fixed64) i ) << 32 )
 #define	double_to_fixed64( f )		((fixed64) ( f * ( 1L << 32 )))
@@ -224,7 +224,7 @@ typedef int32	fixed2p30;												/* 2.30 vorzeichenbehaftet (fÅr Berechnungen
 
 #endif
 
-/* Makros fÅr 2.30 */
+/* Makros f√ºr 2.30 */
 #define	int_to_fixed2p30( i )		(((fixed2p30) i ) << 30 )
 #define	double_to_fixed2p30( f )	((fixed2p30) ( f * ( 1L << 30 )))
 
@@ -234,7 +234,7 @@ typedef int32	fixed2p30;												/* 2.30 vorzeichenbehaftet (fÅr Berechnungen
 
 
 /*----------------------------------------------------------------------------------------*/
-/* Wandelmakros fÅr Little-Endian (Intel)																	*/
+/* Wandelmakros f√ºr Little-Endian (Intel)																	*/
 /*----------------------------------------------------------------------------------------*/
 #define	REVERSE16( a ) 	(int16) (((uint16)(a) >> 8 ) | ((uint16)(a) << 8 ))
 #define	REVERSEu16( a )	(((uint16)(a) >> 8 ) | ((uint16)(a) << 8 ))
@@ -298,7 +298,7 @@ static int32	swapl( int32 d0: __D0 ) = (0x4840);				/* swap		d0 */
 /*----------------------------------------------------------------------------------------*/
 /* Intel-Makros (u.a. Inline-Assembler)																	*/
 /*----------------------------------------------------------------------------------------*/
-#define	FASTCALL															/* fÅr normale Prozessoren/Compiler */
+#define	FASTCALL															/* f√ºr normale Prozessoren/Compiler */
 
 #if INTEL																	/* Intel-CPU? */
 #if USE_INLINE																/* Inline-Assembler benutzen? */
@@ -318,20 +318,20 @@ static int32	swapl( int32 d0: __D0 ) = (0x4840);				/* swap		d0 */
 
 	Mit dem naked-Attribut deklarierte Funktionen werden vom Compiler ohne Prolog- und
 	Epilog-Code generiert, sie enthalten nur die angegebenen (Assembler-) Befehle. Da 
-	das naked-Attribut nur die Code-Generierung fÅr Prolog und Epilog betrifft und nicht
-	die Art der ParameterÅbergabe Ñndert, wird es nicht bei der Deklaration der Funktion
+	das naked-Attribut nur die Code-Generierung f√ºr Prolog und Epilog betrifft und nicht
+	die Art der Parameter√ºbergabe √§ndert, wird es nicht bei der Deklaration der Funktion
 	angegeben.
-	Es Åbrigens eine Eigenart von MSVC, daû bei einer naked-Funktion die static-Definition
-	nur bei der Deklaration erlaubt ist aber bei der Funktion selber einen Fehler auslîst.
+	Es √ºbrigens eine Eigenart von MSVC, da√ü bei einer naked-Funktion die static-Definition
+	nur bei der Deklaration erlaubt ist aber bei der Funktion selber einen Fehler ausl√∂st.
 
 	__fastcall
 	==========
 	
-	ParameterÅbergabe:	Die ersten beiden (u)int32-Argumente (oder kleiner) werden in ECX und EDX
-								Åbergeben. Alle anderen werden von rechts nach links auf dem Stack Åbergeben.
-	RÅckgabe:				Das Funktionsresultat wird in EAX zurÅckgeliefert (wenn es uint32 oder kleiner ist).
+	Parameter√ºbergabe:	Die ersten beiden (u)int32-Argumente (oder kleiner) werden in ECX und EDX
+								√ºbergeben. Alle anderen werden von rechts nach links auf dem Stack √ºbergeben.
+	R√ºckgabe:				Das Funktionsresultat wird in EAX zur√ºckgeliefert (wenn es uint32 oder kleiner ist).
 	Benamung:				Ein "@" kommt vor den Namen und ein "@" gefolgt von der Byteanzahl in der 
-								Parameterliste wird an den Namen angehÑngt.
+								Parameterliste wird an den Namen angeh√§ngt.
 */
 
 /* Makros entfernen */
@@ -385,7 +385,7 @@ __declspec( naked ) void *FASTCALL REVERSEptr( void *ptr )
 
 #endif																		/* _MSC_VER */
 
-/* Bei INTEL_SWAPxx() mÅssen die Werte direkt Åbergeben werden. */
+/* Bei INTEL_SWAPxx() m√ºssen die Werte direkt √ºbergeben werden. */
 /* Aufrufe wie INTEL_SWAP32( bitmap->width ) sind nicht erlaubt, */
 /* da der Compiler damit nicht klarkommt. */
 
@@ -419,7 +419,7 @@ __declspec( naked ) void *FASTCALL REVERSEptr( void *ptr )
 
 
 /*----------------------------------------------------------------------------------------*/
-/* Makros fÅr Wandlung LITTLE_ENDIAN/BIG_ENDIAN <-> Zielplattform									*/
+/* Makros f√ºr Wandlung LITTLE_ENDIAN/BIG_ENDIAN <-> Zielplattform									*/
 /*----------------------------------------------------------------------------------------*/
 #if LITTLE_ENDIAN
 
@@ -449,7 +449,7 @@ __declspec( naked ) void *FASTCALL REVERSEptr( void *ptr )
 
 
 /*----------------------------------------------------------------------------------------*/
-/* öberlauf einer Addtion feststellen																		*/
+/* √úberlauf einer Addtion feststellen																		*/
 /*----------------------------------------------------------------------------------------*/
 #define	XBIT8( a, b )	((( a & b ) | (( a | b ) & ( a + b ))) >> 7 )
 #define	XBIT16( a, b )	((( a & b ) | (( a | b ) & ( a + b ))) >> 15 )
@@ -473,7 +473,7 @@ __declspec( naked ) void *FASTCALL REVERSEptr( void *ptr )
 /*----------------------------------------------------------------------------------------*/
 /* Zeichenkonstanten																								*/
 /*----------------------------------------------------------------------------------------*/
-#if LITTLE_ENDIAN															/* wir mÅssen wieder alles drehen */
+#if LITTLE_ENDIAN															/* wir m√ºssen wieder alles drehen */
 
 #define	CHAR_CONST16( a )	REVERSEu16( a )
 #define	CHAR_CONST32( a )	REVERSEu32( a )
@@ -487,12 +487,12 @@ __declspec( naked ) void *FASTCALL REVERSEptr( void *ptr )
 
 
 /*----------------------------------------------------------------------------------------*/
-/* PrÅffunktion																									*/
+/* Pr√ºffunktion																									*/
 /*----------------------------------------------------------------------------------------*/
 #if USE_TYPE_CHECKING
 
 static int	are_types_ok( void );
-static int	are_types_ok( void )										/* Grîûe der Standarddatentypen ÅberprÅfen */
+static int	are_types_ok( void )										/* Gr√∂√üe der Standarddatentypen √ºberpr√ºfen */
 {
 	if ( FALSE != 0 )
 		return( 0 );
@@ -524,7 +524,7 @@ static int	are_types_ok( void )										/* Grîûe der Standarddatentypen ÅberprÅ
 	if ( sizeof( uint64 ) != 8 )
 		return( 0 );
 
-	return( 1 );															/* alle Datentypen haben die korrekte LÑnge */
+	return( 1 );															/* alle Datentypen haben die korrekte L√§nge */
 }
 
 #endif																		/* USE_TYPE_CHECKING */

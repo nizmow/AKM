@@ -21,7 +21,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "fix_rsc.h"
+#include "FIX_RSC.H"
 
 struct foobar
 {
@@ -35,7 +35,7 @@ static void fix_objects(short num_objs, OBJECT *obj, TEDINFO *ted, char *str[],
 			ICONBLK *icon, BITBLK *bblk, struct foobar *rs_imdope);
 static void fix_str(char **where, char *str[]);
 static void fix_img(int16_t **where, struct foobar *rs_imdope);
-static void fix_frstr(short num_frstr, long *rs_frstr, char *str[]);
+static void fix_frstr(short num_frstr, int32_t *rs_frstr, char *str[]);
 static void fix_frimg(short num_frimg, BITBLK **rs_frimg, BITBLK *bblk,
 		      struct foobar *rs_imdope);
 
@@ -54,12 +54,12 @@ static void fix_frimg(short num_frimg, BITBLK **rs_frimg, BITBLK *bblk,
 /*	rs_frstr:	Feld mit Indizes/Zeigern auf freie Strings */
 /*	rs_frimg:	Feld mit Indizes/Zeigern auf freie Images */
 /*	rs_trindex:	Feld mit Indizes/Zeigern auf Objektbaeume */
-/*	rs_imdope:	Feld mit Zeigern auf Images fr ICONBLKs */
+/*	rs_imdope:	Feld mit Zeigern auf Images fÃ¼r ICONBLKs */
 /*----------------------------------------------------------------------------------------*/ 
 void
 fix_rsc(short num_objs, short num_frstr, short num_frimg, short num_tree,
 	OBJECT *rs_object, TEDINFO *rs_tedinfo, char *rs_string[], ICONBLK *rs_iconblk, BITBLK *rs_bitblk,
-	long *rs_frstr, long *rs_frimg, long *rs_trindex, struct foobar *rs_imdope)
+	int32_t *rs_frstr, int32_t *rs_frimg, int32_t *rs_trindex, struct foobar *rs_imdope)
 {
 	fix_trindex(num_tree, (OBJECT **) rs_trindex, rs_object);
 	fix_objects(num_objs, rs_object, rs_tedinfo, rs_string, rs_iconblk, rs_bitblk, rs_imdope);
@@ -89,7 +89,7 @@ fix_trindex(short num_tree, OBJECT **rs_trindex, OBJECT *rs_object)
 }
 
 /*----------------------------------------------------------------------------------------*/ 
-/* Fr alle OBJECTs ob_spec und dessen Referenzen initialisieren */
+/* FÃ¼r alle OBJECTs ob_spec und dessen Referenzen initialisieren */
 /* Funktionsresultat:	- */
 /*	num_objs:	Anzahl aller Objekte in rs_object */
 /*	obj:		Feld mit saemtlichen Resource-OBJECTs */
@@ -207,7 +207,7 @@ fix_img(int16_t **where, struct foobar *rs_imdope)
 /*	str:		Feld mit Strings */
 /*----------------------------------------------------------------------------------------*/ 
 static void
-fix_frstr(short num_frstr, long *rs_frstr, char *str[])
+fix_frstr(short num_frstr, int32_t *rs_frstr, char *str[])
 {
 	while (num_frstr > 0)
 	{

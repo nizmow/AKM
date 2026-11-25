@@ -15,7 +15,7 @@
 /* benîtigte externe Funktionen																				*/
 /*----------------------------------------------------------------------------------------*/
 extern	void	*Malloc_sys( int32 len );							/* Funktion fÅr Speicheranforderung */
-extern	int16	Mfree_sys( void *addr );							/* Funktion fÅr Speicherfreigabe */
+extern	WORD	Mfree_sys( void *addr );							/* Funktion fÅr Speicherfreigabe */
 
 /*----------------------------------------------------------------------------------------*/
 /* Atari-Datei laden																								*/
@@ -24,7 +24,7 @@ extern	int16	Mfree_sys( void *addr );							/* Funktion fÅr Speicherfreigabe */
 /* name:						absoluter Pfad mit Dateinamen													*/
 /* length:					Zeiger auf Langwort fÅr die DateilÑnge										*/
 /*----------------------------------------------------------------------------------------*/
-void *load_file( int8 *name, int32 *length )
+void *load_file( BYTE *name, int32 *length )
 {
 	#define	LF_FLAGS	FA_READONLY + FA_HIDDEN + FA_SYSTEM + FA_ARCHIVE	/* Flags fÅr Fsfirst() */
 
@@ -65,7 +65,7 @@ void *load_file( int8 *name, int32 *length )
 /*	offset:					Abstand vom Anfang der Datei													*/
 /*	len:						LÑnge der einzulesenden Daten													*/
 /*----------------------------------------------------------------------------------------*/
-int32	read_file( int8 *name, void *dest, int32 offset, int32 len )
+int32	read_file( BYTE *name, void *dest, int32 offset, int32 len )
 {
 	int32	handle;
 	int32	read;

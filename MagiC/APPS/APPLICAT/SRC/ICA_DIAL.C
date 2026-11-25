@@ -1,25 +1,24 @@
 /*
 *
-* EnthÑlt die spezifischen Routinen fÅr den Dialog
-* "Anwendungen/Dateitypen auswÑhlen" bzw. "Registrierte Programme"
+* Enth√§lt die spezifischen Routinen f√ºr den Dialog
+* "Anwendungen/Dateitypen ausw√§hlen" bzw. "Registrierte Programme"
 *
 */
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
+#include "APPLICAT_GEM.H"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "gemut_mt.h"
-#include "applicat.h"
-#include "windows.h"
-#include "appl.h"
-#include "inf.h"
-#include "ica_dial.h"
-#include "appldata.h"
-#include "anw_dial.h"
-#include "typ_dial.h"
-#include "iconsel.h"
+#include "IMPORT/GEMUT_MT.H"
+#include "APPLICAT.H"
+#include "WINDOWS.H"
+#include "APPL.H"
+#include "INF.H"
+#include "ICA_DIAL.H"
+#include "APPLDATA.H"
+#include "ANW_DIAL.H"
+#include "TYP_DIAL.H"
+#include "ICONSEL.H"
 
 
 #define NLINES 5
@@ -27,18 +26,18 @@
 #define DFLS 1
 #define PDFLS 2
 
-static int ctrl_objs1[NLINES] =
+static WORD ctrl_objs1[NLINES] =
 	{PN_BK, PN_UP, PN_DOWN, PN_BSL, PN_SLID};
-static int objs1[NLINES] =
+static WORD objs1[NLINES] =
 	{PRG1,PRG2,PRG3,PRG4,PRG5};
-static int ctrl_objs2[NLINES] =
+static WORD ctrl_objs2[NLINES] =
 	{DN_BK, DN_UP, DN_DOWN, DN_BSL, DN_SLID};
-static int objs2[NLINES] =
+static WORD objs2[NLINES] =
 	{DAT1,DAT2,DAT3,DAT4,DAT5};
 
 /*
- Wenn links ein Programm ausgewÑhlt wurde, enthÑlt die
- rechte Listbox die zugehîrigen Dateitypen.
+ Wenn links ein Programm ausgew√§hlt wurde, enth√§lt die
+ rechte Listbox die zugeh√∂rigen Dateitypen.
 */
 struct curr_pgm_file_type
 {
@@ -50,10 +49,10 @@ struct curr_pgm_file_type
 /* Die vier "Fenster" */
 
 /*
- PDFLS:	Ist aktiv, wenn keine Applikation ausgewÑhlt ist.
+ PDFLS:	Ist aktiv, wenn keine Applikation ausgew√§hlt ist.
 
- DFLS:	Ist aktiv, wenn eine Applikation angewÑhlt ist, und
-		enthÑlt die zugeordneten Dateitypen
+ DFLS:	Ist aktiv, wenn eine Applikation angew√§hlt ist, und
+		enth√§lt die zugeordneten Dateitypen
 */
 
 /* Diese Variablen sollten eigentlich alle nach struct <dialog_userdata> */
@@ -81,13 +80,13 @@ char *def_txt;		/* ->hdl_typ */
 
 static int showindex_to_pgmicnobj(int index)
 {
-	static const int icons[] = {PICON1,PICON2,PICON3,PICON4,PICON5};
+	static const WORD icons[] = {PICON1,PICON2,PICON3,PICON4,PICON5};
 
 	return icons[index];
 }
 static int showindex_to_daticnobj(int index)
 {
-	static const int icons[] = {DICON1,DICON2,DICON3,DICON4,DICON5};
+	static const WORD icons[] = {DICON1,DICON2,DICON3,DICON4,DICON5};
 
 	return icons[index];
 }
@@ -143,7 +142,7 @@ static int datobj_to_showindex(int objnr)
 
 /*********************************************************************
 *
-* Gibt den <n>-ten angemeldeten Dateityp fÅr Programm <pgm>.
+* Gibt den <n>-ten angemeldeten Dateityp f√ºr Programm <pgm>.
 * Dreht die Richtung um, weil die zuletzt angemeldeten Typen
 * vorn in der Liste stehen.
 *
@@ -169,11 +168,11 @@ static int pgm_filetype(int pgm, int n)
 
 /*********************************************************************
 *
-* Macht alle Scrollobjekte eines Fensters auswÑhlbar
+* Macht alle Scrollobjekte eines Fensters ausw√§hlbar
 *
 *********************************************************************/
 
-static void enable_scroll(DIALOG *d, int *objs)
+static void enable_scroll(DIALOG *d, WORD *objs)
 {
 	register int i;
 
@@ -189,11 +188,11 @@ static void enable_scroll(DIALOG *d, int *objs)
 
 /*********************************************************************
 *
-* Macht alle Scrollobjekte eines Fensters nicht-auswÑhlbar
+* Macht alle Scrollobjekte eines Fensters nicht-ausw√§hlbar
 *
 *********************************************************************/
 
-static void disable_scroll(DIALOG *d, int *objs)
+static void disable_scroll(DIALOG *d, WORD *objs)
 {
 	register int i;
 
@@ -209,12 +208,12 @@ static void disable_scroll(DIALOG *d, int *objs)
 
 /*********************************************************************
 *
-* Scrolle den Inhalt des "Fensters" so, daû die Zeile fÅr
+* Scrolle den Inhalt des "Fensters" so, da√ü die Zeile f√ºr
 * die Applikation <app_name> oben sichtbar ist.
 *
-* Wenn <app_name> nicht gefunden, RÅckgabe -1
-* Fehler: RÅckgabe -2
-* sonst: RÅckgabe der Programm-Nummer
+* Wenn <app_name> nicht gefunden, R√ºckgabe -1
+* Fehler: R√ºckgabe -2
+* sonst: R√ºckgabe der Programm-Nummer
 *
 *********************************************************************/
 
@@ -254,8 +253,8 @@ static int scroll_win_app(DIALOG *d, char *ap_path)
 /*********************************************************************
 *
 * Sucht einen Dateityp
-* Wenn <dat_name> nicht gefunden, RÅckgabe -1
-* sonst: RÅckgabe der Datei-Nummer
+* Wenn <dat_name> nicht gefunden, R√ºckgabe -1
+* sonst: R√ºckgabe der Datei-Nummer
 *
 *********************************************************************/
 
@@ -307,22 +306,19 @@ static int scroll_win_dat(DIALOG *d, char *datname)
 
 /*********************************************************************
 *
-* "select callback" fÅr Programme-Scrollbox
+* "select callback" f√ºr Programme-Scrollbox
 *
-* item->selected enthÑlt bereits den neuen Selektions-Status,
-* der vorherige wird in <last_state> Åbergeben.
+* item->selected enth√§lt bereits den neuen Selektions-Status,
+* der vorherige wird in <last_state> √ºbergeben.
 *
-* Man beachte, daû linke und rechte Scrollbox dieselben
+* Man beachte, da√ü linke und rechte Scrollbox dieselben
 * LBOX_ITEMs verwenden, also auch denselben <selected>-Status.
 *
 *********************************************************************/
 
-#pragma warn -par
-static void cdecl scrollbox_pgm_select_cb(
-	LIST_BOX *box, OBJECT *tree,
-	LBOX_ITEM *item, void *user_data,
-	WORD obj_index, WORD last_state)
+static void cdecl scrollbox_pgm_select_cb(struct SLCT_ITEM_args args)
 {
+	LBOX_ITEM *item = args.item;
 	struct item_line *line = (struct item_line *) item;
 
 	if (line->selected)
@@ -338,18 +334,16 @@ static void cdecl scrollbox_pgm_select_cb(
 
 /*********************************************************************
 *
-* "select callback" fÅr Dateitypen-Scrollbox
+* "select callback" f√ºr Dateitypen-Scrollbox
 *
-* item->selected enthÑlt bereits den neuen Selektions-Status,
-* der vorherige wird in <last_state> Åbergeben.
+* item->selected enth√§lt bereits den neuen Selektions-Status,
+* der vorherige wird in <last_state> √ºbergeben.
 *
 *********************************************************************/
 
-static void cdecl scrollbox_dat_select_cb(
-	LIST_BOX *box, OBJECT *tree,
-	LBOX_ITEM *item, void *user_data,
-	WORD obj_index, WORD last_state)
+static void cdecl scrollbox_dat_select_cb(struct SLCT_ITEM_args args)
 {
+	LBOX_ITEM *item = args.item;
 	if (selected_program)
 	{
 		struct curr_pgm_file_type *spd = (struct curr_pgm_file_type *) item;
@@ -368,9 +362,9 @@ static void cdecl scrollbox_dat_select_cb(
 		struct item_line *line = (struct item_line *) item;
 
 		/*
-		* Man beachte, daû linke und rechte Scrollbox dieselben
+		* Man beachte, da√ü linke und rechte Scrollbox dieselben
 		* LBOX_ITEMs verwenden, also auch denselben <selected>-Status,
-		* aber nur, wenn links kein Programm ausgewÑhlt ist.
+		* aber nur, wenn links kein Programm ausgew√§hlt ist.
 		*/
 
 		if (item->selected)
@@ -387,14 +381,16 @@ static void cdecl scrollbox_dat_select_cb(
 
 /*********************************************************************
 *
-* "set callback" fÅr Programme-Scrollbox
+* "set callback" f√ºr Programme-Scrollbox
 *
 *********************************************************************/
 
-static WORD cdecl scrollbox_pgm_set_cb(LIST_BOX *box, OBJECT *tree,
-			LBOX_ITEM *item, WORD index,
-			void *user_data, GRECT *rect, WORD offset)
+static WORD cdecl scrollbox_pgm_set_cb(struct SET_ITEM_args args)
 {
+	LIST_BOX *box = args.box;
+	OBJECT *tree = args.tree;
+	LBOX_ITEM *item = args.item;
+	WORD index = args.obj_index;
 	struct item_line *line = (struct item_line *) item;
 	GRECT *redr;
 	struct pgm_file *mypgm;
@@ -506,14 +502,15 @@ static WORD cdecl scrollbox_pgm_set_cb(LIST_BOX *box, OBJECT *tree,
 
 /*********************************************************************
 *
-* "set callback" fÅr Dateitypen-Scrollbox
+* "set callback" f√ºr Dateitypen-Scrollbox
 *
 *********************************************************************/
 
-static WORD cdecl scrollbox_dat_set_cb(LIST_BOX *box, OBJECT *tree,
-			LBOX_ITEM *item, WORD index,
-			void *user_data, GRECT *rect, WORD offset)
+static WORD cdecl scrollbox_dat_set_cb(struct SET_ITEM_args args)
 {
+	OBJECT *tree = args.tree;
+	LBOX_ITEM *item = args.item;
+	WORD index = args.obj_index;
 	struct item_line *line = (struct item_line *) item;
 	struct curr_pgm_file_type *sd = (struct curr_pgm_file_type *) item;
 	struct dat_file *mydat;
@@ -593,18 +590,17 @@ static WORD cdecl scrollbox_dat_set_cb(LIST_BOX *box, OBJECT *tree,
 */
 	return index;
 }
-#pragma warn .par
 
 
 /*********************************************************************
 *
-* Verkette sÑmtliche LBOX_ITEM-Objekte
+* Verkette s√§mtliche LBOX_ITEM-Objekte
 *
-* Man beachte, daû die beiden parallelen Scrollboxen, fÅr Programme
+* Man beachte, da√ü die beiden parallelen Scrollboxen, f√ºr Programme
 * und Dateitypen, dieselben LBOX_ITEMs verwenden. Sie teilen sich
-* also auch das <selected>-Attribut. Es muû sichergestellt werden,
-* daû die Boxen immer parallel laufen und daû die linke Box
-* verriegelt wird, wÑhrend die rechte bearbeitet wird.
+* also auch das <selected>-Attribut. Es mu√ü sichergestellt werden,
+* da√ü die Boxen immer parallel laufen und da√ü die linke Box
+* verriegelt wird, w√§hrend die rechte bearbeitet wird.
 *
 *********************************************************************/
 
@@ -635,7 +631,7 @@ static LBOX_ITEM *cat_lines(void)
 
 /*********************************************************************
 *
-* Initialisierung der Objektklasse "Icon auswÑhlen"
+* Initialisierung der Objektklasse "Icon ausw√§hlen"
 *
 *********************************************************************/
 
@@ -672,17 +668,17 @@ void ica_dial_init_rsc(void)
 	visible_pgmlen = (int) strlen(adr_ica_dialog[PRG1].ob_spec.tedinfo->te_ptext + 1);
 	visible_datlen = (int) strlen(adr_ica_dialog[DAT1].ob_spec.tedinfo->te_ptext + 1);
 
-	/* Scrollbox fÅr Programme */
+	/* Scrollbox f√ºr Programme */
 	sbox1 = lbox_create(adr_ica_dialog,
 					scrollbox_pgm_select_cb,
 					scrollbox_pgm_set_cb,
 					sc,	/* Items */
-					5,		/* Anzahl sichtbarer EintrÑge */
+					5,		/* Anzahl sichtbarer Eintr√§ge */
 					0,		/* erster sichtbarer Eintrag */
 					ctrl_objs1,
 					objs1,
 					LBOX_VERT+LBOX_REAL+LBOX_SNGL+LBOX_TOGGLE,
-					20,		/* Scrollverzîgerung */
+					20,		/* Scrollverz√∂gerung */
 					NULL,	/* user data */
 					NULL,
 					0,0,0,0
@@ -690,17 +686,17 @@ void ica_dial_init_rsc(void)
 	if (!sbox1)
 		Pterm((int) ENSMEM);
 
-	/* Scrollbox fÅr Dateitypen */
+	/* Scrollbox f√ºr Dateitypen */
 	sbox2 = lbox_create(adr_ica_dialog,
 					scrollbox_dat_select_cb,
 					scrollbox_dat_set_cb,
 					sc,		/* Items */
-					5,		/* Anzahl sichtbarer EintrÑge */
+					5,		/* Anzahl sichtbarer Eintr√§ge */
 					0,		/* erster sichtbarer Eintrag */
 					ctrl_objs2,
 					objs2,
 					LBOX_VERT+LBOX_REAL+LBOX_SNGL+LBOX_TOGGLE,
-					20,		/* Scrollverzîgerung */
+					20,		/* Scrollverz√∂gerung */
 					NULL,	/* user data */
 					NULL,
 					0,0,0,0
@@ -712,9 +708,9 @@ void ica_dial_init_rsc(void)
 
 /*********************************************************************
 *
-* Setzt fÅr alle Zeilen der Scrollboxen das Attribut
+* Setzt f√ºr alle Zeilen der Scrollboxen das Attribut
 * item_line->sel korrekt.
-* Auûerdem werden <selected_pgmline> und <selected_datline>
+* Au√üerdem werden <selected_pgmline> und <selected_datline>
 * neu bestimmt.
 *
 *********************************************************************/
@@ -768,7 +764,7 @@ static void sync_sel(void)
 /*********************************************************************
 *
 * Initialisiert die linke Scrollbox, die mit den Programmen,
-* und setzt, wenn <line> nicht -1 ist, den Scrollbalken so, daû
+* und setzt, wenn <line> nicht -1 ist, den Scrollbalken so, da√ü
 * Zeile <line> die erste sichtbare ist.
 *
 *********************************************************************/
@@ -794,7 +790,7 @@ static void setup_lbox_programs(int line)
 /*********************************************************************
 *
 * Initialisiert die rechte Scrollbox, die mit den Dateitypen,
-* und setzt, wenn <line> nicht -1 ist, den Scrollbalken so, daû
+* und setzt, wenn <line> nicht -1 ist, den Scrollbalken so, da√ü
 * Zeile <line> die erste sichtbare ist.
 *
 *********************************************************************/
@@ -816,7 +812,7 @@ static void setup_lbox_datafiles(int line)
 
 /*********************************************************************
 *
-* TrÑgt die zum selektierten Programm gehîrigen
+* Tr√§gt die zum selektierten Programm geh√∂rigen
 * Dateitypen in die zweite Scrollbox ein.
 *
 *********************************************************************/
@@ -878,8 +874,8 @@ static void setup_spdfiles(int line)
 
 /*********************************************************************
 *
-* TrÑgt einen neuen Dateityp ein.
-* Die Dateitypen werden so sortiert, daû die Typen mit "*.<ext>"
+* Tr√§gt einen neuen Dateityp ein.
+* Die Dateitypen werden so sortiert, da√ü die Typen mit "*.<ext>"
 * hinten stehen.
 *
 *********************************************************************/
@@ -898,7 +894,7 @@ int insert_dat(struct pgm_file *pgm, struct dat_file *dat)
 	if (linn >= MAX_LINN)
 	{
 		Rform_alert(1, ALRT_OVERFLOW, NULL);
-		return -3;				/* öberlauf */
+		return -3;				/* √úberlauf */
 	}
 
 	/* Suche <pgm> in pgmx[] */
@@ -943,7 +939,7 @@ int insert_dat(struct pgm_file *pgm, struct dat_file *dat)
 	}
 
 	if (datn >= MAX_DATN)
-		return -2;		/* öberlauf */
+		return -2;		/* √úberlauf */
 	newdat = datn;
 	datn++;
 
@@ -951,7 +947,7 @@ int insert_dat(struct pgm_file *pgm, struct dat_file *dat)
 	datx[newdat] = *dat;
 	dat = datx + newdat;		/* dat = Zeiger auf neuen Eintrag */
 
-	/* dat in die Verkettung fÅr dat->pgm eintragen 			*/
+	/* dat in die Verkettung f√ºr dat->pgm eintragen 			*/
 	/* wird als <k-te> angemeldete Datei zu mypgm eingetragen	*/
 	/* --------------------------------------------------------	*/
 
@@ -962,7 +958,7 @@ int insert_dat(struct pgm_file *pgm, struct dat_file *dat)
 	{
 		mydat = datx+j;
 		if ((dat->name[0] == '*') && (mydat->name[0] != '*'))
-			break;	/* erster Typ, der mit '*' anfÑngt */
+			break;	/* erster Typ, der mit '*' anf√§ngt */
 		if ((dat->name[0] != '*') && (mydat->name[0] == '*'))
 			goto weiter5;
 		if (stricmp(dat->name, mydat->name) >= 0)
@@ -1037,7 +1033,7 @@ int insert_dat(struct pgm_file *pgm, struct dat_file *dat)
 
 /*********************************************************************
 *
-* Lîscht einen Dateityp.
+* L√∂scht einen Dateityp.
 *
 *********************************************************************/
 
@@ -1080,7 +1076,7 @@ int delete_dat(int dat)
 	cat_lines();
 	setup_lbox_programs(-1);
 
-	/* Dateityp aus Liste fÅr pgm entfernen */
+	/* Dateityp aus Liste f√ºr pgm entfernen */
 	/* ------------------------------------ */
 
 	for (prev = &(pgmx[pgm].types); *prev >= 0;
@@ -1119,7 +1115,7 @@ int delete_dat(int dat)
 
 /*********************************************************************
 *
-* éndert einen Dateityp
+* √Ñndert einen Dateityp
 *
 *********************************************************************/
 
@@ -1156,7 +1152,7 @@ int change_dat(struct pgm_file *pgm, struct dat_file *dat,
 
 	found2:
 
-	/* dat Ñndern */
+	/* dat √§ndern */
 	/* ---------- */
 
 	dat_new = *dat;
@@ -1172,7 +1168,7 @@ int change_dat(struct pgm_file *pgm, struct dat_file *dat,
 
 /*********************************************************************
 *
-* Registriert ein neues Programm oder Ñndert ein registriertes
+* Registriert ein neues Programm oder √§ndert ein registriertes
 *
 *********************************************************************/
 
@@ -1200,29 +1196,29 @@ int insert_pgm(struct pgm_file *pgm)
 	{
 		if (!stricmp(pgmx[pgmx_pos].name, pgm->name))
 		{
-			/* Das Programm ist bereits in der Liste. Wir Ñndern es. */
+			/* Das Programm ist bereits in der Liste. Wir √§ndern es. */
 
-			/* erst in pgmx[] Ñndern... */
+			/* erst in pgmx[] √§ndern... */
 			strcpy(pgmx[pgmx_pos].path, pgm->path);
 			pgmx[pgmx_pos].config = pgm->config;
 			pgmx[pgmx_pos].memlimit = pgm->memlimit;
 
-			/* ... , dann in linx[] suchen und Ñndern */
+			/* ... , dann in linx[] suchen und √§ndern */
 			for (linx_pos = 0; linx_pos < linn; linx_pos++)
 			{
 				if (linx[linx_pos].pgmnr == pgmx_pos)
 				{
 					/*
 					 * Das Programm liegt bei pgmx[pgmx_pos] und linx[linx_pos].
-					 * Wir scrollen die Liste so, daû die Programmzeile oben sichtbar ist.
+					 * Wir scrollen die Liste so, da√ü die Programmzeile oben sichtbar ist.
 					 */
 					goto redraw;
 				}
 			}
 
 			/*
-			 * TODO: Unter welchen UmstÑnden kînnen wir hier hin gelangen?
-			 *       Wenn das Programm in pgmx[] ist, mÅûte es auch in linx[] sein.
+			 * TODO: Unter welchen Umst√§nden k√∂nnen wir hier hin gelangen?
+			 *       Wenn das Programm in pgmx[] ist, m√º√üte es auch in linx[] sein.
 			 * <linx_pos> ist jetzt <linn>
 			 */
 
@@ -1231,7 +1227,7 @@ int insert_pgm(struct pgm_file *pgm)
 			goto redraw;			/* Name gefunden */
 		}
 
-		/* Wir haben das Programm noch nicht gefunden, aber suchen nebenbei nach freien EintrÑgen */
+		/* Wir haben das Programm noch nicht gefunden, aber suchen nebenbei nach freien Eintr√§gen */
 
 		if (!pgmx[pgmx_pos].name[0])		/* freier Eintrag */
 		{
@@ -1252,13 +1248,13 @@ int insert_pgm(struct pgm_file *pgm)
 	else
 	{
 		if (pgmx_pos >= MAX_PGMN)
-			return -2;			/* öberlauf */
-		pgmn++;		/* Tabelle verlÑngern */
+			return -2;			/* √úberlauf */
+		pgmn++;		/* Tabelle verl√§ngern */
 	}
 
 	/*
 	 * Bei pgmx[pgmx_pos] ist ein freier Eintrag, wo wir das neue
-	 * Programm reinschreiben. Wenn die Liste verlÑngert werden muûte,
+	 * Programm reinschreiben. Wenn die Liste verl√§ngert werden mu√üte,
 	 * ist das bereits oben passiert.
 	 */
 
@@ -1271,14 +1267,14 @@ int insert_pgm(struct pgm_file *pgm)
 	/* --------------------------- */
 
 	if (linn >= MAX_LINN)
-		return -3;				/* öberlauf */
+		return -3;				/* √úberlauf */
 
 	for (linx_pos = 0; linx_pos < linn; linx_pos++)
 	{
 		if ((pgmx[linx[linx_pos].pgmnr].name[0] == '<') ||
 			 (stricmp(pgmx[linx[linx_pos].pgmnr].name, pgm->name) > 0))
 		{
-			/* TabelleneintrÑge j..linn-1 verschieben nach j+1..linn */
+			/* Tabelleneintr√§ge j..linn-1 verschieben nach j+1..linn */
 			for (k = linn; k > linx_pos; k--)
 			{
 				linx[k] = linx[k - 1];
@@ -1289,7 +1285,7 @@ int insert_pgm(struct pgm_file *pgm)
 
 	ok2:
 
-	/* linx[] ist um einen Eintrag, bei <linx_pos>, verlÑngert worden */
+	/* linx[] ist um einen Eintrag, bei <linx_pos>, verl√§ngert worden */
 
 	linn++;
 	linx[linx_pos].pgmnr = pgmx_pos;
@@ -1376,7 +1372,7 @@ int delete_pgm(int pgm)
 
 /*********************************************************************
 *
-* Das Icon fÅr Applikation <mypgm> hat sich geÑndert.
+* Das Icon f√ºr Applikation <mypgm> hat sich ge√§ndert.
 *
 *********************************************************************/
 
@@ -1427,9 +1423,9 @@ static void chg_icon(int win, int meinding, int iconnr)
 * Wird aufgerufen beim Doppelklick auf ein Icon im Fenster "Icons"
 *
 * Achtung: Wenn sowohl Datei-Icons als auch ein Programm-Icon
-*          selektiert sind, mÅssen wir verhindern, daû das Programm
+*          selektiert sind, m√ºssen wir verhindern, da√ü das Programm
 *          das gleiche Icon wie die Datei(en) bekommt. Deshalb
-*          prÑferieren wir hier die Datei(en).
+*          pr√§ferieren wir hier die Datei(en).
 *
 *********************************************************************/
 
@@ -1512,13 +1508,13 @@ static void ica_draw_subobj(int objnr)
 }
 
 int ica_get_target_obj(int x, int y, int whdl, OBJECT **tree,
-			int *objnr, void (**set_icon)(int iconnr, int objnr),
+			WORD *objnr, void (**set_icon)(int iconnr, int objnr),
 			void (**drawfn)(int objnr))
 {
 	GRECT dummy;
 
 	if (!d_ica)
-		return FALSE;		/* Objekt ungÅltig */
+		return FALSE;		/* Objekt ung√ºltig */
 
 	if (whdl != wdlg_get_handle(d_ica))
 		return FALSE;
@@ -1622,8 +1618,8 @@ static void deselect_program(DIALOG *d)
 
 /*********************************************************************
 *
-* Ein Programm ist angewÑhlt worden. Das Aussehen des Dialogs
-* muû entsprechend angepaût werden.
+* Ein Programm ist angew√§hlt worden. Das Aussehen des Dialogs
+* mu√ü entsprechend angepa√üt werden.
 *
 *********************************************************************/
 
@@ -1680,8 +1676,8 @@ static void pgm_was_selected(DIALOG *d, int pgm, int do_sync)
 
 /*********************************************************************
 *
-* Eine Datei ist angewÑhlt worden. Das Aussehen des Dialogs
-* muû entsprechend angepaût werden.
+* Eine Datei ist angew√§hlt worden. Das Aussehen des Dialogs
+* mu√ü entsprechend angepa√üt werden.
 *
 *********************************************************************/
 
@@ -1709,7 +1705,7 @@ static int ica_wdlg_init(WORD nclicks, void *data, struct dialog_userdata *p_use
 	int retcode;
 
 
-	if (d_ica)			/* Dialog ist schon geîffnet ! */
+	if (d_ica)			/* Dialog ist schon ge√∂ffnet ! */
 		return 0;		/* create verweigern */
 
 	retcode = 1;			/* keine Aktion notwendig */
@@ -1718,7 +1714,7 @@ static int ica_wdlg_init(WORD nclicks, void *data, struct dialog_userdata *p_use
 	{
 		p_userdata->cmd_pgm_path = ((char **) data)[0];
 		p_userdata->cmd_dat_path = ((char **) data)[1];
-		if (nclicks == 1)	/* Icon fÅr Datei */
+		if (nclicks == 1)	/* Icon f√ºr Datei */
 		{
 			if (p_userdata->cmd_pgm_path[0] == '<')	/* nicht angem. */
 				p_userdata->cmd_pgm_path = APP_NAME_FREE;
@@ -1741,13 +1737,13 @@ static int ica_wdlg_init(WORD nclicks, void *data, struct dialog_userdata *p_use
 			sync_sel();
 		}
 
-		if (nclicks == 0)	/* Icon fÅr Programm */
+		if (nclicks == 0)	/* Icon f√ºr Programm */
 		{
 			if (p_userdata->cmd_pgm == -1)	/* neues Programm */
 				retcode = 2;		/* ... erst anmelden */
 		}
 		else
-		if (nclicks == 1)	/* Icon fÅr Datei */
+		if (nclicks == 1)	/* Icon f√ºr Datei */
 		{
 			if (p_userdata->cmd_dat == -1)	/* neue Datei */
 				retcode = 2;		/* ... erst anmelden */
@@ -1831,37 +1827,39 @@ static int ica_wdlg_open(struct dialog_userdata *p_userdata)
 /*********************************************************************
 *
 * Behandelt die Exit-Objekte des Icondialogs
-* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angewÑhlt.
+* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angew√§hlt.
 *
 * objnr = -1:	Initialisierung.
 *			d->user_data und d->dialog_tree initialisieren!
 *			<data> ist Zeiger auf Argumentzeiger,
 *			d.h.		char *data[2]
-*			<clicks> == 0:	Icon fÅr Programm zuweisen
-*					  1: Icon fÅr Datei zuweisen
+*			<clicks> == 0:	Icon f√ºr Programm zuweisen
+*					  1: Icon f√ºr Datei zuweisen
 *					  2: Anwendung anmelden
-*		-2:	Nachricht int data[8] wurde Åbergeben
+*		-2:	Nachricht int data[8] wurde √ºbergeben
 * 		-3:	Fenster wurde durch Closebutton geschlossen.
 *		-4:	Programm wurde beendet.
-*		-5:	Initialisierung _NACH_ ôffnen des Fensters
+*		-5:	Initialisierung _NACH_ √ñffnen des Fensters
 *
-* RÅckgabe:	0	Dialog schlieûen
+* R√ºckgabe:	0	Dialog schlie√üen
 *			< 0	Fehlercode
 *
 *********************************************************************/
 
-#pragma warn -par
 
-WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
-		WORD nclicks, void *data)
+WORD cdecl ica_wdlg_cb(struct HNDL_OBJ_args args)
 {
+	DIALOG *d = args.dialog;
+	short exitbutton = args.obj;
+	short nclicks = args.clicks;
+	void *data = args.data;
 	int pgm, dat;
 	OBJECT *tree;
 	struct pgm_file *mypgm;
 	struct dialog_userdata *p_userdata;
 
 
-	/* 1. Fall: Dialog soll geîffnet werden */
+	/* 1. Fall: Dialog soll ge√∂ffnet werden */
 	/* ------------------------------------ */
 
 	tree = adr_ica_dialog;
@@ -1872,7 +1870,7 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 		return(ica_wdlg_init(nclicks, data, p_userdata));
 	}
 
-	/* 1a. Fall: Dialog ist geîffnet worden */
+	/* 1a. Fall: Dialog ist ge√∂ffnet worden */
 	/* ------------------------------------ */
 
 	if (exitbutton == HNDL_OPEN)
@@ -1888,13 +1886,13 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 		/* Wenn Dialog geschlossen werden soll... */
 		close_dialog:
 		d_ica = NULL;
-		return 0;		/* ...dann schlieûen wir ihn auch */
+		return 0;		/* ...dann schlie√üen wir ihn auch */
 	}
 
 	if (exitbutton < 0)
 		return 1;
 
-	/* 4. Fall: Exitbutton wurde betÑtigt */
+	/* 4. Fall: Exitbutton wurde bet√§tigt */
 	/* ---------------------------------- */
 
 		/* Doppelklick auf Programmnamen */
@@ -1976,13 +1974,13 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 	/*
 	 TODO:
 	 Fehlfunktion bei:
-	 	1. Dateityp auswÑhlen, z.B. *.RSC
-	 	2. Dann zugehîriges Programm auswÑhlen, hier INTRFACE
+	 	1. Dateityp ausw√§hlen, z.B. *.RSC
+	 	2. Dann zugeh√∂riges Programm ausw√§hlen, hier INTRFACE
 	 	-> Klick wird ignoriert, zweiter Klick geht aber.
 	*/
 
 
-	/* Scrollbox #1 angewÑhlt (Programme) */
+	/* Scrollbox #1 angew√§hlt (Programme) */
 	/* ---------------------------------- */
 
 	if (exitbutton == PICON1)
@@ -2012,13 +2010,13 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 		oldsel = selected_pgmline;
 
 		/*
-		   Man beachte, daû, wenn links kein Programm ausgewÑhlt wurde,
+		   Man beachte, da√ü, wenn links kein Programm ausgew√§hlt wurde,
 		   die Listboxen von Dateien und Programmen dieselbe
-		   LBOX_ITEM-Tabelle verwenden, also auch dieselben <selected>-ZustÑnde.
+		   LBOX_ITEM-Tabelle verwenden, also auch dieselben <selected>-Zust√§nde.
 		*/
 		lbox_do(sbox1, exitbutton);
 
-		/* select-Status geÑndert ? */
+		/* select-Status ge√§ndert ? */
 
 		if (!selected_pgmline && oldsel)
 		{
@@ -2033,7 +2031,7 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 	}
 
 
-	/* Scrollbox #2 angewÑhlt (Dateitypen) */
+	/* Scrollbox #2 angew√§hlt (Dateitypen) */
 	/* ----------------------------------- */
 
 	if (exitbutton == DICON1)
@@ -2059,12 +2057,12 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 	{
 		struct curr_pgm_file_type *oldsel = selected_curr_pgm_file_type;
 
-		/* Man beachte, daû, solange links kein Programm ausgewÑhlt ist,
+		/* Man beachte, da√ü, solange links kein Programm ausgew√§hlt ist,
 		   die Listboxen von Dateien und Programmen dieselbe
-		   LBOX_ITEM-Tabelle verwenden, also auch dieselben <selected>-ZustÑnde. */
+		   LBOX_ITEM-Tabelle verwenden, also auch dieselben <selected>-Zust√§nde. */
 		lbox_do(sbox2, exitbutton);
 
-		/* select-Status geÑndert ? */
+		/* select-Status ge√§ndert ? */
 
 		if (selected_program)
 		{
@@ -2088,10 +2086,10 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 			/*
 			* In der linken Liste ist kein Programm selektiert.
 			* Linke und rechte Liste teilen sich die LBOX_ITEMs, wodurch auch links
-			* eine Zeile als "selected" markiert wurde, aber nicht schwarz eingefÑrbt wurde.
+			* eine Zeile als "selected" markiert wurde, aber nicht schwarz eingef√§rbt wurde.
 			* Wenn man jetzt links auf das Programm klickt, ist der Status der Zeile
 			* inkonsistent.
-			* Deshalb lîschen wir das "selected" und tun so, als ob das zugehîrige
+			* Deshalb l√∂schen wir das "selected" und tun so, als ob das zugeh√∂rige
 			* Programm in der linken Liste stattdessen angeklickt wurde.
 			*/
 
@@ -2099,17 +2097,17 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 			int sel_idx = lbox_get_slct_idx(sbox2);
 			if (sel_idx >= 0)
 			{
-				/* Das zugehîrige Programm */
+				/* Das zugeh√∂rige Programm */
 				int sel_pgm = linx[sel_idx].pgmnr;
-				/* selected-Status lîschen, damit der nicht fÅr die linke Liste gilt. */
+				/* selected-Status l√∂schen, damit der nicht f√ºr die linke Liste gilt. */
 				linx[sel_idx].selected = 0;
 				/* Die erste Zeile mit demselben Programm suchen. Das ist die Zeile in der
 				   linken Liste, in der das Programm steht */
 				while ((sel_idx > 0) && (linx[sel_idx - 1].pgmnr == sel_pgm))
 					sel_idx--;
-				/* Linke Liste so scrollen, daû das selektierte Programm der oberste Eintrag ist */
+				/* Linke Liste so scrollen, da√ü das selektierte Programm der oberste Eintrag ist */
 				lbox_scroll_to(sbox1, sel_idx, NULL, NULL);
-				/* Wir tun so, also ob der oberste Eintrag links gewÑhlt wurde. */
+				/* Wir tun so, also ob der oberste Eintrag links gew√§hlt wurde. */
 				exitbutton = PRG1;
 				goto handle_prg;
 			}
@@ -2147,7 +2145,7 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 		goto ende;
 	}
 
-		/* Programm lîschen */
+		/* Programm l√∂schen */
 		/* ---------------- */
 
 	if (exitbutton == DEL_PGM)
@@ -2193,7 +2191,7 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 		goto ende;
 	}
 
-		/* Dateityp lîschen */
+		/* Dateityp l√∂schen */
 		/* ---------------- */
 
 	if (exitbutton == DEL_DAT)
@@ -2243,4 +2241,3 @@ WORD cdecl ica_wdlg_cb(DIALOG *d, EVNT *ev, WORD exitbutton,
 	subobj_wdraw(d, exitbutton, exitbutton, 1);
 	return 1;		/* weiter */
 }
-#pragma warn +par

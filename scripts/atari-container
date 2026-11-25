@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+image="${ATARI_TOOLCHAIN_IMAGE:-localhost/magic-atari-toolchain:latest}"
+
+case "${1:-}" in
+    build)
+        shift
+        exec podman build -t "$image" -f "$root/Containerfile.atari" "$@" "$root"
+        ;;
+    publish)
+        shift
+        image="${ATARI_TOOLCHAIN_IMAGE:-registry.gitlab.com/nizmow/atari-mac-magic-sources/atari-toolchain:latest}"
+        podman build -t "$image" -f "$root/Containerfile.atari" "$@" "$root"
+        exec podman push "$image"
+        ;;
+    shell)
+        shift
+        set -- bash "$@"
+        ;;
+    run)
+        shift
+        if (( $# == 0 )); then
+            printf 'Usage: %s run COMMAND [ARGS...]\n' "$0" >&2
+            exit 2
+        fi
+        ;;
+    *)
+        printf 'Usage: %s {build [OPTIONS...]|publish [BUILD_OPTIONS...]|shell [BASH_ARGS...]|run COMMAND [ARGS...]}\n' "$0" >&2
+        exit 2
+        ;;
+esac
+
+# Preserve piped input; allocate a terminal only when both ends are terminals.
+terminal=(-i)
+if [[ -t 0 && -t 1 ]]; then
+    terminal+=(-t)
+fi
+
+exec podman run --rm --network=none --userns=keep-id "${terminal[@]}" \
+    -v "$root:/work" -w /work "$image" "$@"

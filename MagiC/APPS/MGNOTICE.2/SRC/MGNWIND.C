@@ -1,31 +1,27 @@
 /*
 *
-* EnthÑlt die spezifischen Routinen fÅr die
+* Enth√§lt die spezifischen Routinen f√ºr die
 * Notizfenster
 *
 */
 
 #define DEBUG 0
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
-#include <vdi.h>
 #include <string.h>
+#include <stdlib.h>
 #if DEBUG
 #include <stdio.h>
 #endif
-#include <stdlib.h>
-#include "gemut_mt.h"
-#include "portab.h"
-#include "windows.h"
-#include "globals.h"
+#include "MGNOTICE_GEM.H"
+#include "WINDOWS.H"
+#include "GLOBALS.H"
 
 WINDOW *selected_window = NULL;
 
 
 /*******************************************************************
 *
-* Notizfenstergrîûe berechnen
+* Notizfenstergr√∂√üe berechnen
 *
 *******************************************************************/
 
@@ -57,7 +53,7 @@ void calc_size_notice_wind( WINDOW *w )
 	printf("%ld Zeilen\n", nlines);
 #endif
 		}
-	else	nlines = 3;	/* fÅr leeres Fenster */
+	else	nlines = 3;	/* f√ºr leeres Fenster */
 
 	nlines *= (long) w->charH;
 	if	(nlines > scrg.g_h)
@@ -68,9 +64,9 @@ void calc_size_notice_wind( WINDOW *w )
 	if	(ncols > 16)
 		w->in.g_w = ncols;
 
-	/* Auûenbereich berechnen */
+	/* Au√üenbereich berechnen */
 
-	wind_calc(WC_BORDER, NOTICE_W_KIND, &(w->in),&(w->out));
+	wind_calc_grect(WC_BORDER, NOTICE_W_KIND, &w->in, &w->out);
 }
 
 
@@ -89,7 +85,7 @@ void deselect_window( WINDOW *w )
 		/* wir erzwingen Neuberechnung von <nlines> */
 		edit_set_format( &w->tree, EDITFELD,
 				w->tabwidth, 0);
-		/* und optimieren die Fensterhîhe */
+		/* und optimieren die Fensterh√∂he */
 		calc_size_notice_wind( w );
 		w->sized(w, &(w->out));
 		}
@@ -144,23 +140,23 @@ static void MY_buttoned( WINDOW *w, int nclicks, EVNTDATA *ev )
 	if	(w->selected)
 		{
 		EVNT w_ev;
-		LONG err;
+		long err;
 
 
 		w_ev.mwhich = MU_BUTTON;
-		w_ev.mclicks = nclicks;
+		w_ev.mclicks = (short) nclicks;
 		*((EVNTDATA *) (&w_ev.mx)) = *ev;
 		edit_evnt( &(w->tree), EDITFELD,
 			w->handle, &w_ev, &err );
 		return;
 		}
 
-	graf_mkstate(&evm);
+	graf_mkstate(&evm.x, &evm.y, &evm.bstate, &evm.kstate);
 
-	if	(evm.bstate)	/* Maustaste noch gedrÅckt */
+	if	(evm.bstate)	/* Maustaste noch gedr√ºckt */
 		{
 		/* Beim Klick rechts unten wird das Fenster	*/
-		/* in der Grîûe verÑndert				*/
+		/* in der Gr√∂√üe ver√§ndert				*/
 
 		if	((ev->x > w->out.g_x + w->out.g_w - 8) &&
 			 (ev->y > w->out.g_y + w->out.g_h - 8))
@@ -168,14 +164,15 @@ static void MY_buttoned( WINDOW *w, int nclicks, EVNTDATA *ev )
 			graf_rubbox(w->in.g_x, w->in.g_y,
 						16, w->charH,
 						&w->in.g_w, &w->in.g_h);
-			wind_calc(WC_BORDER, NOTICE_W_KIND, &(w->in),&(w->out));
+			wind_calc_grect(WC_BORDER, NOTICE_W_KIND, &w->in, &w->out);
 			w->sized(w, &w->out);
 			}
 		else	{
 		/* Ansonsten wird das Fenster verschoben	*/
 			graf_dragbox(w->out.g_w, w->out.g_h,
 						w->out.g_x, w->out.g_y,
-						&scrg,
+						scrg.g_x, scrg.g_y,
+						scrg.g_w, scrg.g_h,
 						&w->out.g_x, &w->out.g_y);
 			w->moved(w, &w->out);
 			}
@@ -195,7 +192,7 @@ static void MY_buttoned( WINDOW *w, int nclicks, EVNTDATA *ev )
 
 	/* Klick auf Hintergrundfenster.					*/
 	/* Weil WF_BEVENT gesetzt ist, wird das Fenster nicht	*/
-	/* vom System nach oben gebracht. Dies muû daher		*/
+	/* vom System nach oben gebracht. Dies mu√ü daher		*/
 	/* manuell erfolgen. Hier nur bei kurzem Einfachklick	*/
 	/* mit nur der linken Maustaste und ohne			*/
 	/* Umschalttasten!								*/
@@ -220,9 +217,6 @@ static void MY_buttoned( WINDOW *w, int nclicks, EVNTDATA *ev )
 				select_window(w);
 				}
 */
-/*
-			wind_set(-1, WF_TOP, -1);	/* MenÅ nach oben! */
-*/
 			return;
 			}
 		}
@@ -242,13 +236,13 @@ static void MY_moved(WINDOW *w, GRECT *g)
 	wind_set_grect(w->handle, WF_CURRXYWH, &(w->out));
 	wind_get_grect(w->handle, WF_WORKXYWH, &(w->in));
 	*((GRECT *) &(w->tree.ob_x)) = w->in;
-	w->position_dirty = TRUE;	/* Position ist geÑndert */
+	w->position_dirty = TRUE;	/* Position ist ge√§ndert */
 }
 
 
 /*******************************************************************
 *
-* Grîûe Ñndern
+* Gr√∂√üe √§ndern
 *
 *******************************************************************/
 
@@ -265,7 +259,7 @@ static void MY_sized(WINDOW *w, GRECT *g)
 	edit_set_format( &w->tree, EDITFELD,
 				w->tabwidth, (&w->tree)[EDITFELD].ob_width);
 	edit_resized(&w->tree, EDITFELD, &oldrh, &newrh);
-	w->position_dirty = TRUE;	/* Position ist geÑndert */
+	w->position_dirty = TRUE;	/* Position ist ge√§ndert */
 	update_window(w);
 }
 
@@ -276,10 +270,10 @@ static void MY_sized(WINDOW *w, GRECT *g)
 *
 *******************************************************************/
 
-static void MY_keyed( WINDOW *w, int kstate, int key )
+static void MY_keyed( WINDOW *w, short kstate, short key )
 {
 	EVNT w_ev;
-	LONG err;
+	long err;
 
 
 	if	(w->selected)
@@ -306,8 +300,8 @@ static void MY_keyed( WINDOW *w, int kstate, int key )
 /****************************************************************
 *
 * Organisiert das Fenster neu, d.h. legt Position der Objekte fest.
-* gibt TRUE zurÅck, falls sich fenster.cols oder fenster.shift
-* geÑndert haben.
+* gibt TRUE zur√ºck, falls sich fenster.cols oder fenster.shift
+* ge√§ndert haben.
 *
 ****************************************************************/
 
@@ -321,17 +315,17 @@ static int arrange_notice_wind( WINDOW *w )
 
 /*******************************************************************
 *
-* Neues Notizfenster îffnen
+* Neues Notizfenster √∂ffnen
 *
 * <notice> zeigt auf die Notiz, die Zeilen sind mit CR/LF
 * abgeschlossen, der Gesamttext mit EOS.
 *
 *******************************************************************/
 
-long open_notice_wind( unsigned char *notice, int id,
+long open_notice_wind( unsigned char *notice, short id,
 					GRECT *g,
-					int fontID, int font_is_prop, int fontH,
-					int colour,
+					short fontID, short font_is_prop, short fontH,
+					short colour,
 					WINDOW **pw )
 {
 	WINDOW **wp;
@@ -362,10 +356,10 @@ long open_notice_wind( unsigned char *notice, int id,
 	wp = new_window();
 	if	(!wp)
 		return(ENSMEM);		/* kein Slot */
-	w = Malloc(sizeof(WINDOW));
+	w = (WINDOW *) Malloc(sizeof(WINDOW));
 	if	(!w)
 		return(ENSMEM);
-	w->handle = wind_create(NOTICE_W_KIND, &scrg);	/* keine Fensterelemente */
+	w->handle = wind_create_grect(NOTICE_W_KIND, &scrg);	/* keine Fensterelemente */
 	if	(w->handle < 0)
 		{
 		fehler:
@@ -379,8 +373,7 @@ long open_notice_wind( unsigned char *notice, int id,
 	w->id_code = id;
 	w->selected = FALSE;
 	w->bcolour = colour;
-	w->tcolour = adr_colour[colour+1].ob_spec.tedinfo->
-					te_ucolor.te_colspec.textcol;
+	w->tcolour = TED_TEXTCOLOR(adr_colour[colour+1].ob_spec.tedinfo);
 	w->fontH = fontH;
 	w->fontID = fontID;
 	w->fontprop = font_is_prop;
@@ -390,7 +383,7 @@ long open_notice_wind( unsigned char *notice, int id,
 	/* -------------- */
 
 	w->bufsize = NOTICE_MEM;
-	w->buf = Malloc(w->bufsize);
+	w->buf = (char *) Malloc(w->bufsize);
 	if	(!w->buf)
 		goto fehler;
 	strcpy(w->buf, (char *) notice);
@@ -414,7 +407,7 @@ long open_notice_wind( unsigned char *notice, int id,
 				w->fontID, w->fontH, FALSE, !w->fontprop);
 	tcolour = (w->bcolour < ncolours) ? w->tcolour : WHITE;
 	edit_set_colour( &w->tree, EDITFELD,
-				tcolour, w->bcolour);
+				(short) tcolour, w->bcolour);
 
 	*wp = w;
 	init_window(w);
@@ -427,9 +420,9 @@ long open_notice_wind( unsigned char *notice, int id,
 		w->in.g_h += 40;
 		}
 
-	/* Breite und Hîhe des EDIT-Objekts festlegen.		*/
-	/* Die Breite ist vorgegeben, die Hîhe stellt sicher,	*/
-	/* daû alle Zeilen sichtbar sind.					*/
+	/* Breite und H√∂he des EDIT-Objekts festlegen.		*/
+	/* Die Breite ist vorgegeben, die H√∂he stellt sicher,	*/
+	/* da√ü alle Zeilen sichtbar sind.					*/
 	/* --------------------------------------------------- */
 
 	calc_size_notice_wind( w );

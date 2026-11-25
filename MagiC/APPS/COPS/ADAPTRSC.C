@@ -24,16 +24,15 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdint.h>
-#include "mgx_dos.h"
-#include <vdi.h>
+#include <mint/cookie.h>
 
 /*
 #include <mint/cookie.h>
 */
 
-#include "cops_rsc.h"
-#include "adaptrsc.h"
-#include "cops.h"
+#include "COPS_RSC.H"
+#include "ADAPTRSC.H"
+#include "COPS.H"
 
 
 /* XXX */
@@ -111,7 +110,7 @@ unsigned long get_aes_info(int16_t *font_id, int16_t *font_height, int16_t *hor_
 	flags = 0;
 	pens = work_out[13];		/* Anzahl der Farbstifte */
 	*font_id = attrib[0];		/* Standardfont */
-	*font_height = attrib[7];	/* Standardh”he */
+	*font_height = attrib[7];	/* StandardhÃ¶he */
 	*hor_3d = 0;
 	*ver_3d = 0;
 	radio_bgcol = 0;
@@ -183,7 +182,7 @@ unsigned long get_aes_info(int16_t *font_id, int16_t *font_height, int16_t *hor_
 		{
 			if (flags & GAI_MAGIC) /* MagiC spezifische Funktion! */
 			{
-				if (ag4 & 0x08) /* G_SHORTCUT untersttzt ? */
+				if (ag4 & 0x08) /* G_SHORTCUT unterstÃ¼tzt ? */
 					flags |= GAI_GSHORTCUT;
 			}
 				
@@ -406,7 +405,7 @@ void substitute_objects(OBJECT *objs, unsigned short no_objs, unsigned long aesf
 
 						/* Ueberschrift */
 						case G_STRING:
-							if (state == 0xff00)					/* Unterstreichung auf voller L„nge? */
+							if (state == 0xff00)					/* Unterstreichung auf voller LÃ¤nge? */
 							{
 								/* Zeiger auf den Text */
 								tmp->ub_parm = (long) obj->ob_spec.free_string;
@@ -530,7 +529,7 @@ static int16_t cdecl radio_button(PARMBLK *parmblock)
 	clip[1] = parmblock->pb_yc;
 	clip[2] = parmblock->pb_xc + parmblock->pb_wc - 1;
 	clip[3] = parmblock->pb_yc + parmblock->pb_hc - 1;
-	udef_vs_clip(vdi_handle, 1, clip);				/* Zeichenoperationen auf gegebenen Bereich beschr„nken */
+	udef_vs_clip(vdi_handle, 1, clip);				/* Zeichenoperationen auf gegebenen Bereich beschrÃ¤nken */
 
 	string = (char *) parmblock->pb_parm;
 

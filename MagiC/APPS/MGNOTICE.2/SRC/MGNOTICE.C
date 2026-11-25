@@ -2,7 +2,7 @@
 *
 *             MGNOTICE.APP                             10.11.96
 *             ============
-*                                 letzte énderung:
+*                                 letzte √Ñnderung:
 *
 * geschrieben mit Pure C V1.1
 * Projektdatei: MGNOTICE.PRJ
@@ -13,33 +13,29 @@
 
 #define DEBUG 0
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
-#include <vdi.h>
 #include <string.h>
 #include <stdlib.h>
-#include "windows.h"
-#include "globals.h"
-#include "mgnotice.h"
-#include "gemut_mt.h"
-#if DEBUG
 #include <stdio.h>
-#endif
+#include "MGNOTICE_GEM.H"
+#include "WINDOWS.H"
+#include "GLOBALS.H"
+#include "MGNOTICE.H"
 
-int	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
+short	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
 int	ap_id;
 int	ncolours;
 GRECT scrg;
-int aes_handle;		/* Screen-Workstation des AES */
+short aes_handle;		/* Screen-Workstation des AES */
 
-/* fÅr die SharedLib */
+/* f√ºr die SharedLib */
 SLB_EXEC	slbexec;
-SHARED_LIB  slb;
+SLB_HANDLE	slb;
 
 /* globale Einstellungen */
 
 struct prefs prefs;
-char *notice_path = "X:\\gemsys\\gemdesk\\notice\\";
+static char notice_path_buffer[] = "X:\\gemsys\\gemdesk\\notice\\";
+char *notice_path = notice_path_buffer;
 /*
 char *notice_path = "X:\\pc\\source\\deskutil\\mgnotice.2\\notice\\";
 */
@@ -59,12 +55,12 @@ WINDOW *windows[NWINDOWS];
 /****************************************************************
 *
 * Rechnet Koordinaten linear um. Der Wert <wert> wurde bei
-* Bildschirmgrîûe <old> abgespeichert, jetzt ist die
-* Bildschirmgrîûe <new>.
+* Bildschirmgr√∂√üe <old> abgespeichert, jetzt ist die
+* Bildschirmgr√∂√üe <new>.
 *
 * Liegt das Fenster links aus dem Bildschirm heraus, wird
 * nichts umgerechnet. Hier sollte aber sichergestellt werden,
-* daû man an das Fenster noch herankommt, d.h.:
+* da√ü man an das Fenster noch herankommt, d.h.:
 *	x+w > k > 0.
 *
 ****************************************************************/
@@ -80,6 +76,20 @@ static void recalc(int *wert, int old, int new)
 		tmp   /= old;
 		*wert  = (int) tmp;
 		}
+}
+
+static short recalc_short(short wert, int old, int new)
+{
+	unsigned long tmp;
+
+	if	((wert > 0) && (old > 0) && (new > 0))
+		{
+		tmp   = (unsigned long) wert;
+		tmp  *= new;
+		tmp  /= old;
+		return (short) tmp;
+		}
+	return wert;
 }
 
 
@@ -130,7 +140,7 @@ void read_inf( void )
 			return;
 		buf[len] = EOS;
 
-		/* erste Zeile Åberlesen */
+		/* erste Zeile √ºberlesen */
 
 		for	(s = buf; (*s) && (*s != '\n'); s++)
 			;
@@ -151,8 +161,16 @@ void read_inf( void )
 
 			if	(!strncmp(s, "WINDOW PREFS ", 12))
 				{
+				int winpos[4];
+
 				s += 13;
-				scan_values(&s, 4, (int *) &prefs.prefs_win);
+				if	(scan_values(&s, 4, winpos) == 4)
+					{
+					prefs.prefs_win.g_x = (short) winpos[0];
+					prefs.prefs_win.g_y = (short) winpos[1];
+					prefs.prefs_win.g_w = (short) winpos[2];
+					prefs.prefs_win.g_h = (short) winpos[3];
+					}
 				}
 
 			if	(!strncmp(s, "FONT ", 5))
@@ -175,8 +193,11 @@ void read_inf( void )
 
 			if	(!strncmp(s, "COLOUR ", 7))
 				{
+				int colour;
+
 				s += 7;
-				scan_values(&s, 1, &prefs.colour);
+				if	(scan_values(&s, 1, &colour) == 1)
+					prefs.colour = (short) colour;
 				}
 
 			weiter:
@@ -191,13 +212,17 @@ void read_inf( void )
 
 		if	(oldwh[0] != scrg.g_w)
 			{
-			recalc(&(prefs.prefs_win.g_x), oldwh[0], scrg.g_w);
-			recalc(&(prefs.prefs_win.g_w), oldwh[0], scrg.g_w);
+			prefs.prefs_win.g_x = recalc_short(prefs.prefs_win.g_x,
+							  oldwh[0], scrg.g_w);
+			prefs.prefs_win.g_w = recalc_short(prefs.prefs_win.g_w,
+							  oldwh[0], scrg.g_w);
 			}
 		if	(oldwh[1] != scrg.g_h)
 			{
-			recalc(&(prefs.prefs_win.g_y), oldwh[1], scrg.g_h);
-			recalc(&(prefs.prefs_win.g_h), oldwh[1], scrg.g_h);
+			prefs.prefs_win.g_y = recalc_short(prefs.prefs_win.g_y,
+							  oldwh[1], scrg.g_h);
+			prefs.prefs_win.g_h = recalc_short(prefs.prefs_win.g_h,
+							  oldwh[1], scrg.g_h);
 			}
 		prefs.prefs_win.g_x += scrg.g_x;
 		prefs.prefs_win.g_y += scrg.g_y;
@@ -207,18 +232,20 @@ void read_inf( void )
 
 /****************************************************************
 *
-* Schreibe Fensterposition auflîsungsunabhÑngig in
+* Schreibe Fensterposition aufl√∂sungsunabh√§ngig in
 * Zeichenkette.
 *
 ****************************************************************/
 
 static void print_winpos(char *s, GRECT *g, int n)
 {
-	g->g_x -= scrg.g_x;
-	g->g_y -= scrg.g_y;
-	print_values(s, n, (int *) g);
-	g->g_x += scrg.g_x;
-	g->g_y += scrg.g_y;
+	int values[4];
+
+	values[0] = g->g_x - scrg.g_x;
+	values[1] = g->g_y - scrg.g_y;
+	values[2] = g->g_w;
+	values[3] = g->g_h;
+	print_values(s, n, values);
 }
 
 
@@ -265,9 +292,13 @@ void save_options( void )
 	strcat(buf, prefs.fontname);
 
 	strcat(buf, "\r\nCOLOUR ");
-	print_values(buf + strlen(buf), 1, &(prefs.colour));
+	{
+		int colour = prefs.colour;
 
-	Fwrite(hdl, strlen(buf), buf);
+		print_values(buf + strlen(buf), 1, &colour);
+	}
+
+	Fwrite(hdl, (long) strlen(buf), buf);
 	Fclose(hdl);
 }
 
@@ -291,7 +322,7 @@ static void read_all_notices( char *path )
 	int id;			/* eindeutige Nummer 0..NWINDOWS-1 */
 	int xywh[4];
 	int oldwh[2];
-	int font[3];		/* fontID, propFlag und Grîûe */
+	int font[3];		/* fontID, propFlag und Gr√∂√üe */
 	int colour;
 	int n;
 
@@ -310,22 +341,31 @@ static void read_all_notices( char *path )
 		errcode = Fsfirst(p, 0);
 		}
 
+	xywh[0] = 100;
+	xywh[1] = 100;
+	xywh[2] = 80;
+	xywh[3] = 32;
+	font[0] = prefs.fontID;
+	font[1] = prefs.fontprop;
+	font[2] = prefs.fontH;
+	colour = prefs.colour;
+
 	oldwh[0] = scrg.g_w;
 	oldwh[1] = scrg.g_h;
 	while(!errcode)
 		{
 		if	(!errcode)
 			{
-			strcpy(pname, dta.d_fname);
+			strcpy(pname, dta.dta_name);
 			id = atoi(pname);
 			handle = (int) Fopen(p, RMODE_RD);
 			if	(handle > 0)
 				{
-				data = Malloc(dta.d_length+1);
+				data = (unsigned char *) Malloc(dta.dta_size+1);
 				if	(data)
 					{
-					data[dta.d_length] = '\0';
-					Fread(handle, dta.d_length, data);
+					data[dta.dta_size] = '\0';
+					Fread(handle, dta.dta_size, data);
 
 					/* Steuer-Infos auswerten */
 					/* ---------------------- */
@@ -357,7 +397,7 @@ static void read_all_notices( char *path )
 							if	(n == 2)
 								{
 								xywh[2] = 80;	/* Breite */
-								xywh[3] = 32;	/* Hîhe */
+								xywh[3] = 32;	/* H√∂he */
 								}
 							goto nextline;
 							}
@@ -398,14 +438,22 @@ static void read_all_notices( char *path )
 					if	(xywh[1] > scrg.g_h - 8)
 						xywh[1] = scrg.g_h - 8;
 
+					GRECT g;
+
 					memcpy(data, s, strlen(s)+1);
-					Mshrink(0, data, strlen((char *) data)+1);
+					Mshrink(data, strlen((char *) data)+1);
+					g.g_x = (short) xywh[0];
+					g.g_y = (short) xywh[1];
+					g.g_w = (short) xywh[2];
+					g.g_h = (short) xywh[3];
 					w = NULL;
 					errcode = open_notice_wind(data,
-								id,
-								(GRECT *) xywh,
-								font[0], font[1], font[2],
-								colour,
+								(short) id,
+								&g,
+								(short) font[0],
+								(short) font[1],
+								(short) font[2],
+								(short) colour,
 								&w);
 					if	(errcode)
 						form_xerr(errcode, NULL);
@@ -433,11 +481,11 @@ long save_notice( WINDOW *w, char *path )
 	char buf[256];
 	int handle;
 	char *s;
-	int font[3];		/* fontID und Grîûe */
+	int font[3];		/* fontID und Gr√∂√üe */
 
 
 	strcpy(p, path);
-	itoa(w->id_code, p + strlen(p), 10);
+	sprintf(p + strlen(p), "%d", w->id_code);
 	strcat(p, ".NOT");
 	errcode = Fcreate(p, 0);
 	if	(errcode < E_OK)
@@ -453,7 +501,13 @@ long save_notice( WINDOW *w, char *path )
 	/* ---------------------- */
 
 	strcpy(buf, "SCREENSIZE ");
-	print_values(buf+strlen(buf), 2, &scrg.g_w);
+	{
+		int scrwh[2];
+
+		scrwh[0] = scrg.g_w;
+		scrwh[1] = scrg.g_h;
+		print_values(buf+strlen(buf), 2, scrwh);
+	}
 	s = buf+strlen(buf);
 	*s++ = '\r';
 	*s++ = '\n';
@@ -476,14 +530,18 @@ long save_notice( WINDOW *w, char *path )
 
 	strcpy(s, "COLOUR ");
 	s += strlen(s);
-	print_values(s, 1, &(w->bcolour));
+	{
+		int colour = w->bcolour;
+
+		print_values(s, 1, &colour);
+	}
 	s += strlen(s);
 	*s++ = '\r';
 	*s++ = '\n';
 
 	strcpy(s, "BEGIN\r\n");
-	errcode = Fwrite(handle, strlen(buf), buf);
-	if	(errcode != strlen(buf))
+	errcode = Fwrite(handle, (long) strlen(buf), buf);
+	if	(errcode != (long) strlen(buf))
 		{
 		err2:
 		if	(errcode >= E_OK)
@@ -492,8 +550,8 @@ long save_notice( WINDOW *w, char *path )
 		goto err1;
 		}
 
-	errcode = Fwrite(handle, strlen((char *) w->buf), w->buf);
-	if	(errcode != strlen((char *) w->buf))
+	errcode = Fwrite(handle, (long) strlen(w->buf), w->buf);
+	if	(errcode != (long) strlen(w->buf))
 		goto err2;
 
 	w->position_dirty = FALSE;		/* ist gesichert */
@@ -503,7 +561,7 @@ long save_notice( WINDOW *w, char *path )
 
 /****************************************************************
 *
-* Schreibt alle geÑnderten Notizen.
+* Schreibt alle ge√§nderten Notizen.
 *
 ****************************************************************/
 
@@ -520,7 +578,7 @@ void save_all_notices( char *path )
 
 /****************************************************************
 *
-* éndert die Farbe fÅr die entsprechende Notiz
+* √Ñndert die Farbe f√ºr die entsprechende Notiz
 *
 ****************************************************************/
 
@@ -531,18 +589,17 @@ static void change_colour( WINDOW *w )
 	int tcolour;
 
 
-	graf_mkstate(&ev);
+	graf_mkstate(&ev.x, &ev.y, &ev.bstate, &ev.kstate);
 	obj = form_popup(adr_colour,ev.x,ev.y);
 	if	(obj > 0)
 		{
-		w->bcolour = obj-1;
-		w->tcolour =
-			adr_colour[obj].ob_spec.tedinfo->te_ucolor.te_colspec.textcol;
+		w->bcolour = (short) (obj-1);
+		w->tcolour = TED_TEXTCOLOR(adr_colour[obj].ob_spec.tedinfo);
 		if	(!(w->flags & WFLAG_ICONIFIED))
 			{
 			tcolour = (w->bcolour < ncolours) ? w->tcolour : WHITE;
 			edit_set_colour( &w->tree, EDITFELD,
-				tcolour, w->bcolour);
+				(short) tcolour, w->bcolour);
 			update_window(w);
 			}
 		save_notice( w, notice_path );
@@ -552,25 +609,26 @@ static void change_colour( WINDOW *w )
 
 /****************************************************************
 *
-* WÑhlt einen Zeichensatz aus.
+* W√§hlt einen Zeichensatz aus.
 *
 ****************************************************************/
 
 #define	FONT_FLAGS	( FNTS_BTMP + FNTS_OUTL + FNTS_MONO + FNTS_PROP )
 #define	BUTTON_FLAGS ( FNTS_SNAME + FNTS_SSTYLE + FNTS_SSIZE )
 
-int dial_font( long *id, long *pt, int *mono, char *name )
+int dial_font( long *id, long *pt, short *mono, char *name )
 {
-	int work_out[57],work_in [12];	 /* VDI- Felder fÅr v_opnvwk() */
-	int	handle;
+	short work_out[57], work_in[11];	/* VDI-Felder f√ºr v_opnvwk() */
+	short	handle;
 	register int i;
 	FNT_DIALOG *fnt_dialog;
-	int button,check_boxes;
+	int button;
+	short check_boxes;
 	long ratio;
-	int dummy;
+	short dummy;
 
 
-	for( i = 1; i < 10 ; i++ )											/* work_in initialisieren */
+	for( i = 0; i < 10 ; i++ )											/* work_in initialisieren */
 		work_in[i] = 1;
 	work_in[10] = 2;		/* Rasterkoordinaten benutzen */
 	handle = aes_handle;
@@ -614,8 +672,8 @@ int dial_font( long *id, long *pt, int *mono, char *name )
 
 /****************************************************************
 *
-* éndert den Zeichensatz fÅr die entsprechende Notiz.
-* w == NULL: éndert den Default-Font
+* √Ñndert den Zeichensatz f√ºr die entsprechende Notiz.
+* w == NULL: √Ñndert den Default-Font
 *
 ****************************************************************/
 
@@ -625,7 +683,7 @@ int dial_font( long *id, long *pt, int *mono, char *name )
 static void change_font( WINDOW *w )
 {
 	long id,pt;
-	int mono;
+	short mono;
 	int ret;
 
 
@@ -634,8 +692,8 @@ static void change_font( WINDOW *w )
 	ret = dial_font( &id, &pt, &mono, NULL );
 	if	(ret)
 		{
-		w->fontID = (int) id;
-		w->fontH = (int) (pt >> 16L);
+		w->fontID = (short) id;
+		w->fontH = (short) (pt >> 16L);
 		w->fontprop = !mono;
 		calc_size_notice_wind( w );
 		edit_set_font( &w->tree, EDITFELD,
@@ -688,7 +746,7 @@ void create_notice( int x, int y )
 
 /****************************************************************
 *
-* ôffnet den "Voreinstllungen" Dialog
+* √ñffnet den "Voreinstllungen" Dialog
 *
 ****************************************************************/
 
@@ -697,7 +755,7 @@ void open_options( void )
 	int whdl;
 
 
-	if	(d_options)	/* ist schon geîffnet */
+	if	(d_options)	/* ist schon ge√∂ffnet */
 		{
 		}
 	else	{
@@ -739,7 +797,7 @@ void open_options( void )
 
 /****************************************************************
 *
-* éndert Status DISABLED von MenÅeintrÑgen
+* √Ñndert Status DISABLED von Men√ºeintr√§gen
 *
 ****************************************************************/
 
@@ -754,7 +812,7 @@ void menu_change( int enable )
 
 /****************************************************************
 *
-* Bearbeitet die MenÅbefehle
+* Bearbeitet die Men√ºbefehle
 *
 ****************************************************************/
 
@@ -764,12 +822,12 @@ static int do_menu( int title, int entry)
 	int ret = 0;
 
 
-	/* Sonderfall fÅr Tastaturbedienung: */
+	/* Sonderfall f√ºr Tastaturbedienung: */
 	/* --------------------------------- */
 
 	state = adr_menu[title].ob_state;
 	if	(state & DISABLED)
-		return(0);	/* Eintrag ungÅltig */
+		return(0);	/* Eintrag ung√ºltig */
 	if	(!(state & SELECTED))
 		menu_tnormal(adr_menu, title, 0);
 
@@ -795,8 +853,8 @@ static int do_menu( int title, int entry)
 				char p[128];
 
 				strcpy(p, notice_path);
-				itoa(selected_window->id_code,
-						p + strlen(p), 10);
+				sprintf(p + strlen(p), "%d",
+						selected_window->id_code);
 				strcat(p, ".NOT");
 				Fdelete(p);
 
@@ -851,12 +909,6 @@ int do_key( EVNT *w_ev, WINDOW *w )
 			menu = MT_FILE;
 			entry = M_NEW;
 			break;
-/*
-		case 0x180f:	/* ^O */
-			menu = MT_FILE;
-			entry = M_OPEN;
-			break;
-*/
 		case 0x2004:	/* ^D */
 			menu = MT_FILE;
 			entry = M_DELETE;
@@ -929,10 +981,10 @@ int main( void )
 	/* SharedLib laden */
 	/* --------------- */
 
-	Pdomain(1);
-	err = Slbopen("EDITOBJC.SLB", NULL, 9L, &slb, &slbexec, 0L);
+	Pdomain(PDOM_MINT);
+	err = Slbopen("EDITOBJC.SLB", NULL, 9L, &slb, &slbexec);
 	if	(err < 0)
-		Pterm((WORD) err);
+		Pterm((short) err);
 
 	/* Initialisierung */
 	/* --------------- */
@@ -940,7 +992,7 @@ int main( void )
 	notice_path[0] = Dgetdrv()+'A';
 	if   ((ap_id = appl_init()) < 0)
 		Pterm(-1);
-	i = _GemParBlk.global[10];
+	i = aes_global[10];
 	ncolours = (i > 8) ? 32767 : (1 << i);
 	wind_get_grect(SCREEN, WF_WORKXYWH, &scrg);
 
@@ -971,7 +1023,7 @@ int main( void )
 
 	menu_bar(adr_menu, TRUE);
 
-	/* Abgespeicherte Notizen îffnen */
+	/* Abgespeicherte Notizen √∂ffnen */
 	/* ----------------------------- */
 
 	read_all_notices(notice_path);
@@ -979,7 +1031,7 @@ int main( void )
 	for	(;;)
 		{
 
-		/* MenÅeinttrÑge ENABLE/DISABLE */
+		/* Men√ºeinttr√§ge ENABLE/DISABLE */
 		/* ---------------------------- */
 
 		if	(selected_window != last_selected_window)
@@ -996,18 +1048,17 @@ int main( void )
 			last_selected_window = selected_window;
 			}
 
-		w_ev.mwhich = evnt_multi(MU_KEYBD+MU_BUTTON+MU_MESAG,
+		w_ev.mwhich = mt_evnt_multi(MU_KEYBD+MU_BUTTON+MU_MESAG,
 			  2,			/* Doppelklicks erkennen 	*/
 			  1,			/* nur linke Maustaste		*/
-			  1,			/* linke Maustaste gedrÅckt	*/
-			  0,NULL,		/* kein 1. Rechteck			*/
-			  0,NULL,		/* kein 2. Rechteck			*/
+			  1,			/* linke Maustaste gedr√ºckt	*/
+			  0, 0, 0, 0, 0,	/* kein 1. Rechteck			*/
+			  0, 0, 0, 0, 0,	/* kein 2. Rechteck			*/
 			  w_ev.msg,
 			  0L,	/* ms */
-			  (EVNTDATA*) &(w_ev.mx),
-			  &w_ev.key,
-			  &w_ev.mclicks
-			  );
+			  &w_ev.mx, &w_ev.my, &w_ev.mbutton, &w_ev.kstate,
+			  &w_ev.key, &w_ev.mclicks,
+			  aes_global);
 
 		/* Fensterdialoge */
 		/* -------------- */
@@ -1022,7 +1073,7 @@ int main( void )
 			prefs.prefs_win.g_y = adr_options->ob_y;
 			}
 
-		/* Tastaturbedienung fÅr MenÅs */
+		/* Tastaturbedienung f√ºr Men√ºs */
 		/* --------------------------- */
 
 		w = selected_window;

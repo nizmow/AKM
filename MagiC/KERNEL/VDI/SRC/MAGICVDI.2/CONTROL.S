@@ -700,7 +700,7 @@ init_wk_fill:		move.l	(a1)+,(a0)+
 
 						move.w	#9,m_height(a6) ;Default-Markerh”he
 						
-						move.l	#text,p_gtext(a6)
+						move.l	#text_start,p_gtext(a6)
 						move.l	#v_escape_in,p_escapes(a6)
 						
 						movem.l	(sp),d0-d2/a0-a1

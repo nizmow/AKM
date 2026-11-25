@@ -1,12 +1,12 @@
 /*****************************************************************
 *
-* Erledigt fÅr Mag!X 3.00 das Shutdown und den Auflîsungs-
+* Erledigt f√ºr Mag!X 3.00 das Shutdown und den Aufl√∂sungs-
 * wechsel.
 *
-* neue Version fÅr das AES vom 28.6.95
+* neue Version f√ºr das AES vom 28.6.95
 *
-* erweitert fÅr MagiC 4 und den Falcon am 11.11.95.
-* Konzept erneuert fÅr sauberen Shutdown 13.11.95
+* erweitert f√ºr MagiC 4 und den Falcon am 11.11.95.
+* Konzept erneuert f√ºr sauberen Shutdown 13.11.95
 * Neue PRJ-Datei 25.10.1999
 *
 *
@@ -15,20 +15,20 @@
 * zeile := TERMINATE <app-name>
 *    oder	 IGNORE <app-name>
 *
-* <app-name> in Groûbuchstaben, ohne Extension und ohne
+* <app-name> in Gro√übuchstaben, ohne Extension und ohne
 * trailing blanks
 *
 * Shutdown-Reihenfolge:
 *
-*	1.	regulÑrer Shutdown Åber AES-Funktion. Entfernt
+*	1.	regul√§rer Shutdown √ºber AES-Funktion. Entfernt
 *		alle Programme, die AP_TERM verstehen
 *	2.	behandelt alle Programme, die AP_TERM nicht
 *		verstehen, bzw. gibt ihre Namen aus
-*	3.	fÅhrt alle Programme im Ordner \gemsys\magic\stop
+*	3.	f√ºhrt alle Programme im Ordner \gemsys\magic\stop
 *		aus
 *	4.	Lenkt die BIOS-Handles -1,-2,-3 auf NULL um (-4)
-*		und lîscht sÑmtliche Devices
-*	5.	Option fÅr Warmstart/Kaltstart bzw. Sprung in
+*		und l√∂scht s√§mtliche Devices
+*	5.	Option f√ºr Warmstart/Kaltstart bzw. Sprung in
 *		den Macintosh Finder.
 *
 *****************************************************************/
@@ -36,10 +36,56 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <mgx_dos.h>
-#include <mt_aes.h>
+#include <gem.h>
+#include <mint/osbind.h>
 #include <ctype.h>
-#include <country.h>
+#include "IMPORT/COUNTRY.H"
+#include <mint/mintbind.h>
+#include <sys/stat.h>
+
+#define E_OK 0
+#define RMODE_RD 0
+#define EXE_LDEX 0
+#define HDL_CON (-1)
+#define HDL_AUX (-2)
+#define HDL_PRN (-3)
+#define HDL_NUL (-4)
+
+typedef struct {
+	unsigned short mode;
+	long index;
+	unsigned short dev, reserved1, nlink, uid, gid;
+	long size, blksize, nblocks;
+	short mtime, mdate, atime, adate, ctime, cdate, attr, reserved2;
+	long reserved3[2];
+} XATTR;
+
+typedef struct {
+	short x, y, bstate, kstate;
+} EVNTDATA;
+
+static long magicmac_xbios(short mode)
+{
+	register long result __asm__("d0");
+	long magic = 0x416e4b72L;
+
+	__asm__ volatile (
+		"movw %2,%%sp@-\n\t"
+		"movl %1,%%sp@-\n\t"
+		"movw #39,%%sp@-\n\t"
+		"trap #14\n\t"
+		"lea %%sp@(8),%%sp"
+		: "=r"(result)
+		: "r"(magic), "r"(mode)
+		: "d1", "d2", "a0", "a1", "a2", "cc", "memory");
+	return result;
+}
+
+static long sync_all(void)
+{
+	return trap_1_w(0x150);
+}
+
 
 #define DEBUG 0
 
@@ -81,36 +127,23 @@ typedef struct {			/* laufende APPs */
 } APPLINF;
 
 
-int	ap_id;
+short ap_id;
 int	nappl;
 int	unappl;
 unsigned long timeout = TIMEOUT;
-int language = COUNTRY_UK;
+short language = COUNTRY_UK;
 
 APPLINF applx[NAPPL];
 APPLSPEC uncrit[UNAPPL];
 
 
 
-/*********************************************************************
-*
-* Dxreaddir()
-*
-* Beim Fxattr werden Symlinks nicht verfolgt.
-* <xr> enthÑlt nach dem Aufruf den Fehlercode von Fxattr.
-*
-*********************************************************************/
-
-long Dxreaddir(int len, long dirhandle,
-			char *buf, XATTR *xattr, long *xr)
-{
-	return gemdos(0x142, len, dirhandle, buf, xattr, xr);
-}
+/* Dxreaddir is provided by MiNTLib's <mint/mintbind.h>. */
 
 
 /****************************************************************
 *
-* FÅhrt alle Programme in <path> aus.
+* F√ºhrt alle Programme in <path> aus.
 * Hier: Ordner \gemsys\magic\stop
 *
 ****************************************************************/
@@ -169,7 +202,7 @@ static void exec_pgm_path(char *path)
 /****************************************************************
 *
 * Lenkt alle BIOS-Device-Handles auf u:\dev\null um (Handle -4)
-* und lîscht alle Devices
+* und l√∂scht alle Devices
 *
 ****************************************************************/
 
@@ -223,7 +256,7 @@ static void shutdown_devices(char *path)
 
 /****************************************************************
 *
-* Entfernt rechtsbÅndige Leerstellen aus <s>
+* Entfernt rechtsb√ºndige Leerstellen aus <s>
 *
 ****************************************************************/
 
@@ -269,12 +302,12 @@ static int readline(int hdl, char *line)
 			return (s == line) ? 0 : 1;
 		}
 		if (*s == '\r')
-			continue;		/* CR Åberlesen */
+			continue;		/* CR √ºberlesen */
 		if (*s != '\n')
 			s++;
 		if ((s - line) > (LBUFLEN - 2))
 		{
-			/* error("ZeilenÅberlauf"); */
+			/* error("Zeilen√ºberlauf"); */
 			return 0;
 		}
 	}
@@ -319,7 +352,7 @@ void load_defaults(void)
 	while (readline(hdl, path) && unappl < UNAPPL)
 	{
 		s = path;
-		while (*s == ' ')	/* fÅhrende ' ' entfernen */
+		while (*s == ' ')	/* f√ºhrende ' ' entfernen */
 			s++;
 		if (!*s)
 			continue;		/* Leerzeile entfernen */
@@ -330,7 +363,7 @@ void load_defaults(void)
 		{
 			uncrit[unappl].typ = 'T';
 			s += 8;
-			while (*s == ' ')	/* fÅhrende ' ' entfernen */
+			while (*s == ' ')	/* f√ºhrende ' ' entfernen */
 				s++;
 			if (!*s)
 				continue;		/* Leerzeile entfernen */
@@ -385,7 +418,7 @@ void load_defaults(void)
 			continue;
 		}
 		
-		while (*s == ' ')	/* fÅhrende ' ' entfernen */
+		while (*s == ' ')	/* f√ºhrende ' ' entfernen */
 			s++;
 		if (!*s)
 			continue;		/* Leerzeile entfernen */
@@ -412,7 +445,7 @@ void get_all_apps(void)
 {
 	int i, j;
 	char apname[16];
- 	int aptyp, apid;
+	short aptyp, apid;
 
 
 	/* sfirst */
@@ -450,15 +483,15 @@ void get_all_apps(void)
 *
 * Entfernt eine Applikation
 *
-* Das Problem ist, daû das Terminieren Åber Fdelete() der
-* Prozeûdatei zunÑchst nur eine Nachricht an den SCRENMGR
-* verschickt, d.h. das eigentliche Lîschen der Applikation
+* Das Problem ist, da√ü das Terminieren √ºber Fdelete() der
+* Proze√üdatei zun√§chst nur eine Nachricht an den SCRENMGR
+* verschickt, d.h. das eigentliche L√∂schen der Applikation
 * kann noch etwas dauern. Daher wird gewartet, bis die
-* Applikation Åber appl_find() nicht mehr sichtbar ist.
+* Applikation √ºber appl_find() nicht mehr sichtbar ist.
 *
 ******************************************************************/
 
-void remove_app(int apid, char *name)
+void remove_app(short apid, char *name)
 {
 	int pid;
 	char path[256];
@@ -493,8 +526,8 @@ void remove_app(int apid, char *name)
 *
 * type = 'I':
 *
-* Entfernt alle unkritischen Applikationen, damit der Auflîsungs-
-* wechsel beim zweiten Anlauf endlich ausgefÅhrt werden kann.
+* Entfernt alle unkritischen Applikationen, damit der Aufl√∂sungs-
+* wechsel beim zweiten Anlauf endlich ausgef√ºhrt werden kann.
 * 
 ******************************************************************/
 
@@ -516,7 +549,7 @@ void remove_apps(char type)
 		apid = appl_find(name);
 		if (apid >= 0)
 		{
-			/* Programm lÑuft */
+			/* Programm l√§uft */
 			remove_app(apid, name);
 		}
 	}
@@ -533,7 +566,7 @@ void remove_accs(void)
 {
 	int i;
 	char apname[16];
- 	int aptyp, apid;
+	short aptyp, apid;
 
 
 	/* sfirst */
@@ -560,21 +593,21 @@ void remove_accs(void)
 *
 * Erwartet ein bis vier Parameter:
 *
-* arg1 = [-w|-c] Warm- bzw. Kaltstart ohne RÅckfrage
-* arg2 = GerÑtenummer (dev), Default: -1
-*		  wenn -1: Shutdown, kein Auflîsungswechsel
+* arg1 = [-w|-c] Warm- bzw. Kaltstart ohne R√ºckfrage
+* arg2 = Ger√§tenummer (dev), Default: -1
+*		  wenn -1: Shutdown, kein Aufl√∂sungswechsel
 *
-* arg3 = Texthîhe. Default: 0 (d.h. nicht setzen)
+* arg3 = Texth√∂he. Default: 0 (d.h. nicht setzen)
 *
-* arg4 = Falcon-Auflîsungsmodus.
+* arg4 = Falcon-Aufl√∂sungsmodus.
 *
 ******************************************************************/
 
 int main(int argc, char *argv[])
 {
 	EVNTDATA evd;
- 	int ev, dummy;
-	int buf[8];
+	short ev, dummy;
+	short buf[8];
 	char apname[16];
 	char s[256];
 	register int i;
@@ -652,7 +685,7 @@ int main(int argc, char *argv[])
 
 	/* Der erste Aufruf kann nur gutgehen, wenn nur	*/
 	/* "intelligente" Programme im System sind.		*/
-	/* Daher ist i.a. ein zweiter Anlauf nîtig.		*/
+	/* Daher ist i.a. ein zweiter Anlauf n√∂tig.		*/
 	/* ---------------------------------------------- */
 
 	for	(iteration = 0; iteration < 2; iteration++)
@@ -681,14 +714,14 @@ int main(int argc, char *argv[])
 			if (language == COUNTRY_DE)
 			{
 				t = "[3][SHUTDOWN:| |"
-						"Prozeû ist gesperrt.]"
+						"Proze\236 ist gesperrt.]"
 						"[Abbruch]";
 			}
 			else
 			if (language == COUNTRY_FR)
 			{
 				t = "[3][SHUTDOWN:| |"
-						"Processus bloquÇ.]"
+						"Processus bloqu\202.]"
 						"[Abandon]";
 			}
 			else
@@ -719,14 +752,12 @@ int main(int argc, char *argv[])
 
 		do{
 			ev = evnt_multi((timeout) ? MU_MESAG+MU_TIMER : MU_MESAG,
-							0,0,0,				/* keine Mausklicks */
-							0,NULL,				/* kein 1. Rechteck */
-							0,NULL,				/* kein 2. Rechteck */
-							buf,
-							timeout,
-							&evd,
-							&dummy,				/* keine Tasten */
-							&dummy);				/* keine Klicks */
+							0, 0, 0,
+							0, 0, 0, 0, 0,
+							0, 0, 0, 0, 0,
+							buf, timeout,
+							&evd.x, &evd.y, &evd.bstate, &evd.kstate,
+							&dummy, &dummy);
 	
 			/* Timeout.							*/
 			/* ----------------------------------------- */
@@ -738,14 +769,14 @@ int main(int argc, char *argv[])
 				if (language == COUNTRY_DE)
 				{
 					t = "[3][SHUTDOWN:| |"
-							"ZeitÅberschreitung.]"
+							"Zeit\201berschreitung.]"
 							"[Abbruch]";
 				}
 				else
 				if (language == COUNTRY_FR)
 				{
 					t = "[3][SHUTDOWN:| |"
-							 "DÇbordement temps.]"
+							 "D\202bordement temps.]"
 							 "[Abandon]";
 				}
 				else
@@ -776,7 +807,7 @@ int main(int argc, char *argv[])
 		{
 			char *template;
 
-			/* Eine Applikation hat den Prozeû per AP_TFAIL   */
+			/* Eine Applikation hat den Proze√ü per AP_TFAIL   */
 			/* verweigert.								*/
 			/* Namen der App zur ap_id <buf[4]> ermitteln	*/
 			/* ---------------------------------------------- */
@@ -792,7 +823,7 @@ int main(int argc, char *argv[])
 			if (language == COUNTRY_DE)
 			{
 				template = "[3][SHUTDOWN:| |"
-					"Shutdown- Prozeû nicht mîglich.|"
+					"Shutdown- Proze\236 nicht m\224glich.|"
 					"%s lieferte Fehlercode %d.]"
 					"[Abbruch]";
 			}
@@ -820,7 +851,7 @@ int main(int argc, char *argv[])
 		}
 
 		/*
-		Cconws("Shutdown- Prozeû ist OK.\r\n");
+		Cconws("Shutdown- Proze√ü ist OK.\r\n");
 		Cconws("Alle Programme, die AP_TERM verstehen, sind weg.\r\n");
 		Cconws("Suche nach weiteren Programmen...\r\n");
 		*/
@@ -885,7 +916,7 @@ int main(int argc, char *argv[])
 		}
 
 		/* Wenn noch Programme laufen, die nicht ignoriert	*/
-		/* werden dÅrfen, wird der Shutdown-Prozeû hier		*/
+		/* werden d√ºrfen, wird der Shutdown-Proze√ü hier		*/
 		/* abgebrochen.								*/
 		/* --------------------------------------------------- */
 
@@ -895,15 +926,15 @@ int main(int argc, char *argv[])
 			Cconws("Es laufen noch Programme.\r\n");
 #endif
 
-			/* unnîtig, buf[3] ist sowieso 0, d.h. kein Shutdown:
+			/* unn√∂tig, buf[3] ist sowieso 0, d.h. kein Shutdown:
 			shel_write(SHW_SHUTDOWN, FALSE, 0, NULL, NULL);
 			*/
 			break;
 		}
 
 		/* Wenn nur noch Programme laufen, die ignoriert       */
-		/* werden dÅrfen, hat das AES aber den Shutdown-Prozeû */
-		/* schon abgebrochen. D.h. wir mÅssen diese Programme  */
+		/* werden d√ºrfen, hat das AES aber den Shutdown-Proze√ü */
+		/* schon abgebrochen. D.h. wir m√ºssen diese Programme  */
 		/* entfernen und starten einen zweiten Versuch.        */
 		/* --------------------------------------------------- */
 
@@ -917,16 +948,16 @@ int main(int argc, char *argv[])
 		}
 
 #if DEBUG
-		Cconws("SHUTDOWN wird ausgefÅhrt.\r\n");
+		Cconws("SHUTDOWN wird ausgef\201hrt.\r\n");
 #endif
 
 		/* buf[3] war 1, d.h. das System ist im Shutdown-		*/
-		/* Modus, wir kînnen zuschlagen					*/
+		/* Modus, wir k√∂nnen zuschlagen					*/
 		/* --------------------------------------------------- */
 
 		remove_accs();
 
-/* beim Auflîsungswechsel nicht ausfÅhren
+/* beim Aufl√∂sungswechsel nicht ausf√ºhren
 		exec_pgm_path("\\GEMSYS\\MAGIC\\STOP\\");
 		shutdown_devices("U:\\DEV\\");
 */
@@ -947,7 +978,40 @@ int main(int argc, char *argv[])
 #if DEBUG
 			Bconin(2);
 #endif
-			xbios(39, 'AnKr', 0);	/* Beendet MagicMac */
+			/* Do not report success or reset while dirty data is unwritten. */
+			if (sync_all() != 0)
+			{
+				const char *t;
+
+				if (language == COUNTRY_DE)
+				{
+					t = "[3][SHUTDOWN:| |"
+						"Schreibfehler beim Sichern.|"
+						"Daten wurden nicht gesichert!]"
+						"[Abbruch]";
+				}
+				else
+				if (language == COUNTRY_FR)
+				{
+					t = "[3][SHUTDOWN:| |"
+						"Erreur d'ecriture.|"
+						"Donnees non sauvegardees!]"
+						"[Abandon]";
+				}
+				else
+				{
+					t = "[3][SHUTDOWN:| |"
+						"Write error while flushing.|"
+						"Data was not saved!]"
+						"[Cancel]";
+				}
+
+				form_alert(1, t);
+				shel_write(SHW_SHUTDOWN, FALSE, 0, NULL, NULL);
+				appl_exit();
+				return 4;
+			}
+			magicmac_xbios(0);	/* Beendet MagicMac */
 
 			if (bootmode == ask)
 			{
@@ -964,9 +1028,9 @@ int main(int argc, char *argv[])
 				if (language == COUNTRY_FR)
 				{
 					t = "[3][SHUTDOWN:| |"
-							"Shutdown rÇussi.|"
+							"Shutdown r\202ussi.|"
 							"Eteignez l'ordinateur!]"
-							"[RedÇmarrer|Reset Ö froid]";
+							"[Red\202marrer|Reset \205 froid]";
 				}
 				else
 				{
@@ -986,10 +1050,10 @@ int main(int argc, char *argv[])
 					bootmode = coldboot;
 			}
 
-			xbios(39, 'AnKr', bootmode);	/* warm/cold boot */
+			magicmac_xbios(bootmode);	/* warm/cold boot */
 		}
 
-		/* Auflîsungswechsel: ausfÅhren */
+		/* Aufl√∂sungswechsel: ausf√ºhren */
 		/* ---------------------------- */
 
 		break;

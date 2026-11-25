@@ -21,7 +21,6 @@ extern int scan_values(char **s, int n, int values[]);
 extern void Mrsrc_load(char *fname, WORD *global);
 extern void objc_grect(OBJECT *tree, int objn, GRECT *g);
 extern void subobj_draw(OBJECT *tree, int obj, int start, int depth);
-extern int rc_intersect(GRECT *p1, GRECT *p2);
 extern void Mgraf_mouse(int type);
 extern void objs_hide(OBJECT *tree, ...);
 extern void objs_unhide(OBJECT *tree, ...);
@@ -36,12 +35,12 @@ extern void objs_getradio(OBJECT *tree, int *get, ...);
 extern int top_whdl(void);
 extern int find_obj(OBJECT *tree, int x, int y);
 
-extern int vdi_handle;
+extern short vdi_handle;
 void open_work(void);
-extern int work_out[57],work_in[12];
+extern short work_out[57], work_in[11];
 extern int ap_id;
 extern GRECT scrg;
-extern int gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
+extern short gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
 
 extern char *get_name(const char *path);
 extern void fname_int(char *s, char *d);

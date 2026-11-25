@@ -18,14 +18,14 @@ typedef enum {action_format, action_copydisk} action;
 struct fmt_parameter {
 	action	action;
 	WORD		apid;		/* ap_id des Haupt-Thread */
-	WORD		whdl;		/* Fensterhandle f걊 R갷kmeldung */
+	WORD		whdl;		/* Fensterhandle f체r R체ckmeldung */
 	char		diskname[66];	/* Diskname */
 
-	WORD		device;		/* zu formatierendes Ger꼝 */
+	WORD		device;		/* zu formatierendes Ger채t */
 	WORD		do_logical;	/* nur logisch formatieren */
 
 	WORD		src_dev;
-	WORD		dst_dev;		/* f걊 Diskcopy */
+	WORD		dst_dev;		/* f체r Diskcopy */
 	WORD		do_format;	/* Diskcopy mit Formatieren */
 };
 
@@ -35,7 +35,7 @@ extern WORD global[];
 extern int open_format_options( void );
 extern int start_format( void *param );
 extern void MYsubobj_wdraw(void *d, int obj, int n, char *s);
-extern int send_message(int message[8]);
+extern int send_message(WORD message[8]);
 extern int send_message_break( int whdl );
 
 extern void *d_cpydsk;
@@ -43,7 +43,7 @@ extern void *d_format;
 extern void *d_fmtopt;
 extern int fmt_id;
 extern OBJECT *adr_iconified;
-extern int gl_hhchar;
+extern short gl_hhchar;
 
 extern LONG cdecl format_thread( struct fmt_parameter *par );
 

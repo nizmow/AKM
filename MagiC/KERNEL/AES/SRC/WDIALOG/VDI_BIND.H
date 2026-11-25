@@ -22,8 +22,8 @@ typedef struct
 	WORD	pt_sizes[64];		/* verfÅgbare Punkthîhen, z.B. { 8, 9, 10, 11, 12, 14, 18, 24, 36, 48 } */
 } XFNT_INFO;
 
-WORD	vqt_ext_name( WORD handle, WORD index, BYTE *name, UWORD *font_format, UWORD *flags );
-WORD	vqt_xfntinfo( WORD handle, WORD flags, WORD id, WORD index, XFNT_INFO *info );
+static WORD	vqt_ext_name( WORD handle, WORD index, BYTE *name, UWORD *font_format, UWORD *flags );
+static WORD	vqt_xfntinfo( WORD handle, WORD flags, WORD id, WORD index, XFNT_INFO *info );
 
 void	rect_sort( VRECT *rect );
 WORD	rect_intersect( VRECT *rect1, VRECT *rect2, VRECT *dst );

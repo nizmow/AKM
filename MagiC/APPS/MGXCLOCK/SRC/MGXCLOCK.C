@@ -1,25 +1,24 @@
 /*****************************************************************
 *
 * Stellt eine Uhr dar.
-* Erledigt auûerdem fÅr Mag!X 3.00 den Writeback- Cache
+* Erledigt au√üerdem f√ºr MagiC den Writeback-Cache.
 *
 *****************************************************************/
 
-#include <aes.h>
-#include <vdi.h>
-#include <tos.h>
+#include <stddef.h>
+#include <gem.h>
+#include <mint/osbind.h>
 
 #define DATESEP 	'-'
 #define TIMESEP	':'
 #define RIGHTOFFSET 1
 
-#define KER_SETWBACK	0x0300
-#define  WBACK_GET		0
-#define  WBACK_SET		1
-#define  WBACK_RESET	2
-#define  WBACK_SYNC		3
+/* MagiC writeback configuration. */
+#define SC_WBACK 4
+#define SCWB_SET 1
+#define Ssync() ((void)trap_1_w(0x150))
 
-char	datetime[] = "                 ";
+char	datetime[19] = "                 ";
 
 void date_to_str(char *s, unsigned int date);
 void time_to_str(char *s, unsigned int time);
@@ -31,25 +30,38 @@ void time_to_str(char *s, unsigned int time);
 	3	tt.mm.jj  hh:mm:ss
 */
 
-void main()
+int main(void)
 {
-	int work_out[57],work_in [12];	 /* VDI- Felder fÅr v_opnvwk() */
+	short work_out[57],work_in[11];	 /* VDI-Felder f√ºr v_opnvwk() */
 	int sec,tp,ln;
-	register int i;
+	unsigned short i;
 	int x,y;
 	int mode;
 	int len    [] = { 5, 8, 15, 18};
 	int timepos[] = { 0, 0,  7, 10};
 	int secpos [] = {-1, 7, 14, 17};
-	int vdi_handle;
-	int dummy, scrw;
-	int hwchar, hhbox, hhchar;
+	short vdi_handle;
+	short dummy, scrw;
+	short hwchar, hhbox, hhchar;
+	short event, message[8];
 
 
-     if   (appl_init() < 0)
-          return;
+	if (appl_init() < 0)
+		return 1;
+	if (!shel_write(SHW_INFRECGN, 1, 0, NULL, NULL))
+		{
+		appl_exit();
+		return 1;
+		}
 
-	Dcntl(KER_SETWBACK, "", WBACK_SET);
+	/* SC_WBACK takes a word subcommand, unlike generic Sconfig's long argument. */
+	if (trap_1_www(0x33, SC_WBACK, SCWB_SET) < 0L)
+		{
+		appl_exit();
+		return 1;
+		}
+
+	vdi_handle = graf_handle(&hwchar, &hhchar, &dummy, &hhbox);
 
 	for  (i = 0; i < 10; work_in[i++] = 1)
 		;
@@ -57,7 +69,6 @@ void main()
 	v_opnvwk(work_in, &vdi_handle, work_out);
 	/* Ausrichtung Zeichenzellenoberkante */
 	vst_alignment(vdi_handle, 0, 5, &dummy, &dummy);
-	graf_handle(&hwchar, &hhchar, &dummy, &hhbox);
 	y = (hhbox-hhchar) >> 1;
 	wind_get(0, WF_WORKXYWH, &dummy, &dummy, &scrw, &dummy);
 	i = 0;
@@ -94,9 +105,16 @@ void main()
 			v_gtext(vdi_handle, x, y, datetime);
 			}
 
-		evnt_timer(500, 0);		/* 0,5s warten */
+		/* MagiC timed message wait: 25 ticks at 50 Hz. */
+		event = appl_read(-2, 25, message);
+		if ((event & MU_MESAG) && message[0] == AP_TERM)
+			{
+			v_clsvwk(vdi_handle);
+			appl_exit();
+			return 0;
+			}
 
-		Dcntl(KER_SETWBACK, "", WBACK_SYNC);
+		Ssync();
 
 		}
 }

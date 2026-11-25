@@ -1,4 +1,4 @@
-/* Resource Datei Indizes fÅr VT52 */
+/* Resource Datei Indizes f√ºr VT52 */
 
 #define MENU             0   /* Menuebaum */
 #define MMFVIEW          3   /* TITLE in Baum MENU */

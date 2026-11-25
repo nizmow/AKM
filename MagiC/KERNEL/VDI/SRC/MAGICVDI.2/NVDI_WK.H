@@ -212,16 +212,7 @@ typedef struct
 	DRIVER	*bitmap_drvr;		/*	404 Zeiger auf den Offscreen-Treiber-Struktur */
 	WORD		free408;				/* 408 */
 
-	ORGANISATION	bitmap_info;	/* 410 */
-/*
-	LONG		bitmap_colors;		/*	410 gleichzeitig darstellbare Farben */
-	WORD		bitmap_planes;		/*	414 Anzahl der Planes */
-	WORD		bitmap_format;		/*	416 Pixelformat */
-	WORD		bitmap_flags;		/*	418 Bitreihenfolge (wenn das oberste Bit gesetzt ist, wurde fÅr die Bitmap Speicher angefordert) */
-	WORD		bitmap_res1;		/*	420 reserviert */
-	WORD		bitmap_res2;		/*	422 reserviert */
-	WORD		bitmap_res3;		/*	424 reserviert */
-*/
+	ORGANISATION	bitmap_info;	/* 410; expands to colors/planes/format/flags/reserved[3] */
 	WORD		free426;				/* 426 */
 	WORD		free428;				/* 428 */
 
@@ -237,9 +228,5 @@ typedef struct
 
 }WK;
 
-#if offsetof( WK, t_gtext_spacing ) != 380
-	Fehler!!
-#endif
-#if offsetof( WK, planes ) != 436
-	Fehler!!
-#endif
+_Static_assert( offsetof( WK, t_gtext_spacing ) == 380, "WK.t_gtext_spacing ABI offset" );
+_Static_assert( offsetof( WK, planes ) == 436, "WK.planes ABI offset" );

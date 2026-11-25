@@ -21,22 +21,20 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <mgx_dos.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <mt_aes.h>
-#include "rc_inter.h"
+#include "RC_INTER.H"
 
-#include "cops_rsc.h"
-#include "adaptrsc.h"
-#include "callback.h"
-#include "cops.h"
-#include "cpx_bind.h"
-#include "fix_rsc.h"
-#include "popup.h"
-#include "objmacro.h"
+#include "COPS_RSC.H"
+#include "ADAPTRSC.H"
+#include "CALLBACK.H"
+#include "COPS.H"
+#include "CPX_BIND.H"
+#include "FIX_RSC.H"
+#include "POPUP.H"
+#include "OBJMACRO.H"
 
 #undef min
 #undef max

@@ -1,24 +1,19 @@
 /*
 *
-* EnthÑlt die spezifischen Routinen fÅr das
+* Enth√§lt die spezifischen Routinen f√ºr das
 * Fenster der angezeigten Pfade
 *
 */
 
-#include <aes.h>
-#include <vdi.h>
-#include <tos.h>
-#include <tosdefs.h>
+#include "GEMUTILS_SDK.H"
 #include <string.h>
 #include <stdlib.h>
-#include <magx.h>
-#include "mgsearch.h"
-#include "gemutils.h"
-#include "portab.h"
-#include "windows.h"
-#include "srch_win.h"
+#include "MGSEARCH.H"
+#include "GEMUTILS.H"
+#include "WINDOWS.H"
+#include "SRCH_WIN.H"
 
-/* Speicher in Blîcken holen */
+/* Speicher in Bl√∂cken holen */
 
 #define	BLOCKLEN	8192
 
@@ -31,7 +26,7 @@
 
 #define NOBJS	1000
 
-/* Daten fÅrs Fenster */
+/* Daten f√ºrs Fenster */
 static WINDOW fnamewindow;
 
 static WINDOW *mywindow = NULL;
@@ -92,9 +87,9 @@ static void button_fnames( WINDOW *w, int kstate,
 {
 	register int i;
 	int	objnr;
-	int	mstat;
-	int	dummy;
-	int	msg[8];
+	short	mstat;
+	short	dummy;
+	short	msg[8];
 	static char path[128];	/* static wg. verschicken ! */
 	static char fname[128];
 	char *s;
@@ -105,7 +100,7 @@ static void button_fnames( WINDOW *w, int kstate,
 
 	/* Klick auf Hintergrundfenster.					*/
 	/* Weil WF_BEVENT gesetzt ist, wird das Fenster nicht	*/
-	/* vom System nach oben gebracht. Dies muû daher		*/
+	/* vom System nach oben gebracht. Dies mu√ü daher		*/
 	/* manuell erfolgen. Hier nur bei kurzem Einfachklick	*/
 	/* mit nur der linken Maustaste und ohne			*/
 	/* Umschalttasten!								*/
@@ -116,10 +111,7 @@ static void button_fnames( WINDOW *w, int kstate,
 		{
 		if	(!mstat)	/* wieder losgelassen! */
 			{
-			wind_set(w->handle, WF_TOP);
-/*
-			wind_set(-1, WF_TOP, -1);	/* MenÅ nach oben! */
-*/
+			wind_set(w->handle, WF_TOP, 0, 0, 0, 0);
 			return;
 			}
 		}
@@ -209,7 +201,7 @@ void exit_fnames( GRECT *g )
 
 /*******************************************************************
 *
-* Schlieûen
+* Schlie√üen
 *
 *******************************************************************/
 
@@ -232,7 +224,7 @@ static void close_fnames( WINDOW *w, int kstate )
 
 /*******************************************************************
 *
-* Fenster îffnen
+* Fenster √∂ffnen
 *
 *******************************************************************/
 
@@ -242,9 +234,9 @@ int open_fnames( void )
 	register OBJECT *o;
 
 
-	if	(mywindow)		/* schon geîffnet */
+	if	(mywindow)		/* schon ge√∂ffnet */
 		{
-		wind_set(WF_TOP, mywindow->handle);
+		wind_set(mywindow->handle, WF_TOP, 0, 0, 0, 0);
 		return(0);	/* OK */
 		}
 	w = new_window();
@@ -258,10 +250,10 @@ int open_fnames( void )
 						fnamewindow.out.g_w,
 						fnamewindow.out.g_h);
 
-	fnamewindow.tree = Malloc(sizeof(OBJECT) * (NOBJS+1));
+	fnamewindow.tree = (OBJECT *) Malloc(sizeof(OBJECT) * (NOBJS+1));
 	if	(!fnamewindow.tree)
 		return(-3);
-	block = wpos = Malloc(BLOCKLEN);
+	block = wpos = (char *) Malloc(BLOCKLEN);
 	if	(!block)
 		return(-3);
 	free_block = BLOCKLEN;
@@ -276,7 +268,7 @@ int open_fnames( void )
 	/* Baum aufbauen */
 
 	o = fnamewindow.tree;
-	/* Objekt der weiûen Hintergrundbox */
+	/* Objekt der wei√üen Hintergrundbox */
 	o -> ob_next = -1;
 	o -> ob_type = G_BOX;
 	o -> ob_state = NORMAL;
@@ -304,7 +296,7 @@ int open_fnames( void )
 	fnamewindow.key = key_fnames;
 	fnamewindow.close = close_fnames;
 	*w = mywindow = &fnamewindow;
-	wind_set(fnamewindow.handle, WF_NAME, Rgetstring(STR_WINTITLE));
+	wind_set_str(fnamewindow.handle, WF_NAME, Rgetstring(STR_WINTITLE));
 	wind_set(fnamewindow.handle, WF_BEVENT, 0x0001, 0, 0, 0 );
 	fnamewindow.open(&fnamewindow);
 	return(0);
@@ -313,20 +305,20 @@ int open_fnames( void )
 
 /*******************************************************************
 *
-* Titelzeile Ñndern, weil Suchvorgang fertig
+* Titelzeile √§ndern, weil Suchvorgang fertig
 *
 *******************************************************************/
 
 void srch_finished( void )
 {
-	wind_set(fnamewindow.handle, WF_NAME,
+	wind_set_str(fnamewindow.handle, WF_NAME,
 		Rgetstring(STR_WINTITLE) + 2);
 }
 
 
 /*******************************************************************
 *
-* Pfadobjekt hinzufÅgen.
+* Pfadobjekt hinzuf√ºgen.
 *
 *******************************************************************/
 
@@ -341,26 +333,26 @@ int add_path( char *s )
 
 	w = &fnamewindow;
 	if	(w->shownum >= NOBJS)
-		return(-1);		/* öberlauf */
-	len = strlen(s) + 1;	/* benîtigter Platz */
+		return(-1);		/* √úberlauf */
+	len = strlen(s) + 1;	/* ben√∂tigter Platz */
 	if	(len > BLOCKLEN)	/* ??? */
 		return(-2);
 
 	if	(free_block < len)
 		{
-		block = wpos = Malloc(BLOCKLEN);
+		block = wpos = (char *) Malloc(BLOCKLEN);
 		if	(!block)
 			return(-3);
 		free_block = BLOCKLEN;
 		}
 
 	tree = w->tree;
-	n = w->shownum++;		/* Anzahl Objekte erhîhen */
+	n = w->shownum++;		/* Anzahl Objekte erh√∂hen */
 	w->lins++;			/* = Anzahl Zeilen */
 	o = tree + n;
 	o->ob_flags &= ~LASTOB;
 
-	if	(n)				/* VorgÑnger */
+	if	(n)				/* Vorg√§nger */
 		{
 		o->ob_next = n+1;
 		y = o->ob_y + w->showh + w->ydist;

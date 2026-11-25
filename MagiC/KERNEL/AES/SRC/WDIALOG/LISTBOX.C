@@ -6,10 +6,10 @@
 */
 
 
-#include	<PORTAB.H>
-#include	<TOS.H>
-#include	<AES.H>
-#include	<VDI.H>
+#include	<portab.h>
+#include	<tos.h>
+#include	<aes.h>
+#include	<vdi.h>
 
 #define	CALL_MAGIC_KERNEL	1
 

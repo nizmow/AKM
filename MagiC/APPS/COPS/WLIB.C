@@ -24,15 +24,14 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <vdi.h>
+
 
 #include <string.h>
-#include <mt_aes.h>
-#include "rc_inter.h"
-#include "cops_rsc.h"
-#include "cops.h"
-#include "list.h"
-#include "wlib.h"
+#include "RC_INTER.H"
+#include "COPS_RSC.H"
+#include "COPS.H"
+#include "LIST.H"
+#include "WLIB.H"
 
 /*----------------------------------------------------------------------------------------*/
 /* Defines                                                                                */
@@ -365,7 +364,7 @@ arr_window(short handle, short command)
 /*	dy:		Anzahl der Zeilen */
 /*----------------------------------------------------------------------------------------*/
 void
-up_window(WINDOW *window, long dy)
+up_window(WINDOW *window, int32_t dy)
 {
 	if (window->y > 0) /* Slider schon oben? */
 	{
@@ -391,7 +390,7 @@ up_window(WINDOW *window, long dy)
 /*	dy:		Anzahl der Zeilen */
 /*----------------------------------------------------------------------------------------*/
 void
-dn_window(WINDOW *window, long dy)
+dn_window(WINDOW *window, int32_t dy)
 {
 	if ((window->y + window->workarea.g_h) < window->h) /* Slider bereits unten? */
 	{
@@ -416,7 +415,7 @@ dn_window(WINDOW *window, long dy)
 /*	dx:		Anzahl der Spalten */
 /*----------------------------------------------------------------------------------------*/
 void
-lf_window(WINDOW *window, long dx)
+lf_window(WINDOW *window, int32_t dx)
 {
 	if (window->x > 0) /* Slider schon linnks? */
 	{
@@ -441,7 +440,7 @@ lf_window(WINDOW *window, long dx)
 /*	dx:		Anzahl der Spalten */
 /*----------------------------------------------------------------------------------------*/
 void
-rt_window(WINDOW *window, long dx)
+rt_window(WINDOW *window, int32_t dx)
 {
 	if ((window->x + window->workarea.g_w) < window->w) /* Slider bereits rechts? */
 	{

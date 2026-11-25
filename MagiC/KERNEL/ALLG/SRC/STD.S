@@ -444,8 +444,10 @@ toup_ende:
  rts
 
 sonder_s:
- DC.B	'äöüéàåçæñãõøœĳ',0
- DC.B	'ÄÖÜÉÀÅÇÆÑÃÕØŒĲ',0
+; Atari ST bytes for äöüéàåçæñãõøœĳ and ÄÖÜÉÀÅÇÆÑÃÕØŒĲ.
+; UTF-8 source strings would change the table stride used by toupper.
+ DC.B $84,$94,$81,$82,$85,$86,$87,$91,$a4,$b0,$b1,$b3,$b4,$c0,0
+ DC.B $8e,$99,$9a,$90,$b6,$8f,$80,$92,$a5,$b7,$b8,$b2,$b5,$c1,0
 
 
 **********************************************************************

@@ -1,19 +1,37 @@
 /*
 *
-* EnthÑlt die spezifischen Routinen fÅr den Dialog
+* Enth√§lt die spezifischen Routinen f√ºr den Dialog
 * "Voreinstellungen"
 *
 */
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include "gemut_mt.h"
-#include "globals.h"
-#include "mgedit.h"
+#include <string.h>
+#include "GLOBALS.H"
+#include "MGEDIT.H"
 
 static struct prefs localprefs;
+
+/*********************************************************************
+*
+* Schreibt eine Zahl in ein TEDINFO-Textfeld. Die tats√§chliche
+* Puffergr√∂√üe steht in te_txtlen (inklusive abschlie√üendem NUL).
+*
+*********************************************************************/
+
+static void options_set_number(OBJECT *tree, WORD object, short value)
+{
+	TEDINFO *ted;
+
+	ted = tree[object].ob_spec.tedinfo;
+	if	(ted->te_txtlen > 0)
+		{
+		snprintf(ted->te_ptext, (size_t) ted->te_txtlen,
+			"%d", (int) value);
+		}
+}
+
 
 /*********************************************************************
 *
@@ -30,48 +48,54 @@ void options_dial_init_rsc( void )
 *
 * Behandelt die Exit- Objekte des Dialogs
 * Beim Initialisieren wird in <data> ggf. ein Zeiger auf einen
-* Text Åbergeben.
+* Text √ºbergeben.
 *
 *********************************************************************/
 
-#pragma warn -par
-WORD	cdecl hdl_options( DIALOG *d, EVNT *events, WORD exitbutton,
-				WORD clicks, void *data )
+WORD	__CDECL hdl_options( struct HNDL_OBJ_args args )
 {
+	DIALOG *d;
+	EVNT *events;
+	WORD exitbutton;
+	WORD clicks;
+	void *data;
 	OBJECT *tree;
 	int obj;
 	long id,pt;
-	int mono;
+	short mono;
 
 
 
-	/* 1. Fall: Dialog soll geîffnet werden */
+	d = args.dialog;
+	events = args.events;
+	exitbutton = args.obj;
+	clicks = args.clicks;
+	data = args.data;
+	(void) data;
+
+	/* 1. Fall: Dialog soll ge√∂ffnet werden */
 	/* ------------------------------------ */
 
 	tree = adr_options;
 
 	if	(exitbutton == HNDL_INIT)
 		{
-		if	(d_options)			/* Dialog ist schon geîffnet ! */
+		if	(d_options)			/* Dialog ist schon ge√∂ffnet ! */
 			return(0);
 
 		localprefs = prefs;
-		itoa(localprefs.fontH,
-			tree[OPTIONS_FONTSIZE].ob_spec.tedinfo->te_ptext,
-			10);
+		options_set_number(tree, OPTIONS_FONTSIZE, localprefs.fontH);
 		tree[OPTIONS_FONTNAME].ob_spec.tedinfo->te_ptext =
 			localprefs.fontname;
 		tree[OPTIONS_TCOLOUR].ob_spec.tedinfo->te_ptext
 				= adr_colour[localprefs.tcolour+1].ob_spec.tedinfo->te_ptext;
-		tree[OPTIONS_TCOLOUR].ob_spec.tedinfo->te_ucolor.te_color
-				= adr_colour[localprefs.tcolour+1].ob_spec.tedinfo->te_ucolor.te_color;
+		tree[OPTIONS_TCOLOUR].ob_spec.tedinfo->te_color
+				= adr_colour[localprefs.tcolour+1].ob_spec.tedinfo->te_color;
 		tree[OPTIONS_BCOLOUR].ob_spec.tedinfo->te_ptext
 				= adr_colour[localprefs.bcolour+1].ob_spec.tedinfo->te_ptext;
-		tree[OPTIONS_BCOLOUR].ob_spec.tedinfo->te_ucolor.te_color
-				= adr_colour[localprefs.bcolour+1].ob_spec.tedinfo->te_ucolor.te_color;
-		itoa(localprefs.tabwidth,
-			tree[OPTIONS_TABWIDTH].ob_spec.tedinfo->te_ptext,
-			10);
+		tree[OPTIONS_BCOLOUR].ob_spec.tedinfo->te_color
+				= adr_colour[localprefs.bcolour+1].ob_spec.tedinfo->te_color;
+		options_set_number(tree, OPTIONS_TABWIDTH, localprefs.tabwidth);
 		ob_dsel(tree, OPTIONS_OK);
 		ob_dsel(tree, OPTIONS_CANCEL);
 
@@ -85,27 +109,8 @@ WORD	cdecl hdl_options( DIALOG *d, EVNT *events, WORD exitbutton,
 		{
 		switch(events->msg[0])
 			{
-/*
-			 case WM_ALLICONIFY:
-	
-			 case WM_ICONIFY:
-			 	wind_update(BEG_UPDATE);
-			 	wdlg_set_iconify(d, (GRECT *) (events->msg+4),
-	 							" MGCOPY ",
-	 							adr_beg_iconified, 1);
-			 	is_iconified = TRUE;
-			 	wind_update(END_UPDATE);
-			 	break;
-	
-			 case WM_UNICONIFY:
-			 	wind_update(BEG_UPDATE);
-			 	wdlg_set_uniconify(d, (GRECT *) (events->msg+4),
-		 							Rgetstring(STR_MAINTITLE, global),
-		 							adr_beg);
-			 	is_iconified = FALSE;
-			 	wind_update(END_UPDATE);
-				break;
-*/	
+			/* F√ºr diesen Dialog sind keine Sondernachrichten
+			 * zu behandeln. */
 			}
 		return(1);		/* weiter */
 		}
@@ -114,15 +119,12 @@ WORD	cdecl hdl_options( DIALOG *d, EVNT *events, WORD exitbutton,
 	/* --------------------------------------- */
 
 	if	(exitbutton == HNDL_CLSD)	/* Wenn Dialog geschlossen werden soll... */
-		{
-		close_dialog:
-		return(0);		/* ...dann schlieûen wir ihn auch */
-		}
+		return(0);		/* ...dann schlie√üen wir ihn auch */
 
 	if	(exitbutton < 0)	/* unbekannte Unterfunktion */
 		return(1);
 
-	/* 4. Fall: Exitbutton wurde betÑtigt */
+	/* 4. Fall: Exitbutton wurde bet√§tigt */
 	/* ---------------------------------- */
 
 	if	(clicks != 1)
@@ -138,8 +140,8 @@ WORD	cdecl hdl_options( DIALOG *d, EVNT *events, WORD exitbutton,
 			{
 			tree[exitbutton].ob_spec.tedinfo->te_ptext
 				= adr_colour[obj].ob_spec.tedinfo->te_ptext;
-			tree[exitbutton].ob_spec.tedinfo->te_ucolor.te_color
-				= adr_colour[obj].ob_spec.tedinfo->te_ucolor.te_color;
+			tree[exitbutton].ob_spec.tedinfo->te_color
+				= adr_colour[obj].ob_spec.tedinfo->te_color;
 			localprefs.tcolour = obj-1;
 			goto ende;
 			}
@@ -156,8 +158,8 @@ WORD	cdecl hdl_options( DIALOG *d, EVNT *events, WORD exitbutton,
 			{
 			tree[exitbutton].ob_spec.tedinfo->te_ptext
 				= adr_colour[obj].ob_spec.tedinfo->te_ptext;
-			tree[exitbutton].ob_spec.tedinfo->te_ucolor.te_color
-				= adr_colour[obj].ob_spec.tedinfo->te_ucolor.te_color;
+			tree[exitbutton].ob_spec.tedinfo->te_color
+				= adr_colour[obj].ob_spec.tedinfo->te_color;
 			localprefs.bcolour = obj-1;
 			goto ende;
 			}
@@ -172,12 +174,11 @@ WORD	cdecl hdl_options( DIALOG *d, EVNT *events, WORD exitbutton,
 		mono = !localprefs.fontprop;
 		if	(dial_font( &id, &pt, &mono, localprefs.fontname ))
 			{
-			localprefs.fontID = (int) id;
-			localprefs.fontH = (int) (pt >> 16L);
+			localprefs.fontID = (short) id;
+			localprefs.fontH = (short) (pt >> 16L);
 			localprefs.fontprop = !mono;
-			itoa(localprefs.fontH,
-				tree[OPTIONS_FONTSIZE].ob_spec.tedinfo->te_ptext,
-				10);
+			options_set_number(tree, OPTIONS_FONTSIZE,
+				localprefs.fontH);
 			subobj_wdraw(d, OPTIONS_FONTNAME, OPTIONS_FONTNAME, 0);
 			subobj_wdraw(d, OPTIONS_FONTSIZE, OPTIONS_FONTSIZE, 0);
 			}
@@ -185,10 +186,10 @@ WORD	cdecl hdl_options( DIALOG *d, EVNT *events, WORD exitbutton,
 
 	if	(exitbutton == OPTIONS_CANCEL)		/* Abbruch */
 		{
-		goto close_dialog;
+		return(0);
 		}
 
-	localprefs.tabwidth = atoi(
+	localprefs.tabwidth = (short) atoi(
 			tree[OPTIONS_TABWIDTH].ob_spec.tedinfo->te_ptext);
 
 	if	(exitbutton == OPTIONS_SAVE)
@@ -215,4 +216,3 @@ WORD	cdecl hdl_options( DIALOG *d, EVNT *events, WORD exitbutton,
 	subobj_wdraw(d, exitbutton, exitbutton, 0);
 	return(1);		/* weiter */
 }
-#pragma warn +par

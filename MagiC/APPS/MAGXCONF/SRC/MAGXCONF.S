@@ -3,13 +3,16 @@
 * MAGXCONF
 *
 * erstellt		22.08.90	(KAOSCONF)
-* letzte énderung	10.02.96	(franz. Version ergÑnzt)
+* letzte √Ñnderung	10.02.96	(franz. Version erg√§nzt)
 *
 **********************************************************************
 
-FRANKR	EQU 1
-DEUTSCH	EQU 0
-US		EQU 0
+	IFND COUNTRY
+COUNTRY EQU 2			; Original default: French
+	ENDIF
+FRANKR	EQU COUNTRY=2
+DEUTSCH	EQU COUNTRY=1
+US		EQU COUNTRY=3
 
 
 _base		EQU	*-$100
@@ -24,10 +27,20 @@ OB_SICHERN	EQU	4
 	INCLUDE "AESBIND.INC"
 	INCLUDE "MAGIX.INC"
 
+	IFNE aev_magic2-12
+	FAIL "AESVARS magic offset"
+	ENDIF
+	IFNE aev_date-16
+	FAIL "AESVARS date offset"
+	ENDIF
+	IFNE aev_version-48
+	FAIL "AESVARS version offset"
+	ENDIF
+
  bra.b	init
 
 default_value:
- DC.L	-1					; Defaultwert fÅr config
+ DC.L	-1					; Defaultwert f√ºr config
 
 * Initialisierung
 * ===============
@@ -40,7 +53,7 @@ init:
  xbios	Supexec
  addq.l	#6,sp
  move.l	default_value(pc),-(sp)	; Defaultdaten
- bmi.b	init_read 			; ungÅltig: lesen
+ bmi.b	init_read 			; ung√ºltig: lesen
  tst.l	p_parent(a5)
  beq.b	init_write			; bei ACC immer Status schreiben
 * PRG
@@ -70,7 +83,7 @@ ver_err:
  move.b	#'p',(a0)+
  move.b	#'r',(a0)+
  move.b	#'g',(a0) 			; 'PRG' statt 'ACC'
- movea.w	#$100,a0				; ProgrammlÑnge + $100
+ movea.w	#$100,a0				; Programml√§nge + $100
  adda.l	$c(a1),a0
  adda.l	$14(a1),a0
  adda.l	$1c(a1),a0
@@ -86,7 +99,7 @@ ver_err:
  M_appl_init
  bmi 	exit
  bsr 	rsc_init
- bsr 	do_dialog 			; Dialog ausfÅhren
+ bsr 	do_dialog 			; Dialog ausf√ºhren
  M_appl_exit
 exit:
  gemdos	Pterm0
@@ -97,7 +110,7 @@ init_acc:
 
  M_appl_init
  bmi 	exit
- move.w	d0,intin(a6)			; schon fÅr menu_register
+ move.w	d0,intin(a6)			; schon f√ºr menu_register
  tst.b	is_kaos(a6)
  beq.b	again				; kein KAOS: nicht anmelden
  move.l	#appname,addrin(a6)
@@ -117,7 +130,7 @@ again:
  tst.b	is_kaos(a6)
  beq.b	again				; kein KAOS: nichts tun
 
-* Die folgenden Befehle sind speziell an Atari- MistGEM angepaût
+* Die folgenden Befehle sind speziell an Atari- MistGEM angepa√üt
  move.w	menu_id(a6),d0
  cmp.w	ev_mgpbuff+4*2(a6),d0	; 4 statt 3 wegen AES- Fehler
  bne.b	again
@@ -149,15 +162,15 @@ _aes:
 **********************************************************************
 *
 * long get_sysvars( void )
-*  MUû IM SUPERVISOR-MODUS AUSGEFöHRT WERDEN
+*  MU√ü IM SUPERVISOR-MODUS AUSGEF√úHRT WERDEN
 *  Liest Betriebssystemversions- spezifische Daten
-*  RÅckgabe negativ, wenn System nicht unterstÅtzt wird
+*  R√ºckgabe negativ, wenn System nicht unterst√ºtzt wird
 *
 
 get_sysvars:
  move.l	_p_cookies,a0
  move.l	a0,d0
- beq.b	getsv_end 			; Zeiger ungÅltig
+ beq.b	getsv_end 			; Zeiger ung√ºltig
 getcookie_loop:
  move.l	(a0)+,d1				; Cookiename holen
  beq.b	getsv_end 			; Ende der Cookie- Liste
@@ -179,7 +192,7 @@ getcookie_loop:
  move.b	(a1)+,d0
  andi.b	#$f,d0
  add.b	d0,(a0)+
- addq.l	#1,a0				; '.' Åberlesen
+ addq.l	#1,a0				; '.' √ºberlesen
  move.b	(a1),d0
  lsr.b	#4,d0
  add.b	d0,(a0)+
@@ -227,7 +240,7 @@ rsci_loop:
 **********************************************************************
 *
 * Schreibt die aktuelle Konfiguration in die Dialogbox
-* gibt in d0 die geholte Konfiguration zurÅck
+* gibt in d0 die geholte Konfiguration zur√ºck
 *
 
 cnf_to_dialog:
@@ -243,7 +256,7 @@ cnf_to_dialog:
  bsr 	_set
 
  moveq	#FIRSTBUT+2,d1 		; Button 2
- moveq	#6,d2				; smart redraw (keine AES- KompatibilitÑt)
+ moveq	#6,d2				; smart redraw (keine AES- Kompatibilit√§t)
  bsr 	_set
 
  moveq	#FIRSTBUT+3,d1 		; Button 3
@@ -288,9 +301,9 @@ _set_off:
 
 **********************************************************************
 *
-* ErhÑlt in d0 die aktuelle Konfiguration
+* Erh√§lt in d0 die aktuelle Konfiguration
 * Setzt die aktuelle Konfiguration aus der Dialogbox
-* gibt in d0 die gesetzte Konfiguration zurÅck
+* gibt in d0 die gesetzte Konfiguration zur√ºck
 *
 
 dialog_to_cnf:
@@ -394,7 +407,7 @@ do_dialog:
  move.l	d+flyinf(pc),addrin+8(a6)
  M_form_xdo
 
- andi.w	#$7f,d0				; Doppelklick- Bit lîschen
+ andi.w	#$7f,d0				; Doppelklick- Bit l√∂schen
  move.w	d0,d6				; d6 ist Button- Nummer
  mulu	#24,d0
  clr.w	ob_state(a3,d0.w)		; ob_state = NORMAL
@@ -425,7 +438,7 @@ dial_strc:
  gemdos	Fopen
  addq.w	#8,sp
  move.w	d0,d6
- bmi.b	dial_end				; Fehler und Devices absÑgen
+ bmi.b	dial_end				; Fehler und Devices abs√§gen
  clr.w	-(sp)
  move.w	d6,-(sp)
  moveq	#$1c+2,d0
@@ -474,17 +487,17 @@ _form_dial:
 
 	IFNE DEUTSCH
 bit4:	DC.B "Fastload:",0
-bit5:   	DC.B "KompatibilitÑt:",0
+bit5:   	DC.B "Kompatibilit√§t:",0
 bit6:   	DC.B "Smart Redraw:",0
 bit7:	DC.B "Grow- und Shrinkboxen:",0
 bit8:	DC.B "Halt nach TOS- Programmen:",0
-bit10:	DC.B "MenÅs:",0
+bit10:	DC.B "Men√ºs:",0
 s_title:	DC.B "MagiC - Konfigurationsschalter",0
 s_ok:	DC.B "OK",0
 s_sicher: DC.B "Sichern",0
 s_abbr:	DC.B "Abbruch",0
 s_but:	DC.B "Ein",0
-s_ver:	DC.B "MagiC 00.00‡ vom ??.??.????",0
+s_ver:	DC.B "MagiC 00.00Œ± vom ??.??.????",0
 	ENDC
 	IFNE US
 bit4:	DC.B "Fastload:",0
@@ -498,21 +511,21 @@ s_ok:	DC.B "OK",0
 s_sicher: DC.B "Save",0
 s_abbr:	DC.B "Cancel",0
 s_but:	DC.B "On",0
-s_ver:	DC.B "MagiC 00.00‡     ??.??.????",0
+s_ver:	DC.B "MagiC 00.00Œ±     ??.??.????",0
 	ENDC
 	IFNE FRANKR
 bit4:	DC.B "Fastload:",0
-bit5:	DC.B "CompatibilitÇ:",0
+bit5:	DC.B "Compatibilit√©:",0
 bit6:	DC.B "Smart Redraw:",0
-bit7:	DC.B "Boåtes Grow/Shrink:",0
-bit8:	DC.B "Stop apräs programmes TOS:",0
+bit7:	DC.B "Bo√Ætes Grow/Shrink:",0
+bit8:	DC.B "Stop apr√®s programmes TOS:",0
 bit10:	DC.B "Menus:",0
 s_title:	DC.B "MagiC - Boutons de configuration",0
 s_ok:	DC.B "OK",0
 s_sicher: DC.B "Sauver",0
 s_abbr:	DC.B "Abandon",0
 s_but:	DC.B "On",0
-s_ver:	DC.B "MagiC 00.00‡  du ??.??.????",0
+s_ver:	DC.B "MagiC 00.00Œ±  du ??.??.????",0
 	ENDC
 
 	EVEN

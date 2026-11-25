@@ -1,6 +1,5 @@
-#include <tos.h>
-#include <mt_aes.h>
-#include <vdi.h>
+#include <gem.h>
+#include <mint/sysbind.h>
 #include <string.h>
 #include <stddef.h>
 #include "cpxdata.h"
@@ -23,12 +22,17 @@ struct save_vars {
 };
 
 /* must be first item in data segment; written by CPX_Save */
-struct save_vars save_vars = { 0 };
+struct save_vars save_vars __attribute__((section(".save_vars"))) = { 0 };
 
-#include "magxconf.rsh"
+#include "MAGXCONF.RSH"
 
 static long config;
 static XCPB *xcpb;
+
+extern short cpx_xform_do(void *fn, OBJECT *tree, long edit, short *msg);
+extern void cpx_rsh_obfix(void *fn, OBJECT *tree, long ob);
+extern short cpx_xgen_alert(void *fn, long id);
+extern long cpx_call2(void *fn, long a1, long a2);
 
 
 
@@ -108,7 +112,7 @@ static void fix_obj(OBJECT *tree, _WORD index, GRECT *gr, _WORD flags)
 	_WORD outline;
 	_WORD frame;
 	
-	mt_objc_offset(tree, index, &gr->g_x, &gr->g_y, NULL);
+	objc_offset(tree, index, &gr->g_x, &gr->g_y);
 	gr->g_w = tree[index].ob_width;
 	gr->g_h = tree[index].ob_height;
 	if (flags)
@@ -157,11 +161,11 @@ static void draw_obj(OBJECT *tree, _WORD index)
 	GRECT *r;
 	
 	fix_obj(tree, index, &gr, 1);
-	r = xcpb->GetFirstRect(&gr);
+	r = (GRECT *)cpx_call2((void *)xcpb->GetFirstRect, (long)&gr, 0);
 	while (r)
 	{
-		mt_objc_draw_grect(tree, index, MAX_DEPTH, r, NULL);
-		r = xcpb->GetNextRect();
+		objc_draw_grect(tree, index, MAX_DEPTH, r);
+		r = (GRECT *)cpx_call2((void *)xcpb->GetNextRect, 0, 0);
 	}
 }
 
@@ -186,11 +190,11 @@ static _WORD handle_msg(_WORD obj, _WORD *msg)
 		ret = 1;
 		break;
 	case SAVE:
-		if (xcpb->XGen_Alert(CPX_SAVE_DEFAULTS) != 0)
+		if (cpx_xgen_alert((void *)xcpb->XGen_Alert, CPX_SAVE_DEFAULTS) != 0)
 		{
 			set_config();
 			vars.config = config & SCONFIG_MASK;
-			xcpb->CPX_Save(&vars, sizeof(vars));
+			cpx_call2((void *)xcpb->CPX_Save, (long)&vars, (long)sizeof(vars));
 		}
 		tree[SAVE].ob_state &= ~OS_SELECTED;
 		draw_obj(tree, SAVE);
@@ -224,7 +228,7 @@ static BOOLEAN cdecl cpx_call(GRECT *work)
 	draw_obj(tree, ROOT);
 	do
 	{
-		obj = xcpb->Xform_do(tree, ROOT, msg);
+		obj = cpx_xform_do((void *)xcpb->Xform_do, tree, ROOT, msg);
 		ret = handle_msg(obj, msg);
 	} while (ret == 0);
 	return 0;
@@ -327,7 +331,7 @@ static void set_texts(_WORD country)
 	}
 
 	{
-		char *buffer = xcpb->Get_Buffer();
+		char *buffer = (char *)cpx_call2((void *)xcpb->Get_Buffer, 0, 0);
 		char *title = buffer - (offsetof(CPXHEAD, buffer) - offsetof(CPXHEAD, title_txt));
 		strcpy(title, rs_frstr[p[0]]);
 	}
@@ -356,12 +360,12 @@ CPXINFO *cdecl cpx_init(XCPB *Xcpb)
 	AESVARS *aesvars;
 	
 	xcpb = Xcpb;
-	xcpb->getcookie(0x4D616758L, (long *)&magx);
-	mt_appl_init(NULL);
+	cpx_call2((void *)xcpb->getcookie, 0x4D616758L, (long)&magx);
+	appl_init();
 	set_texts(xcpb->Country_Code);
 	if (magx == 0 && !xcpb->booting)
 	{
-		mt_form_alert(1, rs_frstr[al_no_magic], NULL);
+		form_alert(1, rs_frstr[al_no_magic]);
 		return NULL;
 	}
 	if (magx == 0)
@@ -371,7 +375,7 @@ CPXINFO *cdecl cpx_init(XCPB *Xcpb)
 	aesvars = magx->aesvars;
 	if (aesvars == NULL && !xcpb->booting)
 	{
-		mt_form_alert(1, rs_frstr[al_not_active], NULL);
+		form_alert(1, rs_frstr[al_not_active]);
 		return NULL;
 	}
 	
@@ -397,7 +401,7 @@ CPXINFO *cdecl cpx_init(XCPB *Xcpb)
 		
 		tree = rs_object;
 		for (i = 0; i < NUM_OBS; i++)
-			xcpb->rsh_obfix(tree, i);
+			cpx_rsh_obfix((void *)xcpb->rsh_obfix, tree, i);
 		tree = rs_trindex[MAIN];
 		str = tree[VERSION].ob_spec.free_string;
 		str += strlen(str);

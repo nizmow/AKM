@@ -23,5 +23,5 @@
 
 #define WITH_RSC_DEFINITIONS
 #define __GEMLIB_OLDNAMES
-#include "cops_rsc.h"
+#include "COPS_RSC.H"
 

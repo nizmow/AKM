@@ -6,14 +6,8 @@
 /*----------------------------------------------------------------------------------------*/
 /* Globale Includes																								*/
 /*----------------------------------------------------------------------------------------*/
-/* #include <PORTAB.H> */
-#include <TOS.H>
-#include <VDI.H>
-#include <MT_AES.H>
-#include <STDDEF.H>
-#include <STDLIB.H>
+#include "VT52_GEM.H"
 
-/* #include "types2b.H" */
 #include "WSTRUCT.H"
 #include "WLIB.H"
 
@@ -47,13 +41,9 @@ extern	GRECT	mouse_xy;
 extern	WORD	move_flag;
 extern	UBYTE		*key_state;
 
-/*
-static	WORD		global[12] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-*/
-
-#define	global	(_GemParBlk.global)
-static	GRECT		no_clip = { 0,0,0,0 };							/* GRECT fÅr ausgeschaltetes Clipping */
-static	UWORD		color_remap[16] = { 0, 2, 3, 6, 4, 7, 5, 8, 9, 10, 11, 14, 12, 15, 13, 1 };	/* Tabelle fÅr die Umwandlung von Farbebenenflag zu Farbnummer */
+#define	global	aes_global
+static	GRECT		no_clip = { 0,0,0,0 };							/* GRECT f√ºr ausgeschaltetes Clipping */
+static	UWORD		color_remap[16] = { 0, 2, 3, 6, 4, 7, 5, 8, 9, 10, 11, 14, 12, 15, 13, 1 };	/* Tabelle f√ºr die Umwandlung von Farbebenenflag zu Farbnummer */
 static	WORD		dummy;
 
 extern	WORD	update_flag;
@@ -91,13 +81,13 @@ LONG	vt_Bconin( WINDOW	*window )
 	
 	tscreen = WTSCREEN;
 
-	if ( inc_sem( &tscreen->output ))								/* Ausgabe mîglich? */
+	if ( inc_sem( &tscreen->output ))								/* Ausgabe m√∂glich? */
 	{
-		update_window( BEG_UPDATE );									/* Bildschirm fÅr andere Apps sperren */
+		update_window( BEG_UPDATE );									/* Bildschirm f√ºr andere Apps sperren */
 		draw_cursor( window );											/* Cursorposition aktualisieren */
 		redraw_changed( window );										/* Fensterinhalt aktualisieren */
 		update_window( END_UPDATE );									/* Bildschirm freigeben */
-		tscreen->output--;												/* Ausgabesemaphore zurÅcksetzen */
+		tscreen->output--;												/* Ausgabesemaphore zur√ºcksetzen */
 	}
 
 	if ( tscreen->tcnt >= 0 )											/* sind bereits Zeichen im Buffer? */
@@ -112,19 +102,19 @@ LONG	vt_Bconin( WINDOW	*window )
 		appl_yield();														/* Rechenzeit teilen */
 
 	key = WTSCREEN->tbuf[0] & 0xffff00ffL;
-	if (( CONTERM & 0x08 ) == 0 )										/* Status der Kontrolltasten zurÅckliefern? */
+	if (( CONTERM & 0x08 ) == 0 )										/* Status der Kontrolltasten zur√ºckliefern? */
 		key &= 0x00ff00ffL;												/* wenn nein ausmaskieren */
 		
 	move_tbuf( tscreen->tbuf, tscreen->tcnt );					/* Tastaturbuffer verschieben */
 	tscreen->tcnt--;														/* Anzahl dekrementieren */
 
-	tscreen->input--;														/* Eingabesemaphore zurÅcksetzen */
+	tscreen->input--;														/* Eingabesemaphore zur√ºcksetzen */
 
 	return( key );
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Tastaturstatus zurÅckliefern																				*/
+/* Tastaturstatus zur√ºckliefern																				*/
 /* Funktionsresultat:	Tastaturstatus																		*/
 /*	window:					Zeiger auf die Fensterstruktur												*/
 /*----------------------------------------------------------------------------------------*/
@@ -134,31 +124,31 @@ LONG	vt_Kbshift( WINDOW *window )
 	LONG	status;
 	
 	handle = get_top();													/* Handle des obersten Fensters erfragen */
-	if ( handle == window->handle )									/* gehîrt es der TOS-Applikation? */
+	if ( handle == window->handle )									/* geh√∂rt es der TOS-Applikation? */
 	{
 		if ( WTSCREEN->tcnt > 0 )										/* Zeichen im Tastaturbuffer vorhanden? */
-			status = ( WTSCREEN->tbuf[0] >> 24 ) & 0xff;		/* Status des ersten Zeichens zurÅckliefern */
+			status = ( WTSCREEN->tbuf[0] >> 24 ) & 0xff;		/* Status des ersten Zeichens zur√ºckliefern */
 		else
-			status = (LONG) *key_state;								/* aktuellen Status zurÅckliefern */
+			status = (LONG) *key_state;								/* aktuellen Status zur√ºckliefern */
 	}
 	else
 	{
 		if ( get_owner( handle ) == WTSCREEN->child_id )
 		{
-			status = (LONG) *key_state;								/* aktuellen Status zurÅckliefern */
+			status = (LONG) *key_state;								/* aktuellen Status zur√ºckliefern */
 		}
 		else
-			status = 0;														/* keine Kontrolltasten gedrÅckt */
+			status = 0;														/* keine Kontrolltasten gedr√ºckt */
 	}
 	return( status );
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* String fÅrs GEMDOS ausgeben																				*/
+/* String f√ºrs GEMDOS ausgeben																				*/
 /* Funktionsresultat:	Anzahl der ausgegebenen Zeichen oder -1L bei Ctrl-C					*/
 /*	window:					Zeiger auf die Fensterstruktur												*/
 /* str:						Zeiger auf den _nicht_ nullterminierten String							*/
-/* cnt:						LÑnge des Strings																	*/
+/* cnt:						L√§nge des Strings																	*/
 /*----------------------------------------------------------------------------------------*/
 LONG	vt_Cconout( WINDOW *window, BYTE *str, LONG cnt )
 {
@@ -166,17 +156,17 @@ LONG	vt_Cconout( WINDOW *window, BYTE *str, LONG cnt )
 	
 	tscreen = WTSCREEN;
 
-	if (( tscreen->tcnt >= 0 ) && ( search_ctrl( tscreen ) == KEY_TERM ))	/* Zeichen vorhanden und Ctrl-C gedrÅckt? */
+	if (( tscreen->tcnt >= 0 ) && ( search_ctrl( tscreen ) == KEY_TERM ))	/* Zeichen vorhanden und Ctrl-C gedr√ºckt? */
 	{
-		cnt = -1L;															/* -1L ans GEMDOS zurÅckliefern */
-		tscreen->tcnt = -1;												/* Tastaturpuffer ungÅltig machen */
+		cnt = -1L;															/* -1L ans GEMDOS zur√ºckliefern */
+		tscreen->tcnt = -1;												/* Tastaturpuffer ung√ºltig machen */
 	}
 	else
 	{
 		LONG	i;
 		
 		tscreen->output++;												/* Ausgabesemaphore setzen */
-		while ( tscreen->output != 1 )								/* warten, bis Ausgabe mîglich ist */
+		while ( tscreen->output != 1 )								/* warten, bis Ausgabe m√∂glich ist */
 			appl_yield();													/* Rechenzeit abgeben */
 
 		for ( i = 1; i <= cnt; i++ )
@@ -185,14 +175,14 @@ LONG	vt_Cconout( WINDOW *window, BYTE *str, LONG cnt )
 		if	(cnt)
 			window->dirty = TRUE;
 
-		tscreen->output--;												/* Ausgabesemaphore zurÅcksetzen */
+		tscreen->output--;												/* Ausgabesemaphore zur√ºcksetzen */
 	}
 
 	return( cnt );															/* Anzahl der ausgegebenen Zeichen */
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Zeichen von der Tastatur fÅrs GEMDOS einlesen und Bildschirm updaten							*/
+/* Zeichen von der Tastatur f√ºrs GEMDOS einlesen und Bildschirm updaten							*/
 /* Funktionsresultat:	Tastencode oder -1L bei Ctrl-C												*/
 /*	window:					Zeiger auf die Fensterstruktur												*/
 /*----------------------------------------------------------------------------------------*/
@@ -203,20 +193,20 @@ LONG	vt_Cconin( WINDOW *window )
 	
 	tscreen = WTSCREEN;
 	
-	if ( inc_sem( &tscreen->output ))								/* Ausgabe mîglich? */
+	if ( inc_sem( &tscreen->output ))								/* Ausgabe m√∂glich? */
 	{
-		update_window( BEG_UPDATE );									/* Bildschirm fÅr andere Apps sperren */
+		update_window( BEG_UPDATE );									/* Bildschirm f√ºr andere Apps sperren */
 		draw_cursor( window );											/* Cursorposition aktualisieren */
 		redraw_changed( window );										/* Fensterinhalt aktualisieren */
 		update_window( END_UPDATE );									/* Bildschirm freigeben */
-		tscreen->output--;												/* Ausgabesemaphore zurÅcksetzen */
+		tscreen->output--;												/* Ausgabesemaphore zur√ºcksetzen */
 	}
  
  	do
  	{
-	 	if ( search_ctrl( tscreen ) == KEY_TERM )					/* Ctrl-C gedrÅckt? */
+	 	if ( search_ctrl( tscreen ) == KEY_TERM )					/* Ctrl-C gedr√ºckt? */
 		{
-			tscreen->tcnt = -1;											/* Tastaturpuffer wird ungÅltig */
+			tscreen->tcnt = -1;											/* Tastaturpuffer wird ung√ºltig */
 			return( -1L );
 		}
 	} while ( tscreen->tcnt < 0 );									/* warten, bis Zeichen vorhanden */
@@ -228,14 +218,14 @@ LONG	vt_Cconin( WINDOW *window )
 	move_tbuf( tscreen->tbuf, tscreen->tcnt );					/* Tastaturbuffer verschieben */
 	tscreen->tcnt--;														/* Anzahl dekrementieren */
 
-	tscreen->input--;														/* Eingabesemaphore zurÅcksetzen */
+	tscreen->input--;														/* Eingabesemaphore zur√ºcksetzen */
 
 	return( key );	
 }
 
 
 /*----------------------------------------------------------------------------------------*/
-/* Tastaturpuffer auf Ctrl-C ÅberprÅfen und Ctrl-S und Ctrl-Q behandeln							*/
+/* Tastaturpuffer auf Ctrl-C √ºberpr√ºfen und Ctrl-S und Ctrl-Q behandeln							*/
 /* Funktionsresultat:	KEY_TERM bei Ctrl-C																*/
 /*	tscreen:					Zeiger auf die Textschirmstruktur											*/
 /*----------------------------------------------------------------------------------------*/
@@ -280,11 +270,11 @@ WORD	search_ctrl_c( TSCREEN *tscreen )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Tastaturpuffer nach search absuchen und alle del davor lîschen									*/
-/* Falls nîtig wird eine Eingabe abgewartet																*/
+/* Tastaturpuffer nach search absuchen und alle del davor l√∂schen									*/
+/* Falls n√∂tig wird eine Eingabe abgewartet																*/
 /* Funktionsresultat:	KEY_TERM bei Ctrl-C, KEY_OK bei search, sonst KEY_NO_CTRL			*/
 /*	tscreen:					Zeiger auf die Textschirmstruktur											*/
-/* del:						zu lîschende Tastenkombination												*/
+/* del:						zu l√∂schende Tastenkombination												*/
 /* search:					zu suchende Tastenkombination													*/
 /*----------------------------------------------------------------------------------------*/
 WORD	search_ctrl_sq( TSCREEN *tscreen, ULONG del, ULONG search )
@@ -295,7 +285,7 @@ WORD	search_ctrl_sq( TSCREEN *tscreen, ULONG del, ULONG search )
 	ULONG	key;
 		
 	if ( tscreen->tcnt >= 0 )											/* sind bereits Zeichen im Buffer? */
-		vt_mm( mbuf );														/* Nachrichtenbuffer lîschen */
+		vt_mm( mbuf );														/* Nachrichtenbuffer l√∂schen */
 	else																		/* auf Nachricht warten */
 	{
 		while ( tscreen->tcnt < 0 )									/* kein Zeichen vorhanden? */
@@ -305,9 +295,9 @@ WORD	search_ctrl_sq( TSCREEN *tscreen, ULONG del, ULONG search )
 	while ( inc_sem( &tscreen->input ) == 0 )						/* warten, bis Zeichen ausgelesen werden kann */
 		appl_yield();														/* Rechenzeit abgeben */
 
-	if ( search_ctrl_c( tscreen ) == KEY_TERM )					/* Ctrl-C gedrÅckt? */
+	if ( search_ctrl_c( tscreen ) == KEY_TERM )					/* Ctrl-C gedr√ºckt? */
 	{
-		tscreen->input--;													/* Eingabesemaphore zurÅcksetzen */
+		tscreen->input--;													/* Eingabesemaphore zur√ºcksetzen */
 		return( KEY_TERM );
 	}
 
@@ -319,9 +309,9 @@ WORD	search_ctrl_sq( TSCREEN *tscreen, ULONG del, ULONG search )
 		cnt--;
 		key = *buf & 0xff00ffL;
 		
-		if ( key == del )													/* zu lîschende Taste? */
+		if ( key == del )													/* zu l√∂schende Taste? */
 		{
-			move_tbuf( buf, cnt );										/* Taste lîschen */
+			move_tbuf( buf, cnt );										/* Taste l√∂schen */
 			tscreen->tcnt--;												/* Anzahl dekrementieren */
 		}
 		else
@@ -334,9 +324,9 @@ WORD	search_ctrl_sq( TSCREEN *tscreen, ULONG del, ULONG search )
 					cnt--;
 					key = *buf & 0xff00ffL;
 			
-					if ( key == search )									/* ÅberflÅssige Taste? */
+					if ( key == search )									/* √ºberfl√ºssige Taste? */
 					{
-						move_tbuf( buf, cnt );							/* Taste lîschen */
+						move_tbuf( buf, cnt );							/* Taste l√∂schen */
 						tscreen->tcnt--;									/* Anzahl dekrementieren */
 					}
 					else
@@ -348,14 +338,14 @@ WORD	search_ctrl_sq( TSCREEN *tscreen, ULONG del, ULONG search )
 					}
 				}				
 			
-				tscreen->input--;											/* Eingabesemaphore zurÅcksetzen */
+				tscreen->input--;											/* Eingabesemaphore zur√ºcksetzen */
 				return( KEY_OK );											/* gesuchte Taste wurde gefunden */
 			}
 			buf++;
 		}
 	}
 
-	tscreen->input--;														/* Eingabesemaphore zurÅcksetzen */
+	tscreen->input--;														/* Eingabesemaphore zur√ºcksetzen */
 	return( KEY_NO_CTRL );												/* gesuchte Taste wurde nicht gefunden */
 }
 
@@ -373,12 +363,12 @@ void	redraw_timer( void )
 
 	window = get_window_list();										/* Zeiger auf das erste Fenster */
 
-	if ( update_window( BEG_UPDATE | update_flag ))				/* Bildschirm fÅr andere Apps sperren */
+	if ( update_window( BEG_UPDATE | update_flag ))				/* Bildschirm f√ºr andere Apps sperren */
 	{
 		while( window )
 		{
 			WTSCREEN->output++;											/* Ausgabesemaphore setzen */
-			if ( WTSCREEN->output == 1 )								/* Ausgabe mîglich? */
+			if ( WTSCREEN->output == 1 )								/* Ausgabe m√∂glich? */
 			{
 			if	(window->wflags.iconified)
 				{
@@ -400,9 +390,9 @@ void	redraw_timer( void )
 				redraw_changed( window );								/* Fensterinhalt aktualisieren */
 				}
 			}
-			WTSCREEN->output--;											/* Ausgabesemaphore zurÅcksetzen */
+			WTSCREEN->output--;											/* Ausgabesemaphore zur√ºcksetzen */
 
-			window = window->next;										/* Zeiger auf die nÑchste Fensterstruktur */
+			window = window->next;										/* Zeiger auf die n√§chste Fensterstruktur */
 		}
 		update_window( END_UPDATE );									/* Bildschirm freigeben */
 	}
@@ -421,7 +411,7 @@ void	draw_cursor( WINDOW *window )
 	{
 		if ( tscreen->cur_y >= 0 )										/* alter Cursor auf dem Schirm? */
 			if (( tscreen->cur_y !=tscreen->y ) || ( tscreen->cur_x != tscreen->x )) 
-				cursor( &tscreen->first_line[tscreen->cur_y], 0, tscreen->cur_x );	/* alten Cursor lîschen */
+				cursor( &tscreen->first_line[tscreen->cur_y], 0, tscreen->cur_x );	/* alten Cursor l√∂schen */
 
 		cursor( &tscreen->first_line[tscreen->y], CUR_POS, tscreen->x );	/* neuen Cursor setzen */
 		tscreen->cur_x = tscreen->x;
@@ -430,13 +420,13 @@ void	draw_cursor( WINDOW *window )
 	else			
 	{
 		if ( tscreen->cur_y >= 0 )										/* alter Cursor auf dem Schirm? */
-			cursor( &tscreen->first_line[tscreen->cur_y], 0, tscreen->cur_x );	/* alten Cursor lîschen */
-		cursor( &tscreen->first_line[tscreen->y], 0, tscreen->x );	/* zuletzt gezeichneten Cursor lîschen */
+			cursor( &tscreen->first_line[tscreen->cur_y], 0, tscreen->cur_x );	/* alten Cursor l√∂schen */
+		cursor( &tscreen->first_line[tscreen->y], 0, tscreen->x );	/* zuletzt gezeichneten Cursor l√∂schen */
 	}
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Cursorposition setzen oder lîschen																		*/
+/* Cursorposition setzen oder l√∂schen																		*/
 /* line_ptr:				Zeiger auf die Zeilenstruktur													*/
 /* attr:						neues Cursor-Attribut ( 0 oder CUR_POS )									*/
 /* x:							Cursor-Spalte																		*/
@@ -446,10 +436,10 @@ void	cursor( TPTR *line_ptr, ULONG attr, WORD x )
 	ULONG	*pos;
 	ULONG	cur;
 	
-	pos = &line_ptr->line[x];											/* Zeiger auf das Zeichen, Åber dem der Cursor steht */
+	pos = &line_ptr->line[x];											/* Zeiger auf das Zeichen, √ºber dem der Cursor steht */
 	cur = *pos;
 	
-	if (( cur & CUR_POS ) == ( attr ^ CUR_POS ))					/* muû der Cursor-Zustand geÑndert werden? */
+	if (( cur & CUR_POS ) == ( attr ^ CUR_POS ))					/* mu√ü der Cursor-Zustand ge√§ndert werden? */
 	{
 		*pos = (( cur << 8 ) & 0xff000000L) | (( cur >> 8 ) & 0x00ff0000L ) | ( cur & 0xff ) | attr;
 		if ( line_ptr->head == -1 )
@@ -468,7 +458,7 @@ void	cursor( TPTR *line_ptr, ULONG attr, WORD x )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Fensterinhalt aktualisieren; die Maus wird nîtigenfalls ab und wieder angeschaltet		*/
+/* Fensterinhalt aktualisieren; die Maus wird n√∂tigenfalls ab und wieder angeschaltet		*/
 /*	window:					Zeiger auf die Fensterstruktur												*/
 /*----------------------------------------------------------------------------------------*/
 void	redraw_changed( WINDOW *window )
@@ -491,7 +481,7 @@ void	redraw_changed( WINDOW *window )
 
 	get_rect( window->handle, WF_FIRSTXYWH, &box );				/* erstes Element der Rechteckliste erfragen */
 
-	while( box.g_w && box.g_h )										/* noch gÅltige Rechtecke vorhanden? */
+	while( box.g_w && box.g_h )										/* noch g√ºltige Rechtecke vorhanden? */
 	{
 		if ( rc_intersect( &WWORK, &box ))
 		{
@@ -548,7 +538,7 @@ void	redraw_changed( WINDOW *window )
 				line_ptr++;
 			}
 		}
-		get_rect( window->handle, WF_NEXTXYWH, &box );			/* nÑchstes Element der Rechteckliste holen */
+		get_rect( window->handle, WF_NEXTXYWH, &box );			/* n√§chstes Element der Rechteckliste holen */
 	}
 
 	mouse_on( &mouse_flag );											/* Maus anschalten */
@@ -565,7 +555,7 @@ void	redraw_changed( WINDOW *window )
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Zeichen Åber das Device CON ausgeben																	*/
+/* Zeichen √ºber das Device CON ausgeben																	*/
 /*	window:					Zeiger auf die Fensterstruktur												*/
 /* c:							Zeichen																				*/
 /*----------------------------------------------------------------------------------------*/
@@ -576,16 +566,16 @@ void	vt_jmp( WINDOW *window, UWORD c )
 	tscreen = WTSCREEN;
 	
 	tscreen->output++;													/* Ausgabesemaphore setzen */
-	while ( tscreen->output != 1 )									/* warten, bis Ausgabe mîglich ist */
+	while ( tscreen->output != 1 )									/* warten, bis Ausgabe m√∂glich ist */
 		appl_yield();														/* Rechenzeit abgeben */
 
 	tscreen->vt_function( window, c );								/* Zeichen ausgeben */
 	window->dirty = TRUE;
-	tscreen->output--;											 		/* Ausgabesemaphore zurÅcksetzen */
+	tscreen->output--;											 		/* Ausgabesemaphore zur√ºcksetzen */
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Zeichen Åber das Device RAW ausgeben																	*/
+/* Zeichen √ºber das Device RAW ausgeben																	*/
 /*	window:					Zeiger auf die Fensterstruktur												*/
 /* c:							Zeichen																				*/
 /*----------------------------------------------------------------------------------------*/
@@ -597,7 +587,7 @@ void	rawcon_jmp( WINDOW *window, UWORD c )
 	tscreen = WTSCREEN;
 	
 	tscreen->output++;													/* Ausgabesemaphore setzen */
-	while ( tscreen->output != 1 )									/* warten, bis Ausgabe mîglich ist */
+	while ( tscreen->output != 1 )									/* warten, bis Ausgabe m√∂glich ist */
 		appl_yield();
 
 	line_ptr = tscreen->first_line +tscreen->y;
@@ -613,7 +603,7 @@ void	rawcon_jmp( WINDOW *window, UWORD c )
 		tscreen->x++;														/* eine Spalte weiter */
 	else
 	{
-		if ( update_window( BEG_UPDATE | update_flag ))			/* Bildschirm fÅr andere Apps sperren */
+		if ( update_window( BEG_UPDATE | update_flag ))			/* Bildschirm f√ºr andere Apps sperren */
 		{
 			redraw_changed( window );									/* Fensterinhalt aktualisieren */
 			update_window( END_UPDATE );								/* Bildschirm freigeben */
@@ -623,18 +613,18 @@ void	rawcon_jmp( WINDOW *window, UWORD c )
 			tscreen->x = 0;												/* erste Spalte */
 			if ( tscreen->y < tscreen->rows )
 				{
-				tscreen->y++;												/* nÑchste Zeile */
-				tscreen->term_y++;										/* auch fÅr BIOS */
+				tscreen->y++;												/* n√§chste Zeile */
+				tscreen->term_y++;										/* auch f√ºr BIOS */
 				}
 			else
 				scroll_up_page( window );								/* hochscrollen */
 		}
 	}
-	tscreen->output--;													/* Ausgabesemaphore zurÅcksetzen */
+	tscreen->output--;													/* Ausgabesemaphore zur√ºcksetzen */
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Zeichen Åber das Device CON ausgeben oder Steuercodes beachten									*/
+/* Zeichen √ºber das Device CON ausgeben oder Steuercodes beachten									*/
 /*	window:					Zeiger auf die Fensterstruktur												*/
 /* c:							Zeichen																				*/
 /*----------------------------------------------------------------------------------------*/
@@ -659,7 +649,7 @@ void	vt_con( WINDOW	*window, UWORD c )
 			tscreen->x++;													/* eine Spalte weiter */
 		else
 		{
-			if ( update_window( BEG_UPDATE | update_flag ))		/* Bildschirm fÅr andere Apps sperren */
+			if ( update_window( BEG_UPDATE | update_flag ))		/* Bildschirm f√ºr andere Apps sperren */
 			{
 				redraw_changed( window );								/* Fensterinhalt aktualisieren */
 				update_window( END_UPDATE );							/* Bildschirm freigeben */
@@ -669,8 +659,8 @@ void	vt_con( WINDOW	*window, UWORD c )
 				tscreen->x = 0;											/* erste Spalte */
 				if ( tscreen->y < tscreen->rows )
 					{
-					tscreen->y++;											/* nÑchste Zeile */
-					tscreen->term_y++;									/* auch fÅr BIOS */
+					tscreen->y++;											/* n√§chste Zeile */
+					tscreen->term_y++;									/* auch f√ºr BIOS */
 					}
 				else
 					scroll_up_page( window );							/* hochscrollen */
@@ -712,7 +702,7 @@ void	vt_bs( WINDOW *window )
 
 	tscreen = WTSCREEN;
 	if ( tscreen->x > 0 )
-		tscreen->x--;														/* eine Spalte zurÅck */
+		tscreen->x--;														/* eine Spalte zur√ºck */
 }
 
 /* TAB */
@@ -721,7 +711,7 @@ void	vt_ht( WINDOW *window )
 	TSCREEN	*tscreen;
 
 	tscreen = WTSCREEN;
-	tscreen->x = (tscreen->x & 0xfff8) + 8;						/* nÑchste Tabulatorposition */
+	tscreen->x = (tscreen->x & 0xfff8) + 8;						/* n√§chste Tabulatorposition */
 	if ( tscreen->x > tscreen->columns )
 		tscreen->x = tscreen->columns;								/* Spalte begrenzen */
 }
@@ -733,7 +723,7 @@ void	vt_lf( WINDOW *window )
 
 	tscreen = WTSCREEN;
 
-	if ( update_window( BEG_UPDATE | update_flag ))				/* Bildschirm fÅr andere Apps sperren */
+	if ( update_window( BEG_UPDATE | update_flag ))				/* Bildschirm f√ºr andere Apps sperren */
 	{
 		redraw_changed( window );										/* Fensterinhalt aktualisieren */
 		update_window( END_UPDATE );									/* Bildschirm freigeben */
@@ -743,8 +733,8 @@ void	vt_lf( WINDOW *window )
 		scroll_up_page( window );										/* hochscrollen */
 	else
 		{
-		tscreen->y++;														/* nÑchste Zeile */
-		tscreen->term_y++;												/* auch fÅr BIOS */
+		tscreen->y++;														/* n√§chste Zeile */
+		tscreen->term_y++;												/* auch f√ºr BIOS */
 		}
 }
 
@@ -799,7 +789,7 @@ void	vt_seq_A( TSCREEN *tscreen )
 	if ( tscreen->y > ( tscreen->rows - tscreen->visible_rows ))	/* noch nicht in der obersten Zeile? */
 		{
 		tscreen->y--;														/* eine Zeile nach oben */
-		tscreen->term_y--;												/* auch fÅr BIOS */
+		tscreen->term_y--;												/* auch f√ºr BIOS */
 		}
 }
 
@@ -809,7 +799,7 @@ void	vt_seq_B( TSCREEN *tscreen )
 	if ( tscreen->y < tscreen->rows )								/* noch nicht in der untersten Zeile? */
 		{
 		tscreen->y++;														/* eine Zeile nach unten */
-		tscreen->term_y++;												/* auch fÅr BIOS */
+		tscreen->term_y++;												/* auch f√ºr BIOS */
 		}
 }
 
@@ -852,7 +842,7 @@ void	vt_seq_I( WINDOW *window )
 	if ( tscreen->y > ( tscreen->rows - tscreen->visible_rows ))	/* noch nicht in der obersten Zeile? */
 		{
 		tscreen->y--;														/* eine Zeile nach oben */
-		tscreen->term_y--;												/* auch fÅr BIOS */
+		tscreen->term_y--;												/* auch f√ºr BIOS */
 		}
 	else
 		scroll_down_page( window );									/* runterscrollen */
@@ -871,9 +861,9 @@ void	vt_seq_J( TSCREEN *tscreen )
 
 	if ( tscreen->x > 0 )												/* Cursor nicht in der ersten Spalte? */
 	{
-		vt_seq_K( tscreen );												/* bis zum Zeilenende lîschen */
-		tmp++;																/* nÑchste Zeile */
-		rows--;																/* ZÑhler dekrementieren */
+		vt_seq_K( tscreen );												/* bis zum Zeilenende l√∂schen */
+		tmp++;																/* n√§chste Zeile */
+		rows--;																/* Z√§hler dekrementieren */
 	}
 	
 	while ( rows >= 0 )
@@ -881,11 +871,11 @@ void	vt_seq_J( TSCREEN *tscreen )
 		tmp->head = 0;														/* erste neu zu zeichnende Spalte */
 		tmp->tail = tscreen->columns;									/* letzte neu zu zeichnende Spalte */
 
-		for ( i = 0; i <= tscreen->columns; i++ )					/* Zeile lîschen */
+		for ( i = 0; i <= tscreen->columns; i++ )					/* Zeile l√∂schen */
 			tmp->line[i] = 32 | tscreen->colors;
 			
-		tmp++;																/* nÑchste Zeile */
-		rows--;																/* ZÑhler dekrementieren */	
+		tmp++;																/* n√§chste Zeile */
+		rows--;																/* Z√§hler dekrementieren */	
 	}
 }
 
@@ -899,7 +889,7 @@ void	vt_seq_K( TSCREEN *tscreen )
 	line_ptr = tscreen->first_line + tscreen->y;
 	tline = line_ptr->line + tscreen->x;
 	
-	for( i = tscreen->x; i <= tscreen->columns; i++ )			/* bis zum Zeilenende lîschen */
+	for( i = tscreen->x; i <= tscreen->columns; i++ )			/* bis zum Zeilenende l√∂schen */
 		*tline++ = 32 | tscreen->colors;
 	
 	line_ptr->tail= tscreen->columns;								/* letzte neu zu zeichnende Spalte */
@@ -923,14 +913,14 @@ void	vt_seq_L( TSCREEN *tscreen )
 		*tmp = *(tmp - 1);												/* um eine Zeile nach unten schieben */
 		tmp->head = 0;														/* erste neu zu zeichnende Spalte */
 		tmp->tail = tscreen->columns;									/* letzte neu zu zeichnende Spalte */
-		tmp--;																/* ZÑhler dekrementieren */
+		tmp--;																/* Z√§hler dekrementieren */
 	}
 	
 	tmp->line = last_line;
 	tmp->head = 0;															/* erste neu zu zeichnende Spalte */
 	tmp->tail = tscreen->columns;										/* letzte neu zu zeichnende Spalte */
 
-	for ( i = 0; i <= tscreen->columns; i++ ) 					/* letzte Zeile lîschen */
+	for ( i = 0; i <= tscreen->columns; i++ ) 					/* letzte Zeile l√∂schen */
 		*last_line++ = 32 | tscreen->colors;
 
 	tscreen->x = 0;														/* erste Spalte */
@@ -943,7 +933,7 @@ void	vt_seq_M( TSCREEN *tscreen )
 	ULONG *fline;
 	TPTR	*tmp;
 
-	tmp	= tscreen->first_line + tscreen->y;						/* Zeiger auf die zu lîschende Zeile */
+	tmp	= tscreen->first_line + tscreen->y;						/* Zeiger auf die zu l√∂schende Zeile */
 	fline = tmp->line;
 	
 	for ( i = tscreen->y; i < tscreen->rows; i++ )
@@ -958,7 +948,7 @@ void	vt_seq_M( TSCREEN *tscreen )
 	tmp->head = 0;															/* erste neu zu zeichnende Spalte */
 	tmp->tail = tscreen->columns;										/* letzte neu zu zeichnende Spalte */
 
-	for ( i = 0; i <= tscreen->columns; i++ ) 					/* Zeile lîschen */
+	for ( i = 0; i <= tscreen->columns; i++ ) 					/* Zeile l√∂schen */
 		*fline++ = 32 | tscreen->colors;
 
 	tscreen->x = 0;														/* erste Spalte */
@@ -981,7 +971,7 @@ void	vt_seq_Y_y( WINDOW *window, UWORD y )
 	if ( y <= tscreen->visible_rows )								/* innerhalb des sichtbaren Textschirms? */
 	{
 		tscreen->y = tscreen->rows - tscreen->visible_rows + y;	/* Zeile */
-		tscreen->term_y = y;												/* auch fÅr BIOS */
+		tscreen->term_y = y;												/* auch f√ºr BIOS */
 		tscreen->vt_function = vt_seq_Y_x;
 	}
 	else
@@ -1045,10 +1035,10 @@ void	vt_seq_d( TSCREEN *tscreen )
 			rows;
 	TPTR	*tmp;
 	
-	vt_seq_o( tscreen );													/* bis zur Cursorspalte lîschen */
+	vt_seq_o( tscreen );													/* bis zur Cursorspalte l√∂schen */
 	
-	tmp = tscreen->first_line + tscreen->rows - tscreen->visible_rows;	/* erste zu lîschende Zeile */
-	rows = tscreen->y + tscreen->visible_rows - tscreen->rows;	/* Anzahl der zu lîschenden Zeilen - 1 */
+	tmp = tscreen->first_line + tscreen->rows - tscreen->visible_rows;	/* erste zu l√∂schende Zeile */
+	rows = tscreen->y + tscreen->visible_rows - tscreen->rows;	/* Anzahl der zu l√∂schenden Zeilen - 1 */
 
 	for ( i = 0; i <= rows; i++ )
 	{
@@ -1089,7 +1079,7 @@ void	vt_seq_k( TSCREEN *tscreen )
 	{
 		tscreen->x = tscreen->save_x;
 		tscreen->y = tscreen->save_y;
-		tscreen->term_y = tscreen->y + tscreen->visible_rows - tscreen->rows;	/* auch fÅr BIOS */
+		tscreen->term_y = tscreen->y + tscreen->visible_rows - tscreen->rows;	/* auch f√ºr BIOS */
 		tscreen->save_x = -1;											/* Spalte nicht gespeichert */
 		tscreen->save_y = -1;											/* Zeile nicht gespeichert */
 	}
@@ -1099,7 +1089,7 @@ void	vt_seq_k( TSCREEN *tscreen )
 void	vt_seq_l( TSCREEN *tscreen )
 {
 	tscreen->x = 0;														/* erste Spalte */
-	vt_seq_K( tscreen );													/* bis zum Zeilenende lîschen */
+	vt_seq_K( tscreen );													/* bis zum Zeilenende l√∂schen */
 }
 
 /* Erase beginning of line */
@@ -1114,7 +1104,7 @@ void	vt_seq_o( TSCREEN *tscreen )
 		line_ptr = tscreen->first_line + tscreen->y;				/* aktuelle Zeile */
 		tline = line_ptr->line;
 	
-		for( i = 0; i < tscreen->x; i++ )							/* bis zur Cursorspalte lîschen */
+		for( i = 0; i < tscreen->x; i++ )							/* bis zur Cursorspalte l√∂schen */
 			*tline++ = 32 | tscreen->colors;
 	
 		line_ptr->head = 0;												/* erste neu zu zeichnende Spalte */
@@ -1176,17 +1166,17 @@ void	scroll_up_page( WINDOW *window )
 	for ( i = 0; i < tscreen->rows; i++ )
 	{
 		*tmp = *(tmp + 1);												/* um eine Zeile nach oben */
-		tmp++;																/* nÑchste Zeile */
+		tmp++;																/* n√§chste Zeile */
 	}
 
 	tmp->line = fline;
 	tmp->head = -1;
 	tmp->tail = -1;
 
-	for ( i = 0; i <= tscreen->columns; i++ ) 					/* letzte Zeile lîschen */
+	for ( i = 0; i <= tscreen->columns; i++ ) 					/* letzte Zeile l√∂schen */
 		*fline++ = 32 | tscreen->colors;		
 
-	if ( !(window->wflags.iconified) && update_window( BEG_UPDATE | update_flag ))				/* Bildschirm fÅr andere Apps sperren */
+	if ( !(window->wflags.iconified) && update_window( BEG_UPDATE | update_flag ))				/* Bildschirm f√ºr andere Apps sperren */
 	{
 		GRECT	box,
 				desk;
@@ -1197,7 +1187,7 @@ void	scroll_up_page( WINDOW *window )
 		
 		mouse_flag = M_ON;
 
-		get_rect( 0, WF_WORKXYWH, &desk );							/* Grîûe des Hintergrunds erfragen */
+		get_rect( 0, WF_WORKXYWH, &desk );							/* Gr√∂√üe des Hintergrunds erfragen */
 		get_rect( window->handle, WF_FIRSTXYWH, &box );			/* erstes Element der Rechteckliste erfragen */
 
 		while ( box.g_w && box.g_h )									/* Ende der Rechteckliste? */
@@ -1231,21 +1221,21 @@ void	scroll_up_page( WINDOW *window )
 					redraw( window, &box );								/* unterste Zeile neu zeichnen */
 				}	
 			}
-			get_rect( window->handle, WF_NEXTXYWH, &box );		/* nÑchstes Element der Rechteckliste holen */
+			get_rect( window->handle, WF_NEXTXYWH, &box );		/* n√§chstes Element der Rechteckliste holen */
 		}
 		
 		mouse_on( &mouse_flag );										/* Maus anschalten */
 
 		update_window( END_UPDATE );									/* Bildschirm freigeben */
 	}
-	else																		/* Ausgabe ist nicht mîglich */
+	else																		/* Ausgabe ist nicht m√∂glich */
 	{
 		tmp = tscreen->first_line;
 	  	for ( i = 0; i <= tscreen->rows; i++ )
 		{
 			tmp->head = 0;													/* erste neu zu zeichnende Spalte */
 			tmp->tail = tscreen->columns;								/* letzte neu zu zeichnende Spalte */
-			tmp++;															/* nÑchste Zeile */
+			tmp++;															/* n√§chste Zeile */
 		}
 	}
 }
@@ -1270,17 +1260,17 @@ void  scroll_down_page( WINDOW *window )
 	for ( i = 0; i < tscreen->visible_rows; i++ )
 	{
 		*tmp = *(tmp - 1);												/* um eine Zeile nach unten verschieben */
-		tmp--;																/* nÑchste Zeile */
+		tmp--;																/* n√§chste Zeile */
 	}
 
 	tmp->line = last_line;
 	tmp->head = -1;
 	tmp->tail = -1;
 
-	for ( i = 0; i <= tscreen->columns; i++ ) 					/* erste Zeile lîschen */
+	for ( i = 0; i <= tscreen->columns; i++ ) 					/* erste Zeile l√∂schen */
 		*last_line++ = 32 | tscreen->colors;
 		
-	if ( !(window->wflags.iconified) && update_window( BEG_UPDATE | update_flag ))				/* Bildschirm fÅr andere Apps sperren */
+	if ( !(window->wflags.iconified) && update_window( BEG_UPDATE | update_flag ))				/* Bildschirm f√ºr andere Apps sperren */
 	{	
 		GRECT	box,
 				desk;
@@ -1291,7 +1281,7 @@ void  scroll_down_page( WINDOW *window )
 		
 		mouse_flag = M_ON;
 
-		get_rect( 0, WF_WORKXYWH, &desk );							/* Grîûe des Hintergrunds erfragen */
+		get_rect( 0, WF_WORKXYWH, &desk );							/* Gr√∂√üe des Hintergrunds erfragen */
 		get_rect( window->handle, WF_FIRSTXYWH, &box );			/* erstes Element der Rechteckliste erfragen */
 
 		while ( box.g_w && box.g_h )									/* Ende der Rechteckliste? */
@@ -1324,20 +1314,20 @@ void  scroll_down_page( WINDOW *window )
 					redraw( window, &box );								/* oberste Zeile neu zeichnen */
 				}	
 			}
-			get_rect( window->handle, WF_NEXTXYWH, &box );		/* nÑchstes Element der Rechteckliste holen */
+			get_rect( window->handle, WF_NEXTXYWH, &box );		/* n√§chstes Element der Rechteckliste holen */
 		}		
 		mouse_on( &mouse_flag );										/* Maus anschalten */
 			
 		update_window( END_UPDATE );									/* Bildschirm freigeben */
 	}
-	else																		/* Ausgabe ist nicht mîglich */
+	else																		/* Ausgabe ist nicht m√∂glich */
 	{
 		tmp	= tscreen->first_line + tscreen->rows - tscreen->visible_rows;
 		 for ( i = 0; i <= tscreen->visible_rows; i++ )
 		 {
 			tmp->head = 0;													/* erste neu zu zeichnende Spalte */
 			tmp->tail = tscreen->columns;								/* letzte neu zu zeichnende Spalte */
-			tmp++;															/* nÑchste Zeile */
+			tmp++;															/* n√§chste Zeile */
 		}
 	}
 }
@@ -1385,8 +1375,8 @@ void	redraw(	WINDOW *window, GRECT *area )
 	{
 		write_string( x, y, char_count, tscreen, (line_ptr->line + first_index ), &no_clip );
 
-		y += tscreen->char_height;										/* nÑchste Zeile */
-		line_ptr++;															/* nÑchste Zeile */
+		y += tscreen->char_height;										/* n√§chste Zeile */
+		line_ptr++;															/* n√§chste Zeile */
 		line_count--;
 	}
 }
@@ -1395,7 +1385,7 @@ void	redraw(	WINDOW *window, GRECT *area )
 /* VT52-String ausgeben																							*/
 /* Wenn clip->g_w kleiner oder gleich 0 ist, wird das Clipping nicht eingeschaltet.			*/
 /* x,y:						Startkoordinaten des Strings													*/
-/* count:					Anzahl der Zeichen (von 1 aus gezÑhlt)										*/
+/* count:					Anzahl der Zeichen (von 1 aus gez√§hlt)										*/
 /*	tscreen:					Zeiger auf VT52-Struktur														*/
 /* line:						Zeiger auf VT52-String															*/
 /*	clip:						Zeiger auf ein GRECT mit den Clipping-Koordinaten						*/
@@ -1437,7 +1427,7 @@ void	write_string( WORD x, WORD y, WORD count, TSCREEN *tscreen, ULONG *line, GR
 		
 		vt_wrmode( tscreen->handle, MD_REPLACE );			
 
-		if ( cmp & 0xff )													/* Hintergrundfarbe nicht weiû? */
+		if ( cmp & 0xff )													/* Hintergrundfarbe nicht wei√ü? */
 		{
 			vt_fcolor( tscreen->handle, cmp & 0xff );
 			vt_finterior( tscreen->handle, FIS_SOLID );
@@ -1446,40 +1436,19 @@ void	write_string( WORD x, WORD y, WORD count, TSCREEN *tscreen, ULONG *line, GR
 		}
 		vt_tcolor( tscreen->handle, cmp >> 8 );					/* Text in der Vordergrundfarbe */
 	
-		{
-			WORD	*pb[5];
-			WORD	contrl[15];
-			WORD	intout[1];
-			WORD	ptsin[2];
-			WORD	ptsout[1];
-
-			pb[0] = contrl;
-			pb[1] = string;
-			pb[2] = ptsin;
-			pb[3] = intout;
-			pb[4] = ptsout;
-
-			contrl[0] = 8;													/* v_gtext() */
-			contrl[1] = 1;
-			contrl[3] = (WORD) ( str_ptr - string );				/* Zeichenanzahl */
-			contrl[6] = tscreen->handle;								/* VDI-Handle */
-			ptsin[0] = xy.x1;
-			ptsin[1] = xy.y1;
-	
-			vt_vdi( (VDIPB *) pb );										/* VDI aufrufen */
-
-		}
+		v_gtext16n( tscreen->handle, xy.x1, xy.y1, (const short *) string,
+					(WORD) ( str_ptr - string ) );
 	}
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Struktur fÅr Textbildschirm anlegen																		*/
+/* Struktur f√ºr Textbildschirm anlegen																		*/
 /* Funktionsresultat:	Zeiger auf Struktur																*/
 /* columns:					Anzahl der Spalten																*/
 /* rows:						Anzahl der Zeilen																	*/
-/* buffer_rows:			Anzahl der zusÑtzlichen Zeilen zum ZurÅckscrollen						*/
+/* buffer_rows:			Anzahl der zus√§tzlichen Zeilen zum Zur√ºckscrollen						*/
 /* font:						Nummer des einzustellenden Zeichensatzes									*/
-/* point:					Hîhe in Punkten																	*/
+/* point:					H√∂he in Punkten																	*/
 /*----------------------------------------------------------------------------------------*/
 TSCREEN	*open_vt( WORD	columns, WORD rows, WORD buffer_rows, WORD font, WORD point )
 {
@@ -1495,7 +1464,7 @@ TSCREEN	*open_vt( WORD	columns, WORD rows, WORD buffer_rows, WORD font, WORD poi
 				i;
 			
 		for( i = 1; i < 10 ; work_in[i++] = 1 );					/* work_in initialisieren */
-		work_in[0] = Getrez() + 2;										/* Auflîsung */
+		work_in[0] = Getrez() + 2;										/* Aufl√∂sung */
 		work_in[10] = 2;													/* Rasterkoordinaten benutzen */
 		tscreen->handle = graf_handle( &i, &i, &i, &i );
 		v_opnvwk( work_in, &tscreen->handle, work_out );
@@ -1513,18 +1482,18 @@ TSCREEN	*open_vt( WORD	columns, WORD rows, WORD buffer_rows, WORD font, WORD poi
 			tscreen->refcnt = 0;
 			tscreen->child_id = 0;										/* Nummer der TOS-Applikation */
 			tscreen->parent_id = 0;										/* Nummer der Vater-Applikation */
-			tscreen->input = 0;											/* Semaphore fÅr Ausgaben */
-			tscreen->output = 0;										 	/* Semaphore fÅr Eingaben */
+			tscreen->input = 0;											/* Semaphore f√ºr Ausgaben */
+			tscreen->output = 0;										 	/* Semaphore f√ºr Eingaben */
 			
-			tscreen->term = 0; 											/* Flag fÅrs Beenden	 */
+			tscreen->term = 0; 											/* Flag f√ºrs Beenden	 */
 			
 			tscreen->name[0] = 0;										/* Programmpfad */
 			
-			vst_alignment( tscreen->handle, 0, 5, &dummy, &dummy );	/* linksbÅndig an der Zeichenoberkante ausrichten */
+			vst_alignment( tscreen->handle, 0, 5, &dummy, &dummy );	/* linksb√ºndig an der Zeichenoberkante ausrichten */
 			tscreen->font_id = vst_font( tscreen->handle, font );	/* Nummer des Zeichensatzes */
 			tscreen->point_size = vst_point( tscreen->handle, point,	&dummy, &dummy,
-														&tscreen->char_width, &tscreen->char_height );	/* Hîhe in Punkten */
-			vqt_width( tscreen->handle, SPACE, &tscreen->char_width, &dummy, &dummy );		/* zusÑtzliche Abfrage fÅr FSM */
+														&tscreen->char_width, &tscreen->char_height );	/* H√∂he in Punkten */
+			vqt_width( tscreen->handle, SPACE, &tscreen->char_width, &dummy, &dummy );		/* zus√§tzliche Abfrage f√ºr FSM */
 			
 			tscreen->columns = columns - 1;							/* Anzahl der Spalten - 1 */
 			tscreen->rows = rows + buffer_rows - 1;				/* Anzahl der Zeilen	- 1 */
@@ -1539,13 +1508,13 @@ TSCREEN	*open_vt( WORD	columns, WORD rows, WORD buffer_rows, WORD font, WORD poi
 			tscreen->wrap = 1;											/* Zeilenumbruch */
 			tscreen->revers = 0;											/* Vorder- und Hintergrund normal */
 		
-			tscreen->colors = 0x01000000L;							/* Vordergrundfarbe schwarz, Hintergrundfarbe weiû */
+			tscreen->colors = 0x01000000L;							/* Vordergrundfarbe schwarz, Hintergrundfarbe wei√ü */
 	
 			tscreen->x = 0;												/* aktuelle Spalte (von 0 aus) */
 			tscreen->y = buffer_rows;									/* aktuelle Zeile (von 0 aus) */
-			tscreen->term_y = tscreen->y + tscreen->visible_rows - tscreen->rows;	/* auch fÅr BIOS */
+			tscreen->term_y = tscreen->y + tscreen->visible_rows - tscreen->rows;	/* auch f√ºr BIOS */
  
-			tscreen->vt_function = vt_con;							/* Funktion fÅr Console-Ausgabe */
+			tscreen->vt_function = vt_con;							/* Funktion f√ºr Console-Ausgabe */
 		
 			tscreen->tcnt = -1;											/* Eingabepuffer ist leer */
 		
@@ -1559,7 +1528,7 @@ TSCREEN	*open_vt( WORD	columns, WORD rows, WORD buffer_rows, WORD font, WORD poi
 				line_ptr++;
 	
 				for ( i = columns; i > 0; i-- )
-					*line++ = 0x01000020L;								/* Zeile lîschen, Vordergrundfarbe schwarz, Hintergrundfarbe weiû */
+					*line++ = 0x01000020L;								/* Zeile l√∂schen, Vordergrundfarbe schwarz, Hintergrundfarbe wei√ü */
 			}
 		}
 		else
@@ -1572,7 +1541,7 @@ TSCREEN	*open_vt( WORD	columns, WORD rows, WORD buffer_rows, WORD font, WORD poi
 }
 
 /*----------------------------------------------------------------------------------------*/
-/* Struktur fÅr Textbildschirm freigeben																	*/
+/* Struktur f√ºr Textbildschirm freigeben																	*/
 /* tscreen:					Zeiger auf Struktur																*/
 /*----------------------------------------------------------------------------------------*/
 void	close_vt( TSCREEN *tscreen )
@@ -1592,26 +1561,7 @@ void	close_vt( TSCREEN *tscreen )
 /*----------------------------------------------------------------------------------------*/
 void	vt_wrmode( WORD handle, WORD mode )
 {
-	WORD	*pb[5];
-	WORD	contrl[15];
-	WORD	intin[1];
-	WORD	intout[1];
-	WORD	ptsin[1];
-	WORD	ptsout[1];
-
-	pb[0] = contrl;
-	pb[1] = intin;
-	pb[2] = ptsin;
-	pb[3] = intout;
-	pb[4] = ptsout;
-	
-	contrl[0] = 32;
-	contrl[1] = 0;
-	contrl[3] = 1;
-	contrl[6] = handle;
-	intin[0] = mode;
-
-	vt_vdi( (VDIPB *) pb );	
+	vswr_mode( handle, mode );
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -1621,26 +1571,7 @@ void	vt_wrmode( WORD handle, WORD mode )
 /*----------------------------------------------------------------------------------------*/
 void	vt_tcolor( WORD handle, WORD color )
 {
-	WORD	*pb[5];
-	WORD	contrl[15];
-	WORD	intin[1];
-	WORD	intout[1];
-	WORD	ptsin[1];
-	WORD	ptsout[1];
-
-	pb[0] = contrl;
-	pb[1] = intin;
-	pb[2] = ptsin;
-	pb[3] = intout;
-	pb[4] = ptsout;
-	
-	contrl[0] = 22;
-	contrl[1] = 0;
-	contrl[3] = 1;
-	contrl[6] = handle;
-	intin[0] = color;
-
-	vt_vdi( (VDIPB *) pb );	
+	vst_color( handle, color );
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -1650,26 +1581,7 @@ void	vt_tcolor( WORD handle, WORD color )
 /*----------------------------------------------------------------------------------------*/
 void	vt_fcolor( WORD handle, WORD color )
 {
-	WORD	*pb[5];
-	WORD	contrl[15];
-	WORD	intin[1];
-	WORD	intout[1];
-	WORD	ptsin[1];
-	WORD	ptsout[1];
-
-	pb[0] = contrl;
-	pb[1] = intin;
-	pb[2] = ptsin;
-	pb[3] = intout;
-	pb[4] = ptsout;
-	
-	contrl[0] = 25;
-	contrl[1] = 0;
-	contrl[3] = 1;
-	contrl[6] = handle;
-	intin[0] = color;
-
-	vt_vdi( (VDIPB *) pb );	
+	vsf_color( handle, color );
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -1679,26 +1591,7 @@ void	vt_fcolor( WORD handle, WORD color )
 /*----------------------------------------------------------------------------------------*/
 void	vt_finterior( WORD handle, WORD interior )
 {
-	WORD	*pb[5];
-	WORD	contrl[15];
-	WORD	intin[1];
-	WORD	intout[1];
-	WORD	ptsin[1];
-	WORD	ptsout[1];
-
-	pb[0] = contrl;
-	pb[1] = intin;
-	pb[2] = ptsin;
-	pb[3] = intout;
-	pb[4] = ptsout;
-	
-	contrl[0] = 23;
-	contrl[1] = 0;
-	contrl[3] = 1;
-	contrl[6] = handle;
-	intin[0] = interior;
-
-	vt_vdi( (VDIPB *) pb );	
+	vsf_interior( handle, interior );
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -1708,27 +1601,7 @@ void	vt_finterior( WORD handle, WORD interior )
 /*----------------------------------------------------------------------------------------*/
 void	vt_clip( WORD handle, VRECT *xy )
 {
-	WORD	*pb[5];
-	WORD	contrl[15];
-	WORD	intin[1];
-	WORD	intout[1];
-	WORD	ptsin[4];
-	WORD	ptsout[1];
-
-	pb[0] = contrl;
-	pb[1] = intin;
-	pb[2] = ptsin;
-	pb[3] = intout;
-	pb[4] = ptsout;
-	
-	contrl[0] = 129;
-	contrl[1] = 2;
-	contrl[3] = 1;
-	contrl[6] = handle;
-	intin[0] = 1;
-	*(VRECT *) ptsin = *xy;
-
-	vt_vdi( (VDIPB *) pb );	
+	vs_clip( handle, 1, (short *) xy );
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -1738,26 +1611,7 @@ void	vt_clip( WORD handle, VRECT *xy )
 /*----------------------------------------------------------------------------------------*/
 void	vt_rect( WORD handle, VRECT *xy )
 {
-	WORD	*pb[5];
-	WORD	contrl[15];
-	WORD	intin[1];
-	WORD	intout[1];
-	WORD	ptsin[4];
-	WORD	ptsout[1];
-
-	pb[0] = contrl;
-	pb[1] = intin;
-	pb[2] = ptsin;
-	pb[3] = intout;
-	pb[4] = ptsout;
-	
-	contrl[0] = 114;
-	contrl[1] = 2;
-	contrl[3] = 0;
-	contrl[6] = handle;
-	*(VRECT *) ptsin = *xy;
-
-	vt_vdi( (VDIPB *) pb );	
+	vr_recfl( handle, (short *) xy );
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -1871,7 +1725,7 @@ void	mouse_off( WORD *flag, GRECT *box )
 		EVNTDATA	mouse;
 		GRECT		mouse_rect;
 
-		graf_mkstate( &mouse );
+		graf_mkstate( &mouse.x, &mouse.y, &mouse.bstate, &mouse.kstate );
 		mouse_rect.g_x = mouse.x - 50;
 		mouse_rect.g_y = mouse.y - 50;
 		mouse_rect.g_w = 100;
@@ -1891,28 +1745,7 @@ void	mouse_off( WORD *flag, GRECT *box )
 /*----------------------------------------------------------------------------------------*/
 void	switch_mouse( WORD mform )
 {
-	WORD	*pb[6];
-	WORD	contrl[5];
-	WORD	intin[2];
-	WORD	intout[8];
-	void	*addrin[2];
-	void	*addrout[1];
-	
-	pb[0] = contrl;
-	pb[1] = global;
-	pb[2] = intin;
-	pb[3] = intout;
-	pb[4] = (WORD *) addrin;
-	pb[5] = (WORD *) addrout;
-	
-	contrl[0] = 78;
-	contrl[1] = 1;
-	contrl[3] = 1;
-
-	intin[0] = mform;
-	addrin[0] = 0L;
-
-	vt_aes( (AESPB *) pb );
+	graf_mouse( mform, 0L );
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -1923,31 +1756,7 @@ void	switch_mouse( WORD mform )
 /*----------------------------------------------------------------------------------------*/
 void	get_rect( WORD handle, WORD info, GRECT *box )
 {
-	WORD	*pb[6];
-	WORD	contrl[5];
-	WORD	intin[2];
-	WORD	intout[8];
-	void	*addrin[2];
-	void	*addrout[1];
-	
-	pb[0] = contrl;
-	pb[1] = global;
-	pb[2] = intin;
-	pb[3] = intout;
-	pb[4] = (WORD *) addrin;
-	pb[5] = (WORD *) addrout;
-	
-	contrl[0] = 104;
-	contrl[1] = 2;
-	contrl[3] = 0;
-
-	intin[0] = handle;
-	intin[1] = info;
-
-	vt_aes( (AESPB *) pb );
-	
-	*box = *(GRECT *) &intout[1];
-
+	wind_get( handle, info, &box->g_x, &box->g_y, &box->g_w, &box->g_h );
 }
 
 /*----------------------------------------------------------------------------------------*/
@@ -2024,27 +1833,6 @@ WORD	get_owner( WORD handle )
 /*----------------------------------------------------------------------------------------*/
 WORD	update_window( WORD beg_update )
 {
-	WORD	*pb[6];
-	WORD	contrl[5];
-	WORD	intin[2];
-	WORD	intout[8];
-	void	*addrin[2];
-	void	*addrout[1];
-	
-	pb[0] = contrl;
-	pb[1] = global;
-	pb[2] = intin;
-	pb[3] = intout;
-	pb[4] = (WORD *) addrin;
-	pb[5] = (WORD *) addrout;
-	
-	contrl[0] = 107;
-	contrl[1] = 1;
-	contrl[3] = 0;
-
-	intin[0] = beg_update;
-	
-	vt_aes( (AESPB *) pb );
-	
-	return( intout[0] );
+	wind_update( beg_update );
+	return( 1 );
 }

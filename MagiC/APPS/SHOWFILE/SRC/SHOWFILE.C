@@ -1,18 +1,30 @@
 /*********************************************************************
 *
-* FÅr die Mag!X 3 - Version von MAGXDESK
+* F√ºr die Mag!X 3 - Version von MAGXDESK
 *
 * Zeigt eine Datei an.
 *
 *********************************************************************/
 
-#include <tos.h>
-#include <tosdefs.h>
-#include <country.h>
+#include <mint/osbind.h>
+#define E_OK 0
+#define ENSMEM (-39L)
+#define EBREAK (-68L)
+#define ERANGE (-64L)
 
+#define FRG 1
+#define USA 0
+#define FRA 2
+#ifndef COUNTRY
+#define COUNTRY USA
+#endif
+#define CON 2
+#define RMODE_RD 0
 #define TRUE 1
 #define FALSE 0
+#ifndef NULL
 #define NULL ((char *) 0)
+#endif
 
 /* Keybord states */
 
@@ -72,10 +84,10 @@ void init_vt52( void )
 {
 	str_conout("\x1b" "E"		/* Clear- Home				*/
 		 	 "\x1b" "b\xff"	/* Schriftfarbe schwarz		*/
-		 	 "\x1b" "c\0"		/* Hintergrundfarbe weiû		*/
+		 	 "\x1b" "c\0"		/* Hintergrundfarbe wei√ü	*/
 		 	 "\x1b" "e"		/* Cursor einschalten		*/
 		 	 "\x1b" "q"		/* Reverse aus				*/
-		 	 "\x1b" "v", 14);	/* Automatischer öberlauf ein */
+		 	 "\x1b" "v", 14);	/* Automatischer √úberlauf ein */
 }
 
 long show_file(char *path)
@@ -90,7 +102,7 @@ long show_file(char *path)
 
 
 
-	if	(NULL == (buf = Malloc(bsize)))
+	if	(NULL == (buf = (char *) Malloc(bsize)))
 		doserr = ENSMEM;
 	else doserr = Fopen(path, RMODE_RD);
 
@@ -132,55 +144,55 @@ long show_file(char *path)
 								str_conout("\r\n--Plus-- "
 										 "\x1b" "e", 13);
 #endif
-							t = waitkey();
-							if	(!s)
-								str_conout("\x1b" "l", 2);
-							if	(t >= 'a')
-								t &= 0x5f;
-							switch(t)
-								{
-								case 3:
-								case 'Q':
-								case 'N': doserr = EBREAK;
-										break;
-								case 'G': mode = TRUE;
-										break;
-								case ' ': ypos = 0;
-										break;
-								case 'D': ypos = 11;
-										break;
-								case '+': back:
-								case '-':	str_conout("\r\n\n"
-"------------------------------------------------------------------------------"
-"\r\n\n", 84);
+								t = waitkey();
+								if	(!s)
+									str_conout("\x1b" "l", 2);
+								if	(t >= 'a')
+									t &= 0x5f;
+								switch(t)
+									{
+									case 3:
+									case 'Q':
+									case 'N': doserr = EBREAK;
+											break;
+									case 'G': mode = TRUE;
+											break;
+									case ' ': ypos = 0;
+											break;
+									case 'D': ypos = 11;
+											break;
+									case '+': back:
+									case '-':	str_conout("\r\n\n"
+										"------------------------------------------------------------------------------"
+										"\r\n\n", 84);
 										fpos = Fseek(0L, handle, 1);
 										if	(fpos < E_OK)
 											{
 											doserr = EBREAK;
 											break;
 											}
-										fpos += lbytes - doserr;
-										fpos += (t == '+') ? 4096L : -4096L;
-										if	(fpos < 0)
-											fpos = 0;
-										fpos = Fseek(fpos, handle, 0);
-										if	(fpos < E_OK && fpos != ERANGE)
-											{
-											doserr = EBREAK;
-											break;
-											}
-										ypos = 0;
-										goto fillbuf;
-								default:  ypos = 22;
-								}
-							if	(doserr == EBREAK)
-								break;
-							if	(!s)
-								continue;
+									fpos += lbytes - doserr;
+									fpos += (t == '+') ? 4096L : -4096L;
+									if	(fpos < 0)
+										fpos = 0;
+									fpos = Fseek(fpos, handle, 0);
+									if	(fpos < E_OK && fpos != ERANGE)
+										{
+										doserr = EBREAK;
+										break;
+										}
+									ypos = 0;
+									goto fillbuf;
+									default:	 ypos = 22;
+									}
+								if	(doserr == EBREAK)
+									break;
+								if	(!s)
+									continue;
 							}
 						}
 
-					/* Anpassung fÅr Wordplus- Codierung */
+					/* Anpassung f√ºr Wordplus- Codierung */
 					/* --------------------------------- */
 
 					if	(c == 0x1c || c == 0x1d || c == 0x1e)
@@ -189,7 +201,7 @@ long show_file(char *path)
 					}
 				}
 			}
-		while(doserr > 0); 
+		while(doserr > 0);
 		}
 
 	if	(doserr >= E_OK)

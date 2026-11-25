@@ -226,9 +226,9 @@ typedef struct _syshdr
 extern BASPAG *_BasPag;
 extern long _PgmSize;
 
-long    gemdos( void, ... );
-long    bios( void, ... );
-long    xbios( void, ... );
+long cdecl gemdos( int opcode, ... );
+long cdecl bios( int opcode, ... );
+long cdecl xbios( int opcode, ... );
 
 /****** Tos *************************************************************/
 

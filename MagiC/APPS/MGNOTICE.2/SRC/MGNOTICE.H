@@ -1,4 +1,4 @@
-/* Resource Datei Indizes fÅr MGNOTICE */
+/* Resource Datei Indizes f√ºr MGNOTICE */
 
 #define T_ABOUT          0   /* Formular/Dialog */
 #define ABOUT_VERSION    2   /* TEXT in Baum T_ABOUT */

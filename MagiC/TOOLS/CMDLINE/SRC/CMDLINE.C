@@ -3,16 +3,15 @@
 *                  CMDLINE.PRG                 Andreas Kromke
 *                  ===========                 19.03.90
 *
-*                              letzte Žnderung 19.03.90
+*                              letzte Ã„nderung 19.03.90
 *
 * Zeigt Kommandozeile an
 *
 *********************************************************************/
 
-#include <tos.h>
-#include <aes.h>
-
-extern unsigned char *_BasPag;
+#include <mint/basepage.h>
+#include <mint/osbind.h>
+#include <gem.h>
 
 #define EOS '\0'
 #define TRUE  1
@@ -21,7 +20,7 @@ extern unsigned char *_BasPag;
 #define write16x(i)	Cconout(tohex((i) >> 4)),Cconout(tohex((i) & 0xf))
 
 void write32x	(unsigned long zahl);
-int	isprint	(unsigned char c);
+int	is_atari_printable	(unsigned char c);
 
 int main( void )
 {
@@ -31,11 +30,10 @@ int main( void )
 	unsigned long envsize;
 	void print(unsigned char *s, unsigned long size);
 
-
-	ttail = _BasPag+0x80;
+	ttail = (unsigned char *) _base->p_cmdlin;
 	Cconws("DOS- KOMMANDOZEILE:\r\n");
 	print(ttail, 128L);
-	env = *((unsigned char **) (_BasPag+0x2c));
+	env = (unsigned char *) _base->p_env;
 	t = env;
 	do	{
 		while(*t)
@@ -69,7 +67,7 @@ void print(unsigned char *s, unsigned long end)
 	while(pos < end)
 		{
 		amnt = 16;
-		if	(amnt > end - pos)
+		if	((unsigned long) amnt > end - pos)
 			amnt = (int) (end - pos);
 		if	(amnt == 0)
 			break;
@@ -85,7 +83,7 @@ void print(unsigned char *s, unsigned long end)
 			}
 		Cconws("  ");
 		for	(i = 0; i < amnt; i++)
-			Cconout((isprint(s[pos+i])) ? s[pos+i] : '.');
+			Cconout((is_atari_printable(s[pos+i])) ? s[pos+i] : '.');
 		pos += amnt;
 		Cconws("\r\n");
 		}
@@ -113,7 +111,7 @@ void write32x(unsigned long zahl)
 *
 *********************************************************************/
 
-int isprint(unsigned char c)
+int is_atari_printable(unsigned char c)
 {
 	if	(c  < 0x1f ||				/* Steuerzeichen  */
 		 c == 0x7f ||				/* DELete		   */

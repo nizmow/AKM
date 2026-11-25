@@ -15,7 +15,9 @@
 *
 **********************************************************************
 
+     IFND OUTSIDE
 OUTSIDE   EQU  0              ; Programmlänge auf 32k-Pages
+     ENDIF
 RESIDENT  EQU  1              ; resetfest
 MODIFY    EQU  0              ; Modifikation nicht notwendig!
 

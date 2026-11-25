@@ -3,10 +3,10 @@
 *                          SPLIT				21.11.89
 *                          =====
 *
-*					  letzte énderung:		28.04.90
+*					  letzte √Ñnderung:		28.04.90
 *
 *
-* Zweck:  (Text)dateien, die zu groû fÅr den Hauptspeicher sind,
+* Zweck:  (Text)dateien, die zu gro√ü f√ºr den Hauptspeicher sind,
 *		aufspalten
 *
 * Syntax: SPLIT [-t] [-pos] von nach1 nach2
@@ -14,18 +14,20 @@
 *******************************************************************/
 
 
-#include <tos.h>
+#include <mint/osbind.h>
 #include <stddef.h>
 #include <string.h>
-#include <tosdefs.h>
-#include <structs.h>
+#include <stdlib.h>
 
 
 #define FALSE             0
 #define TRUE              1
 #define EOS               '\0'
+#define ERANGE            (-64L)
 #define CRLF              "\r\n"
 #define BUFLEN			 10240L
+#define RMODE_RD		 0
+#define HDL_CON			 (-1)
 #define toupper(c)	((c) & 0x5f)
 
 char buf[BUFLEN];
@@ -41,12 +43,11 @@ int main (int argc, char *argv[])
 	char *quelle,*ziel1,*ziel2;
 
 
-	/* PrÅfen, ob genug Argumente Åbergeben wurden */
+	/* Pr√ºfen, ob genug Argumente √ºbergeben wurden */
 	/* ------------------------------------------- */
 
 	if   (argc < 2)
 		{
-		syntax:
 		cerrws("Syntax: SPLIT [-t] [-[s]hhhhhh] datei1 ...\r\n"
 			  "     -hhhhhh  Aufspaltposition, hexadezimal\r\n"
 			  "     -t       Textdatei, auf Zeilenende spalten\r\n");
@@ -101,7 +102,7 @@ void split(char *quelle, char *ziel1, char *ziel2)
 	if	(!ziel1)
 		ziel1 = "__eins__";
 
-	/* Datei îffnen          */
+	/* Datei √∂ffnen          */
 	/* --------------------- */
 
 	if   (0L > (err = Fopen(quelle, RMODE_RD)))
@@ -199,7 +200,7 @@ void setflags(char *s)
 	register char *t;
 
 
-	t = s + 1;					/* '-' Åberspringen */
+	t = s + 1;					/* '-' √ºberspringen */
 	while(*t)
 		{
 		if	(toupper(*t) == 'T')	/* Text- Modus		*/
@@ -232,9 +233,5 @@ void setflags(char *s)
 
 void cerrws(char *string)
 {
-	extern BASPAG *_BasPag;
-
-
-	Fwrite( (_BasPag->p_stdfh[STDERR]) ? STDERR : HDL_CON,
-		  strlen(string), string);
+	Fwrite(HDL_CON, strlen(string), string);
 }

@@ -1,6 +1,6 @@
 /*
 *
-* Dieser Quelltext enthÑlt die Routinen fÅr
+* Dieser Quelltext enth√§lt die Routinen f√ºr
 * das Edit-Objekt
 *
 */
@@ -11,15 +11,16 @@
 #define TEMPLATES 0
 #define DEBUG 0
 
-#include <mgx_dos.h>
-#include ".\mt_aes.h"
-#include <vdi.h>
+#include <gem.h>
+#include <gemx.h>
+#include <mint/osbind.h>
+#include <sys/stat.h>
 #if DEBUG
 #include <stdio.h>
 #endif
 #include <string.h>
-#include "editob.h"
-#include "globals.h"
+#include "EDITOB.H"
+#include "GLOBALS.H"
 
 /* GEMDOS (MiNT) Fopen modes */
 
@@ -36,10 +37,7 @@
 #define   MO_TRUNC        0x400
 #define   MO_EXCL         0x800
 
-/* extern aus memchr2.s */
-
 /* sucht nach '\r' oder '\n' */
-extern void  *memchr2( const void *s, size_t len );
 
 /* extern aus editob_s.s */
 
@@ -52,12 +50,12 @@ int errno;
 
 /* lokal */
 
-static void init_lines( XEDITINFO *xi );
-static void init_pcursor( XEDITINFO *xi );
-static LONG get_number_of_lines( XEDITINFO *xi );
+static void init_lines( EDITINFO *xi );
+static void init_pcursor( EDITINFO *xi );
+static LONG get_number_of_lines( EDITINFO *xi );
 
 static WORD curr_fontID = -1;
-static WORD curr_fontH = -1;		/* Hîhe in pt bzw. Pixeln */
+static WORD curr_fontH = -1;		/* H√∂he in pt bzw. Pixeln */
 static WORD curr_fontMd = -1;		/* Modus 0/1 */
 static WORD curr_charW, curr_charH;
 
@@ -68,9 +66,9 @@ static WORD curr_charW, curr_charH;
 *
 ****************************************************************/
 
-static void setfont( XEDITINFO *xi )
+static void setfont( EDITINFO *xi )
 {
-	int dummy = 0;
+	short dummy = 0;
 
 
 	if	(curr_fontID != xi->fontID)
@@ -102,7 +100,7 @@ static void setfont( XEDITINFO *xi )
 *
 ****************************************************************/
 
-WORD edit_set_font( XEDITINFO *xi,
+WORD xedit_set_font( EDITINFO *xi,
 			WORD fontID, WORD fontH, WORD fontPix, WORD mono )
 {
 	unsigned char *firstline;
@@ -122,13 +120,13 @@ WORD edit_set_font( XEDITINFO *xi,
 	printf("xi->charH = %d\n", xi->charH);
 #endif
 
-	if	(xi->lines)	/* geîffnet? */
+	if	(xi->lines)	/* ge√∂ffnet? */
 		{
 		xi->lvis = xi->ob_h/xi->charH;
 #if DEBUG
 	printf("xi->lvis = %d\n", xi->lvis);
 #endif
-		xi->lines = Malloc(xi->lvis * sizeof(struct _xed_li));
+		xi->lines = (struct _xed_li *) Malloc(xi->lvis * sizeof(struct _xed_li));
 		if	(!xi->lines)
 			return(0);
 		if	(xi->lvis)
@@ -142,16 +140,16 @@ WORD edit_set_font( XEDITINFO *xi,
 	return(1);
 }
 
-void edit_set_buf( XEDITINFO *xi,
+void xedit_set_buf( EDITINFO *xi,
 			unsigned char *buf, LONG buflen )
 {
 	xi->buf = buf;
-	xi->buflen = buflen;				/* inkl. EOS */
-	xi->curr_tlen = strlen((char *) xi->buf);	/* ohne EOS */
+	xi->buflen = buflen;				/* inkl. 0 */
+	xi->curr_tlen = strlen((char *) xi->buf);	/* ohne 0 */
 	xi->max_linew = -1;					/* unbekannt */
 	xi->nlines = get_number_of_lines(xi);
-	xi->dirty = FALSE;
-	if	(xi->lines)	/* geîffnet ? */
+	xi->dirty = 0;
+	if	(xi->lines)	/* ge√∂ffnet ? */
 		{
 		xi->xscroll = 0;
 		xi->yscroll = 0;
@@ -164,7 +162,7 @@ void edit_set_buf( XEDITINFO *xi,
 		}
 }
 
-void edit_set_format( XEDITINFO *xi,
+void xedit_set_format( EDITINFO *xi,
 			WORD tabwidth, WORD autowrap )
 {
 	if	((tabwidth >= 0) && (xi->tabwidth != tabwidth))
@@ -180,7 +178,7 @@ void edit_set_format( XEDITINFO *xi,
 			xi->max_linew = -1;
 			xi->nlines = get_number_of_lines(xi);
 			}
-		if	(xi->lines)	/* geîffnet ? */
+		if	(xi->lines)	/* ge√∂ffnet ? */
 			{
 			xi->xscroll = 0;
 			xi->yscroll = 0;
@@ -199,11 +197,11 @@ void edit_set_format( XEDITINFO *xi,
 *
 ****************************************************************/
 
-XEDITINFO *edit_create( void )
+EDITINFO *xedit_create( void )
 {
-	XEDITINFO *xi;
+	EDITINFO *xi;
 
-	xi = Malloc(sizeof(XEDITINFO));
+	xi = (EDITINFO *) Malloc(sizeof(EDITINFO));
 	if	(xi)
 		{
 		xi->magic = 'XEDT';
@@ -212,12 +210,12 @@ XEDITINFO *edit_create( void )
 		xi->buflen = 0L;
 		xi->tabwidth = 64;
 		xi->autowrap = 0;
-		xi->tcolour = BLACK;
-		xi->bcolour = WHITE;
-		xi->dirty = FALSE;
+		xi->tcolour = G_BLACK;
+		xi->bcolour = G_WHITE;
+		xi->dirty = 0;
 		xi->curs_hidecnt = 0;
-		edit_set_font(xi, 1 /* AES-Font */,
-					10 /* 10pt */, FALSE, TRUE);
+		xedit_set_font(xi, 1 /* AES-Font */,
+					10 /* 10pt */, 0, 1);
 		}
 	return(xi);
 }
@@ -225,16 +223,16 @@ XEDITINFO *edit_create( void )
 
 /****************************************************************
 *
-* Objektgrîûe liegt fest, Speicher fÅr Zeilenpuffer anfordern.
+* Objektgr√∂√üe liegt fest, Speicher f√ºr Zeilenpuffer anfordern.
 *
 ****************************************************************/
 
-WORD edit_open( OBJECT *ob, XEDITINFO *xi )
+WORD xedit_open( OBJECT *ob, EDITINFO *xi )
 {
 	xi->ob_h = ob->ob_height;
 	xi->lvis = xi->ob_h/xi->charH;
 	xi->xscroll = 0;
-	xi->lines = Malloc(xi->lvis * sizeof(struct _xed_li));
+	xi->lines = (struct _xed_li *) Malloc(xi->lvis * sizeof(struct _xed_li));
 	if	(!xi->lines)
 		return(0);
 	xi->yscroll = 0;
@@ -256,7 +254,7 @@ WORD edit_open( OBJECT *ob, XEDITINFO *xi )
 *
 ****************************************************************/
 
-void edit_set_scroll_and_cpos( XEDITINFO *xi,
+void xedit_set_scroll_and_cpos( EDITINFO *xi,
 			WORD xscroll,
 			LONG yscroll,
 			unsigned char *cyscroll,
@@ -267,7 +265,7 @@ void edit_set_scroll_and_cpos( XEDITINFO *xi,
 	xi->yscroll = yscroll;
 	xi->xscroll = xscroll;
 	init_lines(xi);
-	xi->tcurs = curpos;		/* falls cy ungÅltig ist */
+	xi->tcurs = curpos;		/* falls cy ung√ºltig ist */
 	xi->ccurs_x = cx;
 	xi->ccurs_y = cy;
 	init_pcursor(xi);
@@ -276,16 +274,16 @@ void edit_set_scroll_and_cpos( XEDITINFO *xi,
 
 /****************************************************************
 *
-* Das Objekt ist geîffnet.
-* Objektgrîûe oder der Zeichensatz haben sich geÑndert.
+* Das Objekt ist ge√∂ffnet.
+* Objektgr√∂√üe oder der Zeichensatz haben sich ge√§ndert.
 *
-* Geliefert wird zusÑtzlich noch die vorherige und neue
-* tatsÑchliche Hîhe, damit ein Editor den Rand neu
+* Geliefert wird zus√§tzlich noch die vorherige und neue
+* tats√§chliche H√∂he, damit ein Editor den Rand neu
 * zeichnen kann.
 *
 ****************************************************************/
 
-WORD edit_resized( OBJECT *ob, XEDITINFO *xi,
+WORD xedit_resized( OBJECT *ob, EDITINFO *xi,
 				WORD *oldrh, WORD *newrh )
 {
 	int new_lvis;
@@ -307,7 +305,7 @@ WORD edit_resized( OBJECT *ob, XEDITINFO *xi,
 	/* --------------------- */
 
 	if	(!xi->tcurs)
-		xi->tcurs = edit_get_cursor(xi);
+		xi->tcurs = xedit_get_cursor(xi);
 
 	/* vertikale Scrollpos. merken. */
 	/* Zeilenstruktur neu aufbauen. */
@@ -324,7 +322,7 @@ WORD edit_resized( OBJECT *ob, XEDITINFO *xi,
 
 	if	(xi->lvis)
 		{
-		xi->lines = Malloc(xi->lvis * sizeof(struct _xed_li));
+		xi->lines = (struct _xed_li *) Malloc(xi->lvis * sizeof(struct _xed_li));
 		if	(!xi->lines)
 			return(0);
 		xi->lines[0].line = oldline;	/* erste sichtbare Zeile */
@@ -337,12 +335,12 @@ WORD edit_resized( OBJECT *ob, XEDITINFO *xi,
 
 /****************************************************************
 *
-* Objektgrîûe, Zeichensatz, Text oder Formatierungsmodi haben
-* sich geÑndert, Speicher fÅr Zeilenpuffer freigeben.
+* Objektgr√∂√üe, Zeichensatz, Text oder Formatierungsmodi haben
+* sich ge√§ndert, Speicher f√ºr Zeilenpuffer freigeben.
 *
 ****************************************************************/
 
-void edit_close( XEDITINFO *xi )
+void xedit_close( EDITINFO *xi )
 {
 	if	(xi->lines)
 		{
@@ -358,16 +356,16 @@ void edit_close( XEDITINFO *xi )
 *
 ****************************************************************/
 
-void edit_delete( XEDITINFO *xi )
+void xedit_delete( EDITINFO *xi )
 {
-	edit_close(xi);
+	xedit_close(xi);
 	Mfree(xi);
 }
 
 
 /*********************************************************************
 *
-* PrÅft, ob der Mausklick ins Objekt ging.
+* Pr√ºft, ob der Mausklick ins Objekt ging.
 *
 *********************************************************************/
 
@@ -384,7 +382,7 @@ static WORD xy_in_grect( WORD x, WORD y, GRECT *g )
 *
 ****************************************************************/
 
-static WORD rc_intersect(GRECT *p1, GRECT *p2)
+static WORD xedit_rect_intersect(GRECT *p1, GRECT *p2)
 {
 	WORD	tx, ty, tw, th;
 
@@ -415,7 +413,7 @@ static WORD extent( unsigned char *s, LONG len, WORD mono,
 	WORD slen;
 	WORD offs = 0;
 	WORD rest;
-	int out[8];
+	short out[8];
 
 
 
@@ -426,7 +424,7 @@ static WORD extent( unsigned char *s, LONG len, WORD mono,
 	while(*s)
 		{
 
-		/* nÑchsten Tabulator bestimmen */
+		/* n√§chsten Tabulator bestimmen */
 		/* ---------------------------- */
 
 		if	(!tabwidth)
@@ -462,21 +460,6 @@ static WORD extent( unsigned char *s, LONG len, WORD mono,
 		}
 	*l = c;
 	return(offs);
-/*
-	unsigned char c;
-	register unsigned char *s2;
-	int out[8];
-
-
-	if	(mono)
-		return((WORD) (n*charW));
-	s2 = s+n;
-	c = *s2;
-	*s2 = '\0';
-	vqt_extent(vdi_handle, (char *) s, out);
-	*s2 = c;
-	return(out[2] - out[0]/* + 1*/);
-*/
 }
 
 
@@ -504,7 +487,7 @@ static void gtext( unsigned char *s, WORD len,
 	while(*s)
 		{
 
-		/* nÑchsten Tabulator bestimmen */
+		/* n√§chsten Tabulator bestimmen */
 		/* ---------------------------- */
 
 		if	(!tabwidth)
@@ -540,7 +523,7 @@ static void gtext( unsigned char *s, WORD len,
 
 /****************************************************************
 *
-* Scrap-Datei îffnen.
+* Scrap-Datei √∂ffnen.
 *
 ****************************************************************/
 
@@ -570,13 +553,13 @@ static WORD open_scrap( WORD omode )
 
 static WORD c_is_sep( unsigned char c)
 {
-	return(NULL != strchr(" !..+-*/:..?[\\]{|}()~ˆ˜¯˘˙" "\t", c));
+	return(NULL != strchr(" !..+-*/:..?[\\]{|}()~\366\367\370\371\372" "\t", c));
 }
 
 
 /****************************************************************
 *
-* Anzahl der Zeilen-Ende zÑhlen
+* Anzahl der Zeilen-Ende z√§hlen
 *
 ****************************************************************/
 
@@ -603,14 +586,14 @@ Cconws("\r\n");
 		if	(!bsel)
 			break;	/* kein (weiteres) Zeilen-Ende gefunden */
 
-		lc++;		/* Anzahl der Zeilen-Enden erhîhen */
+		lc++;		/* Anzahl der Zeilen-Enden erh√∂hen */
 		if	(bsel < esel-1)	/* noch nicht am Ende */
 			{
-			c = bsel[1];		/* nÑchstes Zeichen */
+			c = bsel[1];		/* n√§chstes Zeichen */
 			if	(((c == '\r') || (c == '\n')) && (c != *bsel))
 				bsel++;		/* "\r\n" oder "\n\r" */
 			}
-		eline = bsel+1;	/* nÑchste Zeile */
+		eline = bsel+1;	/* n√§chste Zeile */
 		}
 
 	if	(eline < esel)
@@ -627,12 +610,12 @@ Cconws("\r\n");
 *
 * Pixelposition in Zeichenposition umrechnen.
 *
-* Da es hierzu keine VDI-Funktion gibt, muû man mit Hilfe
-* von vqt_extend() und binÑrer Suche schachteln.
+* Da es hierzu keine VDI-Funktion gibt, mu√ü man mit Hilfe
+* von vqt_extend() und bin√§rer Suche schachteln.
 *
 ****************************************************************/
 
-static int pixpos_to_npos( XEDITINFO *xi,
+static int pixpos_to_npos( EDITINFO *xi,
 						unsigned char *line, LONG len_o,
 						WORD x )
 {
@@ -652,7 +635,7 @@ printf("x = %d len_o = %ld\n", x, len_o);
 		}
 	else	{
 */
-		/* Zeichensatz und -hîhe setzen */
+		/* Zeichensatz und -h√∂he setzen */
 		/* ---------------------------- */
 
 		setfont( xi );
@@ -714,13 +697,13 @@ printf(" ix = %d\n", ix);
 /****************************************************************
 *
 * Zeichenposition des Cursors in Pixelposition umrechnen.
-* Die Pixelposition ist relativ zum Textanfang, d.h. man muû
+* Die Pixelposition ist relativ zum Textanfang, d.h. man mu√ü
 * noch den horizontalen Scroll-Offset abziehen, um die
-* tatsÑchliche Position zu erhalten.
+* tats√§chliche Position zu erhalten.
 *
 ****************************************************************/
 
-static void init_pcursor( XEDITINFO *xi )
+static void init_pcursor( EDITINFO *xi )
 {
 	struct _xed_li *li;
 
@@ -732,7 +715,7 @@ static void init_pcursor( XEDITINFO *xi )
 		xi->pcurs_x = extent( li->line, xi->ccurs_x,
 						xi->mono, xi->charW,
 						xi->tabwidth );
-		xi->tcurs = NULL;	/* Cursor ist gÅltig */
+		xi->tcurs = NULL;	/* Cursor ist g√ºltig */
 		xi->pcursth_x = xi->pcurs_x;
 		}
 #if	DEBUG2
@@ -746,15 +729,15 @@ static void init_pcursor( XEDITINFO *xi )
 *
 * Position des selektierten Bereichs berechnen
 *
-* => RÅckgabe	1, wenn Bereich sichtbar.
+* => R√ºckgabe	1, wenn Bereich sichtbar.
 *	bl		erste Zeile
-*	bc		 zugehîrige Zeichenposition
+*	bc		 zugeh√∂rige Zeichenposition
 *	el		letzte Zeile (ggf. -1, wenn bis Ende)
-*	ec		 zugehîrige Zeichenposition (ggf. -1, wenn bis Ende )
+*	ec		 zugeh√∂rige Zeichenposition (ggf. -1, wenn bis Ende )
 *
 ****************************************************************/
 
-static int get_selrange( XEDITINFO *xi, WORD *bl, WORD *bc,
+static int get_selrange( EDITINFO *xi, WORD *bl, WORD *bc,
 					WORD *el, WORD *ec,
 					unsigned char *bsel, unsigned char *esel )
 {
@@ -826,12 +809,12 @@ printf("bl = %d, bc = %d, el = %d, ec = %d\n", *bl, *bc, *el, *ec);
 *
 * GRECTs des selektierten Bereichs berechnen
 *
-* =>	RÅckgabe:	Anzahl Bereiche (0 oder 1 oder 2 oder 3)
+* =>	R√ºckgabe:	Anzahl Bereiche (0 oder 1 oder 2 oder 3)
 *	g[0..2]	selektierte Bereiche
 *
 ****************************************************************/
 
-static int get_selgrects( XEDITINFO *xi, GRECT *obj_g, GRECT *g,
+static int get_selgrects( EDITINFO *xi, GRECT *obj_g, GRECT *g,
 			unsigned char *bsel, unsigned char *esel )
 {
 	WORD bl,bc,el,ec;
@@ -845,18 +828,8 @@ static int get_selgrects( XEDITINFO *xi, GRECT *obj_g, GRECT *g,
 		return(0);		/* Bereich unsichtbar */
 
 	ng = 1;	/* nur ein GRECT */
-/*
-	if	(xi->mono)
-		xp = bc * xi->charW;
-	else	{
-		if	(bc)
-*/
-			xp = extent(xi->lines[bl].line, bc, xi->mono, xi->charW,
-						xi->tabwidth );
-/*
-		else xp = 0;	/* Zeilenanfang! */
-		}
-*/
+	xp = extent(xi->lines[bl].line, bc, xi->mono, xi->charW,
+				xi->tabwidth );
 	g->g_x = obj_g->g_x + xp - xi->xscroll;
 	g->g_y = obj_g->g_y + bl * xi->charH;
 	if	(bl == el)
@@ -913,23 +886,23 @@ restzeile:
 
 /****************************************************************
 *
-* ZeilenlÑnge und nÑchste Zeile bestimmen.
+* Zeilenl√§nge und n√§chste Zeile bestimmen.
 *
 * Eingabe:
 *	xi			Editfeld-Daten
 *	s			Beginn der Zeile
 *
-* RÅckgabe:
-*	len			Netto-ZeilenlÑnge ohne EOL
-*    lextra		LÑnge der Zeilenende-Markierung
-*	<ret>		1, wenn die Zeile mit EOT abschlieût
+* R√ºckgabe:
+*	len			Netto-Zeilenl√§nge ohne EOL
+*    lextra		L√§nge der Zeilenende-Markierung
+*	<ret>		1, wenn die Zeile mit EOT abschlie√üt
 *
-* Die nÑchste Zeile beginnt also bei
+* Die n√§chste Zeile beginnt also bei
 *	s+len+lextra
 *
 ****************************************************************/
 
-static int get_next_eol( XEDITINFO *xi, unsigned char *s,
+static int get_next_eol( EDITINFO *xi, unsigned char *s,
 					LONG *len, WORD *lextra )
 {
 	unsigned char *eol;
@@ -944,10 +917,10 @@ static int get_next_eol( XEDITINFO *xi, unsigned char *s,
 	if	(eol)
 		{
 		*len = eol-s;
-		*lextra = 1;			/* CR oder LF Åberlesen */
+		*lextra = 1;			/* CR oder LF √ºberlesen */
 		if	(eol < xi->buf+xi->curr_tlen-1)
 			{
-			c = eol[1];			/* nÑchstes Zeichen */
+			c = eol[1];			/* n√§chstes Zeichen */
 			if	(((c == '\r') || (c == '\n')) && (c != *eol))
 				(*lextra)++;	/* "\r\n" oder "\n\r" */
 			}
@@ -992,7 +965,7 @@ printf("lmax = %d, len = %ld\n", lmax, *len);
 				lmax = (WORD) (eol - s + 1);
 			*len = lmax;
 			*lextra = 0;
-			eot = FALSE;
+			eot = 0;
 			}
 		}
 
@@ -1002,19 +975,19 @@ printf("lmax = %d, len = %ld\n", lmax, *len);
 
 /****************************************************************
 *
-* vorherige Zeile und ZeilenlÑnge bestimmen.
+* vorherige Zeile und Zeilenl√§nge bestimmen.
 *
 * Eingabe:
 *	xi			Editfeld-Daten
 *	s			aktuelle Zeile
 *
 * Ausgabe:
-*	len			Netto-ZeilenlÑnge ohne EOL
-*    lextra		LÑnge der Zeilenende-Markierung
+*	len			Netto-Zeilenl√§nge ohne EOL
+*    lextra		L√§nge der Zeilenende-Markierung
 *	<ret>		Zeiger auf vorherige Zeile oder NULL
 *
 * Wenn <s> auf den Beginn der aktuellen Zeile zeigt, wird
-* der Beginn der vorherigen Zeile sowie die LÑnge der
+* der Beginn der vorherigen Zeile sowie die L√§nge der
 * Zeilenende-Markierung der vorherigen Zeile geliefert.
 *
 * Wenn <s> mitten in eine Zeile zeigt, wird der Beginn der
@@ -1022,7 +995,7 @@ printf("lmax = %d, len = %ld\n", lmax, *len);
 *
 ****************************************************************/
 
-static unsigned char *get_prev_eol( XEDITINFO *xi,
+static unsigned char *get_prev_eol( EDITINFO *xi,
 				unsigned char *s, LONG *len, WORD *lextra )
 {
 	unsigned char *sol,*t;
@@ -1094,11 +1067,11 @@ static unsigned char *get_prev_eol( XEDITINFO *xi,
 *
 * Zeilenanzahl berechnen.
 * Die Zeilen werden durch (weichen) Umbruch oder durch
-* "\r\n" (CR+LF) abgeschlossen oder durch EOS (am Text-Ende).
+* "\r\n" (CR+LF) abgeschlossen oder durch 0 (am Text-Ende).
 *
 ****************************************************************/
 
-static LONG get_number_of_lines( XEDITINFO *xi )
+static LONG get_number_of_lines( EDITINFO *xi )
 {
 	register LONG i;
 	unsigned char *s;
@@ -1129,9 +1102,9 @@ static LONG get_number_of_lines( XEDITINFO *xi )
 
 /****************************************************************
 *
-* Zeilenzeiger und -lÑngen initialisieren.
+* Zeilenzeiger und -l√§ngen initialisieren.
 * Die Zeilen werden durch \r\n (CR+LF) abgeschlossen oder
-* durch EOS (am Text-Ende).
+* durch 0 (am Text-Ende).
 *
 * Der Zeiger
 *	xi->lines[0].line
@@ -1140,7 +1113,7 @@ static LONG get_number_of_lines( XEDITINFO *xi )
 *
 ****************************************************************/
 
-static void init_lines( XEDITINFO *xi )
+static void init_lines( EDITINFO *xi )
 {
 	register int i;
 	struct _xed_li *li;
@@ -1152,7 +1125,7 @@ static void init_lines( XEDITINFO *xi )
 	s = li->line;
 	xi->leff = 0;
 
-	for	(i = 0,eot = FALSE; i < xi->lvis; i++,li++)
+	for	(i = 0,eot = 0; i < xi->lvis; i++,li++)
 		{
 #if DEBUG
 	printf("Zeile %d\n", i);
@@ -1178,19 +1151,19 @@ static void init_lines( XEDITINFO *xi )
 
 /***************************************************************
 *
-* Toggelt den Selektionsstatus fÅr das GRECT im Fenster
+* Toggelt den Selektionsstatus f√ºr das GRECT im Fenster
 *
 ***************************************************************/
 
 static void sel_grect( GRECT *g, WORD whdl )
 {
-	int pxy[4];
+	short pxy[4];
 	GRECT list;
 
 
-	vsf_color(vdi_handle, BLACK);
+	vsf_color(vdi_handle, G_BLACK);
 	vswr_mode(vdi_handle, MD_XOR);
-	vs_clip(vdi_handle, FALSE, NULL);
+	vs_clip(vdi_handle, 0, NULL);
 
 	if	(whdl < 0)
 		{
@@ -1204,7 +1177,7 @@ static void sel_grect( GRECT *g, WORD whdl )
 
 	wind_get_grect(whdl, WF_FIRSTXYWH, &list);
 	do	{
-		if	(rc_intersect(g, &list))
+		if	(xedit_rect_intersect(g, &list))
 			{
 			pxy[0] = list.g_x;
 			pxy[1] = list.g_y;
@@ -1224,7 +1197,7 @@ static void sel_grect( GRECT *g, WORD whdl )
 *
 ***************************************************************/
 
-static void sel_xeditob( XEDITINFO *xi, GRECT *obj_g, WORD whdl,
+static void sel_xeditob( EDITINFO *xi, GRECT *obj_g, WORD whdl,
 			unsigned char *bsel, unsigned char *esel )
 {
 	GRECT *g;
@@ -1239,10 +1212,10 @@ static void sel_xeditob( XEDITINFO *xi, GRECT *obj_g, WORD whdl,
 		if	(i)
 			{
 			vswr_mode(vdi_handle, MD_XOR);
-			vsf_color(vdi_handle, BLACK);		/* Selektion */
+			vsf_color(vdi_handle, G_BLACK);		/* Selektion */
 			for	(g = gx; i > 0; i--,g++)
 				{
-				if	(rc_intersect(obj_g, g))
+				if	(xedit_rect_intersect(obj_g, g))
 					sel_grect( g, whdl );
 				}
 			}
@@ -1257,7 +1230,7 @@ static void sel_xeditob( XEDITINFO *xi, GRECT *obj_g, WORD whdl,
 *
 ***************************************************************/
 
-static void unsel_xeditob( XEDITINFO *xi, GRECT *obj_g, WORD whdl )
+static void unsel_xeditob( EDITINFO *xi, GRECT *obj_g, WORD whdl )
 {
 	if	(xi->bsel)
 		{
@@ -1273,7 +1246,7 @@ static void unsel_xeditob( XEDITINFO *xi, GRECT *obj_g, WORD whdl )
 *
 ***************************************************************/
 
-static void sel_new_xeditob( XEDITINFO *xi, GRECT *obj_g, WORD whdl,
+static void sel_new_xeditob( EDITINFO *xi, GRECT *obj_g, WORD whdl,
 			unsigned char *bsel, unsigned char *esel )
 {
 	unsigned char *b,*e;
@@ -1298,7 +1271,7 @@ static void sel_new_xeditob( XEDITINFO *xi, GRECT *obj_g, WORD whdl,
 		goto draw;
 		}
 
-	/* Ende unverÑndert */
+	/* Ende unver√§ndert */
 
 	if	(esel == xi->esel)
 		{
@@ -1308,16 +1281,16 @@ static void sel_new_xeditob( XEDITINFO *xi, GRECT *obj_g, WORD whdl,
 			e = xi->bsel;
 			}
 		else
-		if	(bsel > xi->bsel)	/* Anfang verkÅrzt */
+		if	(bsel > xi->bsel)	/* Anfang verk√ºrzt */
 			{
 			b = xi->bsel;
 			e = bsel;
 			}
-		else	return;			/* keine énderung */
+		else	return;			/* keine √Ñnderung */
 		goto draw;
 		}
 
-	/* Anfang unverÑndert */
+	/* Anfang unver√§ndert */
 
 	if	(bsel == xi->bsel)
 		{
@@ -1336,7 +1309,7 @@ static void sel_new_xeditob( XEDITINFO *xi, GRECT *obj_g, WORD whdl,
 		goto draw;
 		}
 
-	/* Weder Anfang noch Ende unverÑndert */
+	/* Weder Anfang noch Ende unver√§ndert */
 
 	sel_xeditob( xi, obj_g, whdl, xi->bsel, xi->esel );
 	b = bsel;
@@ -1352,17 +1325,17 @@ draw:
 
 /***************************************************************
 *
-* Zeichenroutine fÅrs USERDEF
+* Zeichenroutine f√ºrs USERDEF
 *
 ***************************************************************/
 
-static void _draw_cursor( WORD x, WORD y, XEDITINFO *xi )
+static void _draw_cursor( WORD x, WORD y, EDITINFO *xi )
 {
-	int pxy[4];
+	short pxy[4];
 
 	if	(!xi->tcurs)
 		{
-		vsl_color(vdi_handle, BLACK);
+		vsl_color(vdi_handle, G_BLACK);
 		vswr_mode(vdi_handle, MD_XOR);
 		pxy[0] = x + xi->pcurs_x - xi->xscroll;
 		pxy[1] = y + xi->pcurs_y;
@@ -1372,10 +1345,10 @@ static void _draw_cursor( WORD x, WORD y, XEDITINFO *xi )
 		}
 }
 
-WORD cdecl xeditob_userdef( PARMBLK *pb )
+WORD __CDECL xeditob_userdef( PARMBLK *pb )
 {
-	XEDITINFO *xi = (XEDITINFO *) pb->pb_parm;
-	int pxy[4];
+	EDITINFO *xi = (EDITINFO *) pb->pb_parm;
+	short pxy[4];
 	int x,y;
 	register int i;
 	struct _xed_li *li;
@@ -1387,7 +1360,7 @@ WORD cdecl xeditob_userdef( PARMBLK *pb )
 	if	(pb->pb_currstate != pb->pb_prevstate)
 		goto ende;
 
-	/* Zeichensatz und -hîhe setzen */
+	/* Zeichensatz und -h√∂he setzen */
 	/* ---------------------------- */
 
 	setfont( xi );
@@ -1402,7 +1375,7 @@ WORD cdecl xeditob_userdef( PARMBLK *pb )
 	/* Clipping setzen (mit Objekt schneiden!) */
 	/* --------------------------------------- */
 
-	if	(!rc_intersect((GRECT *) &(pb->pb_x), (GRECT *) &(pb->pb_xc)))
+	if	(!xedit_rect_intersect((GRECT *) &(pb->pb_x), (GRECT *) &(pb->pb_xc)))
 		goto ende;
 	pxy[0] = pb->pb_xc;
 	pxy[1] = pb->pb_yc;
@@ -1410,14 +1383,14 @@ WORD cdecl xeditob_userdef( PARMBLK *pb )
 	pxy[3] = pxy[1] + pb->pb_hc - 1;
 	if	(pxy[2] < 0)
 		goto ende;
-	vs_clip(vdi_handle, TRUE, pxy);
+	vs_clip(vdi_handle, 1, pxy);
 
 /*
 printf("x1 = %d y1 = %d x2 = %d y2 = %d\n",
 	pxy[0],pxy[1],pxy[2],pxy[3]);
 */
 
-	/* Hintergrund (FlÑche) ausgeben */
+	/* Hintergrund (Fl√§che) ausgeben */
 	/* ----------------------------- */
 
 	vr_recfl(vdi_handle, pxy);
@@ -1436,7 +1409,7 @@ printf("x1 = %d y1 = %d x2 = %d y2 = %d\n",
 	printf("li->line = %s, li->len = %ld\n", li->line, li->len);
 #endif
 
-		/* Leerzeilen und solche auûerhalb des	*/
+		/* Leerzeilen und solche au√üerhalb des	*/
 		/* Clippings weglassen				*/
 		/* ------------------------------------ */
 
@@ -1474,7 +1447,7 @@ printf("x1 = %d y1 = %d x2 = %d y2 = %d\n",
 		if	(i)
 			{
 			vswr_mode(vdi_handle, MD_XOR);
-			vsf_color(vdi_handle, BLACK);		/* Selektion */
+			vsf_color(vdi_handle, G_BLACK);		/* Selektion */
 			for	(g = gx; i > 0; i--,g++)
 				{
 				pxy[0] = g->g_x;
@@ -1497,15 +1470,15 @@ ende:
 *
 ***************************************************************/
 
-static void _draw_cursor_whdl( GRECT *obj_g, XEDITINFO *xi,
+static void _draw_cursor_whdl( GRECT *obj_g, EDITINFO *xi,
 						WORD whdl )
 {
-	int pxy[4];
-	int pxyc[4];
+	short pxy[4];
+	short pxyc[4];
 	GRECT list;
 
 
-	if	(xi->tcurs)		/* Cursor auûerhalb des Fensters */
+	if	(xi->tcurs)		/* Cursor au√üerhalb des Fensters */
 		return;
 
 	if	(whdl < 0)
@@ -1514,7 +1487,7 @@ static void _draw_cursor_whdl( GRECT *obj_g, XEDITINFO *xi,
 		return;
 		}
 
-	vsl_color(vdi_handle, BLACK);
+	vsl_color(vdi_handle, G_BLACK);
 	vswr_mode(vdi_handle, MD_XOR);
 	pxy[0] = obj_g->g_x + xi->pcurs_x - xi->xscroll;
 	pxy[1] = obj_g->g_y + xi->pcurs_y;
@@ -1522,13 +1495,13 @@ static void _draw_cursor_whdl( GRECT *obj_g, XEDITINFO *xi,
 	pxy[3] = pxy[1] + xi->charH;
 	wind_get_grect(whdl, WF_FIRSTXYWH, &list);
 	do	{
-		if	(rc_intersect(obj_g, &list))
+		if	(xedit_rect_intersect(obj_g, &list))
 			{
 			pxyc[0] = list.g_x;
 			pxyc[1] = list.g_y;
 			pxyc[2] = pxyc[0] + list.g_w - 1;
 			pxyc[3] = pxyc[1] + list.g_h - 1;
-			vs_clip(vdi_handle, TRUE, pxyc);
+			vs_clip(vdi_handle, 1, pxyc);
 			v_pline( vdi_handle, 2, pxy);
 			}
 		wind_get_grect(whdl, WF_NEXTXYWH, &list);
@@ -1543,10 +1516,10 @@ static void _draw_cursor_whdl( GRECT *obj_g, XEDITINFO *xi,
 *
 ***************************************************************/
 
-static void edit_cursor_off( GRECT *obj_g, XEDITINFO *xi,
+static void xedit_cursor_off( GRECT *obj_g, EDITINFO *xi,
 						WORD whdl )
 {
-	if	(xi->lines)			/* geîffnet */
+	if	(xi->lines)			/* ge√∂ffnet */
 		{
 		if	(!xi->curs_hidecnt)		/* Cursor sichtbar */
 			{
@@ -1558,7 +1531,7 @@ static void edit_cursor_off( GRECT *obj_g, XEDITINFO *xi,
 	xi->curs_hidecnt++;
 }
 
-static void edit_cursor_on( GRECT *obj_g, XEDITINFO *xi,
+static void xedit_cursor_on( GRECT *obj_g, EDITINFO *xi,
 						WORD whdl )
 {
 	xi->curs_hidecnt--;
@@ -1578,8 +1551,8 @@ static void edit_cursor_on( GRECT *obj_g, XEDITINFO *xi,
 *
 ***************************************************************/
 
-WORD edit_cursor(OBJECT *tree, WORD obj, WORD whdl,
-			WORD show, XEDITINFO *xi)
+WORD xedit_cursor(OBJECT *tree, WORD obj, WORD whdl,
+			WORD show, EDITINFO *xi)
 {
 	GRECT g;
 
@@ -1589,10 +1562,10 @@ WORD edit_cursor(OBJECT *tree, WORD obj, WORD whdl,
 	g.g_w = tree->ob_width;
 	g.g_h = tree->ob_height;
 	if	(show == 1)
-		edit_cursor_on(&g, xi, whdl);
+		xedit_cursor_on(&g, xi, whdl);
 	else
 	if	(!show)
-		edit_cursor_off(&g, xi, whdl);
+		xedit_cursor_off(&g, xi, whdl);
 	return(xi->curs_hidecnt);
 }
 
@@ -1601,28 +1574,28 @@ WORD edit_cursor(OBJECT *tree, WORD obj, WORD whdl,
 *
 * Universelle Scrollroutine
 *
-* Sollte ins AES Åbernommen werden.
+* Sollte ins AES √ºbernommen werden.
 *
 * g			Zu scrollender Bereich
 * offset		soviele Pixel scrollen
 * is_horiz	horizontal (1) oder vertikal (0)
-* draw		Routine fÅr redraw (nicht gescrollter Bereich)
+* draw		Routine f√ºr redraw (nicht gescrollter Bereich)
 * whdl		Fenster-Handle oder -1
 *
 ***************************************************************/
 
 void wind_scroll( GRECT *g, WORD offset, WORD is_horiz,
 				void *param, WORD whdl,
-				void cdecl (*draw)(GRECT *g, WORD whdl,
+				void __CDECL (*draw)(GRECT *g, WORD whdl,
 							void *param))
 {
 	WORD abs_offset;
 	WORD page_offset;
 	register int xcopy,ycopy;		/* soviele x-Pixel werden kopiert */
 	MFDB src_mfdb,dest_mfdb;
-	int  pxy[8];
+	short pxy[8];
 	GRECT list_g;
-	int clip_rect[4];
+	short clip_rect[4];
 
 
 
@@ -1638,7 +1611,7 @@ void wind_scroll( GRECT *g, WORD offset, WORD is_horiz,
 
 	/* offset > 0: Balken nach unten/rechts, Inhalt nach oben/links */
 
-	/* Fenster Åber Rechteckliste scrollen */
+	/* Fenster √ºber Rechteckliste scrollen */
 
 	graf_mouse(M_OFF, NULL);
 	if	(whdl >= 0)
@@ -1649,7 +1622,7 @@ void wind_scroll( GRECT *g, WORD offset, WORD is_horiz,
 		}
 
 	do	{
-		if	(rc_intersect(g, &list_g))
+		if	(xedit_rect_intersect(g, &list_g))
 			{
 			scrollit:
 			if	(is_horiz)
@@ -1675,9 +1648,9 @@ void wind_scroll( GRECT *g, WORD offset, WORD is_horiz,
 					clip_rect[1] = g->g_y;
 					clip_rect[2] = clip_rect[0] + g->g_w-1;
 					clip_rect[3] = clip_rect[1] + g->g_h-1;
-					vs_clip	(vdi_handle, TRUE, clip_rect);
+					vs_clip	(vdi_handle, 1, clip_rect);
 					vro_cpyfm(vdi_handle, S_ONLY, pxy, &src_mfdb, &dest_mfdb);
-					/* alles neu zeichnen, was nicht vom Zielraster Åberdeckt wurde */
+					/* alles neu zeichnen, was nicht vom Zielraster √ºberdeckt wurde */
 					list_g.g_w -= xcopy;
 					if	(offset > 0)
 						list_g.g_x += xcopy;
@@ -1705,9 +1678,9 @@ void wind_scroll( GRECT *g, WORD offset, WORD is_horiz,
 					clip_rect[1] = g->g_y;
 					clip_rect[2] = clip_rect[0] + g->g_w-1;
 					clip_rect[3] = clip_rect[1] + g->g_h-1;
-					vs_clip(vdi_handle, TRUE, clip_rect);
+					vs_clip(vdi_handle, 1, clip_rect);
 					vro_cpyfm(vdi_handle, S_ONLY, pxy, &src_mfdb, &dest_mfdb);
-					/* alles neu zeichnen, was nicht vom Zielraster Åberdeckt wurde */
+					/* alles neu zeichnen, was nicht vom Zielraster √ºberdeckt wurde */
 					list_g.g_h -= ycopy;
 					if	(offset > 0)
 						list_g.g_y += ycopy;
@@ -1718,7 +1691,7 @@ void wind_scroll( GRECT *g, WORD offset, WORD is_horiz,
 		if	(whdl >= 0)
 			wind_get_grect(whdl, WF_NEXTXYWH, &list_g);
 		}
-	while((whdl >= 0) && (list_g.g_w > 0));		/* bis Rechteckliste vollstÑndig */
+	while((whdl >= 0) && (list_g.g_w > 0));		/* bis Rechteckliste vollst√§ndig */
 
 	graf_mouse(M_ON, NULL);
 }
@@ -1726,14 +1699,14 @@ void wind_scroll( GRECT *g, WORD offset, WORD is_horiz,
 
 /***************************************************************
 *
-* Horizontale Scrollroutine fÅrs USERDEF
+* Horizontale Scrollroutine f√ºrs USERDEF
 *
-* Es muû sichergestellt werden, daû der Cursor horizontal
-* sichtbar ist. Ggf. muû gescrollt werden.
+* Es mu√ü sichergestellt werden, da√ü der Cursor horizontal
+* sichtbar ist. Ggf. mu√ü gescrollt werden.
 *
 * Der Cursor kann minimal am Textanfang stehen (Pos 0),
 * maximal hinter dem letzten Zeichen, d.h. ein Pixel
-* auûerhalb (!) des Objekts.
+* au√üerhalb (!) des Objekts.
 *
 ***************************************************************/
 
@@ -1743,7 +1716,7 @@ struct _draw_param
 	WORD obj;
 	};
 
-static void cdecl _draw(GRECT *g, WORD whdl,
+static void __CDECL _draw(GRECT *g, WORD whdl,
 				void *p)
 {
 	struct _draw_param *dp = p;
@@ -1752,7 +1725,7 @@ static void cdecl _draw(GRECT *g, WORD whdl,
 }
 
 static void hscroll(OBJECT *tree, WORD obj,GRECT *obj_g,
-					XEDITINFO *xi, WORD whdl)
+					EDITINFO *xi, WORD whdl)
 {
 	int x,xn,offset;
 	struct _draw_param dp;
@@ -1770,11 +1743,11 @@ static void hscroll(OBJECT *tree, WORD obj,GRECT *obj_g,
 	dp.tree = tree;
 	dp.obj = obj;
 	xi->xscroll += offset;
-	wind_scroll(obj_g, offset, TRUE, &dp, whdl, _draw);
+	wind_scroll(obj_g, offset, 1, &dp, whdl, _draw);
 }
 
 static void hscroll_lr(OBJECT *tree, WORD obj,GRECT *obj_g,
-					XEDITINFO *xi, WORD whdl, WORD offset)
+					EDITINFO *xi, WORD whdl, WORD offset)
 {
 	struct _draw_param dp;
 
@@ -1783,7 +1756,7 @@ static void hscroll_lr(OBJECT *tree, WORD obj,GRECT *obj_g,
 	if	(xi->xscroll + offset >= 0)
 		{
 		xi->xscroll += offset;
-		wind_scroll(obj_g, offset, TRUE, &dp, whdl, _draw);
+		wind_scroll(obj_g, offset, 1, &dp, whdl, _draw);
 		}
 }
 
@@ -1803,11 +1776,11 @@ static unsigned char *next_word( struct _xed_li *li, WORD x,
 	s = li->line+x;
 	se = li->line+li->len;
 	while((s < se) && (!(c_is_sep(*s))))
-		s++;		/* öberspringe Zeichen */
+		s++;		/* √úberspringe Zeichen */
 	if	(spaces)
 		{
 		while((s < se) && (c_is_sep(*s)))
-			s++;		/* öberspringe Zeichen */
+			s++;		/* √úberspringe Zeichen */
 		}
 	return(s);
 }
@@ -1819,11 +1792,11 @@ static unsigned char *prev_word( struct _xed_li *li, WORD x )
 
 	s = li->line+x - 1;
 	while((s > li->line) && (c_is_sep(*s)))
-		s--;		/* öberspringe Blanks */
+		s--;		/* √úberspringe Blanks */
 	if	(s > li->line)
 		{
 		while((s > li->line) && (!(c_is_sep(s[-1]))))
-			s--;		/* öberspringe Zeichen */
+			s--;		/* √úberspringe Zeichen */
 		}
 	return(s);
 }
@@ -1833,12 +1806,12 @@ static unsigned char *prev_word( struct _xed_li *li, WORD x )
 *
 * Scrolling.
 *
-* RÅckgabe der Anzahl tatsÑchlich gescrollter Zeilen.
+* R√ºckgabe der Anzahl tats√§chlich gescrollter Zeilen.
 *
 ***************************************************************/
 
 static int scroll_up(OBJECT *tree, WORD obj, GRECT *obj_g,
-				WORD whdl, XEDITINFO *xi, WORD n)
+				WORD whdl, EDITINFO *xi, WORD n)
 {
 	struct _xed_li *li;		/* Cursorzeile */
 	unsigned char *s;
@@ -1878,7 +1851,7 @@ static int scroll_up(OBJECT *tree, WORD obj, GRECT *obj_g,
 
 		draw_g = *obj_g;
 		draw_g.g_h = xi->lvis * xi->charH;
-		wind_scroll( &draw_g, n * xi->charH, FALSE,
+		wind_scroll( &draw_g, n * xi->charH, 0,
 					&dp, whdl, _draw);
 		xi->yscroll += n;
 		}
@@ -1887,7 +1860,7 @@ static int scroll_up(OBJECT *tree, WORD obj, GRECT *obj_g,
 
 
 static int scroll_down(OBJECT *tree, WORD obj, GRECT *obj_g,
-				WORD whdl, XEDITINFO *xi, WORD n)
+				WORD whdl, EDITINFO *xi, WORD n)
 {
 	struct _xed_li *li;		/* Cursorzeile */
 	unsigned char *s;
@@ -1929,7 +1902,7 @@ static int scroll_down(OBJECT *tree, WORD obj, GRECT *obj_g,
 
 		draw_g = *obj_g;
 		draw_g.g_h = xi->lvis * xi->charH;
-		wind_scroll( &draw_g, -n*(xi->charH), FALSE,
+		wind_scroll( &draw_g, -n*(xi->charH), 0,
 					&dp, whdl, _draw);
 		xi->yscroll -= n;
 		}
@@ -1940,11 +1913,11 @@ static int scroll_down(OBJECT *tree, WORD obj, GRECT *obj_g,
 /***************************************************************
 *
 * Setzt yscroll absolut, gibt die Anzahl gescrollter Zeilen
-* zurÅck.
+* zur√ºck.
 *
 ***************************************************************/
 
-static long _lnum_yscroll(XEDITINFO *xi, LONG n)
+static long _lnum_yscroll(EDITINFO *xi, LONG n)
 {
 	struct _xed_li *li;
 	long curr;
@@ -1960,7 +1933,7 @@ static long _lnum_yscroll(XEDITINFO *xi, LONG n)
 	if	(n == curr)
 		return(difflines);
 
-	if	(n < curr)	/* muû hoch scrollen */
+	if	(n < curr)	/* mu√ü hoch scrollen */
 		{
 		do	{
 			t = get_prev_eol( xi, t, &len, &lextra );
@@ -1975,15 +1948,15 @@ static long _lnum_yscroll(XEDITINFO *xi, LONG n)
 			init_lines(xi);
 			}
 		}
-	else	{			/* muû runter scrollen */
-		eot = TRUE;
+	else	{			/* mu√ü runter scrollen */
+		eot = 1;
 		li = xi->lines+xi->lvis-1;	/* letzte Zeile */
 		t = li->line;
 		if	(t)
 			{
 			t += li->len + li->lextra;
 			if	((t < xi->buf+xi->curr_tlen) || (li->lextra))
-				eot = FALSE;	/* es gibt nÑchste Zeile */
+				eot = 0;	/* es gibt n√§chste Zeile */
 			}
 
 		while((!eot) && (n > curr))
@@ -2009,14 +1982,14 @@ static long _lnum_yscroll(XEDITINFO *xi, LONG n)
 *
 * Vertikales Scrolling
 *
-* Es wird solange gescrollt, bis die Zeile, welche <s> enthÑlt,
+* Es wird solange gescrollt, bis die Zeile, welche <s> enth√§lt,
 * im Objekt sichtbar ist.
 * Der Cursor (ccurs_x, ccurs_y) wird auf s gesetzt.
 *
 ***************************************************************/
 
 static void vscroll_to(OBJECT *tree, WORD obj, GRECT *obj_g,
-				WORD whdl, XEDITINFO *xi,
+				WORD whdl, EDITINFO *xi,
 				unsigned char *dest)
 {
 	int difflines = 0;
@@ -2039,7 +2012,7 @@ static void vscroll_to(OBJECT *tree, WORD obj, GRECT *obj_g,
 	if	(dest < t)
 		{
 
-		/* ich muû hoch scrollen */
+		/* ich mu√ü hoch scrollen */
 		/* --------------------- */
 
 		do	{
@@ -2056,14 +2029,14 @@ static void vscroll_to(OBJECT *tree, WORD obj, GRECT *obj_g,
 		}
 	else	{
 
-		eot = TRUE;
+		eot = 1;
 		li = xi->lines+xi->lvis-1;	/* letzte Zeile */
 		t = li->line;
 		if	(t)
 			{
 			t += li->len + li->lextra;
 			if	((t < xi->buf+xi->curr_tlen) || (li->lextra))
-				eot = FALSE;	/* es gibt nÑchste Zeile */
+				eot = 0;	/* es gibt n√§chste Zeile */
 			}
 
 		while((!eot) && (dest >= t))
@@ -2097,7 +2070,7 @@ return(1);
 
 		draw_g = *obj_g;
 		draw_g.g_h = xi->lvis * xi->charH;
-		wind_scroll( &draw_g, difflines * (xi->charH), FALSE,
+		wind_scroll( &draw_g, difflines * (xi->charH), 0,
 				&dp, whdl, _draw);
 		xi->yscroll += difflines;
 		}
@@ -2117,12 +2090,12 @@ return(1);
 
 /***************************************************************
 *
-* Bereich lîschen
+* Bereich l√∂schen
 *
 ***************************************************************/
 
 static void del_range( OBJECT *tree, WORD obj, GRECT *obj_g,
-			WORD whdl, XEDITINFO *xi,
+			WORD whdl, EDITINFO *xi,
 			unsigned char *bsel, unsigned char *esel,
 			struct _xed_li *li)
 
@@ -2130,7 +2103,8 @@ static void del_range( OBJECT *tree, WORD obj, GRECT *obj_g,
 	GRECT draw_g;
 	struct _draw_param dp;
 	int scroll_lines_range,leff,nlines_del;
-	int additional_line,difflines;
+	WORD additional_line;
+	int difflines;
 	unsigned char *aline,*nextline,*pline;
 	LONG len;
 	WORD lextra;
@@ -2158,7 +2132,7 @@ static void del_range( OBJECT *tree, WORD obj, GRECT *obj_g,
 		else	pline = NULL;
 		}
 	else	{
-		/* Anzahl der zu lîschenden Zeilen berechnen */
+		/* Anzahl der zu l√∂schenden Zeilen berechnen */
 		/* ----------------------------------------- */
 		nlines_del = lcount(bsel, esel, &additional_line);
 		xi->nlines -= nlines_del;
@@ -2167,12 +2141,12 @@ static void del_range( OBJECT *tree, WORD obj, GRECT *obj_g,
 		}
 
 
-	/* Bereich lîschen */
+	/* Bereich l√∂schen */
 	/* --------------- */
 
 	memcpy(bsel, esel, xi->buf+xi->curr_tlen-
 							esel+1);
-	xi->dirty = TRUE;	/* Text geÑndert */
+	xi->dirty = 1;	/* Text ge√§ndert */
 	if	(xi->autowrap)
 		xi->max_linew = -1;		/* Breite unbekannt */
 	xi->curr_tlen -= esel-bsel;
@@ -2212,7 +2186,7 @@ static void del_range( OBJECT *tree, WORD obj, GRECT *obj_g,
 			}
 		init_lines(xi);
 
-		/* nachsehen, ob sich aktuelle Zeile geÑndert hat */
+		/* nachsehen, ob sich aktuelle Zeile ge√§ndert hat */
 		/* Wenn ja, aktuelle und vorherige neu zeichnen	*/
 		/* ---------------------------------------------- */
 
@@ -2237,7 +2211,7 @@ Cconws("aline != li->line\r\n");
 			if	(nextline == (li+1)->line)
 				{
 
-				/* nÑchste Zeile hat sich nicht geÑndert */
+				/* n√§chste Zeile hat sich nicht ge√§ndert */
 				/* Nur Zeile neu machen und Ende */
 
 				if	((xi->mono) && (!xi->tabwidth))
@@ -2245,7 +2219,7 @@ Cconws("aline != li->line\r\n");
 					dp.tree = tree;
 					dp.obj = obj;
 		
-					wind_scroll( &draw_g, ((WORD) (esel-bsel)) * xi->charW, TRUE,
+					wind_scroll( &draw_g, ((WORD) (esel-bsel)) * xi->charW, 1,
 								&dp, whdl, _draw);
 					}
 				else	{
@@ -2290,7 +2264,7 @@ Cconws("vscroll_to: ");Fwrite(1, 10L, s + (bp-kbuf));Cconws("\r\n");
 	if	(nlines_del)
 		{
 
-		/* mehrere Zeilen gelîscht */
+		/* mehrere Zeilen gel√∂scht */
 		/* ----------------------- */
 
 		leff = xi->leff;			/* vorherige Anzahl */
@@ -2323,7 +2297,7 @@ printf("scroll_lines_range = %d\n", scroll_lines_range);
 			draw_g.g_h = scroll_lines_range * xi->charH;
 			draw_g.g_y += (xi->ccurs_y + 1) * xi->charH;
 	
-			wind_scroll( &draw_g, difflines * xi->charH, FALSE,
+			wind_scroll( &draw_g, difflines * xi->charH, 0,
 						&dp, whdl, _draw);
 	
 			/* Redraw der letzten Zeilen */
@@ -2343,7 +2317,7 @@ printf("scroll_lines_range = %d\n", scroll_lines_range);
 		/* ------------------------- */
 
 		li = xi->lines+xi->ccurs_y;
-		li->len -= esel-bsel;		/* Zeile verkÅrzt */
+		li->len -= esel-bsel;		/* Zeile verk√ºrzt */
 		if	(xi->mono && !was_tabulator)
 			{
 
@@ -2351,7 +2325,7 @@ printf("scroll_lines_range = %d\n", scroll_lines_range);
 			dp.obj = obj;
 
 			wind_scroll( &draw_g, ((WORD) (esel-bsel))*xi->charW,
-						TRUE, &dp, whdl, _draw);
+						1, &dp, whdl, _draw);
 			}
 		else	{
 
@@ -2381,14 +2355,14 @@ printf("scroll_lines_range = %d\n", scroll_lines_range);
 
 /***************************************************************
 *
-* Bereich (bse,esel) an Cursorposition einfÅgen
+* Bereich (bse,esel) an Cursorposition einf√ºgen
 *
-* RÅckgabe 0 bei PufferÅberlauf
+* R√ºckgabe 0 bei Puffer√ºberlauf
 *
 ***************************************************************/
 
 static int ins_range( OBJECT *tree, WORD obj, GRECT *obj_g,
-			WORD whdl, XEDITINFO *xi,
+			WORD whdl, EDITINFO *xi,
 			unsigned char *data, LONG add_len,
 			struct _xed_li *li)
 
@@ -2396,11 +2370,11 @@ static int ins_range( OBJECT *tree, WORD obj, GRECT *obj_g,
 	GRECT draw_g;
 	struct _draw_param dp;
 	int nlines_ins;
-	int additional_line;
+	WORD additional_line;
 	long len;
 	unsigned char *s;
 	int only_crlf,scroll_lines;
-	int old_lextra;
+	WORD old_lextra;
 	unsigned char *nextline,*aline,*pline;
 
 
@@ -2418,19 +2392,19 @@ static int ins_range( OBJECT *tree, WORD obj, GRECT *obj_g,
 		else	pline = NULL;
 		}
 
-	/* Text einfÅgen */
+	/* Text einf√ºgen */
 	/* ------------- */
 
 	s = li->line + xi->ccurs_x;
 	memmove( s+add_len, s, (xi->buf+xi->curr_tlen+1)-(s));
 	memmove( s, data, add_len );
-	xi->dirty = TRUE;	/* Text geÑndert */
+	xi->dirty = 1;	/* Text ge√§ndert */
 	if	(xi->autowrap)
 		xi->max_linew = -1;		/* Breite unbekannt */
 	s += add_len;
 	xi->curr_tlen += add_len;
 
-	/* GRECT fÅr Redraw der Cursorzeile */
+	/* GRECT f√ºr Redraw der Cursorzeile */
 	/* -------------------------------- */
 
 	draw_g.g_x = obj_g->g_x+xi->pcurs_x - xi->xscroll;
@@ -2467,7 +2441,7 @@ static int ins_range( OBJECT *tree, WORD obj, GRECT *obj_g,
 			}
 		init_lines(xi);
 
-		/* nachsehen, ob sich aktuelle Zeile geÑndert hat */
+		/* nachsehen, ob sich aktuelle Zeile ge√§ndert hat */
 		/* Wenn ja, aktuelle und vorherige neu zeichnen	*/
 		/* ---------------------------------------------- */
 
@@ -2489,7 +2463,7 @@ static int ins_range( OBJECT *tree, WORD obj, GRECT *obj_g,
 			if	(nextline == (li+1)->line)
 				{
 
-				/* nÑchste Zeile hat sich nicht geÑndert */
+				/* n√§chste Zeile hat sich nicht ge√§ndert */
 				/* Nur Zeile neu machen und Ende */
 
 				if	((xi->mono) && (!xi->tabwidth))
@@ -2497,7 +2471,7 @@ static int ins_range( OBJECT *tree, WORD obj, GRECT *obj_g,
 					dp.tree = tree;
 					dp.obj = obj;
 		
-					wind_scroll( &draw_g, (-(WORD) add_len) * xi->charW, TRUE,
+					wind_scroll( &draw_g, (-(WORD) add_len) * xi->charW, 1,
 								&dp, whdl, _draw);
 					}
 				else	{
@@ -2530,7 +2504,7 @@ static int ins_range( OBJECT *tree, WORD obj, GRECT *obj_g,
 	/* 2. Fall: kein Autowrap */
 	/* ---------------------- */
 
-	/* Anzahl der zu einzufÅgenden Zeilen berechnen */
+	/* Anzahl der zu einzuf√ºgenden Zeilen berechnen */
 	/* -------------------------------------------- */
 
 	nlines_ins = lcount(data, data+add_len, &additional_line);
@@ -2539,7 +2513,7 @@ static int ins_range( OBJECT *tree, WORD obj, GRECT *obj_g,
 	if	(!nlines_ins)
 		{
 
-		/* 1. Fall: keine neue Zeile eingefÅgt */
+		/* 1. Fall: keine neue Zeile eingef√ºgt */
 		/* ----------------------------------- */
 
 		li->len += add_len;
@@ -2552,7 +2526,7 @@ static int ins_range( OBJECT *tree, WORD obj, GRECT *obj_g,
 			dp.tree = tree;
 			dp.obj = obj;
 
-			wind_scroll( &draw_g, (-(WORD) add_len) * xi->charW, TRUE,
+			wind_scroll( &draw_g, (-(WORD) add_len) * xi->charW, 1,
 						&dp, whdl, _draw);
 			}
 		else	{
@@ -2572,12 +2546,12 @@ static int ins_range( OBJECT *tree, WORD obj, GRECT *obj_g,
 
 	else	{
 
-		/* 2. Fall: neue Zeile(n) eingefÅgt */
+		/* 2. Fall: neue Zeile(n) eingef√ºgt */
 		/* -------------------------------- */
 
 		only_crlf = ((*data == '\r') && (add_len == 2));
 
-		/* hat sich Cursorzeile geÑndert? */
+		/* hat sich Cursorzeile ge√§ndert? */
 		/* ------------------------------ */
 
 		if	(only_crlf)
@@ -2617,7 +2591,7 @@ static int ins_range( OBJECT *tree, WORD obj, GRECT *obj_g,
 					}
 				li++;
 				li->line = s;
-				li->len = len;		/* neue LÑnge */
+				li->len = len;		/* neue L√§nge */
 				li->lextra = old_lextra;
 				li++;
 
@@ -2641,7 +2615,7 @@ static int ins_range( OBJECT *tree, WORD obj, GRECT *obj_g,
 			draw_g.g_h = scroll_lines * xi->charH;
 			draw_g.g_y += (xi->ccurs_y + 1) * xi->charH;
 
-			wind_scroll( &draw_g, -nlines_ins*(xi->charH), FALSE,
+			wind_scroll( &draw_g, -nlines_ins*(xi->charH), 0,
 						&dp, whdl, _draw);
 			}
 		}
@@ -2652,15 +2626,15 @@ static int ins_range( OBJECT *tree, WORD obj, GRECT *obj_g,
 
 /***************************************************************
 *
-* Tastatur-Eingaberoutine fÅrs USERDEF
+* Tastatur-Eingaberoutine f√ºrs USERDEF
 *
-* noch: Del zurÅckfÅhren auf Block lîschen
-* Zeicheneingabe zurÅckfÅhren auf Block einfÅgen
+* noch: Del zur√ºckf√ºhren auf Block l√∂schen
+* Zeicheneingabe zur√ºckf√ºhren auf Block einf√ºgen
 *
 ***************************************************************/
 
 static WORD key_xeditob( OBJECT *tree, WORD obj, WORD whdl, WORD key,
-				WORD kbsh, XEDITINFO *xi, LONG *errcode )
+				WORD kbsh, EDITINFO *xi, LONG *errcode )
 {
 	OBJECT *t;
 	GRECT obj_g;
@@ -2680,9 +2654,9 @@ static WORD key_xeditob( OBJECT *tree, WORD obj, WORD whdl, WORD key,
 	t = tree+obj;
 	obj_g.g_w = t->ob_width;
 	obj_g.g_h = t->ob_height;
-	edit_cursor_off(&obj_g, xi, whdl);	/* Cursor aus */
+	xedit_cursor_off(&obj_g, xi, whdl);	/* Cursor aus */
 
-	if	(xi->tcurs)	/* Cursor muû umgesetzt werden */
+	if	(xi->tcurs)	/* Cursor mu√ü umgesetzt werden */
 		vscroll_to(tree, obj, &obj_g, whdl, xi, xi->tcurs);
 	li = xi->lines + xi->ccurs_y;
 
@@ -2843,9 +2817,9 @@ cursor_rechts:
 		if	(xi->ccurs_x >= li->len)
 			goto cursor_rechts;
 
-		/* Ansonsten das nÑchste Wort suchen */
+		/* Ansonsten das n√§chste Wort suchen */
 
-		s = next_word( li, xi->ccurs_x, TRUE );
+		s = next_word( li, xi->ccurs_x, 1 );
 		xi->ccurs_x = (int) (s - li->line);
 		goto cursor2;
 
@@ -2885,7 +2859,7 @@ hoch_sel:
 			vscroll_to(tree, obj, &obj_g, whdl, xi, xi->bsel);
 unsel:
 			unsel_xeditob( xi, &obj_g, whdl );
-			edit_cursor_on(&obj_g, xi, whdl);
+			xedit_cursor_on(&obj_g, xi, whdl);
 			break;
 			}
 cursor_up:
@@ -2982,7 +2956,7 @@ cursor2:
 			{
 			del_range( tree, obj, &obj_g, whdl, xi,
 					xi->bsel, xi->esel, NULL);
-			edit_cursor_on(&obj_g, xi, whdl);
+			xedit_cursor_on(&obj_g, xi, whdl);
 			}
 		else	{
 			s = li->line + xi->ccurs_x;
@@ -3011,7 +2985,7 @@ cursor2:
 		sel_new_xeditob( xi, &obj_g, whdl,
 			xi->buf, xi->buf + xi->curr_tlen );
 		if	(xi->bsel)
-			edit_cursor_off(&obj_g, xi, whdl);	/* Cursor aus */
+			xedit_cursor_off(&obj_g, xi, whdl);	/* Cursor aus */
 		break;
 
 		/* ^Y */
@@ -3023,7 +2997,7 @@ cursor2:
 			sel_new_xeditob( xi, &obj_g, whdl,
 				li->line, li->line + li->len + li->lextra );
 			if	(xi->bsel)
-				edit_cursor_off(&obj_g, xi, whdl);	/* Cursor aus */
+				xedit_cursor_off(&obj_g, xi, whdl);	/* Cursor aus */
 			}
 		key = 0x2d18;		/* wie ^X */
 		goto ctrl_x;
@@ -3050,7 +3024,7 @@ cursor2:
 				del_range( tree, obj, &obj_g, whdl, xi,
 					xi->bsel, xi->esel, NULL);
 				li = xi->lines + xi->ccurs_y;
-				edit_cursor_on(&obj_g, xi, whdl);
+				xedit_cursor_on(&obj_g, xi, whdl);
 				}
 			}
 		break;
@@ -3064,30 +3038,30 @@ cursor2:
 			del_range( tree, obj, &obj_g, whdl, xi,
 					xi->bsel, xi->esel, NULL);
 			li = xi->lines + xi->ccurs_y;
-			edit_cursor_on(&obj_g, xi, whdl);
+			xedit_cursor_on(&obj_g, xi, whdl);
 			}
 		hdl = open_scrap(MO_RDONLY);
 		if	(hdl >= 0)
 			{
-			XATTR xa;
+			struct stat st;
 			long ret;
 			unsigned char *nbuf;
 
 
-			ret = Fcntl(hdl, (long) (&xa), FSTAT);
+			ret = fstat(hdl, &st);
 			if	(ret >= 0)
 				{
-				nbuf = Malloc(xa.size+1);
+				nbuf = (unsigned char *) Malloc((LONG) st.st_size + 1);
 				if	(nbuf)
 					{
-					ret = Fread(hdl, xa.size, nbuf);
-					if	(ret == xa.size)
+					ret = Fread(hdl, st.st_size, nbuf);
+					if	(ret == st.st_size)
 						{
 						s = li->line+xi->ccurs_x;
 						if	(ins_range(tree, obj, &obj_g, whdl, xi,
-							nbuf, xa.size, li))
+							nbuf, st.st_size, li))
 							vscroll_to(tree, obj, &obj_g, whdl, xi,
-							s + xa.size);
+							s + st.st_size);
 						else	*errcode = EDITERR_BUFFER_FULL;
 						}
 					Mfree(nbuf);
@@ -3110,7 +3084,7 @@ cursor2:
 			del_range( tree, obj, &obj_g, whdl, xi,
 					xi->bsel, xi->esel, NULL);
 			li = xi->lines + xi->ccurs_y;
-			edit_cursor_on(&obj_g, xi, whdl);
+			xedit_cursor_on(&obj_g, xi, whdl);
 			}
 
 		s = li->line + xi->ccurs_x;
@@ -3152,12 +3126,12 @@ Cconws("vscroll_to: ");Fwrite(1, 10L, s + (bp-kbuf));Cconws("\r\n");
 		break;
 	}
 
-	edit_cursor_on(&obj_g, xi, whdl);
+	xedit_cursor_on(&obj_g, xi, whdl);
 #if	DEBUG2
 	printf("\x1b""H""Scrollpos: %3ld von %3ld\n",
 			xi->yscroll, xi->nlines);
 #endif
-	*errcode = E_OK;		/* kein Fehler */
+	*errcode = 0;		/* kein Fehler */
 	return(1);
 }
 
@@ -3166,18 +3140,18 @@ Cconws("vscroll_to: ");Fwrite(1, 10L, s + (bp-kbuf));Cconws("\r\n");
 *
 * Mausklick in Zeile/Spalte umrechnen.
 *
-* RÅckgabe:	0	innerhalb des Objekts, bei clickx/clicky
+* R√ºckgabe:	0	innerhalb des Objekts, bei clickx/clicky
 *				Absolut: (xi->lines[clicky]->line)+clickx
 *		Bits:
 *			1	oberhalb
 *			2	unterhalb
-*			4	links	ggf. ist clicky gÅltig
-*			8	rechts	ggf. ist clicky gÅltig
+*			4	links	ggf. ist clicky g√ºltig
+*			8	rechts	ggf. ist clicky g√ºltig
 *
 ***************************************************************/
 
 static int mxmy2cxcy(int mx, int my, GRECT *obj_g,
-				XEDITINFO *xi,
+				EDITINFO *xi,
 				WORD *clicky, WORD *clickx)
 {
 	struct _xed_li *li;
@@ -3185,7 +3159,7 @@ static int mxmy2cxcy(int mx, int my, GRECT *obj_g,
 	int cy;
 
 
-	*clicky = -1;		/* erstmal ungÅltig */
+	*clicky = -1;		/* erstmal ung√ºltig */
 	cy = (my - obj_g->g_y) / xi->charH;		/* Zeilennummer */
 	if	(cy < 0)
 		ret |= 1;					/* oberhalb */
@@ -3195,7 +3169,7 @@ static int mxmy2cxcy(int mx, int my, GRECT *obj_g,
 			li = xi->lines+cy;
 			if	(li->line)
 				{
-				*clicky = cy;		/* clicky ist gÅltig */
+				*clicky = cy;		/* clicky ist g√ºltig */
 				if	((mx >= obj_g->g_x) && (mx < obj_g->g_x+obj_g->g_w))
 					{
 					*clickx = mx - obj_g->g_x + xi->xscroll;
@@ -3224,13 +3198,13 @@ printf("ret = %d\n", ret);
 
 /***************************************************************
 *
-* Mausbutton-Behandlungsroutine fÅrs USERDEF
+* Mausbutton-Behandlungsroutine f√ºrs USERDEF
 *
 ***************************************************************/
 
 static WORD button_xeditob( OBJECT *tree, WORD obj, WORD whdl,
-				EVNTDATA *ev, WORD nclicks,
-				XEDITINFO *xi )
+				EVNT *ev, WORD nclicks,
+				EDITINFO *xi )
 {
 	int mwhich;
 	int timer,xtimer;
@@ -3238,9 +3212,9 @@ static WORD button_xeditob( OBJECT *tree, WORD obj, WORD whdl,
 	GRECT obj_g;
 	struct _xed_li *li;
 	WORD clicky,clickx;
-	EVNTDATA ev2;
-	GRECT mg;
-	int ret,dummy;
+	EVNT ev2;
+	MOBLK mg;
+	int ret;
 	unsigned char *bsel,*new_esel,*new_bsel;
 /*
 	struct _draw_param dp;
@@ -3259,22 +3233,22 @@ static WORD button_xeditob( OBJECT *tree, WORD obj, WORD whdl,
 	obj_g.g_w = t->ob_width;
 	obj_g.g_h = t->ob_height;
 
-	/* PrÅfen, ob der Mausklick in unser Objekt geht */
+	/* Pr√ºfen, ob der Mausklick in unser Objekt geht */
 	/* --------------------------------------------- */
 
-	if	(!xy_in_grect(ev->x, ev->y, &obj_g))
+	if	(!xy_in_grect(ev->mx, ev->my, &obj_g))
 		return(0);		/* nicht in unser Objekt */
 
 	/* Zeile und Spalte des Klicks bestimmen */
 	/* ------------------------------------- */
 
-	if	(mxmy2cxcy(ev->x, ev->y, &obj_g, xi, &clicky, &clickx))
-		return(1);	/* ungÅltig */
+	if	(mxmy2cxcy(ev->mx, ev->my, &obj_g, xi, &clicky, &clickx))
+		return(1);	/* ung√ºltig */
 
 	li = xi->lines+clicky;
 
 	if	(!xi->bsel)
-		edit_cursor_off(&obj_g, xi, whdl);	/* Cursor aus */
+		xedit_cursor_off(&obj_g, xi, whdl);	/* Cursor aus */
 
 	/* Einzelner Klick					*/
 	/* ------------------------------------ */
@@ -3284,26 +3258,27 @@ static WORD button_xeditob( OBJECT *tree, WORD obj, WORD whdl,
 		if	(!(ev->kstate & (K_LSHIFT+K_RSHIFT)))
 			unsel_xeditob( xi, &obj_g, whdl );
 
-		graf_mkstate(&ev2);
-		if	(ev2.bstate & 1)
+		graf_mkstate(&ev2.mx, &ev2.my, &ev2.mbutton, &ev2.kstate);
+		if	(ev2.mbutton & 1)
 			{
 
-			/*  noch gedrÅckt: Bereich */
+			/*  noch gedr√ºckt: Bereich */
 			/* ----------------------- */
 
-			mg.g_w = mg.g_h = 1;
+			mg.m_out = 1;
+			mg.m_w = mg.m_h = 1;
 			bsel = li->line+clickx;
 			do	{
 
 				mwhich = MU_BUTTON+MU_M1;
 
-				timer = ev2.y - (obj_g.g_y + obj_g.g_h);
+				timer = ev2.my - (obj_g.g_y + obj_g.g_h);
 				if	(timer <= 0)
-					timer = obj_g.g_y - ev2.y + 1;
+					timer = obj_g.g_y - ev2.my + 1;
 
-				xtimer = ev2.x - (obj_g.g_x + obj_g.g_w);
+				xtimer = ev2.mx - (obj_g.g_x + obj_g.g_w);
 				if	(xtimer <= 0)
-					xtimer = obj_g.g_x - ev2.x + 1;
+					xtimer = obj_g.g_x - ev2.mx + 1;
 
 				if	(xtimer > timer)
 					timer = xtimer;
@@ -3324,23 +3299,22 @@ static WORD button_xeditob( OBJECT *tree, WORD obj, WORD whdl,
 						}
 					}
 
-				mg.g_x = ev2.x;
-				mg.g_y = ev2.y;
-				mwhich = evnt_multi(
+				mg.m_x = ev2.mx;
+				mg.m_y = ev2.my;
+				mt_EVNT_multi(
 						mwhich,
 						1,1,0,		/* linke Mtaste loslassen */
-						1,&mg,		/* Mauspos. verlassen */
-						0,NULL,		/* kein 2. Mausrechteck */
-						NULL,		/* keine Message */
-						timer,		/* Autoscroll-Timer */
+						&mg,		/* Mauspos. verlassen */
+						NULL,		/* kein 2. Mausrechteck */
+						(unsigned long) timer,	/* Autoscroll-Timer */
 						&ev2,
-						&dummy,		/* kreturn */
-						&dummy		/* breturn */
+						aes_global	/* AES-Parameterblock */
 						);
+				mwhich = ev2.mwhich;
 
 				if	(!(mwhich&MU_BUTTON))
 					{
-					ret = (mxmy2cxcy(ev2.x, ev2.y, &obj_g,
+					ret = (mxmy2cxcy(ev2.mx, ev2.my, &obj_g,
 							xi, &clicky, &clickx));
 
 					if	(clicky >= 0)
@@ -3412,7 +3386,7 @@ new_sel:
 							}
 						else	new_bsel = bsel;
 
-						/* Selektion verÑndern */
+						/* Selektion ver√§ndern */
 						/* ------------------- */
 
 						sel_new_xeditob( xi, &obj_g, whdl,
@@ -3442,7 +3416,7 @@ new_sel:
 					}
 				else	new_bsel = bsel;
 
-				/* Selektion verÑndern */
+				/* Selektion ver√§ndern */
 				/* ------------------- */
 
 				sel_new_xeditob( xi, &obj_g, whdl,
@@ -3463,13 +3437,13 @@ new_sel:
 	if	(nclicks == 2)
 		{
 
-		/* Vorhandene Selektion lîschen */
+		/* Vorhandene Selektion l√∂schen */
 		/* ---------------------------- */
 
 		unsel_xeditob( xi, &obj_g, whdl );
 
 		xi->bsel = prev_word( li, clickx+1 );
-		xi->esel = next_word( li, clickx, FALSE );
+		xi->esel = next_word( li, clickx, 0 );
 
 		/* Neue Selektion */
 		/* -------------- */
@@ -3478,7 +3452,7 @@ new_sel:
 		}
 
 	if	(!xi->bsel)
-		edit_cursor_on(&obj_g, xi, whdl);
+		xedit_cursor_on(&obj_g, xi, whdl);
 	return(1);
 }
 
@@ -3489,15 +3463,15 @@ new_sel:
 *
 ***************************************************************/
 
-WORD edit_evnt( OBJECT *tree, WORD obj, WORD whdl, EVNT *ev,
-				XEDITINFO *xi, LONG *errcode )
+WORD xedit_evnt( OBJECT *tree, WORD obj, WORD whdl, EVNT *ev,
+				EDITINFO *xi, LONG *errcode )
 {
 	WORD ret;
 	WORD res = 1;
 	LONG key_err;
 
 
-	*errcode = E_OK;		/* kein Fehler */
+	*errcode = 0;		/* kein Fehler */
 	if	(ev->mwhich & MU_KEYBD)
 		{
 		ret = key_xeditob( tree, obj, whdl, ev->key,
@@ -3512,7 +3486,7 @@ WORD edit_evnt( OBJECT *tree, WORD obj, WORD whdl, EVNT *ev,
 	if	(ev->mwhich & MU_BUTTON)
 		{
 		ret = button_xeditob( tree, obj, whdl,
-				(EVNTDATA *) &(ev->mx), ev->mclicks, xi );
+				ev, ev->mclicks, xi );
 		if	(!ret)
 			{
 			res = 0;
@@ -3531,22 +3505,22 @@ WORD edit_evnt( OBJECT *tree, WORD obj, WORD whdl, EVNT *ev,
 *
 ***************************************************************/
 
-unsigned char *edit_get_cursor( XEDITINFO *xi )
+unsigned char *xedit_get_cursor( EDITINFO *xi )
 {
 	if	(xi->tcurs)
 		return(xi->tcurs);
 	else	return(xi->lines[xi->ccurs_y].line+xi->ccurs_x);
 }
 
-WORD edit_set_cursor( OBJECT *tree, WORD obj, WORD whdl,
-				XEDITINFO *xi, unsigned char *s )
+WORD xedit_set_cursor( OBJECT *tree, WORD obj, WORD whdl,
+				EDITINFO *xi, unsigned char *s )
 {
 	unsigned char *curr;
 	OBJECT *t;
 	GRECT obj_g;
 
 
-	curr = edit_get_cursor(xi);
+	curr = xedit_get_cursor(xi);
 	if	(curr == s)
 		return(1);
 	if	((s < xi->buf) || (s > xi->buf+xi->curr_tlen))
@@ -3556,13 +3530,13 @@ WORD edit_set_cursor( OBJECT *tree, WORD obj, WORD whdl,
 	t = tree+obj;
 	obj_g.g_w = t->ob_width;
 	obj_g.g_h = t->ob_height;
-	edit_cursor_off(&obj_g, xi, whdl);	/* Cursor aus */
+	xedit_cursor_off(&obj_g, xi, whdl);	/* Cursor aus */
 
 	vscroll_to(tree, obj, &obj_g, whdl, xi, s);
 	init_pcursor(xi);		/* Cursor versetzen */
 	hscroll(tree, obj, &obj_g, xi, whdl);	/* Cursor sichtbar! */
 
-	edit_cursor_on(&obj_g, xi, whdl);
+	xedit_cursor_on(&obj_g, xi, whdl);
 	return(1);
 }
 
@@ -3573,8 +3547,8 @@ WORD edit_set_cursor( OBJECT *tree, WORD obj, WORD whdl,
 *
 ***************************************************************/
 
-WORD edit_scroll(OBJECT *tree, WORD obj,
-				WORD whdl, XEDITINFO *xi,
+WORD xedit_scroll(OBJECT *tree, WORD obj,
+				WORD whdl, EDITINFO *xi,
 				LONG yscroll, WORD xscroll)
 {
 	WORD diffcols;
@@ -3598,7 +3572,7 @@ WORD edit_scroll(OBJECT *tree, WORD obj,
 	dp.tree = tree;
 	dp.obj = obj;
 
-	edit_cursor_off(&obj_g, xi, whdl);	/* Cursor aus */
+	xedit_cursor_off(&obj_g, xi, whdl);	/* Cursor aus */
 
 	if	(xscroll >= 0)
 		{
@@ -3607,7 +3581,7 @@ WORD edit_scroll(OBJECT *tree, WORD obj,
 		if	(diffcols)
 			{
 			xi->xscroll = xscroll;
-			wind_scroll(&obj_g, diffcols, TRUE, &dp, whdl, _draw);
+			wind_scroll(&obj_g, diffcols, 1, &dp, whdl, _draw);
 			}
 		}
 
@@ -3623,7 +3597,7 @@ WORD edit_scroll(OBJECT *tree, WORD obj,
 			draw_g = obj_g;
 			draw_g.g_h = xi->lvis * xi->charH;
 			dl = (difflines > 32000) ? 32000 : (WORD) difflines;
-			wind_scroll( &draw_g, dl * (xi->charH), FALSE,
+			wind_scroll( &draw_g, dl * (xi->charH), 0,
 					&dp, whdl, _draw);
 			xi->yscroll += difflines;
 	
@@ -3640,6 +3614,6 @@ WORD edit_scroll(OBJECT *tree, WORD obj,
 			hscroll(tree, obj, &obj_g, xi, whdl);	/* Cursor sichtbar! */
 			}
 		}
-	edit_cursor_on(&obj_g, xi, whdl);
+	xedit_cursor_on(&obj_g, xi, whdl);
 	return(1);
 }

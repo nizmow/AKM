@@ -3,12 +3,12 @@
 *  FLP_PAR1              Andreas Kromke, 27.8.94
 *  ========
 *
-* schaltet die parallele FloppyÅbertragung ein.
+* schaltet die parallele Floppy√ºbertragung ein.
 *
 *********************************************************************/
 
-#include <tos.h>
-#include <magx.h>
+#include <mint/sysbind.h>
+#define SCB_FLPAR 0x800L
 
 int main( void )
 {

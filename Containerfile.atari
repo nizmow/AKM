@@ -1,0 +1,98 @@
+# vasm 2.0f (2026-07-11), Motorola syntax module.  The upstream release
+# archive is:
+#   http://sun.hasenbraten.de/vasm/release/vasm.tar.gz
+#   sha256 c84b2de1cbb87831795fe64a85c5d9a7002a766e3a7c30b0a2d7d5e99d878f49
+# The upstream host returned 404 (server under maintenance) on 2026-11-14,
+# and offers no HTTPS listener, so the pinned git mirror below is used.  Its
+# vasm tree is identical to that release archive (the mirror only adds
+# README.md, LICENSE and CMakeLists.txt).  The SHA-256 pins this exact
+# mirror tarball; update URL and hash together.
+ARG VASM_URL=https://codeload.github.com/StarWolf3000/vasm-mirror/tar.gz/a13e7e728a3dd5a9ba468bf479119e0bc23e70fd
+ARG VASM_SHA256=ac4439a853a884762f65f6dbba317d72beb7abdc243e6a4f5e02f99622c92ade
+
+# Native build stage.  vasm needs -DUNIX for backslash/target path handling
+# and for getcwd(); its Makefile supplies that via CFLAGS.  CPU=m68k
+# SYNTAX=mot produces vasmm68k_mot with the Motorola 68k backend, and the
+# default `all` target also produces vobjdump.  Only these two binaries are
+# copied into the runtime image, so the host compiler never ships.
+FROM docker.io/library/debian:trixie-slim AS vasm-build
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates curl gcc libc6-dev make \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG VASM_URL
+ARG VASM_SHA256
+
+RUN curl -fsSL "$VASM_URL" -o /tmp/vasm.tar.gz \
+    && echo "$VASM_SHA256  /tmp/vasm.tar.gz" | sha256sum -c - \
+    && mkdir -p /usr/src/vasm \
+    && tar -xzf /tmp/vasm.tar.gz -C /usr/src/vasm --strip-components=1 \
+    && rm -f /tmp/vasm.tar.gz \
+    && mkdir -p /usr/src/vasm/obj \
+    && make -C /usr/src/vasm CPU=m68k SYNTAX=mot \
+    && install -m 0755 /usr/src/vasm/vasmm68k_mot /usr/local/bin/vasmm68k_mot \
+    && install -m 0755 /usr/src/vasm/vobjdump /usr/local/bin/vobjdump \
+    && test -x /usr/local/bin/vasmm68k_mot \
+    && test -x /usr/local/bin/vobjdump
+
+FROM docker.io/library/debian:trixie-slim
+
+# Official MiNT ELF Debian repository; upstream currently serves it over HTTP.
+# APT verifies package signatures using the repository's dedicated keyring.
+#
+# Only the target binutils, MiNTLib, GEM library and mintbin helpers are taken
+# from Debian.  GCC 13 from this repository is deliberately not installed:
+# the compiler itself comes from Thorsten Otto's GCC 15.2 release below, so
+# there is no second GCC runtime/multilib/include tree to shadow it.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl xz-utils \
+    && curl -fsSL http://vincent.riviere.free.fr/apt/vincent-riviere-apt.gpg \
+        -o /usr/share/keyrings/vincent-riviere-apt.gpg \
+    && printf '%s\n' \
+        'deb [signed-by=/usr/share/keyrings/vincent-riviere-apt.gpg] http://vincent.riviere.free.fr/apt/ trixie contrib' \
+        > /etc/apt/sources.list.d/mintelf.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        binutils-m68k-atari-mintelf \
+        mintlib-m68k-atari-mintelf \
+        fdlibm-m68k-atari-mintelf \
+        gemlib-m68k-atari-mintelf \
+        mintbin-m68k-atari-mintelf \
+        libstdc++6 zlib1g libzstd1 \
+        make file zip unzip python3-minimal \
+    && rm -rf /var/lib/apt/lists/*
+
+# Thorsten Otto's upstream GCC 15.2 for m68k-atari-mintelf.  The archive was
+# built with --prefix=/usr --libdir=/usr/lib64 and an absolute sysroot of
+# /usr/m68k-atari-mintelf/sys-root, so it is unpacked directly at / rather
+# than into a relocated prefix.  The SHA-256 pins the exact tested tarball.
+ARG GCC15_URL=https://tho-otto.m68k.eu/download/mint/gcc-15.2.0-mintelf-20250810-bin-linux64.tar.xz
+ARG GCC15_SHA256=1f86cc5caa9a5b2429b253bd2218bdf82973ef772260b1e692e19010b1ea6c34
+
+# GCC 15's driver resolves cc1/collect2/as/ld from its own installed tree and
+# from /usr/m68k-atari-mintelf/bin (provided by the Debian binutils package),
+# so no user -B flag is needed.  Its target C/C++ headers live in the sysroot,
+# while mintlib/gemlib/mintbin install C headers in
+# /usr/m68k-atari-mintelf/include.  Expose those entries inside the sysroot;
+# the archive's C++ headers stay in sysroot/usr/include/c++/15.
+RUN curl -fsSL "$GCC15_URL" -o /tmp/gcc15.tar.xz \
+    && echo "$GCC15_SHA256  /tmp/gcc15.tar.xz" | sha256sum -c - \
+    && tar -xJf /tmp/gcc15.tar.xz -C / --no-same-owner \
+    && rm -f /tmp/gcc15.tar.xz \
+    && find /usr/m68k-atari-mintelf/include -mindepth 1 -maxdepth 1 ! -name c++ \
+        -exec ln -s {} /usr/m68k-atari-mintelf/sys-root/usr/include/ \; \
+    && test -x /usr/bin/m68k-atari-mintelf-gcc \
+    && test -x /usr/m68k-atari-mintelf/bin/as \
+    && test -x /usr/m68k-atari-mintelf/bin/ld \
+    && test -f /usr/m68k-atari-mintelf/sys-root/usr/include/stdio.h
+
+# Motorola-syntax 68k assembler for the original MagiC assembly sources.
+# GCC/binutils come from the packages above; vasm is only the assembler and
+# vobjdump is kept for inspecting vasm's own object/relocation output.
+COPY --from=vasm-build /usr/local/bin/vasmm68k_mot /usr/local/bin/vasmm68k_mot
+COPY --from=vasm-build /usr/local/bin/vobjdump /usr/local/bin/vobjdump
+
+WORKDIR /work
+CMD ["/bin/bash"]

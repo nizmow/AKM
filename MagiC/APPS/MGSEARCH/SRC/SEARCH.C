@@ -1,23 +1,19 @@
 /*******************************************************************
 *
-* Dieses Modul enth꼕t die eigentliche Suche.
+* Dieses Modul enth채lt die eigentliche Suche.
 *
 * min_xxx und max_xxx sind -1, wenn diese Kriterien nicht
-* zu ber갷ksichtigen sind.
+* zu ber체cksichtigen sind.
 *
 ****************************************************************/
 
-#include <aes.h>
-#include <tos.h>
+#include "GEMUTILS_SDK.H"
 #include <string.h>
 #include <stdlib.h>
-#include <tosdefs.h>
-#include <portab.h>
-#include <magx.h>
-#include "gemutils.h"
-#include "c:\pc\source\magxdesk.3\pattern.h"
+#include "GEMUTILS.H"
+#include "PATTERN.H"
 
-static char _path[512];	/* f걊 Rekursion */
+static char _path[512];	/* f체r Rekursion */
 static int depth;
 
 static char _pattern[256];
@@ -43,7 +39,7 @@ long filesearch( char *startpath, char *pattern,
 	_max_len  = max_len;
 	_callback_ever = callback_ever;
 	_callback_match = callback_match;
-	depth = 8;			/* Rekursionsz꼑ler */
+	depth = 8;			/* Rekursionsz채hler */
 
 	return(_filesearch());
 }
@@ -83,7 +79,7 @@ static long _filesearch( void )
 				continue;			/* ".." */
 			}
 
-		/* Auf Verzeichnis pr갽en, Rekursion */
+		/* Auf Verzeichnis pr체fen, Rekursion */
 		/* --------------------------------- */
 
 		if	((xa.mode & S_IFMT) == 0040000)

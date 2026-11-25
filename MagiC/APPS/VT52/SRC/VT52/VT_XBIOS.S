@@ -1,9 +1,7 @@
-	SUPER
-
 CURS_GETRATE		EQU	5
 
-IMPORT	app_window, pact_appl, stack_offset
-EXPORT	xbios_disp, old_xbios_vec
+	xref	app_window, pact_appl, stack_offset
+	xdef	xbios_disp, old_xbios_vec
 
                   DC.L 'XBRA'
                   DC.L 'VT52'
@@ -30,7 +28,7 @@ Cursconf:			move.w   (a0)+,d0       ;Funktionsnummer
 						add.w		d1,d1
 						add.w		d1,d1
 						lea		app_window,a0
-						move.l	0(a0,d1.w),d1	;Zeiger auf die Fensterstruktur fÅr den Prozeû oder NULL
+						move.l	0(a0,d1.w),d1	;Zeiger auf die Fensterstruktur f√ºr den Proze√ó oder NULL
 						beq.s		old_xbios
 						move.l	d1,a0				;Zeiger auf die Fensterstruktur
                   

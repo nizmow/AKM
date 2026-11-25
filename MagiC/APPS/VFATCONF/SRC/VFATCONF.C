@@ -2,7 +2,7 @@
 *
 *             VFATCONF.PRG                             6.1.96
 *             ============
-*                                 letzte Žnderung:	29.6.96
+*                                 letzte Ã„nderung:	29.6.96
 *
 * geschrieben mit Pure C V1.1
 * Projektdatei: VFATCONF.PRJ
@@ -11,59 +11,59 @@
 *
 ****************************************************************/
 
-#include <aes.h>
-#include <portab.h>
-#include <tos.h>
-#include <magx.h>
-#include <string.h>
+#include <gem.h>
+#include <mint/dcntl.h>
+#include <mint/errno.h>
+#include <mint/mintbind.h>
+#include <mint/osbind.h>
+#include <stdint.h>
 #include <stdlib.h>
-#include <tosdefs.h>
-#include "vfatconf.h"
-#include "gemutils.h"
+#include <string.h>
+#include "VFATCONF.H"
+#include "VFATCONF_GEM.H"
 
 static long conf_temp;
 static long conf_temp_valid;
 static long old_conf_temp;
 
 /* hier sind Dinge drin, die nicht in magx.h enthalten sind,
-   weil sie nicht fr die ™ffentlichkeit sind */
+   weil sie nicht fÃ¼r die Ã–ffentlichkeit sind */
 
-typedef struct
-     {
-     LONG magic;                   /* muž $87654321 sein              */
-     void *membot;                 /* Ende der AES- Variablen         */
-     void *aes_start;              /* Startadresse                    */
-     LONG magic2;                  /* ist 'MAGX'                      */
-     ULONG date;                   /* Erstelldatum ttmmjjjj           */
-     void (*chgres)(int res, int txt);  /* Aufl”sung „ndern           */
-     LONG (**shel_vector)(void);   /* residentes Desktop              */
-     char *aes_bootdrv;            /* von hieraus wurde gebootet      */
-     WORD *vdi_device;             /* vom AES benutzter VDI-Treiber   */
-     void *reservd1;
-     void *reservd2;
-     void *reservd3;
-     WORD version;                 /* z.B. $0201 ist V2.1             */
-     WORD release;                 /* 0=alpha..3=release              */
+typedef struct {
+	int32_t magic;
+	void *membot;
+	void *aes_start;
+	int32_t magic2;
+	uint32_t date;
+	void (*chgres)(int res, int txt);
+	int32_t (**shel_vector)(void);
+	char *aes_bootdrv;
+	int16_t *vdi_device;
+	void *reservd1;
+	void *reservd2;
+	void *reservd3;
+	int16_t version;
+	int16_t release;
 	void *_basepage;
-	WORD **moff_cnt;
-	UWORD **shel_buf_len;
-	void	**shel_buf;
+	int16_t **moff_cnt;
+	uint16_t **shel_buf_len;
+	void **shel_buf;
 	void *notready_list;
-	void	**menu_app;
+	void **menu_app;
 	void **menutree;
 	void **desktree;
-	WORD **desktree_1stob;
+	int16_t **desktree_1stob;
 	void **dos_magic;
-	WORD *nwindows;
+	int16_t *nwindows;
 	void **p_fsel;
 	void *ctrl_timeslice;
-	void	**topwind_app;
+	void **topwind_app;
 	void **mouse_app;
 	void **keyb_app;
-	void	*suspend_list;
-	WORD	install_drv;
-	char	kernelpath[16];
-     } AESVARS2;
+	void *suspend_list;
+	int16_t install_drv;
+	char kernelpath[16];
+} AESVARS2;
 
 
 
@@ -89,12 +89,12 @@ void ob_disable_enable(OBJECT *tree, int which, int dis)
 
 void	save_conf_to_inf( void )
 {
-	XATTR xa;
 	char infpath[] = "A:\\MAGX.INF";
 	char infpath2[] = "A:\\MAGX.&&&";
 	char *buf = NULL;
 	AESVARS2 *av;
 	long errc;
+	long inf_size;
 	int handle = -1;
 	char *s;
 	char *sec_vfat,*next_sec,*drives_asng;
@@ -121,10 +121,10 @@ void	save_conf_to_inf( void )
 	*s++ = '\n';
 	*s = '\0';
 
-	/* INF-Datei ”ffnen */
+	/* INF-Datei Ã¶ffnen */
 	/* ---------------- */
 
-	av = *((AESVARS2 **)(_GemParBlk.global+11));
+	av = *((AESVARS2 **)(aes_global + 11));
 	infpath[0] += *(av->aes_bootdrv);
 	infpath2[0] += *(av->aes_bootdrv);
 	errc = Fopen(infpath, RMODE_RW);
@@ -142,23 +142,27 @@ void	save_conf_to_inf( void )
 	/* INF-Datei einlesen */
 	/* ------------------ */
 
-	errc = Fcntl(handle, (long) &xa, FSTAT);
-	if	(errc)
+	errc = Fseek(handle, 0L, 2);
+	if	(errc < E_OK)
 		goto err;
-	buf = Malloc(xa.size+1);		/* Platz fr EOS! */
+	inf_size = errc;
+	errc = Fseek(handle, 0L, 0);
+	if	(errc < E_OK)
+		goto err;
+	buf = (char *)Malloc(inf_size+1);		/* Platz fÃ¼r EOS! */
 	if	(!buf)
 		{
 		Rform_alert(1, ALRT_MEMERR);
 		goto err2;
 		}
-	buf[xa.size] = '\0';
+	buf[inf_size] = '\0';
 
-	errc = Fread(handle, xa.size, buf);
+	errc = Fread(handle, inf_size, buf);
 	if	(errc < E_OK)
 		goto err;
 	Fclose(handle);
 
-	/* Zieldatei ”ffnen */
+	/* Zieldatei Ã¶ffnen */
 	/* ---------------- */
 
 	errc = Fcreate(infpath2, 0);
@@ -176,7 +180,7 @@ void	save_conf_to_inf( void )
 	if	(sec_vfat)
 		{
 		/* Suche das Ende der Section */
-		/* Falls es keine n„chste gibt, Dateiende */
+		/* Falls es keine nÃ¤chste gibt, Dateiende */
 
 		next_sec = strstr(sec_vfat, "\r\n#[");
 		if	(next_sec)
@@ -217,7 +221,7 @@ void	save_conf_to_inf( void )
 		insert = "#[vfat]\r\n";
 		}
 
-	/* 3. Fall: Es gibt berhaupt keine Section */
+	/* 3. Fall: Es gibt Ã¼berhaupt keine Section */
 	/* ---------------------------------------- */
 
 	else	{
@@ -242,28 +246,28 @@ void	save_conf_to_inf( void )
 	if	(errc != end_sec1-buf)
 		goto err;
 
-	/* Einfgung */
+	/* EinfÃ¼gung */
 	if	(insert)
 		{
 		errc = Fwrite(handle, strlen(insert), insert);
-		if	(errc != strlen(insert))
+		if	(errc != (long)strlen(insert))
 			goto err;
 		}
 	/* neue Zeile */
 	errc = Fwrite(handle, strlen(drives_line), drives_line);
-	if	(errc != strlen(drives_line))
+	if	(errc != (long)strlen(drives_line))
 		goto err;
 
 	if	(insert2)
 		{
 		errc = Fwrite(handle, strlen(insert2), insert2);
-		if	(errc != strlen(insert2))
+		if	(errc != (long)strlen(insert2))
 			goto err;
 		}
 
 	/* Dateiende */
 	errc = Fwrite(handle, strlen(sec2), sec2);
-	if	(errc != strlen(sec2))
+	if	(errc != (long)strlen(sec2))
 		goto err;
 
 	errc = Fclose(handle);
@@ -301,7 +305,7 @@ static void init_conf( void )
 	long ret;
 	long bit;
 	char path[] = "U:\\";
-	int stat[2] = {0,0};
+	int16_t stat[2] = {0,0};
 
 
 	ret = Dcntl(VFAT_CNFDFLN, path, -1L);
@@ -364,7 +368,7 @@ static void exit_conf( OBJECT *tree )
 	long ret,old;
 	long bit;
 	char path[] = "U:\\";
-	int msg[8];
+	int16_t msg[8];
 
 
 	if	(is_temp)

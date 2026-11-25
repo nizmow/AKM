@@ -252,7 +252,7 @@
 #undef RSC_STATIC_FILE
 #define RSC_STATIC_FILE 1
 
-#include "tslice.h"
+#include "TSLICE.H"
 
 #ifndef RSC_NAMED_FUNCTIONS
 #  define RSC_NAMED_FUNCTIONS 0
@@ -343,7 +343,7 @@ static char tslice_string_12[] = "Background Priority:";
 static char tslice_string_13[] = "Pre-emptive Multitasking";
 static char tslice_string_14[] = "OK";
 static char tslice_string_15[] = "Save";
-static char tslice_string_16[] = "Abort";
+static char tslice_string_16[] = "Cancel";
 static char tslice_string_17[] = "[1][MagiC is not installed!][ Abort ]";
 static char tslice_string_18[] = "[1][MagiC AES is not active!][ Abort ]";
 static char tslice_string_19[] = "MagiC Timeslice";

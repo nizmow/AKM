@@ -1,18 +1,16 @@
 /*
 *
-* EnthÑlt die spezifischen Routinen fÅr den Dialog
+* Enth√§lt die spezifischen Routinen f√ºr den Dialog
 * "Disketten kopieren"
 *
 */
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
+#include "MGFORMAT_GEM.H"
 #include <string.h>
 #include <stdlib.h>
-#include <country.h>
-#include "mgformat.h"
-#include "gemut_mt.h"
-#include "globals.h"
+#include "MGFORMAT.H"
+#include "GEMUT_MT.H"
+#include "GLOBALS.H"
 
 
 #define TRUE   1
@@ -35,10 +33,10 @@ static struct fmt_parameter fmt_parameter;
 
 void cpy_dial_init_rsc( int src_dev, int dst_dev )
 {
-	extern int gl_hhchar;
+	extern short gl_hhchar;
 
 
-	MT_rsrc_gaddr(0, T_CPYDSK, &adr_cpydsk, global);
+	mt_rsrc_gaddr(0, T_CPYDSK, &adr_cpydsk, global);
 	(adr_cpydsk+CPYDS_R1)->ob_y -= gl_hhchar >> 1;
 	*((adr_cpydsk + CPYDS_QU)->ob_spec.free_string) = src_dev + 'A';
 	*((adr_cpydsk + CPYDS_ZI)->ob_spec.free_string) = dst_dev + 'A';
@@ -48,15 +46,15 @@ void cpy_dial_init_rsc( int src_dev, int dst_dev )
 /*********************************************************************
 *
 * Behandelt die Exit- Objekte des Diskettenkopierdialogs
-* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angewÑhlt.
+* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angew√§hlt.
 *
 * objnr = -1:	Initialisierung.
 *			d->user_data und d->dialog_tree initialisieren!
-*		-2:	Nachricht int data[8] wurde Åbergeben
+*		-2:	Nachricht int data[8] wurde √ºbergeben
 * 		-3:	Fenster wurde durch Closebutton geschlossen.
 *		-4:	Programm wurde beendet.
 *
-* RÅckgabe:	0	Dialog schlieûen
+* R√ºckgabe:	0	Dialog schlie√üen
 *			< 0	Fehlercode
 *
 *********************************************************************/
@@ -69,23 +67,27 @@ static void fmt_feedb(void *d, char *action, int n)
 
 #pragma warn -par
 
-WORD	cdecl hdl_cpydsk( void *d, EVNT *events,
-				WORD exitbutton, WORD clicks, void *data )
+WORD	cdecl hdl_cpydsk( struct HNDL_OBJ_args args )
 {
+	DIALOG *d = args.dialog;
+	EVNT *events = args.events;
+	WORD exitbutton = args.obj;
+	WORD clicks = args.clicks;
+
 	OBJECT *tree;
 	char newlw[2];
 	int	source_drv, dest_drv;
 	extern int disk_type(int drvnr);
 
 
-	/* 1. Fall: Dialog soll geîffnet werden */
+	/* 1. Fall: Dialog soll ge√∂ffnet werden */
 	/* ------------------------------------ */
 
 	tree = adr_cpydsk;
 
 	if	(exitbutton == HNDL_INIT)
 		{
-		if	(d_cpydsk)			/* Dialog ist schon geîffnet ! */
+		if	(d_cpydsk)			/* Dialog ist schon ge√∂ffnet ! */
 			return(0);			/* create verweigern */
 
 		objs_hide(adr_cpydsk, CPYDS_SI, CPYDS_TR, CPYDS_SC, CPYDS_DO, CPYDS_DT,
@@ -190,13 +192,13 @@ WORD	cdecl hdl_cpydsk( void *d, EVNT *events,
 		close_dialog:
 		d_cpydsk = NULL;
 		send_message_break(wdlg_get_handle( d ));
-		return(0);		/* ...dann schlieûen wir ihn auch */
+		return(0);		/* ...dann schlie√üen wir ihn auch */
 		}
 
 	if	(exitbutton < 0)
 		return(1);
 
-	/* 4. Fall: Exitbutton wurde betÑtigt */
+	/* 4. Fall: Exitbutton wurde bet√§tigt */
 	/* ---------------------------------- */
 
 	if	(clicks != 1)
@@ -226,7 +228,7 @@ WORD	cdecl hdl_cpydsk( void *d, EVNT *events,
 		lw_anzeig:
 
 		do	{
-			dest_drv++;				/* nÑchstes Laufwerk */
+			dest_drv++;				/* n√§chstes Laufwerk */
 			dest_drv %= 32;			/* maximal 32 Laufwerke */
 			}
 		while(dest_drv != 0 && dest_drv > 1 /* && disk_type(dest_drv) != 'FD'*/ );

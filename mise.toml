@@ -1,0 +1,305 @@
+[tools]
+python = "3.13.7"
+
+# The Linux x86-64 AppImage includes the GUI, headless runner and EmuTOS ROMs.
+# Extract once at install time: headless runs must not depend on FUSE.
+
+[tools."github:habib256/neost"]
+version = "0.6.5"
+os = ["linux/x64"]
+asset_pattern = "NeoST-0.6.5-x86_64.AppImage"
+checksum = "sha256:a37c54c65ef882be8ed8cb1f75f87b548692d53bad13849b6244f0e8a24d3af8"
+format = "raw"
+bin_path = "squashfs-root/usr/bin"
+postinstall = 'cd "$MISE_TOOL_INSTALL_PATH" && "./squashfs-root/usr/bin/NeoST-$MISE_TOOL_VERSION-x86_64.AppImage" --appimage-extract > /dev/null'
+
+# Toolchain and everyday builds
+
+[tasks."toolchain:build"]
+description = "Build the Atari cross-toolchain Podman image"
+dir = "{{ config_root }}"
+run = "scripts/atari-container build"
+
+[tasks."toolchain:shell"]
+description = "Open a shell in the Atari toolchain container"
+dir = "{{ config_root }}"
+raw = true
+run = "scripts/atari-container shell"
+
+[tasks.atari]
+description = "Run a command in the Atari toolchain container"
+dir = "{{ config_root }}"
+raw = true
+run = "scripts/atari-container run"
+
+[tasks.make]
+description = "Run Makefile.atari with arbitrary targets and options"
+dir = "{{ config_root }}"
+run = "scripts/atari-container run make -f Makefile.atari"
+
+[tasks.kernel]
+description = "Build the German Atari/68000 MAGIC.RAM kernel"
+dir = "{{ config_root }}"
+run = "scripts/atari-container run make -f Makefile.atari magic"
+
+[tasks.apps]
+description = "Run Makefile.apps with application targets and options"
+dir = "{{ config_root }}"
+run = "scripts/atari-container run make -f Makefile.apps"
+
+# Core package and install smoke
+
+[tasks."release:core"]
+description = "Assemble the deterministic German Atari/ST core installation ZIP"
+dir = "{{ config_root }}"
+run = "python3 scripts/make-release.py --output build/atari/release/core-de.zip --manifest build/atari/release/core-de.manifest"
+
+[tasks."test:release-neost"]
+description = "Build, install and boot the German core ZIP on a clean MagiC image"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-release-smoke.py"
+
+# ABI, encoding, and host-helper checks
+
+[tasks."test:neost-server"]
+description = "Run NeoST server client protocol regression tests"
+dir = "{{ config_root }}"
+run = "python3 scripts/test_neost_server.py"
+
+[tasks."test:neost-helpers"]
+description = "Run NeoST host-side image, screen and session helper tests"
+dir = "{{ config_root }}/scripts"
+run = "python3 -m unittest test_neost_common test_neost_host test_neost_image test_neost_screen"
+
+[tasks."test:encoding"]
+description = "Verify strict Atari ST text conversion and C literal escapes"
+dir = "{{ config_root }}"
+run = "python3 -m unittest discover -s NON-TOS/atari-utf8-conversion -p 'test_*.py'"
+
+[tasks."test:abi"]
+description = "Compile the application ABI layout checks"
+dir = "{{ config_root }}"
+run = "scripts/atari-container run make -f Makefile.apps abi-check"
+
+[tasks."lint:cpx-abi"]
+description = "Reject CPX native callback access outside approved ABI bridges"
+dir = "{{ config_root }}"
+run = "python3 scripts/cpx_abi_lint.py"
+
+[tasks."test:cpx-abi"]
+description = "Lint CPX callbacks and execute bridge ABI regressions under QEMU"
+dir = "{{ config_root }}"
+run = "python3 scripts/cpx_abi_lint.py && python3 -m unittest discover -s scripts -p 'test_cpx_*.py'"
+
+# Component regressions (opt-in emulator scenarios)
+
+[tasks."test:mod-app-neost"]
+description = "Compare archived and GCC MOD_APP under NeoST"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-mod-app-smoke.py"
+
+[tasks."test:mgcopy-neost"]
+description = "Compare archived and rebuilt MGCOPY file operations under NeoST/MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-mgcopy-smoke.py"
+
+[tasks."test:mgformat-neost"]
+description = "Compare archived and rebuilt MGFORMAT startup dialog under NeoST/MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-mgformat-smoke.py"
+
+[tasks."test:vt52-neost"]
+description = "Compare archived and rebuilt VT52 terminal session under NeoST/MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-vt52-smoke.py"
+
+[tasks."test:console-tools-neost"]
+description = "Compare archived and rebuilt MAC2ST, DUMP, FC and SPLIT under NeoST"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-console-tools-smoke.py"
+
+[tasks."test:dis-neost"]
+description = "Compare archived and rebuilt DIS1/DIS2 on the TST corpus under NeoST"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-dis-smoke.py"
+
+[tasks."test:slb-consumer-neost"]
+description = "Boot a disposable MagiC image and exercise rebuilt SLB consumers"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-slb-consumer-smoke.py"
+
+[tasks."test:mgclock-neost"]
+description = "Verify MGCLOCK desktop timer and MagiC coexistence under NeoST"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-mgclock-smoke.py"
+
+[tasks."test:mgnotice-neost"]
+description = "Compare archived and rebuilt MGNOTICE note lifecycle under NeoST"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-mgnotice-smoke.py"
+
+[tasks."test:mgsearch-neost"]
+description = "Compare archived and rebuilt MGSEARCH dialogs and results under NeoST"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-mgsearch-smoke.py"
+
+[tasks."test:magxdesk-neost"]
+description = "Compare archived and rebuilt MAGXDESK v5 startup under NeoST"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-magxdesk-smoke.py"
+
+[tasks."test:mcmd-neost"]
+description = "Compare localized MCMD command execution under NeoST/MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-mcmd-smoke.py"
+
+[tasks."test:magxconf-neost"]
+description = "Compare localized MAGXCONF PRG/ACC dialog and saved configuration under MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-magxconf-smoke.py"
+
+[tasks."test:tslice-cpx-neost"]
+description = "Compare archived and rebuilt TSLICE.CPX dialog under MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-tslice-cpx-smoke.py"
+
+[tasks."test:magxconf-cpx-neost"]
+description = "Compare archived and rebuilt MAGXCONF.CPX boot init and dialog under MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-magxconf-cpx-smoke.py"
+
+[tasks."test:winframe-neost"]
+description = "Compare archived and rebuilt WINFRAME.SLB window frames under MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-winframe-smoke.py"
+
+[tasks."test:winframe-demo-neost"]
+description = "Compare the archived and rebuilt WINFRAME.DEM example library under MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-winframe-demo-smoke.py"
+
+[tasks."test:osd-off002-neost"]
+description = "Build OFF002.OSD and prove NVDI draws into a 1-plane offscreen bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-off002-smoke.py"
+
+[tasks."test:osd-off004ip-neost"]
+description = "Build OFF004IP.OSD and prove NVDI draws into a 2-plane offscreen bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-off004ip-smoke.py"
+
+[tasks."test:osd-off016ip-neost"]
+description = "Build OFF016IP.OSD and prove NVDI draws into a 4-plane offscreen bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-off016ip-smoke.py"
+
+[tasks."test:osd-off256ip-neost"]
+description = "Build OFF256IP.OSD and prove NVDI draws into an 8-plane offscreen bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-off256ip-smoke.py"
+
+[tasks."test:osd-off016pk-neost"]
+description = "Build OFF016PK.OSD and prove NVDI draws into a 16-colour packed bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-osd-batch-smoke.py --driver off016pk"
+
+[tasks."test:osd-off256pk-neost"]
+description = "Build OFF256PK.OSD and prove NVDI draws into a 256-colour packed bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-osd-batch-smoke.py --driver off256pk"
+
+[tasks."test:osd-off32kfl-neost"]
+description = "Build OFF32KFL.OSD and prove NVDI draws into a flat 15-bit bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-osd-batch-smoke.py --driver off32kfl"
+
+[tasks."test:osd-off32kpk-neost"]
+description = "Build OFF32KPK.OSD and prove NVDI draws into a packed 15-bit bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-osd-batch-smoke.py --driver off32kpk"
+
+[tasks."test:osd-off65kpk-neost"]
+description = "Build OFF65KPK.OSD and prove NVDI draws into a packed 16-bit bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-osd-batch-smoke.py --driver off65kpk"
+
+[tasks."test:osd-off16mov-neost"]
+description = "Build OFF16MOV.OSD and prove NVDI draws into a 32-bit TrueColor bitmap"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-osd-batch-smoke.py --driver off16mov"
+
+[tasks."test:cops-neost"]
+description = "Compare archived and rebuilt COPS panel and CPX dialogs on MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-cops-smoke.py"
+
+[tasks."test:cops-accessory-neost"]
+description = "Compare the shipped and rebuilt COPS accessory lifecycle on MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-cops-accessory-smoke.py"
+
+[tasks."test:keyb-sys-neost"]
+description = "Compare all six KEYB_SYS generators with their archives under NeoST"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-keyb-sys-smoke.py"
+
+[tasks."test:diagnostic-tools-neost"]
+description = "Compare archived and rebuilt SHOWFREE, MAGXKERN, MEMEXAMN and CRASHDMP under MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-diagnostic-tools-smoke.py"
+
+[tasks."test:screen-drivers-neost"]
+description = "Build all MFA/MFM screen drivers and verify ST high/medium/low archive and rebuild boots"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-screen-driver-smoke.py"
+
+[tasks."test:magxboot-neost"]
+description = "Compare the shipped and rebuilt MAGXBOOT loaders on cloned MagiC images"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-magxboot-smoke.py"
+
+[tasks."test:hardcopy-neost"]
+description = "Verify archived and rebuilt HARDCOPY installs the scr_dump hook on MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-hardcopy-smoke.py"
+
+# Artifact verification
+
+[tasks."verify:apps"]
+description = "Check expected application outputs; pass -- --build for a fresh build"
+dir = "{{ config_root }}"
+run = "python3 scripts/verify_builds.py"
+
+# Porting inventory and legacy project tools
+
+[tasks."ports:scan"]
+description = "Scan the port catalogue for remaining sources and legacy paths"
+dir = "{{ config_root }}"
+run = "python3 scripts/port_scan.py"
+
+[tasks."ports:deps"]
+description = "Resolve legacy PRJ module and header references"
+dir = "{{ config_root }}"
+run = "python3 scripts/port_deps.py"
+
+[tasks."ports:brief"]
+description = "Build a porting brief for one component"
+dir = "{{ config_root }}"
+run = "python3 scripts/port_brief.py"
+
+[tasks."ports:compile"]
+description = "Run syntax-only probes over remaining sources"
+dir = "{{ config_root }}"
+run = "python3 scripts/compile_probe.py"
+
+# Special-purpose tasks: legacy registry and standalone test fixture
+
+[tasks."toolchain:publish"]
+description = "Build and push the Atari cross-toolchain image to GitLab"
+dir = "{{ config_root }}"
+run = "scripts/atari-container publish"
+
+[tasks."test:console-driver"]
+description = "Build the generic Pexec driver for console comparisons"
+dir = "{{ config_root }}"
+run = "scripts/atari-container run make -f Makefile.apps console-test-driver"

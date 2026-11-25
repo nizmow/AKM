@@ -1,17 +1,14 @@
 /*
 *
-* EnthÑlt die allgemeinen Routinen fÅr die
+* Enth√§lt die allgemeinen Routinen f√ºr die
 * Fensterverwaltung
 *
 */
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
 #include <stdlib.h>
 #include <stddef.h>
-#include <vdi.h>
-#include "gemut_mt.h"
-#include "windows.h"
+#include "MGNOTICE_GEM.H"
+#include "WINDOWS.H"
 
 #ifndef WM_ICONIFY
 #define WM_ICONIFY       34                                 /* AES 4.1     */
@@ -98,7 +95,7 @@ int update_window(WINDOW *w)
 {
 	WMESAG mesag;
 
-	/* Der Redraw wird nicht direkt ausgefÅhrt, sondern schickt */
+	/* Der Redraw wird nicht direkt ausgef√ºhrt, sondern schickt */
 	/* eine Nachricht an die Applikation, um Kollisionen mit    */
 	/* von AES erzeugten Redraws zu vermeiden                   */
 	/* -------------------------------------------------------- */
@@ -114,7 +111,7 @@ int update_window(WINDOW *w)
 
 /****************************************************************
 *
-* Das Fenster mit Nummer <wnr> wird auf Maximalgrîûe gebracht.
+* Das Fenster mit Nummer <wnr> wird auf Maximalgr√∂√üe gebracht.
 *
 ****************************************************************/
 
@@ -127,26 +124,26 @@ static void fulled(WINDOW *w)
 
 	if	(w->flags & WFLAG_ICONIFIED)
 		return;
-	out = &(w->out);				/* out = Auûenmaûe */
+	out = &(w->out);				/* out = Au√üenma√üe */
 	wind_get(w->handle, WF_PREVXYWH, &prev.g_x, &prev.g_y, &prev.g_w, &prev.g_h);
 	wind_get(w->handle, WF_FULLXYWH, &full.g_x, &full.g_y, &full.g_w, &full.g_h);
  
-	/* 1. Fall: Das Fenster hat bereits Maximalgrîûe	  */
-	/*		  Also muû das Fenster verkleinert werden */
+	/* 1. Fall: Das Fenster hat bereits Maximalgr√∂√üe	  */
+	/*		  Also mu√ü das Fenster verkleinert werden */
 	/* ------------------------------------------------ */
 
 	if	((out->g_x == full.g_x) && (out->g_y == full.g_y) &&
 		 (out->g_w == full.g_w) && (out->g_h == full.g_h)) {
-		graf_shrinkbox(&prev, &full);
+		graf_shrinkbox_grect(&prev, &full);
 		newg = &prev;
 		}
 
-	/* 2. Fall: Das Fenster hat nicht Maximalgrîûe	  */
-	/*		  Also Grîûe auf Maximum 			  */
+	/* 2. Fall: Das Fenster hat nicht Maximalgr√∂√üe	  */
+	/*		  Also Gr√∂√üe auf Maximum 			  */
 	/* ------------------------------------------------ */
 
 	else {
-		graf_growbox(out, &full);
+		graf_growbox_grect(out, &full);
 		newg = &full;
 		}
 
@@ -154,7 +151,7 @@ static void fulled(WINDOW *w)
 }
 
 
-static void _message_obj_window(WINDOW *w, int kstate, int message[16])
+static void _message_obj_window(WINDOW *w, short kstate, short message[8])
 {
 	switch(message[0])
 		{
@@ -201,22 +198,7 @@ static void _message_obj_window(WINDOW *w, int kstate, int message[16])
 }
 
 
-/****************************************************************
-*
-* Das Fenster wird mit Default-Funktionen initialisiert.
-* Da der PureC- Linker "intelligent" ist, wird hier nur die
-* Dummy-Funktion fÅr den horizontalen Slider eingetragen.
-*
-* Wenn das Programm den horizontalen Slider braucht, muû es
-* einfach w->hslid = hslid setzen.
-*
-****************************************************************/
-
 #pragma warn -par
-static void scrl_arrange(struct _window *w, int is_horiz)
-{
-	window_calc_slider(w, is_horiz);
-}
 static void iconified(WINDOW *w, GRECT *g)
 {
 }
@@ -232,7 +214,7 @@ static void closed(WINDOW *w, int kstate)
 static void buttoned( WINDOW *w, int nclicks, EVNTDATA *ev )
 {
 }
-static void keyed( WINDOW *w, int kstate, int key )
+static void keyed( WINDOW *w, short kstate, short key )
 {
 }
 static void draw (WINDOW *w, GRECT *g)
@@ -249,7 +231,7 @@ static int arrange (WINDOW *w)
 
 static void opened(WINDOW *w)
 {
-	wind_open(w->handle, &(w->out));
+	wind_open_grect(w->handle, &(w->out));
 	wind_get_grect(w->handle, WF_WORKXYWH, &(w->in));
 	w->arrange(w);
 }

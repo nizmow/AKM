@@ -9,7 +9,7 @@
 * From UK version created by Petr Jand¡k 28.04.2002
 */
 
-#include <tos.h>
+#include <mint/osbind.h>
 
 char tab_unshift[128] = {
  0,		/*   0: nicht belegt */

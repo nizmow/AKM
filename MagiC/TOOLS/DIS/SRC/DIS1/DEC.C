@@ -6,13 +6,13 @@
 * "lbl(PC)" und lbl(PC,Rn)- Adressierung.
 * Die adressierte relative Adresse wird in die Labeltabelle
 * eingetragen.
-* FÅr die m-Option (aus dem Speicher disassemblieren) werden
+* F√ºr die m-Option (aus dem Speicher disassemblieren) werden
 * auch die Langwort- Adressen in die Labeltabelle aufgenommen,
 * sofern sie sich im disassemblierten Bereich befinden.
 *
 **********************************************************/
 
-#include <tos.h>
+#include "DIS_COMPAT.H"
 #define FALSE (0)
 #define TRUE  (1)
 #define FMT_BYTE  0
@@ -26,16 +26,16 @@
 #define MOD_PRED  4      /* Adr.ind. predecrement      -(An)      */
 #define MOD_OFFS  5      /* Adr.ind. mit Offset     xxxx(An)      */
 #define MOD_INDX  6      /* Adr.ind. mit Index        xx(An,Rn.f) */
-#define MOD_SPEC  7      /* zusÑtzliche Adressierungsarten: */
+#define MOD_SPEC  7      /* zus√§tzliche Adressierungsarten: */
 #define REG_ABSH  0      /* absolute short              xxxx      */
 #define REG_ABLO  1      /* absolute long               xxxxxxxx  */
 #define REG_RELA  2      /* PC- relativ             xxxx(PC)      */
 #define REG_RIDX  3      /* PC- relativ mit Index     xx(PC,Rn.f) */
 #define REG_IMME  4      /* unmittelbar (immediate)    #xxxxxxxx  */
 
-extern long	adr;		/* Adresse des NéCHSTEN Codeworts */
+extern long	adr;		/* Adresse des N√ÑCHSTEN Codeworts */
 extern int	add_tab(long lbl);
-extern int	*datei;
+extern int16_t	*datei;
 extern int	iserror;
 extern int	isobj;
 extern int	is30;
@@ -46,14 +46,14 @@ extern long	m_beg,m_end;
 
 
 static int  befehl, reg, mode, opmode, reg1, format, cindex;
-static int  code[6];
+static int16_t code[6];
 static int  isturbo = FALSE;
 static long endcopyr;
 
 
 static void write_pcrel( void )
 {
-	unsigned int puffer;
+	uint16_t puffer;
 	long pos;
 
 
@@ -124,7 +124,7 @@ void adressierung(void)
         case 7:   /* Spezielle Adressierungsarten */
                getcode();
 			switch (reg) {
-			  case 3:       /* ProgrammzÑhler mit Index und Verschiebung */
+			  case 3:       /* Programmz√§hler mit Index und Verschiebung */
 			  	    write_pcrel_short();
 			  	    break;
 			  	    
@@ -139,7 +139,7 @@ void adressierung(void)
 							iserror = add_tab(l - m_beg);
 			         		}
 			         break;
-			  case 2:       /* PROGRAMMZéHLER MIT VERSCHIEBUNG */
+			  case 2:       /* PROGRAMMZ√ÑHLER MIT VERSCHIEBUNG */
 			  	    write_pcrel();
 			         break;
 			  case 4:       /* unmittelbare Adressierung */
@@ -243,7 +243,7 @@ void decode4(void)
 		if	(code[cindex] & 0x83f8)
 			return;				/* Fehler */
 
-		/* Die Codierung von divx(l).l ist widersprÅchlich, hier */
+		/* Die Codierung von divx(l).l ist widerspr√ºchlich, hier */
 		/* widersprechen sich pasm/masm/bug/pd gegenseitig, die  */
 		/* korrekte Codierung ist nicht zu erkennen			  */
 
@@ -525,7 +525,7 @@ void decode(void)
 		endcopyr = (befehl & 0xff) + 2L;
 		}
 
-	/* Reloziertes Langwort oder die Stackgrîûe von Turbo */
+	/* Reloziertes Langwort oder die Stackgr√∂√üe von Turbo */
 	if	(isturbo && befehlsadresse == 2L)
 		{
 		getcode();

@@ -42,6 +42,7 @@ typedef struct
 	WORD	msg[16];
 } EVNT;
 
+struct _dialog;
 typedef	WORD	(cdecl *HNDL_OBJ)( struct _dialog *dialog, EVNT *events, WORD obj, WORD clicks, void *data );
 
 /*----------------------------------------------------------------------------------------*/ 

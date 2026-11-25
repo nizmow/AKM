@@ -1,28 +1,27 @@
 /*
 *
-* EnthÑlt die Routinen zum Einlesen und Abspeichern der INF-
+* Enth√§lt die Routinen zum Einlesen und Abspeichern der INF-
 * Dateien
 *
 */
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
+#include "APPLICAT_GEM.H"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include "gemut_mt.h"
-#include "windows.h"
-#include "appl.h"
-#include "inf.h"
-#include "applicat.h"
-#include "appldata.h"
-#include "anw_dial.h"	/* wegen d_anw */
-#include "ica_dial.h"	/* wegen d_ica */
-#include "icp_dial.h"	/* wegen d_icp */
-#include "pth_dial.h"	/* wegen d_pth */
-#include "spc_dial.h"	/* wegen d_spc */
-#include "typ_dial.h"	/* wegen d_typ */
+#include "IMPORT/GEMUT_MT.H"
+#include "WINDOWS.H"
+#include "APPL.H"
+#include "INF.H"
+#include "APPLICAT.H"
+#include "APPLDATA.H"
+#include "ANW_DIAL.H"	/* wegen d_anw */
+#include "ICA_DIAL.H"	/* wegen d_ica */
+#include "ICP_DIAL.H"	/* wegen d_icp */
+#include "PTH_DIAL.H"	/* wegen d_pth */
+#include "SPC_DIAL.H"	/* wegen d_spc */
+#include "TYP_DIAL.H"	/* wegen d_typ */
 
 #define WBUFLEN 8000L
 
@@ -39,6 +38,14 @@
 int n_windefpos = 0;
 WINDEFPOS windefpos[MAXWINDEFPOS];
 char buf512[512];	/* multi-purpose */
+/* Desktop handoff extension: preserve the original 16/32-bit ABI. */
+typedef struct
+{
+	WORD dst_apid;
+	WORD unique_flg;
+	void *attached_mem;
+	WORD *msgbuf;
+} APP_XAESMSG;
 
 
 /****************************************************************
@@ -78,7 +85,7 @@ static long iwrite(int hdl, char *wbuf, long *wlen, const char *s)
 		if (ret != *wlen)
 		{
 			inf_alert_error_text(STR_ERR_FULL_INF);
-			return ERROR;
+			return -1L;
 		}
 
 		if (s)
@@ -98,7 +105,7 @@ static long iwrite(int hdl, char *wbuf, long *wlen, const char *s)
 * Wandelt einen Pfad in die externe Darstellung mit
 * Hochkommata um, falls dies notwendig ist.
 *
-* RÅckgabe 1: öberlauf
+* R√ºckgabe 1: √úberlauf
 *
 ****************************************************************/
 
@@ -163,10 +170,10 @@ WINDEFPOS *def_wind_pos(const char *s)
 
 /****************************************************************
 *
-* Ermittelt TabellenlÑngen
+* Ermittelt Tabellenl√§ngen
 *
 * Wenn <m_used> != NULL, wird in *m_used eine Tabelle
-* zurÅckgegeben, die fÅr jedes benutzte Icon eine 1 enthÑlt.
+* zur√ºckgegeben, die f√ºr jedes benutzte Icon eine 1 enth√§lt.
 *
 ****************************************************************/
 
@@ -187,7 +194,7 @@ static void get_len
 	if (m_used)
 		*m_used = NULL;
 
-	buf = Malloc(icnn);
+	buf = (char *)(uintptr_t)Malloc(icnn);
 	if (!buf)
 	{
 		form_xerr(ENSMEM, NULL);
@@ -254,7 +261,7 @@ static void get_len
 	if (m_used)
 		*m_used = buf;
 	else
-		Mfree(buf);
+		Mfree((long)(uintptr_t)buf);
 }
 
 
@@ -271,10 +278,10 @@ static void calc_ic(int icn, int *o, char **rnam, char **inam)
 	ICONBLK *icb;
 
 	rscf = rscx + icnx[icn].rscfile;
-	/* Resourcedatei fÅr Programm-Icon */
+	/* Resourcedatei f√ºr Programm-Icon */
 	*rnam = rscf->fname;
 	/* Iconnummer innerhalb der Ressource */
-	*o = icn - rscf->firsticon;		/* Achtung: fÅhrt wohl zu -1 bei FLPDSK! */
+	*o = icn - rscf->firsticon;		/* Achtung: f√ºhrt wohl zu -1 bei FLPDSK! */
 	/* Name des Icons (dummy) */
 	obj = rscf->adr_icons + icnx[icn].objnr;
 	if (obj->ob_type == G_USERDEF)
@@ -289,8 +296,24 @@ static void calc_ic(int icn, int *o, char **rnam, char **inam)
 
 /****************************************************************
 *
+* L√§nge der Mono- bzw. einer Farbicon-Ebene.
+*
+* AESRSC rundet jede Bitmap-Zeile auf eine 16-Bit-Grenze auf.
+* Beide put_icondata-Durchl√§ufe und der CICON-Fallback m√ºssen
+* dieselbe Zeilenbreite verwenden.
+*
+****************************************************************/
+
+static long icon_bitmap_len(const ICONBLK *iblk)
+{
+	return (long) (((iblk->ib_wicon + 15) >> 4) * 2) * iblk->ib_hicon;
+}
+
+
+/****************************************************************
+*
 * Icon-Daten:
-*	action = 0:	LÑnge bestimmen
+*	action = 0:	L√§nge bestimmen
 *	action = 1:	Daten sichern
 *
 * ic		Tabelle der Icon-Nummern (int)
@@ -326,18 +349,16 @@ static long put_icondata(int action, int n_icn, int *ic, CICONBLK **cb,
 		{
 			case G_ICON:
 				ciblk.monoblk = *(o->ob_spec.iconblk);
-				mono_len = (ciblk.monoblk.ib_wicon >> 3) *
-						ciblk.monoblk.ib_hicon;
+				mono_len = icon_bitmap_len(&ciblk.monoblk);
 				cic = NULL;
 				break;
 
 			case G_CICON:
 				ciblk = *((CICONBLK *) (o->ob_spec.index));
-				mono_len = (ciblk.monoblk.ib_wicon >> 3) *
-					ciblk.monoblk.ib_hicon;
+				mono_len = icon_bitmap_len(&ciblk.monoblk);
 				/* Anzahl Icons berechnen */
 				cic = ciblk.mainlist;
-				if (!cic)	/* bin in Monochrom-Auflîsung ? */
+				if (!cic)	/* bin in Monochrom-Aufl√∂sung ? */
 					cic = (CICON *)
 							((o->ob_spec.index) +
 							sizeof(CICONBLK) +
@@ -427,12 +448,15 @@ static long put_icondata(int action, int n_icn, int *ic, CICONBLK **cb,
 
 /****************************************************************
 *
-* Sortiervergleich fÅr Dateitypen.
+* Sortiervergleich f√ºr Dateitypen.
 *
 ****************************************************************/
 
-static int compare_ico_dat(DATAFILE *e1, DATAFILE *e2)
+static int compare_ico_dat(const void *a, const void *b)
 {
+	const DATAFILE *e1 = a;
+	const DATAFILE *e2 = b;
+
 	if ((e1->daname[0] == '*') && (e2->daname[0] != '*'))
 		return 1;	/* '*'-lose Typen nach vorn */
 	if ((e1->daname[0] != '*') && (e2->daname[0] == '*'))
@@ -446,14 +470,14 @@ static int compare_ico_dat(DATAFILE *e1, DATAFILE *e2)
 * Schreibt die Icondatei "applicat.dat".
 *
 * Dateiaufbau:
-*	Header		struct ico_head	LÑnge = 1
-*	Strings		char []			LÑnge = all_slen
-*	APPs			struct ico_ap		LÑnge = h.n_ap2ic
-*	DATs			struct ico_dat		LÑnge = h.n_da2ic
-*	PATHs		struct ico_path	LÑnge = h.n_pa2ic
-*	SPECs		struct ico_spec	LÑnge = h.n_sp2ic
-*	Tabelle		CICONBLK **		LÑnge = h.n_icn;
-*	Icondaten		char []			LÑnge = all_iconlen
+*	Header		struct ico_head	L√§nge = 1
+*	Strings		char []			L√§nge = all_slen
+*	APPs			struct ico_ap		L√§nge = h.n_ap2ic
+*	DATs			struct ico_dat		L√§nge = h.n_da2ic
+*	PATHs		struct ico_path	L√§nge = h.n_pa2ic
+*	SPECs		struct ico_spec	L√§nge = h.n_sp2ic
+*	Tabelle		CICONBLK **		L√§nge = h.n_icn;
+*	Icondaten		char []			L√§nge = all_iconlen
 *
 ****************************************************************/
 
@@ -484,12 +508,12 @@ static long put_icons(void)
 	char *buf,*buf2;
 	char *icondata;
 	char *used_icons;
-	XAESMSG xmsg;
-	int msg[8];
+	APP_XAESMSG xmsg;
+	WORD msg[8] = { 0 };
 
 
 
-	/* LÑnge der Zeichenketten bestimmen */
+	/* L√§nge der Zeichenketten bestimmen */
 	/* --------------------------------- */
 
 	all_slen = 0;
@@ -519,7 +543,7 @@ static long put_icons(void)
 	if (all_slen & 1)
 		all_slen++;		/* gerade Adresse */
 
-	/* Header anlegen und LÑnge der Tabellen bestimmen */
+	/* Header anlegen und L√§nge der Tabellen bestimmen */
 	/* ----------------------------------------------- */
 
 	h.magic = 'AnKr';
@@ -528,16 +552,16 @@ static long put_icons(void)
 			&h.n_pa2ic, &h.n_sp2ic, &h.n_icn, &used_icons);
 	if (!used_icons)
 		return ENSMEM;
-	ic = Malloc(h.n_icn * sizeof(int));	/* interne Icon-Nummern */
+	ic = (int *)(uintptr_t)Malloc(h.n_icn * sizeof(int));	/* interne Icon-Nummern */
 
 	for (i = 0,curr_ic = ic,buf = used_icons; i < icnn; i++,buf++)
 	{
 		if (*buf)
 			*curr_ic++ = i;
 	}
-	Mfree(used_icons);
+	Mfree((long)(uintptr_t)used_icons);
 
-	/* LÑnge der Icon-Daten bestimmen */
+	/* L√§nge der Icon-Daten bestimmen */
 	/* ------------------------------ */
 
 	all_iconlen = put_icondata(0, (int) h.n_icn, ic, NULL, NULL, 0L);
@@ -554,7 +578,7 @@ static long put_icons(void)
 				h.n_icn * sizeof(CICONBLK *) +
 				all_iconlen;
 
-	buf = Malloc(all_len);
+	buf = (char *)(uintptr_t)Malloc(all_len);
 	if (!buf || !ic)
 		return ENSMEM;
 
@@ -607,8 +631,7 @@ static long put_icons(void)
 			slen = strlen(pgm_file->name) + 1;
 			memcpy(curr_string, pgm_file->name, slen);
 			curr_string += slen;
-			if ((pgm_file->path) && (pgm_file->path[0]) &&
-				 (pgm_file->ntypes))
+			if (pgm_file->path[0] && pgm_file->ntypes)
 			{
 				curr_app->path = (long) curr_string;
 				slen = strlen(pgm_file->path) + 1;
@@ -710,9 +733,9 @@ static long put_icons(void)
 	}
 
 
-	/* Die Datentypen mÅssen so sortiert werden, daû diejenigen,	*/
+	/* Die Datentypen m√ºssen so sortiert werden, da√ü diejenigen,	*/
 	/* die '*' enthalten, vorn stehen. Wir machen aber gleich		*/
-	/* eine vollstÑndige Sortierung							*/
+	/* eine vollst√§ndige Sortierung							*/
 	/* ------------------------------------------------------------- */
 
 	qsort(dat, h.n_da2ic, sizeof(struct ico_dat), compare_ico_dat);
@@ -739,7 +762,7 @@ static long put_icons(void)
 	/* Kopie zum Abspeichern anlegen */
 	/* ----------------------------- */
 
-	buf2 = Malloc(all_len);
+	buf2 = (char *)(uintptr_t)Malloc(all_len);
 	
 	/* Alles ans Desktop verschicken */
 	/* ----------------------------- */
@@ -758,9 +781,9 @@ static long put_icons(void)
 		xmsg.msgbuf = msg;
 		if (0 >= appl_write(-2, 16, &xmsg))
 		{
-			Mfree(buf2);
-			err_alert(ERROR);
-			return ERROR;
+			Mfree((long)(uintptr_t)buf2);
+			err_alert(-1L);
+			return -1L;
 		}
 	}
 
@@ -774,7 +797,7 @@ static long put_icons(void)
 	hdl = (int) ret;
 
 	ret = Fwrite(hdl, all_len, buf);
-	Mfree(buf);
+	Mfree((long)(uintptr_t)buf);
 	Fclose(hdl);
 
 	if (ret < E_OK)
@@ -794,11 +817,11 @@ static long put_icons(void)
 *
 * global: Schreibt die Textdatei "applicat.inf".
 *
-* Achtung: <applicat_inf_filename> kînnte auf ein anderes
+* Achtung: <applicat_inf_filename> k√∂nnte auf ein anderes
 *          "Volume" verweisen, was aber nur beim Debugging
 *          passieren kann. Dann geht das Frename() von
 *          "applicat.$$$" schief.
-*          Das kînnte man vermeiden, lohnt aber den Aufwand nicht.
+*          Das k√∂nnte man vermeiden, lohnt aber den Aufwand nicht.
 *
 ****************************************************************/
 
@@ -851,7 +874,7 @@ long put_inf(void)
 	/* INF-Datei erstellen */
 	/* ------------------- */
 
-	wbuf = Malloc(WBUFLEN);
+	wbuf = (char *)(uintptr_t)Malloc(WBUFLEN);
 	if (!wbuf)
 		return ENSMEM;
 	wlen = 0L;		/* Schreibpuffer ist leer */
@@ -859,7 +882,7 @@ long put_inf(void)
 	ret = Fcreate(tempname, 0);
 	if (ret < E_OK)
 	{
-		Mfree(wbuf);
+		Mfree((long)(uintptr_t)wbuf);
 		form_xerr(ret, tempname);
 		return ret;
 	}
@@ -872,7 +895,7 @@ long put_inf(void)
 	if (ret)
 	{
 		err:
-		Mfree(wbuf);
+		Mfree((long)(uintptr_t)wbuf);
 		Fclose(hdl);
 		return ret;
 	}
@@ -896,7 +919,7 @@ long put_inf(void)
 			goto err;
 	}
 
-	/* Tabellengrîûen ermitteln und schreiben */
+	/* Tabellengr√∂√üen ermitteln und schreiben */
 	/* -------------------------------------- */
 
 	get_len(&npg, &nd, &npt, &ns, &ni, NULL);
@@ -912,7 +935,7 @@ long put_inf(void)
 	if (ret)
 		goto err;
 
-	/* EintrÑge rausschreiben */
+	/* Eintr√§ge rausschreiben */
 	/* ---------------------- */
 
 	for (i = 0,z = linx; i < linn;)
@@ -1002,7 +1025,7 @@ long put_inf(void)
 	{
 		char val[5];
 
-		/* FÅr I_FLPDSK wird o hier -1, falls es ein internes Icon ist. Unschîn.*/
+		/* F√ºr I_FLPDSK wird o hier -1, falls es ein internes Icon ist. Unsch√∂n.*/
 		calc_ic(spcx[i].iconnr, &o, &rnam, &inam);
 		strncpy(val, (char *) &spcx[i].key, 4);
 		val[4] = EOS;
@@ -1025,10 +1048,10 @@ long put_inf(void)
 	ret = iwrite(hdl, wbuf, &wlen, NULL);	/* flush buffer */
 	if (ret)
 		goto err;
-	Mfree(wbuf);
+	Mfree((long)(uintptr_t)wbuf);
 
-	/* Schlieûe die temporÑre Datei. Wenn alles gut, die INF-Datei lîschen
-	   und die temporÑre Datei zur INF-Datei machen */
+	/* Schlie√üe die tempor√§re Datei. Wenn alles gut, die INF-Datei l√∂schen
+	   und die tempor√§re Datei zur INF-Datei machen */
 
 	ret = Fclose(hdl);
 	if (!ret)

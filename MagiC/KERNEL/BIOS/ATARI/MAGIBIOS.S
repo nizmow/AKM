@@ -90,7 +90,6 @@ XFS95     EQU  1
      EXPORT      warm_boot           ; nach AES
      EXPORT      warmbvec,coldbvec   ; nach AES
      EXPORT      ideparm             ; nach IDE.C
-     EXPORT      putch
      EXPORT      prn_wrts            ; -> DEV_BIOS
      IFNE FALCON
      EXPORT      scrbuf_adr,scrbuf_len    ; nach DOS
@@ -1967,11 +1966,11 @@ fatal_err:
 *
 halt_system:
  moveq    #$d,d0
- bsr.b    putch
+ bsr.b    bios_putch
  moveq    #$a,d0
- bsr.b    putch
+ bsr.b    bios_putch
  moveq    #$a,d0                   ; CR,LF,LF
- bsr.b    putch
+ bsr.b    bios_putch
  bsr.b    putstr                   ; Benutzermeldung
  lea      fatal_errs(pc),a0
  bsr      putstr                   ; "System angehalten"
@@ -1981,17 +1980,17 @@ halt_endless:
 putstr:
  move.b   (a0)+,d0
  beq.b    puts_ende
- bsr      putch
+ bsr      bios_putch
  bra.b    putstr
 puts_ende:
  rts
 
 **********************************************************************
 *
-* PUREC void putch(char c)
+* Private BIOS console output; STD exports the kernel's Pure C putch.
 *
 
-putch:
+bios_putch:
  move.l  a2,-(sp)          ; wg. PureC
  andi.w   #$00ff,d0
  move.l   a0,-(sp)

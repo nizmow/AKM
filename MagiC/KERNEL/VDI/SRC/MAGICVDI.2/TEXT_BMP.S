@@ -289,7 +289,7 @@ textp_ital_next270:subq.w	#1,d2
 ;a6 Zeiger auf die Workstation
 ;Ausgaben
 ;d0-d7/a0-a5 werden zerst”rt
-text: 				move.w	n_intin(a1),d6 ;Zeichenanzahl
+text_start: 		move.w	n_intin(a1),d6 ;Zeichenanzahl
 						ble.s 	text_exit		;gengend ?
 						subq.w	#1,d6 			;Zeichenz„hler
 

@@ -2,13 +2,13 @@
 ;******************************************************************************;
 ;* 																									*;
 ;* 																									*;
-;* 						 Ωæø 1990-95 by Sven & Wilfried Behne							*;
+;* 						 ‚ïú‚ïõ‚îê 1990-95 by Sven & Wilfried Behne							*;
 ;* 																									*;
 ;******************************************************************************;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 						;'Header'
 
-;Referenzen fÅrs Linken von MAGX.RAM
+;Referenzen f√ºrs Linken von MAGX.RAM
 
 						.EXPORT	__a_vdi
 						.EXPORT	__e_vdi
@@ -26,18 +26,18 @@
 
 ;Referenzen aus dem BIOS
 						.IMPORT	MM_init									;VDI_SETUP_DATA	*MM_init( VDI_SETUP_DATA *in_setup );
-																				;sorgt bei der Initialisierung fÅr KompatibilitÑt zun alten MagiCMac
+																				;sorgt bei der Initialisierung f√ºr Kompatibilit√§t zun alten MagiCMac
 						
 ;sonstige Referenzen
 					
-						.EXPORT	cpu020		;wird in MATH.S benîtigt
+						.EXPORT	cpu020		;wird in MATH.S ben√∂tigt
 						.EXPORT	gdos_path
 
 						.EXPORT	nvdi_struct
 						.EXPORT	OSC_ptr
 						.EXPORT	OSC_count
 						.EXPORT	init_mono_NOD
-						.EXPORT	clear_cpu_caches	;fÅr DRIVERS
+						.EXPORT	clear_cpu_caches	;f√ºr DRIVERS
 												
 						.IMPORT	Malloc_sys
 						.IMPORT	Mfree_sys
@@ -82,7 +82,7 @@
 ALLOC 				EQU 1
 ALLOC_BIT			EQU 0
 
-MAX_ID				EQU 10						;Maximale GerÑtenummer
+MAX_ID				EQU 10						;Maximale Ger√§tenummer
 
 MAX_HANDLE			EQU 128						;Maximale Handlenummer
 AES_HANDLE			EQU 1 						;Handle des AES
@@ -95,12 +95,12 @@ NO_NVDI_DRVR		EQU -1
 NOT_ENOUGH_WKS 	EQU -1
 NOT_ENOUGH_MEM 	EQU -3
 
-NVDI_BUF_SIZE		EQU 16384					;Grîûe des Buffers
+NVDI_BUF_SIZE		EQU 16384					;Gr√∂‚Çße des Buffers
 
 TAB					EQU 9 						;Tabulator
 SPACE 				EQU 32						;Leerzeichen
 
-;Defines fÅr dicke Linie
+;Defines f√ºr dicke Linie
 ST_MIDRES			EQU -1
 TT_LOWRES			EQU 1
 
@@ -112,7 +112,7 @@ __e_vdi				EQU	SAVE_AREA_TT+8*16*4	;Ende der VDI-Variablen
 
 						.OFFSET	__a_vdi			;ab hier beginnen die VDI-Variablen
 
-tmp_buffer:											;kurzzeiger Buffer fÅr Schweinereien, der ptsin, ..., contrl zerstîren darf
+tmp_buffer:											;kurzzeiger Buffer f√ºr Schweinereien, der ptsin, ..., contrl zerst√∂ren darf
 ;VDI-Arrays
 ptsin:				DS.L	128					;128 Koordinaten
 intin: 				DS.W	12						;12  Worte
@@ -129,16 +129,16 @@ font_hdr4:			DS.B	88						;Header des 16*32 Systemfonts (hier unbenutzt)
 
 ;**************** Diverses ***************
 
-atxt_off_table:	DS.L	1						;Dummy-off_table fÅr TextBlt
+atxt_off_table:	DS.L	1						;Dummy-off_table f√ºr TextBlt
 
 old_etv_timer:		DS.L	1
 key_state:			DS.L	1						;*kbshift, Tasten-Status-Adresse
 
-nvdi_pool:			DS.B	sizeof_FMP			;Pool fÅr NVDI-mallocs (Texteffekte, Beziers..)
+nvdi_pool:			DS.B	sizeof_FMP			;Pool f√ºr NVDI-mallocs (Texteffekte, Beziers..)
 
 buffer_ptr:			DS.L	1						;Zeiger auf den Buffer
 
-system_boot:		DS.W	1						;Flag ist wÑhrend der Startphase, d.h. vor vdi_init gesetzt
+system_boot:		DS.W	1						;Flag ist w√§hrend der Startphase, d.h. vor vdi_init gesetzt
 
 gdos_path:			DS.B 128 					;GDOS-Pfad
 screen_driver:		DS.B	sizeof_driver		;Treiberdaten des Bildschirmtreibers
@@ -151,7 +151,7 @@ OFFSCREEN_ptr:		DS.L	1						;Zeiger auf die Liste der Offscreen-Treiber
 OSC_count:
 OFFSCREEN_count:	DS.W	1						;Anzahl der Offscreen-Treiber
 
-mono_DRVR:			DS.L	1						;Zeiger auf die Treiberstruktur fÅr den monochromen Offscreen-Treiber
+mono_DRVR:			DS.L	1						;Zeiger auf die Treiberstruktur f√ºr den monochromen Offscreen-Treiber
 mono_bitblt:		DS.L	1						;Zeiger auf die Bitblt-Routine des monochromen Offscreen-Treibers
 mono_expblt:		DS.L	1						;Zeiger auf die Expblt-Routine des monochromen Offscreen-Treibers
 
@@ -163,14 +163,14 @@ linea_wk_ptr:		DS.L	1						;Zeiger auf die LINEA-Workstation
 aes_wk_ptr:			DS.L	1						;Zeiger auf die AES-Workstation
 
 ;**************** Ausgabevektoren *****************
-bconout_vec:		DS.L 1						;Sprungvektor fÅr den VT52
+bconout_vec:		DS.L 1						;Sprungvektor f√ºr den VT52
 
 bconout_tab:
 cursor_cnt_vec:	DS.L 1						;Zeiger auf cursor_cnt
 cursor_vbl_vec:	DS.L 1						;Zeiger auf die Cursor-Routine im VBL
 vt52_vec_vec:		DS.L 1						;Zeiger auf bconout_vec
-con_vec: 			DS.L 1						;Vektor fÅr Bios-Ausgabe Åber CON
-rawcon_vec: 		DS.L 1						;Vektor fÅr Bios-Ausgabe Åber RAWCON
+con_vec: 			DS.L 1						;Vektor f√ºr Bios-Ausgabe √ºber CON
+rawcon_vec: 		DS.L 1						;Vektor f√ºr Bios-Ausgabe √ºber RAWCON
 
 color_map_tab:
 color_map_ptr: 	DS.L 1
@@ -178,8 +178,8 @@ color_remap_ptr:	DS.L 1
 
 mouse_tab:
 mouse_buffer:		DS.L 1						;Zeiger auf den Hintergrundbuffer
-draw_spr_vec:		DS.L 1						;Vektor fÅr DRAW SPRITE
-undraw_spr_vec:	DS.L 1						;Vektor fÅr UNDRAW SPRITE
+draw_spr_vec:		DS.L 1						;Vektor f√ºr DRAW SPRITE
+undraw_spr_vec:	DS.L 1						;Vektor f√ºr UNDRAW SPRITE
 
 xbios_tab:
 call_old_xbios:	DS.L 1						;Zeiger auf die Routine, die XBIOS anspringt
@@ -196,7 +196,7 @@ nvdi_datum: 		DS.L 1						;TTMMJJJJ
 nvdi_conf:			DS.B 1						;NVDI-Konfigurationswort
 nvdi_conf_low: 	DS.B 1
 nvdi_aes_wk:		DS.L 1						;Zeiger auf die AES-WK
-nvdi_fills: 		DS.L 1						;Zeiger aufs erste FÅllmuster
+nvdi_fills: 		DS.L 1						;Zeiger aufs erste F√ºllmuster
 nvdi_wk_tab:		DS.L 1						;Zeiger auf die Tabelle mit den WKs
 nvdi_path:			DS.L 1						;Pfad
 nvdi_drvr_tab: 	DS.L 1						;Zeiger auf die Tabelle mit den Treibern
@@ -205,10 +205,10 @@ nvdi_font_tab: 	DS.L 1						;Zeiger auf Bitmap-Fontlisten-Tabelle
 nvdi_fonthdr:		DS.L 1						;.l Zeiger auf den ersten Systemfontheader
 nvdi_sys_font_info:	DS.L 1					;.l
 nvdi_colmaptab:	DS.L 1						;.l Zeiger auf Farbtabellen
-nvdi_opn_wo_ptr:	DS.L	1						;.l Zeiger auf die Standard-Ausgaben fÅr v_opnwk/v_opnvwk/v_opnbm
-nvdi_ext_wo_ptr:	DS.L	1						;.l Zeiger auf die Standard-Ausgaben fÅr vq_extnd
+nvdi_opn_wo_ptr:	DS.L	1						;.l Zeiger auf die Standard-Ausgaben f√ºr v_opnwk/v_opnvwk/v_opnbm
+nvdi_ext_wo_ptr:	DS.L	1						;.l Zeiger auf die Standard-Ausgaben f√ºr vq_extnd
 						DS.W	1						;.w Maximale Anzahl der Workstations
-						DS.W	1						;.w hîchste VDI-Funktionsnummer
+						DS.W	1						;.w h√∂chste VDI-Funktionsnummer
 nvdi_status:		DS.B	1						;NVDI-Statuswort
 nvdi_status_low:	DS.B	1						;Low-Bytes des Statusworts
 						DS.W	1						;frei
@@ -222,14 +222,14 @@ nvdi_mouse_tab:	DS.L 1						;Zeiger auf die Maustabelle
 						DS.W	1						;frei
 blitter: 			DS.W	1						;.w Blitter-Flag
 modecode:			DS.W	1						;.w Falcon-modecode
-resolution: 		DS.W 1						;XBIOS-Auflîsung + 1 fÅr v_opnwk
+resolution: 		DS.W 1						;XBIOS-Aufl√∂sung + 1 f√ºr v_opnwk
 
 nvdi_cookie_CPU:	DS.W	1
 cpu:					DS.W	1
 video:	
 nvdi_cookie_VDO:	DS.L	1						;Videohardware
 nvdi_cookie_MCH:	DS.L	1
-first_device:		DS.W 1						;Nummer des allerersten GerÑts
+first_device:		DS.W 1						;Nummer des allerersten Ger√§ts
 cpu020:				DS.W	1						;Flag das angibt, ob mindestens ein 020 vorhanden ist
 magix:				DS.W 1
 mint: 				DS.W 1						;Flag das angibt, ob MiNT vorhanden ist
@@ -257,11 +257,11 @@ n_get_FIF_path:	DS.L	1
 n_get_INF_name:	DS.L	1
 vdi_setup_ptr:			DS.L	1											;Zeiger auf VDI_SETUP_DATA oder 0 (direkter Zugriff auf ATARI-Hardware)
 
-ds.l	32	;Platz fÅr weitere Variablen
+ds.l	32	;Platz f√ºr weitere Variablen
 
 nstruct_ende:
 
-IF nstruct_ende > CUR_FONT						;sind die Variablen fÅr NVDI zu lang?
+IF nstruct_ende > CUR_FONT						;sind die Variablen f√ºr NVDI zu lang?
 	Fehler!
 ENDIF
 
@@ -308,7 +308,7 @@ color_map:			DC.B 0,255,1,2,4,6,3,5,7,8,9,10,12,14,11,13
 						DC.B 236,237,238,239,240,241,242,243,244,245
 						DC.B 246,247,248,249,250,251,252,253,254,15
 
-;Tabelle fÅr die Umwandlung von Farbebenenflag zu Farbnummer
+;Tabelle f√ºr die Umwandlung von Farbebenenflag zu Farbnummer
 color_remap:		DC.B 0,2,3,6,4,7,5,8,9,10,11,14,12,15,13,255
 						DC.B 16,17,18,19,20,21,22,23,24,25
 						DC.B 26,27,28,29,30,31,32,33,34,35
@@ -336,9 +336,9 @@ color_remap:		DC.B 0,2,3,6,4,7,5,8,9,10,11,14,12,15,13,255
 						DC.B 246,247,248,249,250,251,252,253,254,1
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-						;'FÅllmuster'
+						;'F√ºllmuster'
 
-;alle FÅllmuster mÅssen in dieser Reihenfolge hintereinander stehen !
+;alle F√ºllmuster m√ºssen in dieser Reihenfolge hintereinander stehen !
 
 ;LEER
 fill0:				DC.W 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -1082,18 +1082,18 @@ cos:					DC.W 0,-572,-1144,-1715,-2286,-2856,-3425,-3993,-4560,-5126
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 						;'Polymarkerdefinition'
 m_dot:				DC.W 1						;Linienanzahl
-						DC.W 0						;zusÑtzliche Breite
+						DC.W 0						;zus√§tzliche Breite
 						DC.W 0						;Hot-Spot-x
 						DC.W 0						;Hot-Spot-y
 						DC.W 0,0,0,0
 m_plus:				DC.W 2						;Linienanzahl
-						DC.W 0						;zusÑtzliche Breite
+						DC.W 0						;zus√§tzliche Breite
 						DC.W 32767					;Hot-Spot-x
 						DC.W 32767					;Hot-Spot-y
 						DC.W 32767,0,32767,65535
 						DC.W 0,32767,65535,32767
 m_asterisk: 		DC.W 4						;Linienanzahl
-						DC.W 0						;zusÑtzliche Breite
+						DC.W 0						;zus√§tzliche Breite
 						DC.W 32767					;Hot-Spot-x
 						DC.W 32767					;Hot-Spot-y
 						DC.W 32767,0,32767,65535
@@ -1101,7 +1101,7 @@ m_asterisk: 		DC.W 4						;Linienanzahl
 						DC.W 0,32767,65535,32767
 						DC.W 58981,6553,6553,58981
 m_square:			DC.W 4						;Linienanzahl
-						DC.W 0						;zusÑtzliche Breite
+						DC.W 0						;zus√§tzliche Breite
 						DC.W 32767					;Hot-Spot-x
 						DC.W 32767					;Hot-Spot-y
 						DC.W 0,0,65535,0
@@ -1109,13 +1109,13 @@ m_square:			DC.W 4						;Linienanzahl
 						DC.W 0,0,0,65535
 						DC.W 65535,0,65535,65535
 m_cross: 			DC.W 2						;Linienanzahl
-						DC.W 0						;zusÑtzliche Breite
+						DC.W 0						;zus√§tzliche Breite
 						DC.W 32767					;Hot-Spot-x
 						DC.W 32767					;Hot-Spot-y
 						DC.W 65535,0,0,65535
 						DC.W 0,0,65535,65535
 m_diamond:			DC.W 4						;Linienanzahl
-						DC.W 39600					;zusÑtzliche Breite
+						DC.W 39600					;zus√§tzliche Breite
 						DC.W 32767					;Hot-Spot-x
 						DC.W 20500					;Hot-Spot-y
 						DC.W 0,20500,32767,150
@@ -1131,12 +1131,12 @@ work_out0:			DC.W	0						;0
 						DC.W	0						;2
 						DC.W	0						;3
 						DC.W	0						;4
-						DC.W	3						;5  Anzahl der Hîhen des Systemzeichensatzes
+						DC.W	3						;5  Anzahl der H√∂hen des Systemzeichensatzes
 						DC.W 7						;6  Anzahl der Linientypen
 						DC.W 0						;7  Linienbreiten
 						DC.W 6						;8  Anzahl der Marker
-						DC.W 0						;9  Markerhîhen
-						DC.W 1						;10 Anzahl der ZeichensÑtze
+						DC.W 0						;9  Markerh√∂hen
+						DC.W 1						;10 Anzahl der Zeichens√§tze
 						DC.W 24						;11 Anzahl der Muster
 						DC.W 12						;12 Anzahl der Schraffuren
 						DC.W 0 						;13 Anzahl der Farben
@@ -1149,60 +1149,60 @@ work_out0:			DC.W	0						;0
 						DC.W 6						;20 elliptischer Bogen
 						DC.W 7						;21 Ellipsenausschnitt
 						DC.W 8						;22 abgerundetes Rechteck
-						DC.W 9						;23 ausgefÅlltes, abgerundetes Rechteck
+						DC.W 9						;23 ausgef√ºlltes, abgerundetes Rechteck
 						DC.W 10						;24 justierter Grafiktext
-						DC.W 3						;25 ausgefÅllter Bereich
+						DC.W 3						;25 ausgef√ºllter Bereich
 						DC.W 0						;26 Linie
-						DC.W 3						;27 ausgefÅllter Bereich
-						DC.W 3						;28 ausgefÅllter Bereich
-						DC.W 3						;29 ausgefÅllter Bereich
+						DC.W 3						;27 ausgef√ºllter Bereich
+						DC.W 3						;28 ausgef√ºllter Bereich
+						DC.W 3						;29 ausgef√ºllter Bereich
 						DC.W 0						;30 Linie
-						DC.W 3						;31 ausgefÅllter Bereich
+						DC.W 3						;31 ausgef√ºllter Bereich
 						DC.W 0						;32 Linie
-						DC.W 3						;33 ausgefÅllter Bereich
+						DC.W 3						;33 ausgef√ºllter Bereich
 						DC.W 2						;34 Textdarstellung
 						DC.W 1						;35 Farbe vorhanden
-						DC.W 1						;36 Textrotation verfÅgbar
-						DC.W 1						;37 FlÑchenfÅllung vorhanden
+						DC.W 1						;36 Textrotation verf√ºgbar
+						DC.W 1						;37 Fl√§chenf√ºllung vorhanden
 						DC.W 0						;38 CELLARRAY nicht vorhanden
 						DC.W 0						;39 Anzahl aller Farbabstufungen
 						DC.W 2						;40 Zeigerkontrolle durch T & M
-						DC.W 1						;41 Tastatur fÅr vari. Eingaben
+						DC.W 1						;41 Tastatur f√ºr vari. Eingaben
 						DC.W 1						;42 Funktionstasten als Auswahlt.
 						DC.W 1						;43 Strings: Tastatur
 						DC.W 2						;44 Ein - und Ausgabe !
 						DC.W	5						;45 geringste Zeichenbreite
-						DC.W	4						;46 geringste Zeichenhîhe
-						DC.W	7						;47 grîûte Zeichenbreite
-						DC.W	13						;48 grîûte Zeichenhîhe
+						DC.W	4						;46 geringste Zeichenh√∂he
+						DC.W	7						;47 gr√∂‚Çßte Zeichenbreite
+						DC.W	13						;48 gr√∂‚Çßte Zeichenh√∂he
 						DC.W	L_WIDTH_MIN			;49 minimale Linienbreite
 						DC.W	0						;50
 						DC.W	L_WIDTH_MAX			;51 maximale Linienbreite
 						DC.W	0						;52
 						DC.W	M_WIDTH_MIN			;53 minimale Markerbreite
-						DC.W	M_HEIGHT_MIN		;54 minimale Markerhîhe
+						DC.W	M_HEIGHT_MIN		;54 minimale Markerh√∂he
 						DC.W	M_WIDTH_MAX			;55 maximale Markerbreite
-						DC.W	M_HEIGHT_MAX		;56 maximale Markerhîhe
+						DC.W	M_HEIGHT_MAX		;56 maximale Markerh√∂he
 
 extnd_out0:			DC.W 4						;0  Text und Grafik zugleich
 						DC.W 0						;1 Anzahl der Farbabstufungen
 						DC.W 31						;2  Anzahl der Texteffekte
-						DC.W 0						;3  Raster nicht vergrîûerbar
+						DC.W 0						;3  Raster nicht vergr√∂‚Çßerbar
 						DC.W 0						;4  Farbebenenanzahl
 						DC.W 1						;5  CLUT vorhanden
 						DC.W 2200					;6  Anzahl der 16*16 Rasteroperationen
-						DC.W 1						;7  Contourfill verfÅgbar
+						DC.W 1						;7  Contourfill verf√ºgbar
 						DC.W 2						;8  Text beliebig rotierbar
 						DC.W 4						;9  Anzahl der Zeichenmodi
-						DC.W 2						;10 SAMPLE-Modus hîchster Eingabemodus
-						DC.W 1						;11 Textausrichtung mîglich
+						DC.W 2						;10 SAMPLE-Modus h√∂chster Eingabemodus
+						DC.W 1						;11 Textausrichtung m√∂glich
 						DC.W 0						;12 kein Farbstiftwechsel
-						DC.W 0						;13 kein Farbbandwechsel mîglich
-						DC.W 1024					;14 Anzahl der Koordinatenpaare fÅr Polyline usw
+						DC.W 0						;13 kein Farbbandwechsel m√∂glich
+						DC.W 1024					;14 Anzahl der Koordinatenpaare f√ºr Polyline usw
 						DC.W -1						;15 intin unbegrenzt
 						DC.W 2						;16 Anzahl der Maustasten
-						DC.W 0						;17 keine Linientypen fÅr breite Linien
-						DC.W 4						;18 Anzahl der Schreibmodi fÅr breite Linien
+						DC.W 0						;17 keine Linientypen f√ºr breite Linien
+						DC.W 4						;18 Anzahl der Schreibmodi f√ºr breite Linien
 						DCB.W	40,0
 						
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1214,19 +1214,19 @@ nvdi_struct_beg:	DC.W	VERSION				;Versionsnummer im BCD-Format
 						DC.W	YEAR					;Jahr im BCD-Format
 						DC.W	0						;NVDI-Konfigurationswort
 						DC.L	0		 				;Zeiger auf die AES-WK
-						DC.L	fill0					;Zeiger aufs erste FÅllmuster
+						DC.L	fill0					;Zeiger aufs erste F√ºllmuster
 						DC.L	wk_tab 				;Zeiger auf die Tabelle mit den WKs
 						DC.L	gdos_path 			;Pfad
 						DC.L	0						;Zeiger auf die Tabelle mit den Treibern
 						DC.L	0						;Zeiger auf Fontlisten-Tabelle
 
 						DC.L	font_hdr1 			;Zeiger auf den ersten Fontheader
-						DC.L	sys_font_info		;Zeiger auf Informationsstruktur Åber die Bildschirm-Systemfonts
+						DC.L	sys_font_info		;Zeiger auf Informationsstruktur √ºber die Bildschirm-Systemfonts
 						DC.L	color_map_tab		;Zeiger auf die Farbumwandlungstabellen
-						DC.L	work_out0			;.l Zeiger auf die Standard-Ausgaben fÅr v_opnwk/v_opnvwk/v_opnbm
-						DC.L	extnd_out0			;.l Zeiger auf die Standard-Ausgaben fÅr vq_extnd
+						DC.L	work_out0			;.l Zeiger auf die Standard-Ausgaben f√ºr v_opnwk/v_opnvwk/v_opnbm
+						DC.L	extnd_out0			;.l Zeiger auf die Standard-Ausgaben f√ºr vq_extnd
 						DC.W	MAX_HANDLE			;Anzahl der Workstations
-						DC.W	VQT_FONTINFO		;hîchste VDI-Funktionsnummer
+						DC.W	VQT_FONTINFO		;h√∂chste VDI-Funktionsnummer
 
 						DC.W	0						;NVDI-Statuswort
 						DC.W	0						;frei
@@ -1236,16 +1236,16 @@ nvdi_struct_beg:	DC.W	VERSION				;Versionsnummer im BCD-Format
 						DC.L	0						;Zeiger auf Tabelle mit GEMDOS-Sprungvektoren
 						DC.L	bconout_tab			;Zeiger auf Tabelle mit BIOS-Sprungvektoren
 						DC.L	0			 			;Zeiger auf Tabelle mit XBIOS-Sprungvektoren
-						DC.L	mouse_tab			;.l Zeiger auf Tabelle fÅr die Maus
+						DC.L	mouse_tab			;.l Zeiger auf Tabelle f√ºr die Maus
 
 						DC.W	0						;frei
 						DC.W	0						;Blitter-Status
 						DC.W	0						;.w Falcon-modecode
-						DC.W	0						;.w XBIOS-Auflîsung fÅr v_opnwk
+						DC.W	0						;.w XBIOS-Aufl√∂sung f√ºr v_opnwk
 						DC.L	0						;.l Inhalt des _CPU-Cookies
 						DC.L	0						;.l Inhalt des _VDO-Cookies
 						DC.L	0						;.l Inhalt des _MCH-Cookies
-						DC.W	0						;.w Nummer des zuerst geîffneten GerÑts (Haupt-Bildschirm)
+						DC.W	0						;.w Nummer des zuerst ge√∂ffneten Ger√§ts (Haupt-Bildschirm)
 						DC.W	0						;.w CPU-Flag: ist gesetzt, wenn mindestens ein 68020 vorhanden ist
 						DC.W	0						;.w MagiX-Flag
 						DC.W	0						;.w MiNT-Flag
@@ -1276,7 +1276,7 @@ nvdi_struct_end:
 ;a0.l neue Adresse
 ;a1.l Zeiger auf Platz zum Speichern des alten Vektors oder -1 (ignorieren)
 ;Ausgaben
-;kein Register wird verÑndert
+;kein Register wird ver√§ndert
 change_vec: 		movem.l	d0-d1/a0,-(sp)
 						moveq 	#-1,d1
 						cmpa.l	d1,a1 			;ignorieren?
@@ -1312,18 +1312,18 @@ setexc:				movem.l	d1-d2/a1-a2,-(sp)
 
 ;GDOS initialisieren
 ;ASSIGN.SYS laden und analysieren
-;residente GerÑtetreiber und ZeichensÑtze laden
+;residente Ger√§tetreiber und Zeichens√§tze laden
 ;Eingaben
 ; -
 
 ;Ausgaben
-;d0-a6 werden zerstîrt
+;d0-a6 werden zerst√∂rt
 init_gdos:			lea		screen_driver,a1	;Treibertabelle
 						move.l	#'NVDI',(a1)+			;NVDI-Treiber
 						clr.l 	(a1)+
 						clr.b 	(a1)+ 					;Ende des Namens
 						move.b	#DRIVER_NVDI,(a1)+	;Treiberstatus
-						clr.w 	(a1)+ 					;Semaphore = 0, bisher nicht geîffnet
+						clr.w 	(a1)+ 					;Semaphore = 0, bisher nicht ge√∂ffnet
 						clr.l 	(a1)+ 					;Treiberadresse = 0, bisher nicht geladen
 						REPT		4
 						clr.l		(a1)+
@@ -1352,11 +1352,11 @@ init_gdos:			lea		screen_driver,a1	;Treibertabelle
 
 ;Speicher allozieren
 ;Eingaben
-;d0.l LÑnge des Speicherbereichs
+;d0.l L√§nge des Speicherbereichs
 ;Ausgaben
 ;d0.l Adresse des Speicherblocks oder 0 (Fehler)
 MallocA:				movem.l	d1-d2/a0-a2,-(sp)
-						bsr		Malloc_sys
+						jsr		Malloc_sys
 						movem.l	(sp)+,d1-d2/a0-a2
 						rts
 
@@ -1364,24 +1364,24 @@ MallocA:				movem.l	d1-d2/a0-a2,-(sp)
 
 ;Eingaben
 ;d0.l Adresse des Speicherblocks
-;d1.l neue LÑnge des Speicherblocks
+;d1.l neue L√§nge des Speicherblocks
 ;Ausgaben
-;d0.w evtl. -40 (falsche Adresse) oder -67 (Speicherblock vergrîûert)
+;d0.w evtl. -40 (falsche Adresse) oder -67 (Speicherblock vergr√∂‚Çßert)
 Mshrink: 			movem.l	d1-d2/a0-a2,-(sp)
 						movea.l	d0,a0
 						move.l	d1,d0
-						bsr		Mshrink_sys
+						jsr		Mshrink_sys
 						movem.l	(sp)+,d1-d2/a0-a2
 						rts
 
-;Allozierten Speicher zurÅckgeben
+;Allozierten Speicher zur√ºckgeben
 ;Eingaben
 ; d0.l Adresse des Speicherblocks
 ;Ausgaben
 ;d0.w evtl. -40 (falsche Adresse)
 Mfree:				movem.l	d1-d2/a0-a2,-(sp)
 						move.l	d0,a0
-						bsr		Mfree_sys
+						jsr		Mfree_sys
 						movem.l	(sp)+,d1-d2/a0-a2
 						rts
 
@@ -1392,10 +1392,10 @@ clear_cpu_caches:	move.w	cpu,d0						;CPU-Kennung
 						ori		#$0700,sr					;Interrupts sperren
 
 						MC68040
-						cpusha	bc								;beide Caches lîschen
+						cpusha	bc								;beide Caches l√∂schen
 						MC68000
 
-						move		(sp)+,sr						;Statusregister zurÅck
+						move		(sp)+,sr						;Statusregister zur√ºck
 						rts
 
 clear_cpu030:		cmpi.w   #M68020,d0					;68020 oder 68030?
@@ -1407,13 +1407,13 @@ clear_cpu030:		cmpi.w   #M68020,d0					;68020 oder 68030?
 
 						MC68030
 						movec		cacr,d0
-						or.l		#$0808,d0					;Daten- und Instruktionscache lîschen
+						or.l		#$0808,d0					;Daten- und Instruktionscache l√∂schen
 						movec		d0,cacr
 
 						MC68000
 
 						move.l	(sp)+,d0
-						move		(sp)+,sr						;Statusregister zurÅck
+						move		(sp)+,sr						;Statusregister zur√ºck
 
 clear_cpu_exit:	rts
 						
@@ -1421,7 +1421,7 @@ clear_cpu_exit:	rts
 
 ;Blitter initialisieren (diese Routine wird normalerweise vor vdi_init aufgerufen!)
 ;Vorgaben:
-;kein Register wird verÑndert
+;kein Register wird ver√§ndert
 ;Eingaben:
 ;a0.l	Zeiger auf VDI_SETUP_DATA-Struktur oder PixMap (altes MagiCMac)
 ;		oder 0 (direkter Zugriff auf ATARI-Hardware)
@@ -1429,19 +1429,19 @@ clear_cpu_exit:	rts
 ;-
 vdi_blinit:			movem.l	d0-d2/a0-a2,-(sp)
 
-						bsr		MM_init									;bei alten MagiCMac-Versionen den Zeiger auf die PixMap konvertieren
+						jsr		MM_init									;bei alten MagiCMac-Versionen den Zeiger auf die PixMap konvertieren
 						move.l	a0,vdi_setup_ptr.w					;Zeiger auf die PixMap des Macintosh
 						move.w	#1,system_boot							;wir sind gerade beim Systemstart
 						
 						bsr		copy_nvdi_struct		;NVDI-Struktur kopieren
 
 						lea		bconout_tab,a0
-						move.l	#V_HID_CNT,(a0)+	;cursor_cnt_vec: Zeiger auf den Cursor-ZÑhler
+						move.l	#V_HID_CNT,(a0)+	;cursor_cnt_vec: Zeiger auf den Cursor-Z√§hler
 						move.l	#vbl_cursor,(a0)+	;cursor_vbl_vec: Zeiger auf die Cursor-VBL-Routine
 						move.l	#con_state,(a0)+	;vt52_vec_vec: Zeiger auf den VT52-Sprungvektor
-						move.l	#vt_con,(a0)+		;con_vec: Zeiger auf die Standardroutine fÅr CON
-						move.l	#vt_rawcon,(a0)+	;rawcon_vec: Zeiger auf die Standardroutine fÅr RAWCON
-						move.l	#vt_con,con_state.w	;Sprungvektor fÅr VT52
+						move.l	#vt_con,(a0)+		;con_vec: Zeiger auf die Standardroutine f√ºr CON
+						move.l	#vt_rawcon,(a0)+	;rawcon_vec: Zeiger auf die Standardroutine f√ºr RAWCON
+						move.l	#vt_con,con_state.w	;Sprungvektor f√ºr VT52
 
 						lea		xbios_tab,a0
 						move.l	#dummy_rte,(a0)+	;call_old_xbios
@@ -1459,7 +1459,7 @@ vdi_blinit:			movem.l	d0-d2/a0-a2,-(sp)
 						bsr		init_fonts			;Fontheader kopieren
 
 						lea		screen_driver,a0	;Zeiger auf die Treiberstruktur
-						clr.l 	driver_addr(a0)	;Treiberadresse lîschen
+						clr.l 	driver_addr(a0)	;Treiberadresse l√∂schen
 
 						clr.w		blitter.w			;kein Blitter
 
@@ -1476,7 +1476,7 @@ vdi_blinit_exit:	movem.l	(sp)+,d0-d2/a0-a2
 
 ;Testen, ob der Blitter vorhanden ist
 ;Vorgaben:
-;Nur Register d0 wird verÑndert
+;Nur Register d0 wird ver√§ndert
 ;Eingaben:
 ;-
 ;Ausgaben:
@@ -1491,19 +1491,19 @@ chk_blitter:		movem.l	d1/a0-a1,-(sp)
 						moveq 	#0,d0
 						tst.w 	$ffff8a00.w			;auf Hardware zugreifen
 						moveq 	#2,d0					;Blitter ist vorhanden
-bus_err_tst:		move.l	a1,8.w				;Busfehler-Vektor zurÅck
-						movea.l	a0,sp					;Stackpointer zurÅck
-						move		d1,sr					;Statusregister zurÅck
+bus_err_tst:		move.l	a1,8.w				;Busfehler-Vektor zur√ºck
+						movea.l	a0,sp					;Stackpointer zur√ºck
+						move		d1,sr					;Statusregister zur√ºck
 						movem.l	(sp)+,d1/a0-a1
 						rts
 
 rez_bps_tab:		DC.W 1,2,4,8,16
 
-;VT52-Daten fÅr Falcon generieren
+;VT52-Daten f√ºr Falcon generieren
 ;Eingaben:
 ;modecode.w
 ;Ausgaben:
-;a0.l Zeiger auf Auflîsungen
+;a0.l Zeiger auf Aufl√∂sungen
 create_falcon_rez:movem.l	d0-d2,-(sp)
 						move.w	modecode,d0
 						lea		vt52_falcon_rez,a0
@@ -1529,7 +1529,7 @@ falcon_hor_over:	btst		#OVS_BIT,d0 	;Overscan?
 falcon_lwidth: 	move.w	d1,(a0)+ 		;Bytes pro Zeile
 						move.w	d2,(a0)+ 		;Breite in Pixeln
 
-						btst		#STC_BIT,d0 	;ST-KompatibilitÑt?
+						btst		#STC_BIT,d0 	;ST-Kompatibilit√§t?
 						beq.s 	falcon_vga
 						move.w	#200,d2			;200 Zeilen in Farbe
 						moveq 	#7,d1
@@ -1575,7 +1575,7 @@ vt52_rez:			DC.W 4,160,320,200		;0 320 * 200 ST
 
 ;VT52 intialisieren
 ;Vorgaben:
-;kein Register wird verÑndert
+;kein Register wird ver√§ndert
 ;Eingaben:
 ;d0.w neuer modecode falls es ein Falcon ist
 ;Ausgaben:
@@ -1587,19 +1587,19 @@ vt52_init:			movem.l	d0-d2/a0-a2,-(sp)
 						bne.s		vt52_init_MAC
 
 						moveq 	#0,d0
-						move.b	sshiftmd.w,d0					;XBIOS-Auflîsung
+						move.b	sshiftmd.w,d0					;XBIOS-Aufl√∂sung
 						cmp.w 	#FALCONMDS,d0					;Falcon?
 						bne.s 	init_vt52_st_tt
 						move.w	4(sp),modecode					;neuen modecode setzen							
 						bsr		create_falcon_rez
 						bra.s 	init_vt52_fad
-init_vt52_st_tt:	lsl.w 	#3,d0								;*8 (4 WorteintrÑge pro Zeile)
-						lea		vt52_rez(pc,d0.w),a0 		;Zeiger auf die Auflîsungstabelle
+init_vt52_st_tt:	lsl.w 	#3,d0								;*8 (4 Worteintr√§ge pro Zeile)
+						lea		vt52_rez(pc,d0.w),a0 		;Zeiger auf die Aufl√∂sungstabelle
 init_vt52_fad:		move.w	(a0)+,PLANES.w					;Anzahl der Ebenen
 						move.w	(a0),BYTES_LIN.W				;Bytes pro Zeile
 						move.w	(a0)+,WIDTH.w
 						move.w	(a0)+,V_REZ_HZ.w				;Breite
-						move.w	(a0)+,V_REZ_VT.w				;Hîhe
+						move.w	(a0)+,V_REZ_VT.w				;H√∂he
 
 						bra.s		vt52_init_exit
 
@@ -1616,15 +1616,15 @@ vt52_init_MAC:		movea.l	d0,a0
 						move.w	d0,V_REZ_HZ.w					;Breite
 						move.l	VDISPLAY_ymax(a0),d1
 						sub.l		VDISPLAY_ymin(a0),d1
-						move.w	d1,V_REZ_VT.w					;Hîhe
+						move.w	d1,V_REZ_VT.w					;H√∂he
 
 vt52_init_exit:	bsr.s		init_vt52_vars					;VT52-Variablen initialisieren
 						move.w	(sp)+,d0							;zuletzt eingestellte Plane-Anzahl
 
-						tst.w		system_boot						;noch wÑhrend der Bootphase?
+						tst.w		system_boot						;noch w√§hrend der Bootphase?
 						bne.s		vt52_init_return						
 
-						sub.w		PLANES.w,d0						;wurde die Plane-Anzahl verÑndert?
+						sub.w		PLANES.w,d0						;wurde die Plane-Anzahl ver√§ndert?
 						bsr		unload_scr_drvr				;vorhandenen Treiber entfernen
 						bsr		load_scr_drvr					;neuen Bilschirmtreiber laden
 																		
@@ -1635,7 +1635,7 @@ vt52_init_return:	movem.l	(sp)+,d0-d2/a0-a2
 init_vt52_vars:	movem.l	d0-d3/a0-a2,-(sp)
 
 						move.w	V_REZ_HZ.w,d0					;Breite in Pixeln
-						move.w	V_REZ_VT.w,d1					;Hîhe in Zeilen
+						move.w	V_REZ_VT.w,d1					;H√∂he in Zeilen
 						move.w	BYTES_LIN.w,d2					;Bytes pro Zeile
 						
 						lea		header_09pt,a1					;8*8 Systemfont
@@ -1646,8 +1646,8 @@ init_vt52_font:	move.l	dat_table(a1),V_FNT_AD.w	;Adresse des Fontimage
 						move.l	off_table(a1),V_OFF_AD.w	;Adresse der HOT
 						move.w	#256,V_FNT_WD.w				;Breite des Fontimages in Bytes
 						move.l	#$ff0000,V_FNT_ND.w			;Nummer des letzten/ersten Zeichens
-						move.w	form_height(a1),d3			;Zeichenhîhe
-						move.w	d3,V_CEL_HT.w					;Zeichenhîhe
+						move.w	form_height(a1),d3			;Zeichenh√∂he
+						move.w	d3,V_CEL_HT.w					;Zeichenh√∂he
 						lsr.w 	#3,d0
 						subq.w	#1,d0 							;Textspaltenanzahl -1
 						divu		d3,d1
@@ -1657,7 +1657,7 @@ init_vt52_font:	move.l	dat_table(a1),V_FNT_AD.w	;Adresse des Fontimage
 						move.l	#255,V_COL_BG.w				;Hinter-/Vordergrundfarbe
 						move.w	#1,V_HID_CNT.w					;TOS-Cursor aus!
 						move.w	#256,RESERVED.w				;blinken
-						move.w	#$1e1e,V_PERIOD.w				;Blinkrate des Cursors/ZÑhler
+						move.w	#$1e1e,V_PERIOD.w				;Blinkrate des Cursors/Z√§hler
 						move.l	v_bas_ad.w,V_CUR_AD.w		;Cursoradresse
 						clr.l 	V_CUR_XY.w						;Cursor nach links oben
 						clr.w 	V_CUR_OF.w						;Offset von v_bas_ad
@@ -1688,7 +1688,7 @@ Cconws:				movem.l	d1-d2/a0-a2,-(sp)
 
 ;VDI initialisieren
 ;Vorgaben:
-;kein Register wird verÑndert
+;kein Register wird ver√§ndert
 ;Eingaben:
 ;-
 ;Ausgaben:
@@ -1725,7 +1725,7 @@ vdi_init:			movem.l	d0-d2/a0-a3/a6,-(sp)
 						trap		#GEMDOS
 						lea		16(sp),sp
 						
-						lea		128(sp),sp				;Platz fÅr den Pfad zurÅckgeben
+						lea		128(sp),sp				;Platz f√ºr den Pfad zur√ºckgeben
 
 						lea		system_halted(pc),a0
 						jsr		Cconws					;Meldung ausgeben
@@ -1757,7 +1757,7 @@ vdi_init_fonts:	bsr		init_fonts				;Fonts initialisieren
 
 ;Bildschirmtreiber laden
 ;Vorgaben:
-;kein Register wird verÑndert
+;kein Register wird ver√§ndert
 ;Eingaben:
 ;-
 ;Ausgaben:
@@ -1772,10 +1772,10 @@ load_scr_drvr:		movem.l	d0-d2/a0-a2,-(sp)
 						bne.s		load_scr_MAC		
 
 						moveq		#0,d0
-						move.b	sshiftmd.w,d0			;XBIOS-Auflîsung
+						move.b	sshiftmd.w,d0			;XBIOS-Aufl√∂sung
 						move.w	modecode.w,d1			;Falcon-Moduswort
 						lea		gdos_path,a0
-						bsr		load_ATARI_driver		;Treiber fÅr den Atari laden
+						bsr		load_ATARI_driver		;Treiber f√ºr den Atari laden
 						move.l	a0,d0						;Treiber vorhanden?
 						bne.s		load_scr_call
 
@@ -1800,7 +1800,7 @@ load_scr_drvr:		movem.l	d0-d2/a0-a2,-(sp)
 						trap		#GEMDOS
 						lea		16(sp),sp
 						
-						lea		128(sp),sp				;Platz fÅr den Pfad zurÅckgeben
+						lea		128(sp),sp				;Platz f√ºr den Pfad zur√ºckgeben
 
 						lea		system_halted(pc),a0
 						jsr		Cconws					;Meldung ausgeben
@@ -1811,7 +1811,7 @@ load_scr_halt:		nop
 load_scr_MAC:		movea.l	vdi_setup_ptr.w,a0					;kein direkter Hardware-Zugriff (Mac)
 						movea.l	VSD_displays(a0),a0					;Zeiger auf VDI_DISPLAY-Struktur
 						lea		gdos_path,a1
-						bsr		load_MAC_driver						;Treiber fÅr den Mac laden
+						bsr		load_MAC_driver						;Treiber f√ºr den Mac laden
 						move.l	a0,d0										;Treiber vorhanden?
 						bne.s		load_scr_call
 						
@@ -1820,13 +1820,13 @@ load_scr_MAC:		movea.l	vdi_setup_ptr.w,a0					;kein direkter Hardware-Zugriff (M
 						moveq		#-1,d0									;kein VDI-Treiber
 						jmp		(a0)
 						
-load_scr_call:		lea		screen_driver,a3		;Treiberstruktur fÅr den Bildschirmtreiber
+load_scr_call:		lea		screen_driver,a3		;Treiberstruktur f√ºr den Bildschirmtreiber
 						move.l	a0,driver_addr(a3)	;Treiberstart
 						movea.l	DRVR_init(a0),a2		;Adresse der Initroutine
-						lea		nvdi_struct,a0			;NVDI-Struktur Åbergeben
+						lea		nvdi_struct,a0			;NVDI-Struktur √ºbergeben
 						movea.l	a3,a1						;Zeiger auf die Treiberstruktur
 						jsr		(a2)
-						move.l	d0,driver_wk_len(a3) ;LÑnge der Wk fÅr NVDI-Treiber
+						move.l	d0,driver_wk_len(a3) ;L√§nge der Wk f√ºr NVDI-Treiber
 						bne.s		load_scr_exit			;alles in Ordnung?
 
 						tst.l		vdi_setup_ptr.w						;kein direkter Hardware-Zugriff (Mac)?
@@ -1845,13 +1845,13 @@ load_scr_exit:		movem.l	(sp)+,d0-d2/a0-a2
 
 ;Bildschirmtreiber aus dem Speicher entfernen
 ;Vorgaben:
-;kein Register wird verÑndert
+;kein Register wird ver√§ndert
 ;Eingaben:
-;d0.w Flag dafÅr, ob sich die Farbtiefe geÑndert hat
+;d0.w Flag daf√ºr, ob sich die Farbtiefe ge√§ndert hat
 ;Ausgaben:
 ;-
 unload_scr_drvr:	movem.l	d0-d2/a0-a2,-(sp)
-						lea		nvdi_struct,a0		;NVDI-Struktur Åbergeben
+						lea		nvdi_struct,a0		;NVDI-Struktur √ºbergeben
 						lea		screen_driver,a1	;Zeiger auf die Treiberstruktur
 						move.l	driver_addr(a1),d0	
 						beq.s		unload_scr_exit	;Treiber vorhanden?
@@ -1859,35 +1859,35 @@ unload_scr_drvr:	movem.l	d0-d2/a0-a2,-(sp)
 						movea.l	DRVR_reset(a2),a2
 						jsr		(a2)					;Treiber-internen Speicher freigeben
 
-						tst.w		2(sp)					;wurde die Plane-Anzahl verÑndert?
+						tst.w		2(sp)					;wurde die Plane-Anzahl ver√§ndert?
 						beq.s		unload_scr_exit
 						
 						lea		screen_driver,a1	;Zeiger auf die Treiberstruktur
 						move.l	driver_addr(a1),a0
-						clr.l 	driver_addr(a1)	;Treiberadresse lîschen
-						bsr		Mfree_sys			;Treiberspeicher freigeben
+						clr.l 	driver_addr(a1)	;Treiberadresse l√∂schen
+						jsr		Mfree_sys			;Treiberspeicher freigeben
 unload_scr_exit:	movem.l	(sp)+,d0-d2/a0-a2
 						rts
 
 ; Vektoren initialisieren
-; zerstîrt d0-d2/a0-a2
+; zerst√∂rt d0-d2/a0-a2
 init_vdi_vecs: 
 						move.l	#WK_LENGTH+32*32+1024,d0
-						bsr		Malloc_sys
+						jsr		Malloc_sys
 						move.l	a0,linea_wk_ptr
 						move.l	#WK_LENGTH+32*32+1024,d0
-						bsr		clear_mem			;Speicher der LineA-Workstation lîschen
+						bsr		clear_mem			;Speicher der LineA-Workstation l√∂schen
 
 						move.l	#WK_LENGTH+32*32+1024,d0
-						bsr		Malloc_sys
+						jsr		Malloc_sys
 						move.l	a0,aes_wk_ptr
 						move.l	a0,nvdi_aes_wk
 						move.l	#WK_LENGTH+32*32+1024,d0
-						bsr		clear_mem			;Speicher der AES-Workstation lîschen
+						bsr		clear_mem			;Speicher der AES-Workstation l√∂schen
 
 						move.l	#NVDI_BUF_SIZE,d0
-						bsr		Malloc_sys
-						move.l	a0,buffer_ptr		;Buffer fÅr Texteffekte usw.
+						jsr		Malloc_sys
+						move.l	a0,buffer_ptr		;Buffer f√ºr Texteffekte usw.
 
 						move.w 	#MAX_HANDLE-1,d0
 						lea		wk_tab0,a1		;Zeiger auf die Workstationtabelle-4
@@ -1902,7 +1902,7 @@ make_wk_tab:		move.l	#closed,(a1)+
 
 						movea.l	sysbase.w,a0	;Zeiger auf Sysheader
 
-						movea.l	os_beg(a0),a0	;vorhandenen Ramheader Åbergehen
+						movea.l	os_beg(a0),a0	;vorhandenen Ramheader √ºbergehen
 						move.l	kbshift(a0),key_state ;Tastenstatus (Kbshift)
 						cmpi.w	#$0106,os_version(a0) ;bell_hook schon vorhanden?
 						bge.s 	get_act_pd
@@ -1912,18 +1912,18 @@ get_act_pd: 		cmpi.w	#$0100,os_version(a0) ;TOS 1.0 ?
 						move.l	#$0e1b,key_state ;Tastenstatus (Kbshift) von TOS 1.0
 init_vdi_vecs_exit:rts
 
-;ZeichensÑtze initialisieren
+;Zeichens√§tze initialisieren
 ;Ausgaben
-;d0-d1/a0-a3 werden zerstîrt
+;d0-d1/a0-a3 werden zerst√∂rt
 init_fonts: 		movem.l	d0-d2/a0-a2,-(sp)
-						moveq 	#2,d1 			;ZÑhler
+						moveq 	#2,d1 			;Z√§hler
 						lea		font_hdr1.w,a1
 						lea		linea_font_tab(pc),a2 ;neue LINE-A-Fonttabelle
 init_fonts_loop:	move.l	(a2)+,d0 		;keine weiteren Fonts ?
 						movea.l	d0,a0
 						bsr.s 	copy_header 	;Fontheader kopieren
-						lea		88(a1),a1		;Adresse des nÑchsten Fontheaders
-						move.l	a1,-4(a1)		;Zeiger auf den nÑchsten Fontheader
+						lea		88(a1),a1		;Adresse des n√§chsten Fontheaders
+						move.l	a1,-4(a1)		;Zeiger auf den n√§chsten Fontheader
 						dbra		d1,init_fonts_loop
 						clr.l 	-4(a1)
 						movem.l	(sp)+,d0-d2/a0-a2
@@ -1934,7 +1934,7 @@ init_fonts_loop:	move.l	(a2)+,d0 		;keine weiteren Fonts ?
 ;a0.l Quelladresse
 ;a1.l Zieladresse
 ;Ausgaben
-;kein Register wird zerstîrt
+;kein Register wird zerst√∂rt
 copy_header:		movem.l	d0/a0-a1,-(sp)
 						moveq 	#20,d0			;84 Bytes kopieren
 copy_header_loop: move.l	(a0)+,(a1)+
@@ -1962,7 +1962,7 @@ init_cookies:		move.l	#'MFMV',d0
 
 ;Cookie eintragen
 ;Vorgaben:
-;Register d0-d2/a0-a1 werden verÑndert
+;Register d0-d2/a0-a1 werden ver√§ndert
 ;Eingaben:
 ;d0.l Cookie-Kennung
 ;d1.l Cookie-Inhalt
@@ -1973,21 +1973,21 @@ init_cookie:		movem.l	d0-d1,-(sp)
 						beq.s 	cookie_exit
 cookie_jar: 		movea.l	d0,a0 			;Adresse des Cookie-Jars
 						movea.l	d0,a1
-						moveq 	#0,d0 			;ZÑhler initialisieren
+						moveq 	#0,d0 			;Z√§hler initialisieren
 cookie_search: 	addq.l	#1,d0 			;inkrementieren
 						tst.l 	(a1)				;Ende der Liste ?
-						addq.l	#8,a1 			;nÑchster Eintrag
+						addq.l	#8,a1 			;n√§chster Eintrag
 						bne.s 	cookie_search
-cookie_end: 		move.l	-(a1),d1 		;Anzahl der vorhandenen EintrÑge
+cookie_end: 		move.l	-(a1),d1 		;Anzahl der vorhandenen Eintr√§ge
 						subq.l	#4,a1
-						cmp.l 	d1,d0 			;noch genÅgend Platz ?
+						cmp.l 	d1,d0 			;noch gen√ºgend Platz ?
 						blt.s 	cookie_found
 						move.l	d1,d2
-						subq.l	#1,d2 			;Anzahl der zu kopierenden EintrÑge
+						subq.l	#1,d2 			;Anzahl der zu kopierenden Eintr√§ge
 						bgt.s 	cookie_count_ok
 						moveq 	#0,d1
 						moveq 	#0,d2
-cookie_count_ok:	addq.l	#8,d1 			;acht weitere EintrÑge
+cookie_count_ok:	addq.l	#8,d1 			;acht weitere Eintr√§ge
 						move.l	d1,d0
 						lsl.l 	#3,d0 			;*8
 						bsr		MallocA
@@ -2001,7 +2001,7 @@ cookie_dbf: 		dbra		d2,cookie_copy
 cookie_found:		move.l	(sp),(a1)+		;Cookie-Kennung
 						move.l	4(sp),(a1)+ 	;Cookie-Inhalt
 						clr.l 	(a1)+
-						move.l	d1,(a1)+ 		;Anzahl der EintrÑge
+						move.l	d1,(a1)+ 		;Anzahl der Eintr√§ge
 cookie_exit:		addq.l	#8,sp 			;Stack korrigieren
 						rts
 
@@ -2009,7 +2009,7 @@ cookie_exit:		addq.l	#8,sp 			;Stack korrigieren
 ;Eingaben
 ;-
 ;Ausgaben
-;d0-d2/a0 werden zerstîrt
+;d0-d2/a0 werden zerst√∂rt
 search_cookies:	move.l	#'_CPU',d0		;_CPU-Cookie suchen
 						bsr 		search_cookie
 						move.l	d1,nvdi_cookie_CPU	;Prozessortyp
@@ -2033,7 +2033,7 @@ search_cookies:	move.l	#'_CPU',d0		;_CPU-Cookie suchen
 ;Ausgaben
 ;d0.l Cookie-ID oder 0 (Suche fehlgeschlagen)
 ;d1.l Cookie-Daten oder 0 (Suche fehlgeschlagen)
-;d2/a0 werden zerstîrt
+;d2/a0 werden zerst√∂rt
 search_cookie: 	move.l	p_cookies.w,d2 ;Zeiger auf die Cookies
 						beq.s 	search_ck_err	;keine Cookies?
 						movea.l	d2,a0
@@ -2047,13 +2047,13 @@ search_ck_err: 	clr.l 	d0 				;keine Cookies
 						clr.l 	d1
 						rts
 
-;Cookie suchen und lîschen
+;Cookie suchen und l√∂schen
 ;Eingaben
 ;d0.l Cookie-ID
 ;Ausgaben
 ;d0.l Cookie-ID oder 0 (Suche fehlgeschlagen)
 ;d1.l Cookie-Daten oder 0 (Suche fehlgeschlagen)
-;d2/a0 werden zerstîrt
+;d2/a0 werden zerst√∂rt
 reset_cookie: 		move.l	p_cookies.w,d2 ;Zeiger auf die Cookies
 						beq.s 	reset_ck_err	;keine Cookies?
 						movea.l	d2,a0
@@ -2063,17 +2063,17 @@ reset_ck_loop:		move.l	(a0)+,d2 		;Cookie-ID
 						cmp.l 	d0,d2 			;gefunden?
 						bne.s 	reset_ck_loop
 reset_ck_delete:	addq.l	#4,a0
-						move.l	(a0)+,-12(a0)	;Daten Åberschreiben
-						move.l	-8(a0),-16(a0)	;Cookie-ID Åberschreiben
+						move.l	(a0)+,-12(a0)	;Daten √ºberschreiben
+						move.l	-8(a0),-16(a0)	;Cookie-ID √ºberschreiben
 						bne.s		reset_ck_delete
 reset_ck_err: 		rts
 
-;VBL-Routine fÅr den virtuellen Schirm einklinken
+;VBL-Routine f√ºr den virtuellen Schirm einklinken
 ;Eingaben:
 ;a0.l Zeiger auf die Interrupt-Routine
 init_virtual_vbl: rts
 
-;VBL-Routine fÅr den virtuellen Schirm entfernen
+;VBL-Routine f√ºr den virtuellen Schirm entfernen
 ;Eingaben:
 ;a0.l Zeiger auf die Interrupt-Routine
 reset_virtual_vbl:	rts
@@ -2104,7 +2104,7 @@ eddi_tab:			DC.W eddi_version-eddi_tab
 eddi_err:			moveq 	#-1,d0
 						rts
 
-;Funktion -1, EdDI-Versionsnummer im BCD-Format zurÅckgeben
+;Funktion -1, EdDI-Versionsnummer im BCD-Format zur√ºckgeben
 eddi_version:		move.w	#$0100,d0
 						rts
 
@@ -2114,7 +2114,7 @@ eddi_version:		move.w	#$0100,d0
 v_contourfill_in: move.l	#contour_abort,SEEDABORT.w
 seedfill:			movem.w	(a3),d0-d1		;x-Start/y-Start
 
-;Startpunkt auûerhalb des Clippingrechteckes ?
+;Startpunkt au‚Çßerhalb des Clippingrechteckes ?
 						lea		clip_xmin(a6),a0
 						cmp.w 	(a0)+,d0 		;XMINCL
 						blt.s 	Ente
@@ -2130,7 +2130,7 @@ seedfill:			movem.w	(a3),d0-d1		;x-Start/y-Start
 						move.w	d1,d7 			;y-Start
 
 						move.w	(a2),d0			;INTIN
-						cmp.w 	colors(a6),d0	;Farbnummer zulÑssig ?
+						cmp.w 	colors(a6),d0	;Farbnummer zul√§ssig ?
 						ble.s 	tst_indx
 Ente: 				rts
 
@@ -2151,13 +2151,13 @@ indx_pos:			movea.l	p_vdi_to_color(a6),a4
 						move.l	d0,v_1e(a5)		;Farbwert
 						clr.w 	(a5)
 ;
-; Die Register d5-d7 dÅrfen in den aufgerufen Subroutinen nicht zerstîrt werden
-scan_once:			lea		v_2c(a5),a0 	;Adr. fÅr linke Grenze
-						lea		v_2e(a5),a1 	;Adr. fÅr rechte Grenze
+; Die Register d5-d7 d√ºrfen in den aufgerufen Subroutinen nicht zerst√∂rt werden
+scan_once:			lea		v_2c(a5),a0 	;Adr. f√ºr linke Grenze
+						lea		v_2e(a5),a1 	;Adr. f√ºr rechte Grenze
 
 						move.w	v_34(a5),d0 	;x-Start
 						move.w	d7,d1 			;y-Start
-						bsr		scanline			;RÅckgabewert in d0
+						bsr		scanline			;R√ºckgabewert in d0
 						tst.w 	d0
 						beq.s 	Ente				;0: Ende
 
@@ -2346,18 +2346,18 @@ ex_drawto:			rts
 ; a1: & rechte Grenze
 ; a2: & Flag(.w)
 ;
-; RÅckgabewert in d0
+; R√ºckgabewert in d0
 ;
-; Register d6/d7/a5/a6 dÅrfen NICHT zerstîrt werden !!
-; Register d5 wird verÑndert (+/- 3)
+; Register d6/d7/a5/a6 d√ºrfen NICHT zerst√∂rt werden !!
+; Register d5 wird ver√§ndert (+/- 3)
 ;
-draw_to: 			clr.w 	(a2)				;Flag lîschen
+draw_to: 			clr.w 	(a2)				;Flag l√∂schen
 						tst.w 	v_3a(a5)
-						bne.s 	drawto_failed	;!= 0, FÅllvorgang abbrechen
+						bne.s 	drawto_failed	;!= 0, F√ºllvorgang abbrechen
 
 						move.w	d1,-(sp) 		;y sichern
 						and.w 	#$7fff,d1
-						bsr		scanline			;RÅckgabewert in d0
+						bsr		scanline			;R√ºckgabewert in d0
 						tst.w 	d0 				;0: Ende
 						bne.s 	lbl575
 						addq.w	#2,sp 			;Stack korrigieren
@@ -2398,7 +2398,7 @@ lbl576:				movea.l	a3,a4
 						cmp.w 	d5,d3
 						bne.s 	lbl60A
 
-						bsr.s 	fillabort		;zerstîrt a0 !!
+						bsr.s 	fillabort		;zerst√∂rt a0 !!
 
 lbl60A:				move.w	#1,(a2)			;Flag neu setzen
 						clr.w 	d0
@@ -2425,7 +2425,7 @@ lbl646:				cmp.w 	d5,d3
 						cmpi.w	#$0780,d5
 						ble.s 	lbl690
 
-						move.w	#1,v_3a(a5) 	;FÅllvorgang abbrechen !!
+						move.w	#1,v_3a(a5) 	;F√ºllvorgang abbrechen !!
 						addq.w	#2,sp 			;Stack korrigieren
 						clr.w 	d0
 						rts
@@ -2442,7 +2442,7 @@ lbl690:				adda.w	d3,a3
 						moveq 	#1,d0
 						rts
 ;
-; zerstîrt a0 !!
+; zerst√∂rt a0 !!
 fillabort:			lea		v_42(a5),a0 	;$1848-2*3
 						adda.w	d5,a0
 						adda.w	d5,a0
@@ -2461,7 +2461,7 @@ lbl4FC:				cmp.w 	d5,d6
 						clr.w 	d6
 
 						bsr.s		contour_abort	;d0 == weiter
-						move.w	d0,v_3a(a5) 	;d0 != 0, FÅllvorgang abbrechen
+						move.w	d0,v_3a(a5) 	;d0 != 0, F√ºllvorgang abbrechen
 ex_fillabort:		rts
 
 ;-------------------------------------------------
@@ -2469,21 +2469,21 @@ scln_failed:
 contour_abort: 	moveq 	#0,d0
 						rts
 
-;Zeile fÅr v_contourfill absuchen
+;Zeile f√ºr v_contourfill absuchen
 ;
 ;Diese Routine ermittelt die Farbe des Startpunktes (x,y) und sucht dann
 ;links und rechts davon solange, bis ein Farbwechsel auftritt. Diese Grenzen
-;werden Åber die Pointer (a0/a1) gesichert
+;werden √ºber die Pointer (a0/a1) gesichert
 ;
-;d5-d7/a0-a2/a5/a6 dÅrfen nicht verÑndert werden
+;d5-d7/a0-a2/a5/a6 d√ºrfen nicht ver√§ndert werden
 ;Eingaben
 ;d0.w x
 ;d1.w y
 ;a0.l Adresse der linken Grenze
 ;a1.l Adresse der rechten Grenze
 ;Ausgaben
-;d0.w RÅckgabewert
-;d0-d4/a3/a4 werden zerstîrt
+;d0.w R√ºckgabewert
+;d0-d4/a3/a4 werden zerst√∂rt
 scanline:			cmp.w 	clip_ymin(a6),d1
 						bmi.s 	scln_failed
 						cmp.w 	clip_ymax(a6),d1
@@ -2493,7 +2493,7 @@ scanline:			cmp.w 	clip_ymin(a6),d1
 						move.w	clip_xmax(a6),d2
 
 						movea.l	p_scanline(a6),a4
-						jmp		(a4)				;RÅckgabewert in d0
+						jmp		(a4)				;R√ºckgabewert in d0
 						
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 dummy:				rts
@@ -2516,7 +2516,7 @@ dummy_rte:			rte
 .INCLUDE	"TEXT_BMP.S"
 
 
-;Ellipsenausschnitt zeichnen (gefÅllt)
+;Ellipsenausschnitt zeichnen (gef√ºllt)
 ;Eingaben
 ;d0.w x1
 ;d1.w y1
@@ -2526,7 +2526,7 @@ dummy_rte:			rte
 ;d5.w Endwinkel in 1/10 Grad
 ;a6.l Wk-Zeiger
 ;Ausgaben
-;d0-d7/a0-a5 werden zerstîrt
+;d0-d7/a0-a5 werden zerst√∂rt
 fellipse_arc:		tst.w 	d4
 						bne.s 	fellipse_arc2
 						cmpi.w	#3600,d5
@@ -2536,23 +2536,23 @@ fellipse_arc2: 	tst.w 	d5
 						cmpi.w	#3600,d4
 						beq		fellipse2		;Vollellipse zeichnen
 fellipse_arc3: 	movea.l	buffer_addr(a6),a1
-						move.l	buffer_len(a6),-(sp) ;BufferlÑnge speichern
+						move.l	buffer_len(a6),-(sp) ;Bufferl√§nge speichern
 						move.l	a1,-(sp) 		;Bufferadresse speichern
 						move.w	d0,(a1)+
 						move.w	d1,(a1)+
-						bsr.s 	ellipse_calc_in ;Bufferadresse Åbergeben
+						bsr.s 	ellipse_calc_in ;Bufferadresse √ºbergeben
 						movea.l	(sp),a3
-						move.l	(a3),(a1)+		;Umriû schlieûen
+						move.l	(a3),(a1)+		;Umri‚Çß schlie‚Çßen
 						move.l	a1,d1
 						sub.l 	a3,d1
 						move.l	a1,buffer_addr(a6) ;neue Bufferstartadresse
-						move.l	d1,buffer_len(a6) ;neue BufferlÑnge
+						move.l	d1,buffer_len(a6) ;neue Bufferl√§nge
 						move.w	d0,d4
 						addq.w	#1,d4 			;Koordinatenpaaranzahl - 1
 						bmi.s 	fellipse_arc_ex
 						bsr		v_fillarea3
 fellipse_arc_ex:	move.l	(sp)+,buffer_addr(a6) ;alte Bufferadresse
-						move.l	(sp)+,buffer_len(a6) ;alte BufferlÑnge
+						move.l	(sp)+,buffer_len(a6) ;alte Bufferl√§nge
 
 						rts
 
@@ -2566,13 +2566,13 @@ fellipse_arc_ex:	move.l	(sp)+,buffer_addr(a6) ;alte Bufferadresse
 ;d5.w Endwinkel in 1/10 Grad
 ;a6.l Zeiger auf die Wk (buffer_addr)
 ;Ausgaben
-;Register d0/d4-d7/a0-a1/a2.l werden verÑndert
+;Register d0/d4-d7/a0-a1/a2.l werden ver√§ndert
 ;d0.w Koordinatenpaaranzahl
 ;a1.l Zeiger auf die erste unbenutzte Bufferadresse
 ellipse_calc:		movea.l	buffer_addr(a6),a1
 
 ;Ellipse berechnen
-;Eingaben wie bei ellipse_calc, zusÑtzlich
+;Eingaben wie bei ellipse_calc, zus√§tzlich
 ;a1.l Bufferadresse
 ;Ausgaben wie bei ellipse_calc
 ellipse_calc_in:	ext.l 	d4
@@ -2590,7 +2590,7 @@ ellipse_calc_in:	ext.l 	d4
 ellipse_calc1: 	divs		#10,d4
 						bsr		ellipse_point
 						move.l	-4(a1),(a1)+
-						moveq 	#2,d0 			;2 Punkte fÅr v_pline
+						moveq 	#2,d0 			;2 Punkte f√ºr v_pline
 						rts
 
 ellipse_wa: 		divs		d6,d4
@@ -2631,12 +2631,12 @@ ellipse_grad8: 	cmp.w 	#100,d2
 						ble.s 	ellipse_grad4
 
 						addq.w	#8,d4
-						andi.w	#$fff8,d4		;nÑchste 8¯-Position
-						movea.w	#16,a2			;Schrittweite fÅr 8¯
+						andi.w	#$fff8,d4		;n√§chste 8¬∞-Position
+						movea.w	#16,a2			;Schrittweite f√ºr 8¬∞
 						add.w 	d4,d4
 						adda.w	d4,a0
 						lsr.w 	#4,d4
-						lsr.w 	#3,d5 			;8¯-Schritte
+						lsr.w 	#3,d5 			;8¬∞-Schritte
 						bra.s 	ellipse_test
 
 ellipse_grad4: 	cmp.w 	#300,d2
@@ -2645,30 +2645,30 @@ ellipse_grad4: 	cmp.w 	#300,d2
 						bgt.s 	ellipse_grad2
 
 						addq.w	#4,d4
-						andi.w	#$fffc,d4		;nÑchste 4¯-Position
+						andi.w	#$fffc,d4		;n√§chste 4¬∞-Position
 
-						movea.w	#8,a2 			;Schrittweite fÅr 4¯
+						movea.w	#8,a2 			;Schrittweite f√ºr 4¬∞
 						add.w 	d4,d4
 						adda.w	d4,a0
 						lsr.w 	#3,d4
-						lsr.w 	#2,d5 			;4¯-Schritte
+						lsr.w 	#2,d5 			;4¬∞-Schritte
 						bra.s 	ellipse_test
 
 ellipse_grad2: 	addq.w	#2,d4
 						andi.w	#$fffe,d4
-						movea.w	#4,a2 			;Schrittweite fÅr 2¯
+						movea.w	#4,a2 			;Schrittweite f√ºr 2¬∞
 
 						add.w 	d4,d4
 						adda.w	d4,a0
 						lsr.w 	#2,d4
 						lsr.w 	#1,d5
-ellipse_test:		sub.w 	d4,d5 			;ZÑhler
+ellipse_test:		sub.w 	d4,d5 			;Z√§hler
 						moveq 	#1,d4 			;Anzahl der berechneten Punkte
 						subq.w	#1,d5
 						bmi.s 	ellipse_last
 						move.l	#32768,d7		;Rundungswert
 
-ellipse_cloop: 	move.w	(a0),d6			;sin ‡
+ellipse_cloop: 	move.w	(a0),d6			;sin Œ±
 
 						muls		d2,d6 			;* a
 						add.l 	d6,d6 			;* 2
@@ -2678,11 +2678,11 @@ ellipse_cloop: 	move.w	(a0),d6			;sin ‡
 						bvc.s 	ell_noover1
 						tst.w 	d6
 						bmi.s 	ell_overmi1
-						move.w	#-32767,d6		;groûes negatives Ergebnis
+						move.w	#-32767,d6		;gro‚Çßes negatives Ergebnis
 						bra.s 	ell_noover1
-ell_overmi1:		move.w	#32767,d6		;groûes positives Ergebnis
+ell_overmi1:		move.w	#32767,d6		;gro‚Çßes positives Ergebnis
 ell_noover1:		move.w	d6,(a1)+
-						move.w	cos-sin(a0),d6 ;cos ·
+						move.w	cos-sin(a0),d6 ;cos √ü
 						muls		d3,d6 			;* b
 						add.l 	d6,d6 			;* 2
 						add.l 	d7,d6 			;runden
@@ -2691,9 +2691,9 @@ ell_noover1:		move.w	d6,(a1)+
 						bvc.s 	ell_noover2
 						tst.w 	d6
 						bmi.s 	ell_overmi2
-						move.w	#-32767,d6		;groûes negatives Ergabenis
+						move.w	#-32767,d6		;gro‚Çßes negatives Ergabenis
 						bra.s 	ell_noover2
-ell_overmi2:		move.w	#32767,d6		;groûes positives Ergebnis
+ell_overmi2:		move.w	#32767,d6		;gro‚Çßes positives Ergebnis
 ell_noover2:		move.w	d6,(a1)+
 						move.l	-(a1),d6
 						cmp.l 	-4(a1),d6		;gleicher Punkt?
@@ -2711,7 +2711,7 @@ ellipse_last:		move.w	d4,d5
 						move.w	d5,d0
 						rts
 
-;Start- bzw. Endpunkt einer Ellipse annÑhren
+;Start- bzw. Endpunkt einer Ellipse ann√§hren
 ;Eingaben
 ;d0.w x
 ;d1.w y
@@ -2720,7 +2720,7 @@ ellipse_last:		move.w	d4,d5
 ;d4.l Winkel in Grad im unteren und Rest in 10tel Grad im oberen Wort
 ;a1.l Zeiger auf den Buffer
 ;Ausgaben
-;Register d6-d7/a0-a1.l werden verÑndert
+;Register d6-d7/a0-a1.l werden ver√§ndert
 ;d0.w x
 ;d1.w y
 ;d2.w ra
@@ -2739,7 +2739,7 @@ ellipse_point: 	lea		sin,a0
 						divs		#10,d7			;Interpolationsergebnis
 						addq.w	#1,d7
 						asr.w 	#1,d7
-						add.w 	d7,d6 			;sin ‡
+						add.w 	d7,d6 			;sin Œ±
 						muls		d2,d6 			;* a
 						add.l 	d6,d6 			;* 2
 						add.l 	#32768,d6		;runden
@@ -2748,9 +2748,9 @@ ellipse_point: 	lea		sin,a0
 						bvc.s 	ell_noover3
 						tst.w 	d6
 						bmi.s 	ell_overmi3
-						move.w	#-32767,d6		;groûes negatives Ergebnis
+						move.w	#-32767,d6		;gro‚Çßes negatives Ergebnis
 						bra.s 	ell_noover3
-ell_overmi3:		move.w	#32767,d6		;groûes positives Ergebnis
+ell_overmi3:		move.w	#32767,d6		;gro‚Çßes positives Ergebnis
 ell_noover3:		move.w	d6,(a1)+
 						lea		cos-sin(a0),a0 ;Zeiger in die Cosinus-Tabelle
 						move.w	(a0),d7
@@ -2761,7 +2761,7 @@ ell_noover3:		move.w	d6,(a1)+
 						divs		#10,d7			;Interpolationsergebnis
 						addq.w	#1,d7
 						asr.w 	#1,d7
-						add.w 	d7,d6 			;cos ‡
+						add.w 	d7,d6 			;cos Œ±
 						muls		d3,d6 			;* b
 						add.l 	d6,d6 			;* 2
 						add.l 	#32768,d6		;runden
@@ -2770,14 +2770,14 @@ ell_noover3:		move.w	d6,(a1)+
 						bvc.s 	ell_noover4
 						tst.w 	d6
 						bmi.s 	ell_overmi4
-						move.w	#-32767,d6		;groûes negatives Ergebnis
+						move.w	#-32767,d6		;gro‚Çßes negatives Ergebnis
 						bra.s 	ell_noover4
-ell_overmi4:		move.w	#32767,d6		;groûes positives Ergebnis
+ell_overmi4:		move.w	#32767,d6		;gro‚Çßes positives Ergebnis
 ell_noover4:		move.w	d6,(a1)+
 						swap		d4
 						rts
 
-;Ellipse zeichnen (gefÅllt)
+;Ellipse zeichnen (gef√ºllt)
 ;Eingaben
 ;d0.w x1
 ;d1.w y1
@@ -2785,12 +2785,12 @@ ell_noover4:		move.w	d6,(a1)+
 ;d3.w Radius b
 ;a6.l Workstation
 ;Ausgaben
-;d0-d7/a0-a5 werden zerstîrt
+;d0-d7/a0-a5 werden zerst√∂rt
 fellipse2:			moveq 	#0,d4
 						move.w	#3600,d5
-						cmp.w 	#1000,d2 		;Radius zu groû (öberlauf mîglich) ?
+						cmp.w 	#1000,d2 		;Radius zu gro‚Çß (√úberlauf m√∂glich) ?
 						bgt		fellipse_arc3
-						cmp.w 	#1000,d3 		;Radius zu groû (öberlauf mîglich) ?
+						cmp.w 	#1000,d3 		;Radius zu gro‚Çß (√úberlauf m√∂glich) ?
 						bgt		fellipse_arc3
 						bsr.s 	fellipse
 						tst.w 	f_perimeter(a6) ;Umrahmung ?
@@ -2801,7 +2801,7 @@ fellipse2:			moveq 	#0,d4
 						bra		v_pline_fill	;Umrandung ziehen
 fellipse_ex2:		rts
 
-;Ellipse zeichnen (gefÅllt, ohne Umrahmung)
+;Ellipse zeichnen (gef√ºllt, ohne Umrahmung)
 ;Eingaben
 ;d0.w x1
 ;d1.w y1
@@ -2809,7 +2809,7 @@ fellipse_ex2:		rts
 ;d3.w Radius b
 ;a6.l Workstation
 ;Ausgaben
-;kein Register wird zerstîrt
+;kein Register wird zerst√∂rt
 fellipse:			movem.l	d0-a1,-(sp) 	;Register sichern
 
 						movea.l	buffer_addr(a6),a0 ;Zeiger auf Offsettabelle
@@ -2852,8 +2852,8 @@ fe_loop: 			move.w	d4,d0 			;x
 						bsr		fline
 						movem.w	(sp)+,d0-d2
 						move.w	(sp)+,d4
-						addq.w	#1,d1 			;nÑchste Zeile
-						subq.w	#1,d3 			;nÑchste Zeile
+						addq.w	#1,d1 			;n√§chste Zeile
+						subq.w	#1,d3 			;n√§chste Zeile
 
 						cmp.w 	d1,d3
 						bne.s 	fe_loop
@@ -2862,13 +2862,13 @@ fe_exit: 			movem.l	(sp)+,d0-a1
 						rts
 
 ;a0 buffer
-;Ellipse berechnen (gefÅllt) nach Bresenham
+;Ellipse berechnen (gef√ºllt) nach Bresenham
 ;Eingaben
 ;d2.w Radius a, max. 1023
 ;d3.w Radius b, max. 1023
 ;a0.l Bufferadresse
 ;Ausgaben
-;kein Register wird zerstîrt
+;kein Register wird zerst√∂rt
 fec:					tst.w 	d2
 						beq.s 	fec_small0
 						cmp.w 	#1,d2
@@ -2880,27 +2880,27 @@ fec:					tst.w 	d2
 						clr.w 	d0 				;Offset x = 0;
 						move.w	d3,d1 			;Offset y = b;
 
-						mulu		d2,d2 			;qa = a˝;
-						move.l	d2,d6 			;da = a˝;
+						mulu		d2,d2 			;qa = a¬≤;
+						move.l	d2,d6 			;da = a¬≤;
 						move.l	d2,d7 			;Hilfsvariable
-						add.l 	d2,d2 			;qa = 2a˝;
+						add.l 	d2,d2 			;qa = 2a¬≤;
 
-						mulu		d3,d3 			;qb = b˝;
-						add.l 	d3,d6 			;da = a˝ + b˝;
-						add.l 	d3,d3 			;qb = 2b˝;
+						mulu		d3,d3 			;qb = b¬≤;
+						add.l 	d3,d6 			;da = a¬≤ + b¬≤;
+						add.l 	d3,d3 			;qb = 2b¬≤;
 
 						move.l	d2,d5 			;dy = qa;
 						move.w	d5,d4 			;Low von dy
 						swap		d5 				;High von dy
 						mulu		d1,d5 			;dy_high = qa_high * b;
 						swap		d5
-						clr.w 	d5 				;Low lîschen
+						clr.w 	d5 				;Low l√∂schen
 						mulu		d1,d4 			;dy_low = qa_low * b;
 						add.l 	d4,d5 			;dy = qa * b;
-						sub.l 	d7,d5 			;dy = qa * b -a˝;
+						sub.l 	d7,d5 			;dy = qa * b -a¬≤;
 
-						move.l	d3,d4 			;dx = 2b˝
-						lsr.l 	#1,d4 			;dx = b˝
+						move.l	d3,d4 			;dx = 2b¬≤
+						lsr.l 	#1,d4 			;dx = b¬≤
 
 						subq.w	#1,d1 			;wegen dbf
 						bmi.s 	fec_exit
@@ -2916,7 +2916,7 @@ fec_x_loop:			sub.l 	d4,d6 			;da -= dx;
 						add.l 	d3,d4 			;dx += qb;
 						addq.w	#1,d0 			;Offsetx x += 1;
 						tst.l 	d6
-						bpl.s 	fec_x_loop		;while (da Ú 0)
+						bpl.s 	fec_x_loop		;while (da ‚â• 0)
 
 fec_output: 		subq.w	#1,d0
 						move.w	d0,(a0)+ 		;*buf++ = Offset x;
@@ -2959,7 +2959,7 @@ fec_small2: 		move.w	d0,-(sp)
 						move.w	(sp)+,d0
 						rts
 
-;Umriû eines abgerundetes Rechtecks berechnen
+;Umri‚Çß eines abgerundetes Rechtecks berechnen
 ;Eingaben
 ;d0.w x1
 ;d1.w y1
@@ -2967,7 +2967,7 @@ fec_small2: 		move.w	d0,-(sp)
 ;d3.w y2
 ;a6.l Wk-Zeiger
 ;Ausgaben
-;Register d0-d7/a3/a4.l werden verÑndert
+;Register d0-d7/a3/a4.l werden ver√§ndert
 ;d4.w Punktanzahl
 ;a3.l Zeiger auf die erste unbenutze Bufferadresse
 rbox_calc:			movea.l	buffer_addr(a6),a3
@@ -3080,7 +3080,7 @@ rbloop4: 			add.w 	-(a4),d0
 						moveq 	#37,d4
 						rts
 
-;gefÅlltes abgerundetes Rechteck zeichnen
+;gef√ºlltes abgerundetes Rechteck zeichnen
 ;Eingaben
 ;d0.w x1
 ;d1.w y1
@@ -3088,10 +3088,10 @@ rbloop4: 			add.w 	-(a4),d0
 ;d3.w y2
 ;a6.l Wk-Zeiger
 ;Ausgaben
-;kein Register wird verÑndert
+;kein Register wird ver√§ndert
 frbox:				movem.l	d0-a1,-(sp)
 
-;mÅssen x1 und x2 vertauscht werden ?
+;m√ºssen x1 und x2 vertauscht werden ?
 frbx1x2: 			cmp.w 	d0,d2
 						bge.s 	frby1y2
 
@@ -3139,7 +3139,7 @@ frbsb:				addq.w	#1,d0
 frbnormal:			addq.w	#8,d0
 
 						subq.w	#8,d2
-						moveq 	#7,d4 			;ZÑhler
+						moveq 	#7,d4 			;Z√§hler
 						lea		round(pc),a0	;Zeiger
 frbloop: 			move.w	d4,-(sp)
 						movem.w	d0-d2,-(sp)
@@ -3161,7 +3161,7 @@ frbexit: 			movem.l	(sp)+,d0-a1
 						rts
 
 
-;Rundungsdaten fÅr RBOX
+;Rundungsdaten f√ºr RBOX
 round:				DC.W 2
 						DC.W 2
 						DC.W 1
@@ -3172,7 +3172,7 @@ round:				DC.W 2
 						DC.W 1
 
 
-;gefÅlltes Rechteck zeichnen
+;gef√ºlltes Rechteck zeichnen
 ;Eingaben
 ;d0.w x1
 ;d1.w y1
@@ -3180,12 +3180,12 @@ round:				DC.W 2
 ;d3.w y2
 ;a6.l Wk-Zeiger
 ;Ausgaben
-;kein Register wird verÑndert
+;kein Register wird ver√§ndert
 fbox: 				movem.l	d0-a6,-(sp)
 						bsr.s 	fbox_noreg
 						movem.l	(sp)+,d0-a6
 fbox_exit2: 		rts
-;d0-a6 werden verÑndert
+;d0-a6 werden ver√§ndert
 fbox_noreg:
 fbox_exgx:			cmp.w 	d0,d2
 						bge.s 	fbox_exgy
@@ -3217,22 +3217,22 @@ fbox_clipyy:		cmp.w 	d1,d3
 						jmp		(a1)
 
 
-;horizontale Linie mit FÅllmuster ausgeben
+;horizontale Linie mit F√ºllmuster ausgeben
 ;Eingaben:
 ;d0.w x1
 ;d1.w y1
 ;d2.w x2
 ;a6.l Zeiger auf Attribute
 ;Ausgaben:
-;kein Register wird verÑndert
+;kein Register wird ver√§ndert
 fline_save_regs:	movem.l	d0-d2/d4-d7/a1,-(sp)
 						bsr.s 	fline
 						movem.l	(sp)+,d0-d2/d4-d7/a1
 						rts
 
-;horizontale Linie mit FÅllmuster ausgeben
+;horizontale Linie mit F√ºllmuster ausgeben
 ;Vorgaben:
-;d0-d2/d4-d7/a1 dÅrfen verÑndert werden
+;d0-d2/d4-d7/a1 d√ºrfen ver√§ndert werden
 ;Eingaben:
 ;d0.w x1
 ;d1.w y1
@@ -3264,7 +3264,7 @@ hline_exit: 		rts
 
 ;horizontale Linie ausgeben
 ;Vorgaben:
-;d0-d2/d4-d7/a1 dÅrfen verÑndert werden
+;d0-d2/d4-d7/a1 d√ºrfen ver√§ndert werden
 ;Eingaben:
 ;d0.w x1
 ;d1.w y1
@@ -3296,7 +3296,7 @@ hclip_y2:			cmp.w 	(a1)+,d1 		;y1 > clip_ymax ?
 
 ;vertikale Linie ausgeben
 ;Vorgaben:
-;d0-d7/a1 dÅrfen verÑndert werden
+;d0-d7/a1 d√ºrfen ver√§ndert werden
 ;Eingaben:
 ;d0.w x1
 ;d1.w y1
@@ -3315,10 +3315,10 @@ vline:				cmp.w 	d1,d3
 vclip_y1:			cmp.w 	(a1)+,d1 		;y1 zu klein ?
 						bge.s 	vclip_x
 						move.w	-2(a1),d1
-vclip_x: 			cmp.w 	(a1)+,d0 		;x zu groû ?
+vclip_x: 			cmp.w 	(a1)+,d0 		;x zu gro‚Çß ?
 						bgt.s 	vline_exit
 
-vclip_y2:			cmp.w 	(a1)+,d3 		;y2 zu groû ?
+vclip_y2:			cmp.w 	(a1)+,d3 		;y2 zu gro‚Çß ?
 
 						ble.s 	vclip_y_cmp
 						move.w	-2(a1),d3
@@ -3340,9 +3340,9 @@ vline_change:		exg		d1,d3
 
 						bge.s 	vclip_c_x
 						move.w	-2(a1),d1
-vclip_c_x:			cmp.w 	(a1)+,d0 		;x zu groû ?
+vclip_c_x:			cmp.w 	(a1)+,d0 		;x zu gro‚Çß ?
 						bgt.s 	vline_exit
-						cmp.w 	(a1)+,d3 		;y2 zu groû ?
+						cmp.w 	(a1)+,d3 		;y2 zu gro‚Çß ?
 						ble.s 	vclip_c_y_cmp
 						move.w	-2(a1),d3
 vclip_c_y_cmp: 	cmp.w 	d3,d1
@@ -3357,7 +3357,7 @@ vclip_c_y_cmp: 	cmp.w 	d3,d1
 
 vline_exit: 		rts
 
-;SchrÑge Linie ziehen
+;Schr√§ge Linie ziehen
 ;Eingaben
 ;d0.w x1
 ;d1.w y1
@@ -3366,7 +3366,7 @@ vline_exit: 		rts
 ;d6.w Linienmuster
 ;a6.l Workstation-Attribut-Tabelle
 ;Ausgaben
-;d0-d7/a1 werden zerstîrt
+;d0-d7/a1 werden zerst√∂rt
 line: 				cmp.w 	d0,d2 			;Koordinaten vertauschen ?
 						bge.s 	line_clip
 
@@ -3375,14 +3375,14 @@ line: 				cmp.w 	d0,d2 			;Koordinaten vertauschen ?
 
 line_clip:			lea		clip_xmin(a6),a1
 
-						cmp.w 	clip_xmax(a6),d0 ;x1 zu groû ?
+						cmp.w 	clip_xmax(a6),d0 ;x1 zu gro‚Çß ?
 						bgt.s 	line_exit
 						cmp.w 	(a1),d2			;x2 zu klein ?
 						blt.s 	line_exit
 
 						move.w	d2,d4
 						sub.w 	d0,d4 			;dx = x2 - x1; (positiver Ausdruck)
-						cmp.w 	d1,d3 			;y1 grîûer y2, dy negativ ?
+						cmp.w 	d1,d3 			;y1 gr√∂‚Çßer y2, dy negativ ?
 						blt.s 	line_clip2
 						beq		hline 			;horizontale Linie ?
 
@@ -3392,26 +3392,26 @@ line_clip:			lea		clip_xmin(a6),a1
 						cmp.w 	(a1)+,d0 		;x1 zu klein ?
 						bge.s 	line_clip_y1
 						sub.w 	-(a1),d0 		;x1 - clip_xmin (negativer Ausdruck)
-						neg.w 	d0 				;positiver Ausdruck fÅr mulu/divu
+						neg.w 	d0 				;positiver Ausdruck f√ºr mulu/divu
 						mulu		d5,d0 			;* dy
 						divu		d4,d0 			;/ dx
 						add.w 	d0,d1 			;y1 += -(x1 - clip_xmin) * dy / dx;
 						move.w	(a1)+,d0 		;x1 = clip_xmin;
 
-line_clip_y1:		cmp.w 	clip_ymax(a6),d1 ;y1 zu groû ?
+line_clip_y1:		cmp.w 	clip_ymax(a6),d1 ;y1 zu gro‚Çß ?
 						bgt.s 	line_exit
 						cmp.w 	(a1)+,d1 		;y1 zu klein ?
 						bge.s 	line_clip_x2
 						sub.w 	-(a1),d1 		;y1 - clip_ymin (negativer Ausdruck)
-						neg.w 	d1 				;positiver Ausdruck fÅr mulu/divu
+						neg.w 	d1 				;positiver Ausdruck f√ºr mulu/divu
 						mulu		d4,d1 			;* dx
 						divu		d5,d1 			;* dy
 						add.w 	d1,d0 			;x1 += -(y1 - clip_ymin) * dx / dy;
 						move.w	(a1)+,d1 		;y1 = clip_ymin;
-						cmp.w 	(a1),d0			;x1 zu groû ?
+						cmp.w 	(a1),d0			;x1 zu gro‚Çß ?
 						bgt.s 	line_exit
 
-line_clip_x2:		cmp.w 	(a1)+,d2 		;x2 zu groû ?
+line_clip_x2:		cmp.w 	(a1)+,d2 		;x2 zu gro‚Çß ?
 						ble.s 	line_clip_y2
 						sub.w 	-(a1),d2 		;x2 - clip_xmax (positiver Ausdruck)
 						mulu		d5,d2 			;* dy
@@ -3422,7 +3422,7 @@ line_clip_x2:		cmp.w 	(a1)+,d2 		;x2 zu groû ?
 line_clip_y2:		cmp.w 	clip_ymin(a6),d3 ;y2 zu klein ?
 						blt.s 	line_exit
 
-						cmp.w 	(a1)+,d3 		;y2 zu groû ?
+						cmp.w 	(a1)+,d3 		;y2 zu gro‚Çß ?
 						ble.s 	line_clip_cmp
 						sub.w 	-(a1),d3 		;y2 - clip_ymax (positiver Ausdruck)
 						muls		d4,d3 			;* dx
@@ -3440,7 +3440,7 @@ line_clip2: 		move.w	d1,d5
 						cmp.w 	(a1)+,d0 		;x1 zu klein ?
 						bge.s 	line_clip2_y1
 						sub.w 	-(a1),d0 		;x1 - clip_xmin (negativer Ausdruck)
-						neg.w 	d0 				;positiver Ausdruck fÅr mulu/divu
+						neg.w 	d0 				;positiver Ausdruck f√ºr mulu/divu
 						mulu		d5,d0 			;* dy
 						divu		d4,d0 			;/ dx
 						sub.w 	d0,d1 			;y1 -= -(x1 - clip_xmin) * dy / dx;
@@ -3448,17 +3448,17 @@ line_clip2: 		move.w	d1,d5
 
 line_clip2_y1: 	cmp.w 	(a1)+,d1 		;y1 zu klein ?
 						blt.s 	line_exit
-						cmp.w 	clip_ymax(a6),d1 ;y1 zu groû ?
+						cmp.w 	clip_ymax(a6),d1 ;y1 zu gro‚Çß ?
 						ble.s 	line_clip2_x2
 						sub.w 	clip_ymax(a6),d1 ;y1 - clip_ymax (positiver Ausdruck)
 						mulu		d4,d1 			;* dx
 						divu		d5,d1 			;/ dy
 						add.w 	d1,d0 			;x1 += (y1 - clip_ymax) * dx / dy;
 						move.w	clip_ymax(a6),d1 ;y1 = clip_ymax;
-						cmp.w 	(a1),d0			;x1 zu groû ?
+						cmp.w 	(a1),d0			;x1 zu gro‚Çß ?
 						bgt.s 	line_exit
 
-line_clip2_x2: 	cmp.w 	(a1)+,d2 		;x2 zu groû ?
+line_clip2_x2: 	cmp.w 	(a1)+,d2 		;x2 zu gro‚Çß ?
 						ble.s 	line_clip2_y2
 						sub.w 	-(a1),d2 		;x2 - clip_xmax (positiver Ausdruck)
 						mulu		d5,d2 			;* dy
@@ -3467,12 +3467,12 @@ line_clip2_x2: 	cmp.w 	(a1)+,d2 		;x2 zu groû ?
 						add.w 	d2,d3 			;y2 += (x2 - clip_xmax) * dy / dx;
 						move.w	(a1)+,d2 		;x2 = clip_xmax;
 
-line_clip2_y2: 	cmp.w 	(a1)+,d3 		;y2 zu groû ?
+line_clip2_y2: 	cmp.w 	(a1)+,d3 		;y2 zu gro‚Çß ?
 						bgt.s 	line_exit
 						cmp.w 	clip_ymin(a6),d3 ;y2 zu klein ?
 						bge.s 	line_clip_cmp
 						sub.w 	clip_ymin(a6),d3 ;y2 - clip_ymin (negativer Ausdruck)
-						neg.w 	d3 				;positiver Ausdruck fÅr mulu/divu
+						neg.w 	d3 				;positiver Ausdruck f√ºr mulu/divu
 						mulu		d4,d3 			;* dx
 						divu		d5,d3 			;/ dy
 						sub.w 	d3,d2 			;x2 -= -(y2 - clip_ymin) * dx / dy;
@@ -3480,7 +3480,7 @@ line_clip2_y2: 	cmp.w 	(a1)+,d3 		;y2 zu groû ?
 						cmp.w 	clip_xmin(a6),d2 ;x2 zu klein ?
 						blt.s 	line_exit
 
-line_clip_cmp: 	cmp.w 	d0,d2 			;x1 grîûer als x2 ?
+line_clip_cmp: 	cmp.w 	d0,d2 			;x1 gr√∂‚Çßer als x2 ?
 						blt.s 	line_exit
 
 						move.w	(a1),d7			;wr_mode

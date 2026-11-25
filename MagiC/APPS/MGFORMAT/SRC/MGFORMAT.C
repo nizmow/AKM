@@ -4,11 +4,11 @@
 * ========
 *
 * Beginn der Programmierung:	2.6.93	(vorher: MAGXDESK)
-* letzte énderung:		1.6.98
+* letzte √Ñnderung:		1.6.98
 *
 * Modul zum Formatieren und Kopieren von Disketten.
 * Implementation wie zum MultiTOS beschrieben, MultiTOS sucht
-*  eine Env-Variable DESKFMT, die einen Programmnamen enthÑlt.
+*  eine Env-Variable DESKFMT, die einen Programmnamen enth√§lt.
 * Dieses wird aufgerufen mit:
 *
 * -f  A:		zum Formatieren
@@ -17,14 +17,12 @@
 *
 ****************************************************************/
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
+#include "MGFORMAT_GEM.H"
 #include <string.h>
 #include <stdlib.h>
-#include <tosdefs.h>
-#include "mgformat.h"
-#include "gemut_mt.h"
-#include "globals.h"
+#include "MGFORMAT.H"
+#include "GEMUT_MT.H"
+#include "GLOBALS.H"
 
 
 #define TRUE   1
@@ -45,10 +43,10 @@ extern OBJECT *adr_format;
 extern OBJECT *adr_cpydsk;
 extern OBJECT *adr_fmtopt;
 extern void	fmt_dial_init_rsc( int src_dev, int init, int only );
-extern WORD	cdecl hdl_format( DIALOG *dialog, EVNT *events, WORD obj, WORD clicks, void *data );
+extern WORD	cdecl hdl_format( struct HNDL_OBJ_args args );
 extern void	cpy_dial_init_rsc( int src_dev, int dst_dev );
-extern WORD	cdecl hdl_cpydsk( DIALOG *dialog, EVNT *events, WORD obj, WORD clicks, void *data );
-extern WORD	cdecl hdl_fmtopt( DIALOG *dialog, EVNT *events, WORD obj, WORD clicks, void *data );
+extern WORD	cdecl hdl_cpydsk( struct HNDL_OBJ_args args );
+extern WORD	cdecl hdl_fmtopt( struct HNDL_OBJ_args args );
 
 /* DIALOG-Strukturen */
 
@@ -60,7 +58,7 @@ FMT_DEFAULTS prefs;
 
 OBJECT *adr_iconified;
 
-int	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
+short	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
 GRECT scrg;
 int	ap_id;
 WORD global[15];
@@ -69,17 +67,17 @@ WORD global[15];
 /****************************************************************
 *
 * Rechnet Koordinaten linear um. Der Wert <wert> wurde bei
-* Bildschirmgrîûe <old> abgespeichert, jetzt ist die
-* Bildschirmgrîûe <new>.
+* Bildschirmgr√∂√üe <old> abgespeichert, jetzt ist die
+* Bildschirmgr√∂√üe <new>.
 *
 * Liegt das Fenster links aus dem Bildschirm heraus, wird
 * nichts umgerechnet. Hier sollte aber sichergestellt werden,
-* daû man an das Fenster noch herankommt, d.h.:
+* da√ü man an das Fenster noch herankommt, d.h.:
 *	x+w > k > 0.
 *
 ****************************************************************/
 
-static void recalc(int *wert, int old, int new)
+static void recalc(short *wert, short old, short new)
 {
 	unsigned long tmp;
 
@@ -88,7 +86,7 @@ static void recalc(int *wert, int old, int new)
 		tmp    = (unsigned long) *wert;
 		tmp   *= new;
 		tmp   /= old;
-		*wert  = (int) tmp;
+		*wert  = (short) tmp;
 		}
 }
 
@@ -141,7 +139,7 @@ void read_inf( void )
 			return;
 		buf[len] = EOS;
 
-		/* erste Zeile Åberlesen */
+		/* erste Zeile √ºberlesen */
 
 		for	(s = buf; (*s) && (*s != '\n'); s++)
 			;
@@ -162,8 +160,16 @@ void read_inf( void )
 
 			if	(!strncmp(s, "WINDOW FORMAT ", 14))
 				{
+				int win[4];
+
 				s += 14;
-				scan_values(&s, 4, (int *) &prefs.format_win);
+				if	(scan_values(&s, 4, win) == 4)
+					{
+					prefs.format_win.g_x = win[0];
+					prefs.format_win.g_y = win[1];
+					prefs.format_win.g_w = win[2];
+					prefs.format_win.g_h = win[3];
+					}
 				}
 
 			if	(!strncmp(s, "TMPDRV ", 7))
@@ -242,18 +248,20 @@ void read_inf( void )
 
 /****************************************************************
 *
-* Schreibe Fensterposition auflîsungsunabhÑngig in
+* Schreibe Fensterposition aufl√∂sungsunabh√§ngig in
 * Zeichenkette.
 *
 ****************************************************************/
 
 static void print_winpos(char *s, GRECT *g, int n)
 {
-	g->g_x -= scrg.g_x;
-	g->g_y -= scrg.g_y;
-	print_values(s, n, (int *) g);
-	g->g_x += scrg.g_x;
-	g->g_y += scrg.g_y;
+	int win[4];
+
+	win[0] = g->g_x - scrg.g_x;
+	win[1] = g->g_y - scrg.g_y;
+	win[2] = g->g_w;
+	win[3] = g->g_h;
+	print_values(s, n, win);
 }
 
 
@@ -328,9 +336,10 @@ void write_inf( void )
 int main( int argc, char *argv[] )
 {
 	int	tmp;
+	(void) argc;
 	char	*arg;
 	EVNT w_ev;
-	WORD whdl_format,whdl_diskcopy;
+	WORD whdl_format = 0, whdl_diskcopy = 0;
 	int	src_dev;
 	int	dst_dev;
 	enum actioncode action;
@@ -370,13 +379,14 @@ int main( int argc, char *argv[] )
 	if	(dst_dev == -1)
 		dst_dev = 0;
 
-	if   ((ap_id = MT_appl_init(global)) < 0)
+	if   ((ap_id = appl_init()) < 0)
 		Pterm(-1);
+	memcpy(global, aes_global, sizeof global);
 	graf_handle(&gl_hwchar, &gl_hhchar, &gl_hwbox, &gl_hhbox);
 	wind_get_grect(SCREEN, WF_WORKXYWH, &scrg);
 	Mrsrc_load("mgformat.rsc", global);
 
-	MT_rsrc_gaddr(0, T_ICONIF, &adr_iconified, global);
+	mt_rsrc_gaddr(0, T_ICONIF, &adr_iconified, global);
 	adr_iconified[1].ob_width  = 72;
 	adr_iconified[1].ob_height = (adr_iconified[1].ob_spec.iconblk->ib_hicon)+8;
 
@@ -391,7 +401,7 @@ int main( int argc, char *argv[] )
 
 	if	((action == FORMAT) || (action == INIT) || (action == BOTH))
 		{
-		d_format = wdlg_create(hdl_format,
+			d_format = wdlg_create(hdl_format,
 							adr_format,
 							NULL,
 							0,
@@ -399,7 +409,7 @@ int main( int argc, char *argv[] )
 							0);
 		if	(!d_format)
 			goto fehler;
-
+	
 		whdl_format = wdlg_open( d_format,
 							"DISKFORMAT",
 							NAME+CLOSER+MOVER+SMALLER,
@@ -412,7 +422,7 @@ int main( int argc, char *argv[] )
 		}
 	if	((action == COPY) || (action == BOTH))
 		{
-		d_cpydsk = wdlg_create(hdl_cpydsk,
+			d_cpydsk = wdlg_create(hdl_cpydsk,
 							adr_cpydsk,
 							NULL,
 							0,
@@ -421,7 +431,7 @@ int main( int argc, char *argv[] )
 
 		if	(!d_cpydsk)
 			goto fehler;
-
+	
 		whdl_diskcopy = wdlg_open( d_cpydsk,
 							"DISKCOPY",
 							NAME+CLOSER+MOVER+SMALLER,
@@ -434,18 +444,16 @@ int main( int argc, char *argv[] )
 
 	while(1)
 		{
-		w_ev.mwhich = evnt_multi(MU_KEYBD+MU_BUTTON+MU_MESAG,
+		w_ev.mwhich = mt_evnt_multi(MU_KEYBD+MU_BUTTON+MU_MESAG,
 					  2,			/* Doppelklicks erkennen 	*/
 					  1,			/* nur linke Maustaste		*/
-					  1,			/* linke Maustaste gedrÅckt	*/
-					  0,NULL,		/* kein 1. Rechteck			*/
-					  0,NULL,		/* kein 2. Rechteck			*/
+					  1,			/* linke Maustaste gedr√ºckt	*/
+					  0, 0, 0, 0, 0,
+					  0, 0, 0, 0, 0,
 					  w_ev.msg,
 					  0L,	/* ms */
-					  (EVNTDATA*) &(w_ev.mx),
-					  &w_ev.key,
-					  &w_ev.mclicks
-					  );
+					  &w_ev.mx, &w_ev.my, &w_ev.mbutton, &w_ev.kstate,
+					  &w_ev.key, &w_ev.mclicks, global);
 
 		if	(d_fmtopt && !wdlg_evnt(d_fmtopt, &w_ev))
 			{
@@ -470,22 +478,18 @@ int main( int argc, char *argv[] )
 				{
 				if	(d_format && w_ev.msg[3] == whdl_format)
 					{
-					hdl_format(
-							d_format,
-							&w_ev,
-							HNDL_MESG,
-							0,
-							w_ev.msg);
+					struct HNDL_OBJ_args args = {
+						d_format, &w_ev, HNDL_MESG, 0, w_ev.msg
+					};
+					hdl_format(args);
 					}
 				else
 				if	(d_cpydsk && w_ev.msg[3] == whdl_diskcopy)
 					{
-					hdl_cpydsk(
-							d_cpydsk,
-							&w_ev,
-							HNDL_MESG,
-							0,
-							w_ev.msg);
+					struct HNDL_OBJ_args args = {
+						d_cpydsk, &w_ev, HNDL_MESG, 0, w_ev.msg
+					};
+					hdl_cpydsk(args);
 					}
 				}
 			}
@@ -517,7 +521,7 @@ void drv_to_str(char *s, char c)
 {
 	while(*s)
 		{
-		if	(s[1] == ':')		/* nÑchstes Zeichen ist ':' */
+		if	(s[1] == ':')		/* n√§chstes Zeichen ist ':' */
 			{
 			*s = c;
 			break;

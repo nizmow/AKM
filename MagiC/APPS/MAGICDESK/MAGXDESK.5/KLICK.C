@@ -1,17 +1,16 @@
 /*********************************************************************
 *
-* Dieses Modul enthÑlt die Bearbeitung aller Mausklicks, also 
+* Dieses Modul enth√§lt die Bearbeitung aller Mausklicks, also 
 * Verschieben und Aktivierung von Icons, Doppelklicks in Fenster usw.
 *
 *********************************************************************/
 
-#include <mgx_dos.h>
-#include <vdi.h>
-#include "k.h"
+#include "K.H"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <limits.h>
-#include "kobold.h"
+#include "KOBOLD.H"
 
 #define NEWMOVE	1
 
@@ -24,7 +23,7 @@ static void mk_dskt_icns(WINDOW *w, int xrel, int yrel);
 *
 * Das Objekt mit der Objektnummer <index> wird neu gemalt.
 * (da es sich entweder verschoben hat oder der Status sich
-*  geÑndert hat).
+*  ge√§ndert hat).
 * Das Objekt liegt im Fenster mit Nummer <wnr> bzw. auf dem
 * Desktop, wenn <wnr> = 0;
 *
@@ -54,7 +53,7 @@ void redraw_window_object(const WINDOW *w, int index)
 
 /****************************************************************
 *
-* Alle Auswahlen von Fenstern werden gelîscht.
+* Alle Auswahlen von Fenstern werden gel√∂scht.
 *
 ****************************************************************/
 
@@ -115,11 +114,11 @@ void dsel_all(void)
 
 /****************************************************************
 *
-* Der ursprÅngliche Selektionsstatus steht in Bit 2 der MYDTAs.
-* éndert ggf. den Selektionsstatus aller Unterobjekte von
+* Der urspr√ºngliche Selektionsstatus steht in Bit 2 der MYDTAs.
+* √Ñndert ggf. den Selektionsstatus aller Unterobjekte von
 * <tree>, die sich im Rechteck <*g> befinden, und zeichnet die
 * jeweiligen Objekte neu.
-* Gibt zurÅck, ob sich etwas geÑndert hat.
+* Gibt zur√ºck, ob sich etwas ge√§ndert hat.
 *
 ****************************************************************/
 
@@ -142,7 +141,7 @@ static int grect_toggle(WINDOW *w, char *sel_status, GRECT *g)
 	ty = t->ob_y;
 
 	mx = my = INT_MAX;		/* Ecke links oben */
-	mrx = mry = -INT_MAX;	/* Ecke rechts unten (auûerhalb) */
+	mrx = mry = -INT_MAX;	/* Ecke rechts unten (au√üerhalb) */
 
 	if ((i = (t->ob_head)) > 0)
 	{
@@ -237,8 +236,8 @@ void rubberbox(WINDOW *w, int x, int y, int mx, int my)
 	register int i,tail;
 	register OBJECT *tree = w->pobj;
 	GRECT rub,box,mg;
-	int dummy;
-	int timer;
+	short key, clicks;
+	int timer = 0;
 	int mwhich;
 	int scrollpix;
 	char *sel_status;
@@ -256,7 +255,7 @@ void rubberbox(WINDOW *w, int x, int y, int mx, int my)
 
 	if ((i = (tree->ob_head)) > 0)
 	{
-		sel_status = Malloc(w->shownum);
+		sel_status = malloc((size_t) w->shownum);
 		if (!sel_status)
 		{
 			form_xerr(ENSMEM, NULL);
@@ -319,17 +318,13 @@ void rubberbox(WINDOW *w, int x, int y, int mx, int my)
 		mg.g_x = ev.x;
 		mg.g_y = ev.y;
 		mwhich = evnt_multi(
-				mwhich,
-				1,1,0,		/* linke Mtaste loslassen */
-				1,&mg,		/* Mauspos. verlassen */
-				0,NULL,		/* kein 2. Mausrechteck */
-				NULL,		/* keine Message */
-				timer+20L,	/* Autoscroll-Timer */
-				&ev,
-				&dummy,		/* kreturn */
-				&dummy		/* breturn */
-				);
-		xgrf_rbox(&(w->in), &rub);	/* Rubberbox wieder lîschen (XOR) */
+				mwhich, 1, 1, 0,
+				1, mg.g_x, mg.g_y, mg.g_w, mg.g_h,
+				0, 0, 0, 0, 0,
+				NULL, timer + 20L,
+				&ev.x, &ev.y, &ev.bstate, &ev.kstate,
+				&key, &clicks);
+		xgrf_rbox(&(w->in), &rub);	/* Rubberbox wieder l√∂schen (XOR) */
 
 		box = rub;
 		if (rub.g_w < 0)
@@ -371,7 +366,7 @@ void rubberbox(WINDOW *w, int x, int y, int mx, int my)
 	wind_update(END_MCTRL);
 	if (sel_status)
 	{
-		Mfree(sel_status);
+		free(sel_status);
 	}
 }
 
@@ -380,7 +375,7 @@ void rubberbox(WINDOW *w, int x, int y, int mx, int my)
 *
 * Malt alle Objekte in der Liste <mov_boxes[anz_boxes]>.
 * Wird als Begrenzung <grenz> != NULL angegeben, wird verhindert,
-*  daû die Objekte auûerhalb des Bildschirms liegen.
+*  da√ü die Objekte au√üerhalb des Bildschirms liegen.
 *
 ****************************************************************/
 
@@ -390,7 +385,7 @@ void draw_boxes(OBJECT *tree, OBJECT *mov_boxes[], int anz_boxes,
 			 GRECT *grenz, int xoff, int yoff)
 {
 	int px, py;
-	int pxy[10];
+	short pxy[10];
 
 
 	vswr_mode(vdi_handle, MD_XOR);
@@ -440,7 +435,7 @@ void draw_boxes(OBJECT *tree, OBJECT *mov_boxes[], int anz_boxes,
 * Verschieben von selektierten Objekten.
 * <wnr>,<tree>		: Nummer und Baum der selektierten Objekte
 * <x_koor>,<y_koor>	: Anklickpunkt in absoluten Koordinaten
-* KEIN BEG_UPDATE ausgefÅhrt
+* KEIN BEG_UPDATE ausgef√ºhrt
 *
 ****************************************************************/
 
@@ -463,22 +458,22 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 	int old_obj = 0;
 	OBJECT *old_tree = NULL;
 	int scrollpix;
-	int dummy;
-	int timer,rtimer;
-	int scroll_started;		/* Anfangsverzîgerung Åberwunden */
+	short key, clicks;
+	int scroll_started;		/* Anfangsverz√∂gerung √ºberwunden */
 	int scroll_direction;	/* Richtung: WA_DNLINE oder WA_UPLINE */
 	int mwhich;
 	int boxes_y;
+	int timer, rtimer;
 	GRECT mg;
 
 
 	tree = w->pobj;
 	mg.g_w = mg.g_h = 1;
 
-	/* Speicher holen (fÅr max. 2048 Dateien) */
+	/* Speicher holen (f√ºr max. 2048 Dateien) */
 	/* -------------------------------------- */
 
-	mov_boxes = (OBJECT **) Malloc(2048 * sizeof(void *));
+	mov_boxes = (OBJECT **) malloc(2048 * sizeof(void *));
 	if (mov_boxes == NULL)
 	{
 		err_alert(ENSMEM);
@@ -555,7 +550,7 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 			}
 			else
 			{
-				timer = 500;		/* Anfangsverzîgerung */
+				timer = 500;		/* Anfangsverz√∂gerung */
 			}
 			timer += 20;
 		}
@@ -571,16 +566,12 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 			mg.g_x = ev.x;
 			mg.g_y = ev.y;
 			mwhich = evnt_multi(
-				MU_BUTTON+MU_M1+MU_TIMER,
-				1,1,0,	/* linke Mtaste loslassen */
-				1,&mg,			/* Mauspos. verlassen */
-				0,NULL,			/* kein 2. Mausrechteck */
-				NULL,			/* keine Message */
-				rtimer,			/* Autoscroll-Timer */
-				&ev,
-				&dummy,			/* kreturn */
-				&dummy			/* breturn */
-				);
+				MU_BUTTON + MU_M1 + MU_TIMER, 1, 1, 0,
+				1, mg.g_x, mg.g_y, mg.g_w, mg.g_h,
+				0, 0, 0, 0, 0,
+				NULL, rtimer,
+				&ev.x, &ev.y, &ev.bstate, &ev.kstate,
+				&key, &clicks);
 
 			if (mwhich & (MU_BUTTON+MU_M1))
 				break;
@@ -598,7 +589,7 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 		draw_boxes(tree, mov_boxes, num_boxes, ptr_g,
 				 old_x-x, old_y-boxes_y);
 
-		/* Beginn des Scrollens: Anfangsverzîgerung Åberwunden */
+		/* Beginn des Scrollens: Anfangsverz√∂gerung √ºberwunden */
 
 		if (!(mwhich & MU_BUTTON))
 		{
@@ -717,7 +708,7 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 	}
 	while (!(mwhich & MU_BUTTON));
 
-	Mfree(mov_boxes);
+	free(mov_boxes);
 
 	if (dest_obj > 0)
 	{
@@ -729,7 +720,7 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 	wind_update(END_MCTRL);
 
 	/* Die zu verschiebenden Icons lagen im Desktop, Zielfenster */
-	/* ist ebenfalls das Desktop, Zielobjekt ist ungÅltig oder   */
+	/* ist ebenfalls das Desktop, Zielobjekt ist ung√ºltig oder   */
 	/* der Desktop- Hintergrund :							 */
 	/*	ICONS AUF DEM DESKTOP VERSCHIEBEN					 */
 	/* --------------------------------------------------------- */
@@ -742,7 +733,7 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 		return;
 	}
 
-	/* Zielobjekt ist ungÅltig (etwa fremdes Fenster oder mit    */
+	/* Zielobjekt ist ung√ºltig (etwa fremdes Fenster oder mit    */
 	/* einem der Quellobjekte identisch) :					 */
 	/*	NICHTS TUN									 */
 	/* --------------------------------------------------------- */
@@ -766,8 +757,8 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 	}
 
 	/* Objekte sind von einem Fenster aufs Desktop gezogen 	 */
-	/* worden, und zwar nicht in ein gÅltiges Zielobjekt,		 */
-	/* sondern auf eine freie FlÑche :						 */
+	/* worden, und zwar nicht in ein g√ºltiges Zielobjekt,		 */
+	/* sondern auf eine freie Fl√§che :						 */
 	/*	 DESKTOP- ICONS ERSTELLEN						 */
 	/* --------------------------------------------------------- */
 
@@ -779,9 +770,9 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 		return;
 	}
 
-	/* Objekte sind von irgendwoher in ein gÅltiges Objekt auf 	 */
+	/* Objekte sind von irgendwoher in ein g√ºltiges Objekt auf 	 */
 	/* dem Desktop gezogen worden:						 */
-	/*	PAPIERKORB	: LôSCHEN							 */
+	/*	PAPIERKORB	: L√ñSCHEN							 */
 	/*	DRUCKER   	: DRUCKEN							 */
 	/* --------------------------------------------------------- */
 
@@ -829,31 +820,25 @@ static void move_icons(int x, int y, WINDOW *w, int kbsh)
 
 /****************************************************************
 *
-* Nach der Bearbeitung eines Einfach-Mausklicks mÅssen wir
-* prÅfen, ob die Maustaste noch gedrÅckt ist. Insbesondere auf
-* schnellen Systemen mÅssen wir dem Anwender etwas Zeit lassen,
+* Nach der Bearbeitung eines Einfach-Mausklicks m√ºssen wir
+* pr√ºfen, ob die Maustaste noch gedr√ºckt ist. Insbesondere auf
+* schnellen Systemen m√ºssen wir dem Anwender etwas Zeit lassen,
 * die linke Maustaste wieder loszulassen, ansonsten wird immer
 * ein "Drag" erkannt.
 *
-* RÅckgabe TRUE bei "timeout", d.h. Maustaste noch gedrÅckt.
+* R√ºckgabe TRUE bei "timeout", d.h. Maustaste noch gedr√ºckt.
 *
 ****************************************************************/
 
 static int detect_mouse_drag(EVNT *w_ev)
 {
 	w_ev->mwhich = evnt_multi(
-                      MU_BUTTON + MU_TIMER,
-					  1,			/* keine Doppelklicks */
-					  1,			/* nur linke Maustaste */
-					  0,			/* linke Maustaste losgelassen */
-					  0,NULL,		/* kein 1. Rechteck */
-					  0,NULL,		/* kein 2. Rechteck */
-					  NULL,			/* keine "message" */
-					  MOUSE_DRAG_DETECT_MS,		/* ms */
-					  (EVNTDATA *) &(w_ev->mx),
-					  &w_ev->key,
-					  &w_ev->mclicks
-					  );
+		MU_BUTTON + MU_TIMER, 1, 1, 0,
+		0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0,
+		NULL, MOUSE_DRAG_DETECT_MS,
+		&w_ev->mx, &w_ev->my, &w_ev->mbutton, &w_ev->kstate,
+		&w_ev->key, &w_ev->mclicks);
 
 	return (w_ev->mwhich & MU_TIMER) != 0;
 }
@@ -862,8 +847,8 @@ static int detect_mouse_drag(EVNT *w_ev)
 /****************************************************************
 *
 * Der Benutzer hat an der Bildschirmposition (x_koor,y_koor) mit
-* dem <knopf> einen <nclicks>- fachen Mausklick ausgefÅhrt.
-* Es ist kein BEG_UPDATE ausgefÅhrt worden.
+* dem <knopf> einen <nclicks>- fachen Mausklick ausgef√ºhrt.
+* Es ist kein BEG_UPDATE ausgef√ºhrt worden.
 *
 ****************************************************************/
 
@@ -899,7 +884,7 @@ void handle_mouse_button(int nclicks, const EVNTDATA *ev)
 			/*
 			 * Klick auf Hintergrundfenster.
 			 * Weil WF_BEVENT gesetzt ist, wird das Fenster nicht
-			 * vom System nach oben gebracht. Dies muû daher
+			 * vom System nach oben gebracht. Dies mu√ü daher
 			 * manuell erfolgen. Hier nur bei kurzem Einfachklick
 			 * mit nur der linken Maustaste und ohne Umschalttasten!
 			 */
@@ -910,7 +895,7 @@ void handle_mouse_button(int nclicks, const EVNTDATA *ev)
 				/* wieder losgelassen! */
 
 				wind_set_int(w->handle, WF_TOP, 0);
-				wind_set_int(-1, WF_TOP, -1);	/* MenÅ nach oben! */
+				wind_set_int(-1, WF_TOP, -1);	/* Men√º nach oben! */
 				return;
 			}
 		}
@@ -918,7 +903,7 @@ void handle_mouse_button(int nclicks, const EVNTDATA *ev)
 		/*
 		 * Ab MagiC 6 kriegen wir jetzt auch Klicks auf die
 		 * INFO-Zeile. Wir behandeln einfach alle Klicks
-		 * auûerhalb des Arbeitsbereichs als INFO.
+		 * au√üerhalb des Arbeitsbereichs als INFO.
 		 */
 
 		if (!in_grect(ev->x, ev->y, &(w->in)))
@@ -948,12 +933,12 @@ void handle_mouse_button(int nclicks, const EVNTDATA *ev)
 	if (icnobj < 0)
 		return;
 
-	issel = icsel(&w2, &dummy2);	/* irgendwo Icons angewÑhlt? */
+	issel = icsel(&w2, &dummy2);	/* irgendwo Icons angew√§hlt? */
 
 	/*
 	 * 2. Fall: Ein Hintergrund wurde angeklickt.
 	 *	Alle Icons ggf. deselektieren.
-	 *	Falls noch Maustaste gedrÅckt, Box ziehen
+	 *	Falls noch Maustaste gedr√ºckt, Box ziehen
 	 *	Ggf. alle meine Fenster nach oben
 	 */
 
@@ -1048,7 +1033,7 @@ void handle_mouse_button(int nclicks, const EVNTDATA *ev)
 		return;
 	}
 
-	/* Ab hier nur noch Doppelklicks berÅcksichtigen */
+	/* Ab hier nur noch Doppelklicks ber√ºcksichtigen */
 	/* --------------------------------------------- */
 
 	if (nclicks == 2)
@@ -1094,7 +1079,7 @@ void sel_all(WINDOW *w)
 		return;
 
 	/* Select-Status aller Objekte umdrehen */
-	/* auûer versteckten und ".."-Objekt	*/
+	/* au√üer versteckten und ".."-Objekt	*/
 
 	for	(i = head,ob = tree+head;
 			i <= (tree->ob_tail);
@@ -1104,7 +1089,7 @@ void sel_all(WINDOW *w)
 			ob->ob_state ^= SELECTED;
 	}
 
-	/* UmhÅllendes Rechteck aller selektierten */
+	/* Umh√ºllendes Rechteck aller selektierten */
 	/* Objekte bestimmen */
 
 	tree_sel_grect(tree, &g);
@@ -1125,11 +1110,11 @@ void sel_all(WINDOW *w)
 
 /****************************************************************
 *
-* BerÅcksichtigt das Desktop-Raster 
+* Ber√ºcksichtigt das Desktop-Raster 
 *
 ****************************************************************/
 
-static void desk_raster(int *x, int *y)
+static void desk_raster(short *x, short *y)
 {
 	*x -= (*x % settings.desk_raster);
 	*y -= desk_g.g_y;
@@ -1183,7 +1168,7 @@ void init_icnobj(OBJECT *o, CICONBLK *icn, int type, char *text,
 *
 * Ist x == -1, wird eine (freie) Position bestimmt.
 *
-* RÅckgabe != 0, falls nicht erfolgreich.
+* R√ºckgabe != 0, falls nicht erfolgreich.
 *
 ****************************************************************/
 
@@ -1194,6 +1179,7 @@ int make_icon(int type, CICONBLK *cic, char c, char *icntext,
 	register OBJECT *ob,*parent;
 	ICONBLK *ic;
 	char *newmemptr;
+	short raster_x, raster_y;
 
 
 	parent = windows[0]->pobj;
@@ -1244,7 +1230,7 @@ int make_icon(int type, CICONBLK *cic, char c, char *icntext,
 		/* -----------------------------------------	*/
 
 		j = n_deskicons + PLUSICONS;
-		newmemptr = Malloc(sizeof(ICON)        * j +
+		newmemptr = malloc(sizeof(ICON)        * j +
 					  sizeof(OBJECT)      * (j+1));
 		if (!newmemptr)
 		{
@@ -1273,7 +1259,7 @@ int make_icon(int type, CICONBLK *cic, char c, char *icntext,
 		memcpy(parent + j + 1, icon,
 			n_deskicons * sizeof(ICON));
 		icon = (ICON *) (parent + j + 1);
-		Mfree(gmemptr);
+		free(gmemptr);
 		gmemptr = newmemptr;
 		for	(; i < j; i++)
 			icon[i].icon_type = icon[i].isdisk = 0;
@@ -1344,7 +1330,7 @@ int make_icon(int type, CICONBLK *cic, char c, char *icntext,
 	if (is_alias)
 		ob->ob_state |= (SHADOWED+0x8000+0x400);	/* kursiv */
 
-	/* Test, ob Icons auûerhalb des Bildschirms liegen */
+	/* Test, ob Icons au√üerhalb des Bildschirms liegen */
 	/* ----------------------------------------------- */
 
 	x -= parent->ob_x;
@@ -1358,13 +1344,17 @@ int make_icon(int type, CICONBLK *cic, char c, char *icntext,
 	if (y + ob->ob_height > parent->ob_height)
 		y = parent->ob_height - ob->ob_height;
 
-	/* Raster fÅr Iconposition, ohne Text (!) */
+	/* Raster f√ºr Iconposition, ohne Text (!) */
 	/* -------------------------------------- */
 
 	j = icon[i].data.monoblk.ib_xicon;
 	x += j;				/* Position des Icons selbst */
-	desk_raster(&x, &y);	/* ... rastern */
-	x -= j;				/* ... und zurÅck auf Objektposition */
+	raster_x = (short) x;
+	raster_y = (short) y;
+	desk_raster(&raster_x, &raster_y);	/* ... rastern */
+	x = raster_x;
+	y = raster_y;
+	x -= j;				/* ... und zur√ºck auf Objektposition */
 
 	ob->ob_x = x;
 	ob->ob_y = y;
@@ -1397,8 +1387,8 @@ void kill_icon(int objnr)
 
 /****************************************************************
 *
-* Gibt zu einem Objekt den Pfad und ggf. die DTA zurÅck.
-* RÅckgabe  0, falls Datei
+* Gibt zu einem Objekt den Pfad und ggf. die DTA zur√ºck.
+* R√ºckgabe  0, falls Datei
 *           1, falls Pfad (Disk oder Ordner oder Fenster)
 *		 -1, sonst
 *
@@ -1454,7 +1444,7 @@ int obj_to_path(WINDOW *w, int obj, char *path, MYDTA **f)
 			if (ispath && !strcmp(file->filename, ".."))
 			{
 				path[strlen(path)-1] = EOS;	/* '\' weg */
-				*(get_name(path)-1) = EOS;	/* einen zurÅck */
+				*(get_name(path)-1) = EOS;	/* einen zur√ºck */
 			}
 			else
 				strcat(path, file->filename);
@@ -1613,22 +1603,22 @@ Cconws(pgm);
 /****************************************************************
 *
 * sammelt die Pfade aller selektierten Objekte.
-* hÑngt sie, durch EOS getrennt, hintereinander.
+* h√§ngt sie, durch EOS getrennt, hintereinander.
 * Packt hinter jeden Pfad folgendes:
 *
-*	Datei im Fenster:				DateilÑnge
+*	Datei im Fenster:				Dateil√§nge
 *	Ordner im Fenster:				-1
 *	Alias im Fenster:				-2
 *	Device im Fenster:				-3
 *	Objekt auf dem Desktop:			-4
 *
-* Damit kînnen Pfade, wie auf dem Mac, auch Leerzeichen haben.
+* Damit k√∂nnen Pfade, wie auf dem Mac, auch Leerzeichen haben.
 *
 ****************************************************************/
 
 static int action;			/* 'Del', 'Copy', 'Move', 'Alias' */
 static char *sel_mem;		/* Zeiger auf Block */
-static long sel_mem_len;		/*  dessen LÑnge */
+static long sel_mem_len;		/*  dessen L√§nge */
 static char *selpaths;		/* Laufzeiger */
 static long free_space;		/* noch freier Platz */
 static int path_cnt;		/* Anzahl Zeichenketten */
@@ -1636,23 +1626,23 @@ static int path_cnt;		/* Anzahl Zeichenketten */
 static long resize_sel_mem(long add)
 {
 	char *blk;
+	long address;
+	size_t sel_offset;
 
 	if (add < 10240L)
 		add = 10240L;		/* immer mindestens 2k mehr */
-	if (Mshrink(0, sel_mem, sel_mem_len + add))
-	{
-		blk = Malloc(sel_mem_len + add);	/* neuen Block alloz. */
-		if (!blk)
-			return ENSMEM;
-
-		memcpy(blk, sel_mem, selpaths - sel_mem);	/* umkop. */
-		selpaths = blk + (selpaths - sel_mem);
-		Mfree(sel_mem);			/* alten Block freigeben */
-		sel_mem = blk;
-	}
+	sel_offset = (size_t) (selpaths - sel_mem);
+	address = Malloc(sel_mem_len + add);
+	if (address <= 0)
+		return ENSMEM;
+	blk = (char *) (intptr_t) address;
+	memcpy(blk, sel_mem, (size_t) sel_mem_len);
+	selpaths = blk + sel_offset;
+	Mfree(sel_mem);
+	sel_mem = blk;
 
 	free_space += add;
-	sel_mem_len += add;		/* Block vergrîûern */
+	sel_mem_len += add;		/* Block vergr√∂√üern */
 	return E_OK;
 }
 
@@ -1695,13 +1685,13 @@ static int collect_objs(WINDOW *w, int obj, void *dummy)
 	long err;
 	long len,flen;
 	int type;
-	static char last_drive;	/* fÅr Kobold-Jobs */
-	char *quoting;			/* fÅr Kobold 3.5 */
+	static char last_drive;	/* f√ºr Kobold-Jobs */
+	char *quoting;			/* f√ºr Kobold 3.5 */
 
 
-	/* Lîschen auf dem Desktop: Objekt entfernen, auûer */
-	/* bei Disks, die werden tatsÑchlich gelîscht */
-	/* GEéNDERT ! */
+	/* L√∂schen auf dem Desktop: Objekt entfernen, au√üer */
+	/* bei Disks, die werden tats√§chlich gel√∂scht */
+	/* GE√ÑNDERT ! */
 
 /*
 	if ((action == 'D') && (wnr == 0) &&
@@ -1713,17 +1703,17 @@ static int collect_objs(WINDOW *w, int obj, void *dummy)
 		return 0;
 	}
 
-	/* Zugehîrigen Pfad des Objekts bestimmen */
+	/* Zugeh√∂rigen Pfad des Objekts bestimmen */
 	/* -------------------------------------- */
 
 	if (0 > (type = obj_to_path(w, obj, path, &f)))
-		return 0;	/* Objekt ungÅltig ? */
+		return 0;	/* Objekt ung√ºltig ? */
 	len = strlen(path);
 	if (!len)
 		return 0;
 
 	if (!path_cnt)
-		last_drive = 0;	/* 1. Aufruf: last_drive ungÅltig */
+		last_drive = 0;	/* 1. Aufruf: last_drive ung√ºltig */
 
 
 	/* 1. Fall: Kobold benutzen */
@@ -1766,13 +1756,13 @@ static int collect_objs(WINDOW *w, int obj, void *dummy)
 		}
 		else
 		{
-			len += 13;	/* LÑnge inkl. Kommando und crlf */
+			len += 13;	/* L√§nge inkl. Kommando und crlf */
 			if (len > free_space)
 				return (int) ENSMEM;
 
 			strcpy(selpaths, "SRC_SELECT + ");
 
-			/* FÅr Kobold 3.5 brauchen wir Quoting */
+			/* F√ºr Kobold 3.5 brauchen wir Quoting */
 			/* ----------------------------------- */
 
 			quoting = strchr(path+2, ' ');
@@ -1797,7 +1787,7 @@ static int collect_objs(WINDOW *w, int obj, void *dummy)
 
 	else
 	{
-		len++;			/* LÑnge inkl. EOS */
+		len++;			/* L√§nge inkl. EOS */
 		if (len > free_space)
 		{
 			err = resize_sel_mem(len - free_space);
@@ -1809,7 +1799,7 @@ static int collect_objs(WINDOW *w, int obj, void *dummy)
 		free_space -= len;
 		path_cnt++;
 	
-		/* DateilÑnge des Objekts bestimmen */
+		/* Dateil√§nge des Objekts bestimmen */
 		/* -------------------------------- */
 	
 		if (f)				/* im Fenster */
@@ -1827,8 +1817,8 @@ static int collect_objs(WINDOW *w, int obj, void *dummy)
 		else
 			flen = -4L;			/* Objekt auf dem Desktop */
 
-		ltoa(flen, path, 10);
-		len = strlen(path)+1;	/* LÑnge inkl. EOS */
+		sprintf(path, "%ld", flen);
+		len = strlen(path)+1;	/* L√§nge inkl. EOS */
 		if (len > free_space)
 		{
 			err = resize_sel_mem(len - free_space);
@@ -1854,7 +1844,7 @@ static int collect_objs(WINDOW *w, int obj, void *dummy)
 *
 ****************************************************************/
 
-static void wait_kobold_answer(int *msg)
+static void wait_kobold_answer(short *msg)
 {
 	WINDOW *w;
 
@@ -1895,11 +1885,11 @@ static void wait_kobold_answer(int *msg)
 
 void cpmvdl_icns(WINDOW *w, char *dest_path, int kbsh)
 {
-	long len;
+	long len, address;
 	char apname[9];
 	int dst_apid;
 	char *kobold_path;
-	int msg[8];
+	short msg[8];
 
 
 	if (dest_path)
@@ -1919,7 +1909,8 @@ void cpmvdl_icns(WINDOW *w, char *dest_path, int kbsh)
 
 	path_cnt = 0;
 	sel_mem_len = free_space = 10240L;
-	sel_mem = Malloc(sel_mem_len);
+	address = Malloc(sel_mem_len);
+	sel_mem = (address > 0) ? (char *) (intptr_t) address : NULL;
 	if (!sel_mem)
 	{
 		err_alert(ENSMEM);
@@ -1988,7 +1979,7 @@ void cpmvdl_icns(WINDOW *w, char *dest_path, int kbsh)
 		Mfree(sel_mem);
 		sel_mem = NULL;
 
-		/* status = msg[3]; */               /* Abschluûstatus   */
+		/* status = msg[3]; */               /* Abschlu√üstatus   */
 		/* zeile = msg[4]; */                /* Letzte Zeile     */
 
 		if (msg[3] != FINISHED)   /* KOBOLD ist noch aktiv */
@@ -1996,7 +1987,7 @@ void cpmvdl_icns(WINDOW *w, char *dest_path, int kbsh)
 		/*	msg[0] = KOBOLD_CLOSE;	*/
 			msg[0] = KOBOLD_FREE_DRIVES;  /* Message: Beenden*/
 			msg[1] = ap_id;       /* Eigene ID        */
-			msg[2] = 0;             /* Keine öberlÑnge  */
+			msg[2] = 0;             /* Keine √úberl√§nge  */
 
 			appl_write(dst_apid,16,msg);   /* abschicken       */
 
@@ -2050,17 +2041,17 @@ void cpmvdl_icns(WINDOW *w, char *dest_path, int kbsh)
 		free_space -= len;
 	}
 
-	/* Hier werden alle selektierten Objekte erfaût */
+	/* Hier werden alle selektierten Objekte erfa√üt */
 	/* -------------------------------------------- */
 
 	walk_sel(w, collect_objs, NULL);
 
-	/* MGCOPY ausfÅhren */
+	/* MGCOPY ausf√ºhren */
 	/* ---------------- */
 
 	if (path_cnt)
 	{
-		/* ggf. Zielpfad anfÅgen */
+		/* ggf. Zielpfad anf√ºgen */
 		/* --------------------- */
 
 		if (dest_path)
@@ -2076,7 +2067,7 @@ void cpmvdl_icns(WINDOW *w, char *dest_path, int kbsh)
 
 			msg[0] = VA_START;
 			msg[3] = msg[4] = 0;	/* kein "normales" VA_START */
-			msg[5] = 'XA';			/* Kennung fÅr erweitertes V.. */
+			msg[5] = 0x5841;		/* Kennung f√ºr erweitertes VA_START */
 			xmsg.dst_apid = dst_apid;
 			xmsg.unique_flg = FALSE;
 			xmsg.attached_mem = sel_mem;

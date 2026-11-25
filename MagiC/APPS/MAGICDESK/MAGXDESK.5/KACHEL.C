@@ -6,14 +6,11 @@
 /*----------------------------------------------------------------------------------------*/ 
 /* Globale Includes																								*/
 /*----------------------------------------------------------------------------------------*/ 
-#include <PORTAB.H>
-#include <AES.H>
-#include <VDI.H>
-#include <TOS.H> 
-#include <STDDEF.H>
+#include "MAGXDESK_GEM.H"
+#include <stdlib.h>
 
-#include "kachel.h"
-#include "imgload.h"
+#include "KACHEL.H"
+#include "IMPORT/IMGLOAD.H"
 
 /*----------------------------------------------------------------------------------------*/ 
 /* Defines                                                                                */
@@ -23,7 +20,6 @@
 #define	min(A, B) ( (A)<(B) ? (A) : (B) )
 
 extern WORD vdi_handle;
-extern WORD rc_intersect( GRECT *p1, GRECT *p2 );
 
 static MFDB *fill;
 
@@ -36,10 +32,10 @@ WORD cdecl drawdesk(PARMBLK *parmblock)
 {
 	WORD x;
 	WORD y;
-	extern int clip_rect[4];	/* Clipping-Rechteck */
-	WORD obj[4];				/* Grîûe des zu zeichnenden Bildbereichs */
+	extern short clip_rect[4];	/* Clipping-Rechteck */
+	WORD obj[4];				/* Gr√∂√üe des zu zeichnenden Bildbereichs */
 	WORD r[8];					/* wird be vro_cpyfm() benutzt */
-	MFDB screen;				/* MFDB fÅr Bildschirm */
+	MFDB screen;				/* MFDB f√ºr Bildschirm */
 
 	*(GRECT *) clip_rect = *(GRECT *) &parmblock->pb_x;
 	*(GRECT *) obj = *(GRECT *) &parmblock->pb_x;
@@ -51,12 +47,12 @@ WORD cdecl drawdesk(PARMBLK *parmblock)
 	/* clip_rect GRECT -> RECT */
 	clip_rect[2] += clip_rect[0] - 1;
 	clip_rect[3] += clip_rect[1] - 1;
-	vs_clip( vdi_handle, 1, clip_rect );	/* Zeichenoperationen auf gegebenen Bereich beschrÑnken */
+	vs_clip( vdi_handle, 1, clip_rect );	/* Zeichenoperationen auf gegebenen Bereich beschr√§nken */
 
 	screen.fd_addr = 0L;		/* Bildschirm */
 
 	obj[0] -= obj[0] % fill->fd_w;	/* x-Startkoordinate an Musterbreite ausrichten */
-	obj[1] -= obj[1] % fill->fd_h;	/* y-Startkoordinate an Musterhîhe ausrichten */
+	obj[1] -= obj[1] % fill->fd_h;	/* y-Startkoordinate an Musterh√∂he ausrichten */
 
 	r[0] = 0;
 	r[1] = 0;
@@ -90,14 +86,35 @@ WORD cdecl drawdesk(PARMBLK *parmblock)
 }
 
 
-static WORD min_index = 0;	/* Index des ersten verÑnderbaren Farbregisters */
-static WORD cdecl (*xp_raster)( LONG words, LONG len, WORD planes, void *src, void *des );
+static WORD min_index = 0;	/* Index des ersten ver√§nderbaren Farbregisters */
 static MFDB pat;
 static void *exp_img;
 static UBYTE *img;
 static WORD *palette;
 
-/* max_pen = work_out[13] - 1;	*/	/* hîchste Farbstiftnummer */
+/* The kernel's Pure C stack ABI has a two-byte planes argument.
+ * xp_rasterC preserves D3-D7/A2-A6, but GCC also requires D2 preserved. */
+static WORD expand_raster(void *routine, LONG words, LONG len, WORD planes,
+						 void *src, void *dest)
+{
+	register LONG result __asm__("d0");
+	register void *entry __asm__("a1") = routine;
+
+	__asm__ volatile (
+		"move.l %6,-(%%sp)\n\t"
+		"move.l %5,-(%%sp)\n\t"
+		"move.w %4,-(%%sp)\n\t"
+		"move.l %3,-(%%sp)\n\t"
+		"move.l %2,-(%%sp)\n\t"
+		"jsr (%1)\n\t"
+		"lea 18(%%sp),%%sp"
+		: "=d" (result), "+a" (entry)
+		: "r" (words), "r" (len), "r" (planes), "r" (src), "r" (dest)
+		: "d1", "d2", "a0", "cc", "memory");
+	return (WORD) result;
+}
+
+/* max_pen = work_out[13] - 1;	*/	/* h√∂chste Farbstiftnummer */
 
 int tile_init(char *path, WORD max_pen)
 {
@@ -115,11 +132,16 @@ int tile_init(char *path, WORD max_pen)
 	struct
 	{
 		long magic;
-		int subfn;
-		int xp_mode;		/* RÅckgabewert von xp_init */
+		WORD subfn;
+		WORD xp_mode;		/* R√ºckgabewert von xp_init */
 		void *xp_raster;	/* Assemblerfunktion */
 		void *xp_rasterC;	/* cdecl-Funktion */
 	} magic_rcfix;
+	_Static_assert(sizeof(magic_rcfix) == 16, "MagiC raster request size");
+	_Static_assert(offsetof(__typeof__(magic_rcfix), subfn) == 4, "MagiC raster subfunction offset");
+	_Static_assert(offsetof(__typeof__(magic_rcfix), xp_mode) == 6, "MagiC raster mode offset");
+	_Static_assert(offsetof(__typeof__(magic_rcfix), xp_raster) == 8, "MagiC raster pointer offset");
+	_Static_assert(offsetof(__typeof__(magic_rcfix), xp_rasterC) == 12, "MagiC C raster pointer offset");
 
 
 
@@ -135,7 +157,6 @@ int tile_init(char *path, WORD max_pen)
 		return -1;
 	if	(!magic_rcfix.xp_mode)
 		return -1;
-	xp_raster = magic_rcfix.xp_rasterC;
 
 	err = load_IMG(path, &w, &h, &line_width, &planes, &palette, &pal_entries, &img);
 	if	(err < 0)
@@ -152,25 +173,26 @@ int tile_init(char *path, WORD max_pen)
 
 	if ( (planes > 1) && (magic_rcfix.xp_mode > 0) )	/* farbiges IMG? */
 	{
-		exp_img = Malloc((LONG) line_width * h * extnd_out[4]);	/* Speicher fÅr expandiertes IMG anfordern */
+		exp_img = malloc((size_t) line_width * h * extnd_out[4]);	/* Speicher f√ºr expandiertes IMG anfordern */
 
 		if	(! exp_img )
 		{
-			Mfree(img);
+			free(img);
 			return -3;
 		}
 			
-		plane_len = (LONG) line_width * h;		/* LÑnge einer Ebene */
+		plane_len = (LONG) line_width * h;		/* L√§nge einer Ebene */
 
-		if ( (*xp_raster)( plane_len / 2, plane_len, planes, img, exp_img ))	/* IMG expandierbar? */
+		if (expand_raster(magic_rcfix.xp_rasterC, plane_len / 2, plane_len,
+						  planes, img, exp_img))	/* IMG expandierbar? */
 		{
 			fill->fd_addr = exp_img;
 			fill->fd_nplanes = extnd_out[4];
 		}
 		else
 		{
-			Mfree(img);
-			Mfree(exp_img);
+			free(img);
+			free(exp_img);
 			return -4;
 		}
 	}
@@ -185,7 +207,7 @@ int tile_init(char *path, WORD max_pen)
 	if (palette)				/* Palette vorhanden? */
 	{
 
-		if (( pal_entries - 1 ) > max_pen )	/* mehr PaletteneintrÑge als Farbstifte??? */
+		if (( pal_entries - 1 ) > max_pen )	/* mehr Paletteneintr√§ge als Farbstifte??? */
 			pal_entries = max_pen + 1;
 	
 		for (pen = 0; pen < pal_entries; pen++)
@@ -198,7 +220,7 @@ int tile_init(char *path, WORD max_pen)
 			else
 				index = pen;
 			
-			if (pen >= min_index)	/* darf die Farbe verÑndert werden? */
+			if (pen >= min_index)	/* darf die Farbe ver√§ndert werden? */
 				vs_color( vdi_handle, pen, palette + (index * 3) );
 		}
 	}
@@ -210,11 +232,11 @@ int tile_init(char *path, WORD max_pen)
 void tile_exit( void )
 {
 	if (exp_img)
-		Mfree(exp_img);	/* Speicher fÅr expandiertes IMG freigeben */
+		free(exp_img);	/* Speicher f√ºr expandiertes IMG freigeben */
 
 	if (palette)
-		Mfree(palette);	/* Speicher fÅr Palette freigeben */
+		free(palette);	/* Speicher f√ºr Palette freigeben */
 
 	if (img)
-		Mfree(img);		/* Speicher fÅr IMG freigeben */
+		free(img);		/* Speicher f√ºr IMG freigeben */
 }

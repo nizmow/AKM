@@ -3,8 +3,7 @@
 
 extern void subobj_wdraw(void *d, int obj, int startob, int depth);
 extern void options_dial_init_rsc( void );
-extern WORD cdecl hdl_options( DIALOG *d, EVNT *events, WORD exitbutton,
-				WORD clicks, void *data );
+extern WORD __CDECL hdl_options( struct HNDL_OBJ_args args );
 
 extern int ncolours;
 extern WINDOW *selected_window;
@@ -15,24 +14,24 @@ extern GRECT scrg;
 extern char *notice_path;
 
 extern struct prefs {
-	int fontID;
-	int fontH;
-	int fontprop;
+	short fontID;
+	short fontH;
+	short fontprop;
 	char fontname[128];
-	int colour;
+	short colour;
 	GRECT prefs_win;
 } prefs;
 
 /* Notiz-Fenster */
 
 #define MAXWIDTH 40		/* Maximale Textbreite in Zeichen */
-#define MOVER_HEIGHT 0	/* H”he des MOVERs in Pixeln */
-/* #define MOVER_HEIGHT 3	*/	/* H”he des MOVERs in Pixeln */
+#define MOVER_HEIGHT 0	/* HÃ¶he des MOVERs in Pixeln */
+/* #define MOVER_HEIGHT 3	*/	/* HÃ¶he des MOVERs in Pixeln */
 #define MOVER_COLOUR LWHITE	/* Farbe des MOVERs */
 #define NOTICE_W_KIND	0
 extern void save_options( void );
 extern void top_all_my_windows( void );
-extern int dial_font( long *id, long *pt, int *mono, char *name );
+extern int dial_font( long *id, long *pt, short *mono, char *name );
 extern void create_notice( int x, int y );
 extern long save_notice( WINDOW *w, char *path );
 extern void calc_size_notice_wind( WINDOW *w );
@@ -41,10 +40,10 @@ extern unsigned char *get_line(unsigned char *text,
 extern void select_window( WINDOW *w );
 extern void deselect_window( WINDOW *w );
 extern long open_notice_wind( unsigned char *notice,
-					int id,
+					short id,
 					GRECT *g,
-					int fontID, int font_is_prop, int fontH,
-					int colour,
+					short fontID, short font_is_prop, short fontH,
+					short colour,
 					WINDOW **pw );
-long edit_notice_wind( unsigned char *notice, int id,
+long edit_notice_wind( unsigned char *notice, short id,
 					WINDOW **pw );

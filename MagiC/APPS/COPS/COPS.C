@@ -32,38 +32,34 @@
  *   Wenn beim cpx_init() innerhalb von open_cpx_context() eine 1 zurueckgeliefert wird,
  *   interpretiert das COPS als Anweisung kein Fenster zu oeffnen (fuer NPRNCONF)
  * - 2026-11-04
- *   Optionale Emulator-Debug-Ausgabe hinzugefÅgt.
+ *   Optionale Emulator-Debug-Ausgabe hinzugef√ºgt.
  *   Strom- und CPU-Fresser evnt_multi() mit Timeout Null entfernt. Trat immer auf,
- *   wenn ein CPX geîffnet war. Auûerdem war das CPX unter MagiC mit Fast Click fast
+ *   wenn ein CPX ge√∂ffnet war. Au√üerdem war das CPX unter MagiC mit Fast Click fast
  *   unbedienbar.
  */
 
-#include <mgx_dos.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "RC_INTER.H"
+#include "GLOBAL.H"
 
-#include <mt_aes.h>
-#include <vdi.h>
-#include "rc_inter.h"
-#include "global.h"
+#include "INCLUDE/COUNTRY.H"
 
-#include "include\country.h"
-
-#include "cops_rsc.h"
-#include "adaptrsc.h"
-#include "callback.h"
-#include "popup.h"
-#include "cops.h"
-#include "cpx_bind.h"
-#include "key_map.h"
-#include "list.h"
-#include "objmacro.h"
-#include "phstuff.h"
-#include "vaproto.h"
-#include "wlib.h"
-#include "emu_dbg.h"			/* print debug messages to MagicOnLinux emulator */
+#include "COPS_RSC.H"
+#include "ADAPTRSC.H"
+#include "CALLBACK.H"
+#include "POPUP.H"
+#include "COPS.H"
+#include "CPX_BIND.H"
+#include "KEY_MAP.H"
+#include "LIST.H"
+#include "OBJMACRO.H"
+#include "PHSTUFF.H"
+#include "VAPROTO.H"
+#include "WLIB.H"
+#include "../TOS_ARGS.H"
 
 /* #define EMU_PRINTF(args) emu_printf args */
 #define EMU_PRINTF(args)
@@ -192,17 +188,9 @@ static int16_t MapKey(int16_t keystate, int16_t key);
 static int16_t handle_evnt_cpx(CPX_DESC *cpx_desc, EVNT *events);
 static void cdecl sig_handler(int32_t sig);
 
-/* fwr, this function is missing in library */
-int32_t Dxreaddir(int16_t len, int32_t dirhandle,
-			char *buf, XATTR *xattr, int32_t *xr)
-{
-	return gemdos(0x142, len, dirhandle, buf, xattr, xr);
-}
-
-
 /*----------------------------------------------------------------------------------------*/
 
-static int16_t pop_handle(int16_t mx, int16_t my, char **items, int16_t num_items, int16_t default_item, unsigned int16_t disabled)
+static int16_t pop_handle(int16_t mx, int16_t my, char **items, int16_t num_items, int16_t default_item, uint16_t disabled)
 {
 	GRECT gr;
 	char popup_strs[12][30];
@@ -591,7 +579,7 @@ static int16_t select_language(void)
 	if ((aes_flags & GAI_INFO) && appl_getinfo(3, &ag1, &dummy, &dummy, &dummy) != 0)
 		return ag1;
 	if (get_cookie(0x5F414B50L, &akp))
-		return ((unsigned int16_t)akp) >> 8;
+		return ((uint16_t)akp) >> 8;
 	if (NVMaccess(0, 6, 1, &nvram) == 0)
 		return nvram;
 	syshdr = (SYSHDR *) Supexec(get_syshdr);
@@ -700,7 +688,7 @@ cpx_open_window(CPX_DESC *cpx_desc)
 
 	/* Dialog-Struktur initialisieren */
 	if (aes_flags & GAI_WDLG)
-		cpx_desc->dialog = wdlg_create((hndl_obj_tf *) handle_form_cpx, tree, cpx_desc, 0, NULL, 0);
+		cpx_desc->dialog = wdlg_create(handle_form_cpx, tree, cpx_desc, 0, NULL, 0);
 	else
 		cpx_desc->dialog = NULL;
 	if (cpx_desc->dialog)
@@ -952,7 +940,7 @@ init_cpx(const char *file_path, const char *file_name, int16_t inactive)
 /*	entry:		Zeiger auf CPX_DESC-Struktur */
 /*----------------------------------------------------------------------------------------*/
 static int16_t
-search_cpx_selected(long selected, void *entry)
+search_cpx_selected(int32_t selected, void *entry)
 {
 	(void)selected;
 	if (((CPX_DESC *) entry)->selected)
@@ -968,7 +956,7 @@ search_cpx_selected(long selected, void *entry)
 /*	entry:		Zeiger auf CPX_DESC-Struktur */
 /*----------------------------------------------------------------------------------------*/
 static int16_t
-cmp_cpx_id(long id, void *entry)
+cmp_cpx_id(int32_t id, void *entry)
 {
 	id -= ((CPX_DESC *) entry)->old.header.cpx_id;
 	
@@ -1003,7 +991,7 @@ static char *mybasename(char *name)
 /*	entry:		Zeiger auf CPX_DESC-Struktur */
 /*----------------------------------------------------------------------------------------*/
 static int16_t
-search_cpx_name(long name, void *entry)
+search_cpx_name(int32_t name, void *entry)
 {
 	return stricmp(((CPX_DESC *)entry)->file_name, mybasename((char *)name));
 }
@@ -1124,8 +1112,8 @@ update_cpx_list(void)
 		Dclosedir(dir_handle);
 	} else if (dir_handle == -32)
 	{
-		DTA *olddta;
-		DTA dta;
+		_DTA *olddta;
+		_DTA dta;
 		char tmp_path[256];
 		int err;
 
@@ -1133,10 +1121,10 @@ update_cpx_list(void)
 		olddta = Fgetdta();
 		Fsetdta(&dta);
 
-		err = Fsfirst(tmp_path, FA_READONLY | FA_HIDDEN | FA_SYSTEM);
+		err = Fsfirst(tmp_path, FA_RDONLY | FA_HIDDEN | FA_SYSTEM);
 		while (err == 0)
 		{
-			changes = handle_entry(dta.d_fname, changes);
+			changes = handle_entry(dta.dta_name, changes);
 			err = Fsnext();
 		}
 		Fsetdta(olddta);
@@ -2595,7 +2583,7 @@ about(void)
 }
 
 static int16_t
-handle_keyboard(unsigned int16_t kstate, unsigned int16_t key)
+handle_keyboard(uint16_t kstate, uint16_t key)
 {
 	DEBUG(("handle_keyboard 0x%x 0x%x\n", kstate, key));
 
@@ -3136,7 +3124,7 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 						{
 							char **items;
 							int16_t obj;
-							unsigned int16_t disabled = 0;
+							uint16_t disabled = 0;
 							
 							deselect_all_cpx_draw();
 							cpx->selected = 1;
@@ -3180,7 +3168,7 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 						{
 							char **items;
 							int16_t obj;
-							unsigned int16_t disabled = 0;
+							uint16_t disabled = 0;
 							
 							deselect_all_cpx_draw();
 
@@ -3451,8 +3439,8 @@ static time_t mymktime(struct tm *tm)
 
 static time_t mytime(void)
 {
-	unsigned int16_t tos_time;
-	unsigned int16_t tos_date;
+	uint16_t tos_time;
+	uint16_t tos_date;
 	struct tm now;
 
 	tos_time = Tgettime();
@@ -3825,7 +3813,7 @@ cpx_main_loop(void)
 			EVNT_multi(
 					ev_waitfor,
 				   256 + 2, 3, 0,		/* Doppelklick-Erkennung, NICHT beide Maustasten losgelassen */
-				   &cpx_desc->m1, &cpx_desc->m2,		/* BerÅhrungs-Rechtecke */
+				   &cpx_desc->m1, &cpx_desc->m2,		/* Ber√ºhrungs-Rechtecke */
 				   cpx_desc->time,						/* Timer */
 				   &events);
 		}
@@ -3834,7 +3822,7 @@ cpx_main_loop(void)
 			/* kein CPX oben */
 			EVNT_multi(MU_KEYBD | MU_BUTTON | MU_MESAG | MU_TIMER,
 				   256 + 2, 3, 0,		/* Doppelklick-Erkennung, NICHT beide Maustasten losgelassen */
-				   NULL, NULL,			/* keine BerÅhrungs-Rechtecke */
+				   NULL, NULL,			/* keine Ber√ºhrungs-Rechtecke */
 				   30000L,				/* Timer alle 30s. Warum? */
 				   &events);
 		}
@@ -4024,7 +4012,7 @@ cpx_main_loop(void)
 		{
 			if (main_window && (top_whdl() == main_window->handle))	/* liegt das Hauptfenster oben? */
 			{
-				unsigned int16_t key;
+				uint16_t key;
 			
 				key = MapKey(events.kstate, events.key);
 				/* Tastaturbehandlung fuer das Hauptfenster */
@@ -4068,7 +4056,7 @@ MapKey(int16_t keystate, int16_t key)
 	int16_t scancode, ret;
 
 	if (!kt)
-		kt = Keytbl((void *)-1L, (void *)-1L, (void *)-1L);
+		kt = (KEYTAB *) Keytbl((void *)-1L, (void *)-1L, (void *)-1L);
 
 	scancode = (key >> 8) & 0xff;
 
@@ -4079,7 +4067,7 @@ MapKey(int16_t keystate, int16_t key)
 	/* CAPS gedrueckt? */
 	if (keystate & K_CAPSLOCK)
 	{
-		ret = ((char *)kt->capslock)[scancode];
+		ret = ((char *)kt->caps)[scancode];
 	}
 	else
 	{
@@ -4250,7 +4238,7 @@ fix_tree(OBJECT *obj)
  */
 static char *acc_getenv(const char *str)
 {
-	BASPAG *bp;
+	BASEPAGE *bp;
 	char *env;
 	size_t len;
 	
@@ -4473,6 +4461,10 @@ init_vwork(void)
 int
 main(int argc, char *argv[])
 {
+	struct tos_args raw_args;
+
+	argc = tos_arguments(argc, &argv, &raw_args);
+
 	/* Accessory? */
 	if (_app == 0)
 		argc = 0;
@@ -4515,7 +4507,7 @@ main(int argc, char *argv[])
 			/* als Accessory registrieren */
 			menu_id = menu_register(app_id, fstring_addr[menutitle_str]);
 		}
-		/* Checkboxen und öberschriften anpassen */
+		/* Checkboxen und √úberschriften anpassen */
 		substitute_objects(rsc_rs_object, NUM_OBS, aes_flags, NULL, NULL);
 
 		/* Fensterdialoge vorhanden? */

@@ -3,9 +3,8 @@
 	Kommentare ab: Spalte 60											*Spalte 60*
 */
 
-#include	<PORTAB.H>
-#include	<MATH.H>
-#include	<AES.H>
+#include	<portab.h>
+#include	<aes.h>
 
 #include	"OBJ_TOOL.H"
 

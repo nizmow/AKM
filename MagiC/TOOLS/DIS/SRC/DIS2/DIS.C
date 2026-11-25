@@ -7,15 +7,15 @@
 *  mit Hilfe der Prozedur outws(char *string).
 *
 * externals:
-*    int  notexe:                      Datei ist nicht ausfÅhrbar
-*    long text_len,data_len,bss_len:   SegmentlÑngen
+*    int  notexe:                      Datei ist nicht ausf√ºhrbar
+*    long text_len,data_len,bss_len:   Segmentl√§ngen
 *    long range_from,range_to:         Zu disassemblierender Bereich
 *    long rlo_tab[], lbl_tab[]:        Relocation- und Labeltabellen
 *
 *******************************************************************/
 
 
-#include <tos.h>
+#include "DIS_COMPAT.H"
 #include <string.h>
 #include <limits.h>
 
@@ -35,41 +35,25 @@
 #define DCMT_POS         40          /* dito im DATA- Segment */
 
 
-struct header {
-  int  type;
-  long textlen;
-  long datalen;
-  long bsslen;
-  long symlen;
-  long res1;
-  long res2;
-  int  res3;
-};
-#define HEADER_LEN ( (long) sizeof(struct header) )
-
-struct symbol {
-  char symname[8];
-  int  symtype;
-  long symvalue;
-  };
-#define SLEN ( (long) sizeof(struct symbol) ) 
+#define HEADER_LEN 28L
+#define SLEN ( (long) sizeof(struct symbol) )
 
 
 /* Externals aus "dis2.c" */
 
 extern int  prg_file;
 extern long *rlo_tab;              /* Relocation- Tabelle */
-extern int  rlo_max;			/* TabellenlÑnge */
-extern long *lbl_tab;              /* Label- Tabelle, lbl_tab[0] ist LÑnge */
-extern unsigned *rlo_obj;		/* bei Objektdatei: alle Reloc.daten	*/
+extern int  rlo_max;			/* Tabellenl√§nge */
+extern long *lbl_tab;              /* Label- Tabelle, lbl_tab[0] ist L√§nge */
+extern uint16_t *rlo_obj;		/* bei Objektdatei: alle Reloc.daten	*/
 extern struct symbol *symboltab;	/* Symboltabelle */
-extern int  sym_max;			/* TabellenlÑnge */
+extern int  sym_max;			/* Tabellenl√§nge */
 extern int  isobj;				/* Flag, ob .o - Datei */
-extern int  notexe;                /* Flag, ob Datei ausfÅhrbar */
-extern int  iscode;                /* Flag fÅr Code mit angeben */
-extern int  isadr;                 /* Flag fÅr Adresse mit angeben */
-extern int  isasc;                 /* Flag fÅr ASCII mit angeben */
-extern int  ismem;                 /* Flag fÅr Speicher disassemblieren */
+extern int  notexe;                /* Flag, ob Datei ausf√ºhrbar */
+extern int  iscode;                /* Flag f√ºr Code mit angeben */
+extern int  isadr;                 /* Flag f√ºr Adresse mit angeben */
+extern int  isasc;                 /* Flag f√ºr ASCII mit angeben */
+extern int  ismem;                 /* Flag f√ºr Speicher disassemblieren */
 extern int  no0007;				/* Flag: 0007 nicht testen bei ".o" */
 extern int  ismas;
 extern long range_from, range_to;  /* Zu disassemblierender Bereich */
@@ -82,12 +66,13 @@ extern void outws(char *string);	/* Zeichenkette nach Quelltext */
 /* Externals aus "disass.c" */
 
 extern long befehlsadresse;
-extern int  cindex, code[];
+extern int  cindex;
+extern int16_t code[];
 extern void comment(int tab_pos, int do_code, int do_asc);
 
 /* Globals  */
 
-static long memadr;				/* fÅr m-Option */
+static long memadr;				/* f√ºr m-Option */
 long adr;                          /* gerade zu disassemblierende Adresse */
 char ausgabe[200];                 /* Ausgabe- String */
 int  eof;                          /* Datei- Ende */
@@ -143,10 +128,10 @@ void dis(char *dateiname)
 		}
 	adr = range_from;
 
-	/* Titelmeldung und Segmentgrîûen angeben */
+	/* Titelmeldung und Segmentgr√∂√üen angeben */
 	/* -------------------------------------- */
 
-	outws("* GEMDOSø Disassembler, Ω 22.12.88 Andreas Kromke\r\n\r\n* ");
+	outws("* GEMDOS\277 Disassembler, \275 22.12.88 Andreas Kromke\r\n\r\n* ");
 	if	(ismem)
 		outws("Speicherauszug");
 	else {
@@ -237,7 +222,7 @@ void getcode(void)
 	cindex++;
 	if	(ismem)
 		{
-		code[cindex] = *((int *) memadr);
+		code[cindex] = *((int16_t *) memadr);
 		memadr += 2;
 		}
 	else	eof = (2L != Fread(prg_file, 2L, code+cindex));
@@ -273,8 +258,8 @@ void dis_text()
 		befehlsadresse = adr;
 		cindex = -1;
 		getcode();			/* Wort holen */
-		cindex = -1;			/* Marke, daû es ein Byte ist */
-		adr--;				/* FÅr Byte korrigieren */
+		cindex = -1;			/* Marke, da√ü es ein Byte ist */
+		adr--;				/* F√ºr Byte korrigieren */
 		bytes = code[0];
 		code[0] = (bytes >> 8);
 		writestr("DC.B");
@@ -350,7 +335,7 @@ void dis_data()
 		naechste = MIN (naechste,range_to);
 	     }
 
-	if   (naechste - adr > 3L)         /* Platz fÅr Langworte */
+	if   (naechste - adr > 3L)         /* Platz f√ºr Langworte */
 		{
 		writestr("DC.L");
 		writepos(OPR_POS);
@@ -367,13 +352,13 @@ void dis_data()
 			}
 	     }
 	else {
-		if   (naechste - adr > 1L) {       /* Platz fÅr Wort */
+		if   (naechste - adr > 1L) {       /* Platz f√ºr Wort */
 			writestr("DC.W");
 			writepos(OPR_POS);
 			getcode();           /* Wort holen */
 			write16s(code[0]);
 			}
-		else {                            /* Platz fÅr Bytes */
+		else {                            /* Platz f√ºr Bytes */
 			writestr("DC.B");
 			writepos(OPR_POS);
 			if	(ismem)
@@ -426,7 +411,7 @@ void dis_bss()
 /**************************************************************
 *
 * Schreibt externe Labels, die in anderen Modulen vom Linker
-*  gesucht werden mÅssen.
+*  gesucht werden m√ºssen.
 * Wird nur bei Objektdateien aufgerufen.
 *
 **************************************************************/
@@ -523,7 +508,7 @@ void write_equs( void )
 /**************************************************************
 *
 * Schreibt alle Labels und Relocation- Adressen, die beim
-* Disassemblieren nicht berÅcksichtigt werden konnten,
+* Disassemblieren nicht ber√ºcksichtigt werden konnten,
 * in die Ausgabe- Datei (als ASCII).
 *
 **************************************************************/
@@ -612,8 +597,8 @@ void write_errors( void )
 /**************************************************************
 *
 * Rechnet Langwort in <len> - stellige Hex- Zahl um und gibt die
-* Anfangsadresse des Strings zurÅck.
-* c = 'A' Hex- Zahl aus Groûbuchstaben.
+* Anfangsadresse des Strings zur√ºck.
+* c = 'A' Hex- Zahl aus Gro√übuchstaben.
 * c = 'a'               Kleinbuchstaben
 *
 **************************************************************/
@@ -630,7 +615,7 @@ char c;
 	string[len] = EOS;
 	for	(i = 0; i < len; i++)
 		{
-		j      = (int) (wert & 15);     /* 4 Bit fÅr Hex- Ziffer isolieren */
+		j      = (int) (wert & 15);     /* 4 Bit f√ºr Hex- Ziffer isolieren */
 		wert >>= 4;
 		string[len-1-i] =  (j < 10) ? ('0'+(char) j) : (c+(char) (j-10));
 		}
@@ -640,7 +625,7 @@ char c;
 
 /**************************************************************
 *
-* HÑngt einen String <string> an die Zeichenkette <ausgabe> an.
+* H√§ngt einen String <string> an die Zeichenkette <ausgabe> an.
 *
 **************************************************************/
 
@@ -652,7 +637,7 @@ void writestr(char *string)
 
 /**************************************************************
 *
-* HÑngt ein Zeichen <c> an die Zeichenkette <ausgabe> an.
+* H√§ngt ein Zeichen <c> an die Zeichenkette <ausgabe> an.
 *
 **************************************************************/
 
@@ -682,7 +667,7 @@ void writepos(int pos)
 
 /**************************************************************
 *
-* HÑngt den Namen des Labels mit Wert long <label> an die
+* H√§ngt den Namen des Labels mit Wert long <label> an die
 * Zeichenkette <ausgabe> an.
 *
 **************************************************************/
@@ -715,7 +700,7 @@ void writelbl(long label)
 	writestr("lbl");
 	hexzahl = long_to_hex(label+origin, 8, 'A');
 	while((*hexzahl == '0') && (*(hexzahl+1) != EOS))
-		hexzahl++;          /* FÅhrende Nullen unterdrÅcken */
+		hexzahl++;          /* F√ºhrende Nullen unterdr√ºcken */
 	writestr(hexzahl);
 }
 
@@ -788,7 +773,7 @@ void writesym(int i, long offs)
 
 /**************************************************************
 *
-* HÑngt die hexadezimale Schreibweise des 32Bit- Wertes <zahl>
+* H√§ngt die hexadezimale Schreibweise des 32Bit- Wertes <zahl>
 * an die Zeichenkette <ausgabe> an.
 * Sind nur 8 Bit signifikant, wird die Zahl als vorzeichen-
 * behaftet interpretiert.
@@ -810,14 +795,14 @@ void write32(long zahl)
 		writechr('$');
 	hexzahl = long_to_hex(zahl, 8, 'a');
 	while((*hexzahl == '0') && (*(hexzahl+1) != EOS))
-		hexzahl++;          /* FÅhrende Nullen unterdrÅcken */
+		hexzahl++;          /* F√ºhrende Nullen unterdr√ºcken */
 	writestr(hexzahl);
 }
 
 
 /**************************************************************
 *
-* HÑngt die hexadezimale Schreibweise des 32Bit- Wertes <zahl>
+* H√§ngt die hexadezimale Schreibweise des 32Bit- Wertes <zahl>
 * an die Zeichenkette <ausgabe> an.
 * Die Zahl wird als vorzeichenbehaftet interpretiert.
 *
@@ -836,7 +821,7 @@ void write32s(long zahl)
 
 /**************************************************************
 *
-* HÑngt die hexadezimale Schreibweise des 16Bit- Wertes <zahl>
+* H√§ngt die hexadezimale Schreibweise des 16Bit- Wertes <zahl>
 * an die Zeichenkette <ausgabe> an.
 *
 **************************************************************/
@@ -850,14 +835,14 @@ void write16(unsigned zahl)
 		writechr('$');
 	hexzahl = long_to_hex((long) zahl, 4, 'a');
 	while((*hexzahl == '0') && (*(hexzahl+1) != EOS))
-		hexzahl++;          /* FÅhrende Nullen unterdrÅcken */
+		hexzahl++;          /* F√ºhrende Nullen unterdr√ºcken */
 	writestr(hexzahl);
 }
 
 
 /**************************************************************
 *
-* HÑngt die hexadezimale Schreibweise des 16Bit- Wertes <zahl>
+* H√§ngt die hexadezimale Schreibweise des 16Bit- Wertes <zahl>
 * an die Zeichenkette <ausgabe> an.
 * Im Gegensatz zu oben wird die Zahl als vorzeichenbehaftet
 * interpretiert (z.B. bei Adressierung xxxx(An) ).
@@ -869,24 +854,24 @@ void write16s(int zahl)
 	register char *hexzahl;
 
 
-	if	(zahl != INT_MIN && zahl < 0)
+	if	(zahl != INT16_MIN && zahl < 0)
 		{
 		writechr('-');
 		zahl = -zahl;
 		}
 
-	if	(zahl == INT_MIN || zahl > 9)
+	if	(zahl == INT16_MIN || zahl > 9)
 		writechr('$');
 	hexzahl = long_to_hex((long) zahl, 4, 'a');
 	while((*hexzahl == '0') && (*(hexzahl+1) != EOS))
-		hexzahl++;          /* FÅhrende Nullen unterdrÅcken */
+		hexzahl++;          /* F√ºhrende Nullen unterdr√ºcken */
 	writestr(hexzahl);
 }
 
 
 /**************************************************************
 *
-* HÑngt die hexadezimale Schreibweise des 8Bit- Wertes <zahl>
+* H√§ngt die hexadezimale Schreibweise des 8Bit- Wertes <zahl>
 * an die Zeichenkette <ausgabe> an.
 *
 **************************************************************/
@@ -901,20 +886,20 @@ void write8(int zahl)
 		writechr('$');
 	hexzahl = long_to_hex((long) zahl, 2, 'a');
 	while((*hexzahl == '0') && (*(hexzahl+1) != EOS))
-		hexzahl++;          /* FÅhrende Nullen unterdrÅcken */
+		hexzahl++;          /* F√ºhrende Nullen unterdr√ºcken */
 	writestr(hexzahl);
 }
 
 
 /***************************************************
-* PrÅft, ob die <adresse> in der Reloc.-Tab. ist.
-* Wenn ja,   wird TRUE  zurÅckgegeben, und der
+* Pr√ºft, ob die <adresse> in der Reloc.-Tab. ist.
+* Wenn ja,   wird TRUE  zur√ºckgegeben, und der
 * Eintrag in der Tabelle = -1 gesetzt, falls is_kill = TRUE;
 * da <adresse> in aufsteigender Reihenfolge abgefragt
 * wird, wird dann jew. beim letzten Eintrag weitergesucht.
 ***************************************************/
 
-static long last_reloc = 0L;    /* zeigt auf nÑchste Relocation- Adresse */
+static long last_reloc = 0L;    /* zeigt auf n√§chste Relocation- Adresse */
 
 int reloc_search(long adresse, int is_kill)
 {
@@ -951,9 +936,9 @@ int reloc_search(long adresse, int is_kill)
 
 
 /***************************************************
-* Sucht die nÑchste zu relozierende Adresse nach
+* Sucht die n√§chste zu relozierende Adresse nach
 * <adresse>.
-* Wird keine gefunden, wird MAXLONG zurÅckgegeben.
+* Wird keine gefunden, wird MAXLONG zur√ºckgegeben.
 ***************************************************/
 
 long next_reloc(long adresse)
@@ -979,14 +964,14 @@ long next_reloc(long adresse)
 
 
 /***************************************************
-* PrÅft, ob die <adresse> in der Label-Tab. ist.
-* Wenn ja,   wird TRUE  zurÅckgegeben, und der
+* Pr√ºft, ob die <adresse> in der Label-Tab. ist.
+* Wenn ja,   wird TRUE  zur√ºckgegeben, und der
 * Eintrag in der Tabelle = -1 gesetzt.
 * Da <adresse> in aufsteigender Reihenfolge abgefragt
 * wird, wird jew. beim letzten Eintrag weitergesucht.
 ***************************************************/
 
-static   long last_lbl = 1L;   /* zeigt auf nÑchstes Label */
+static   long last_lbl = 1L;   /* zeigt auf n√§chstes Label */
 
 int label_search(long adresse, int is_kill)
 {
@@ -1008,8 +993,8 @@ int label_search(long adresse, int is_kill)
 
 
 /***************************************************
-* Sucht das nÑchste Label in der Liste.
-* Wird keins gefunden, wird MAXLONG zurÅckgegeben.
+* Sucht das n√§chste Label in der Liste.
+* Wird keins gefunden, wird MAXLONG zur√ºckgegeben.
 ***************************************************/
 
 long next_label(long adresse)

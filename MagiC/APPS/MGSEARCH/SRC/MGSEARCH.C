@@ -2,7 +2,7 @@
 *
 *             MGSEARCH.APP                             2.04.95
 *             ============
-*                                 letzte énderung:
+*                                 letzte √Ñnderung:
 *
 * geschrieben mit Pure C V1.1
 * Projektdatei: MGSEARCH.PRJ
@@ -18,25 +18,20 @@
 *
 ****************************************************************/
 
-#include <aes.h>
-#include <vdi.h>
-#include <portab.h>
-#include <tos.h>
-#include <magx.h>
+#include "GEMUTILS_SDK.H"
 #include <string.h>
 #include <stdlib.h>
-#include <tosdefs.h>
-#include "windows.h"
-#include "mgsearch.h"
-#include "search.h"
-#include "srch_win.h"
-#include "gemutils.h"
+#include "WINDOWS.H"
+#include "MGSEARCH.H"
+#include "SEARCH.H"
+#include "SRCH_WIN.H"
+#include "GEMUTILS.H"
 
 
 static GRECT winpos,old_winpos;
-int	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
+short	gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
 int	ap_id;
-int	scrx,scry,scrw,scrh;
+short	scrx,scry,scrw,scrh;
 
 
 void open_work		(void);
@@ -63,19 +58,19 @@ void callback_match(char *path, char *fname)
 
 /************************************************************
 *
-* Wird regelmÑûig aufgerufen.
+* Wird regelm√§√üig aufgerufen.
 *
-* Röckgabe > 0:	Suchvorgang abbrechen.
+* R√úckgabe > 0:	Suchvorgang abbrechen.
 *
 ************************************************************/
 
 int callback_ever( void )
 {
 	WINDOW *w;
-	int	message[16];
-	int  mwhich, nclicks, keycode, kstate,
+	short	message[16];
+	short  mwhich, nclicks, keycode, kstate,
 		button, yclick, xclick;
-	int evtype;
+	short evtype;
 
 
 	evtype = MU_KEYBD+MU_BUTTON+MU_MESAG;
@@ -84,11 +79,11 @@ int callback_ever( void )
 	mwhich = evnt_multi(evtype,
 				  2,			/* Doppelklicks erkennen 	*/
 				  1,			/* nur linke Maustaste		*/
-				  1,			/* linke Maustaste gedrÅckt	*/
+				  1,			/* linke Maustaste gedr√ºckt	*/
 				  0,0,0,0,0,	/* kein 1. Rechteck			*/
 				  0,0,0,0,0,	/* kein 2. Rechteck			*/
 				  message,
-				  0,0,	/* ms */
+				  0L,	/* ms */
 				  &xclick, &yclick,
 				  &button, &kstate,
 				  &keycode, &nclicks
@@ -139,7 +134,7 @@ int callback_ever( void )
 
 /************************************************************
 *
-* String-> Grîûenangabe
+* String-> Gr√∂√üenangabe
 *
 ************************************************************/
 
@@ -354,12 +349,12 @@ long	srch_dialog( char *param )
 /****************************************************************
 *
 * Rechnet Koordinaten linear um. Der Wert <wert> wurde bei
-* Bildschirmgrîûe <old> abgespeichert, jetzt ist die
-* Bildschirmgrîûe <new>.
+* Bildschirmgr√∂√üe <old> abgespeichert, jetzt ist die
+* Bildschirmgr√∂√üe <new>.
 *
 ****************************************************************/
 
-static void recalc(int *wert, int old, int new)
+static void recalc(short *wert, int old, int new)
 {
 	unsigned long tmp;
 
@@ -384,7 +379,7 @@ void read_inf( char *fname, GRECT *gwin )
 	long len;
 	int hdl;
 	char *s,*t;
-	int oldwh[2];
+	short oldwh[2];
 
 
 	s = getenv("HOME");
@@ -409,7 +404,7 @@ void read_inf( char *fname, GRECT *gwin )
 			return;
 		buf[len] = EOS;
 
-		/* erste Zeile Åberlesen */
+		/* erste Zeile √ºberlesen */
 
 		for	(s = buf; (*s) && (*s != '\n'); s++)
 			;
@@ -431,7 +426,7 @@ void read_inf( char *fname, GRECT *gwin )
 			if	(!strncmp(s, "WINDOW PATHS ", 13))
 				{
 				s += 13;
-				scan_values(&s, 4, (int *) gwin);
+				scan_values(&s, 4, (short *) gwin);
 				}
 
 			weiter:
@@ -471,7 +466,7 @@ void write_inf( GRECT *gwin )
 {
 	int hdl;
 	char buf[128];
-	int scrwh[2];
+	short scrwh[2];
 
 
 
@@ -486,7 +481,7 @@ void write_inf( GRECT *gwin )
 	strcat(buf, "\r\nWINDOW PATHS ");
 	gwin->g_x -= scrx;
 	gwin->g_y -= scry;
-	print_values(buf + strlen(buf), 4, (int *) gwin);
+	print_values(buf + strlen(buf), 4, (short *) gwin);
 	Fwrite(hdl, strlen(buf), buf);
 	Fclose(hdl);
 }

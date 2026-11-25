@@ -1,18 +1,17 @@
 /*
 *
-* EnthÑlt die spezifischen Routinen fÅr den Dialog
+* Enth√§lt die spezifischen Routinen f√ºr den Dialog
 * "Dateityp anmelden"
 *
 */
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
+#include "APPLICAT_GEM.H"
 #include <string.h>
 #include <stdlib.h>
-#include "appl.h"
-#include "appldata.h"
-#include "applicat.h"
-#include "typ_dial.h"
+#include "APPL.H"
+#include "APPLDATA.H"
+#include "APPLICAT.H"
+#include "TYP_DIAL.H"
 
 
 #define TRUE   1
@@ -57,34 +56,37 @@ void typ_dial_init_rsc(void)
 /*********************************************************************
 *
 * Behandelt die Exit- Objekte des Dialogs "Dateityp anmelden"
-* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angewÑhlt.
+* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angew√§hlt.
 *
 * objnr = -1:	Initialisierung.
 *			d->user_data und d->dialog_tree initialisieren!
-*		-2:	Nachricht int data[8] wurde Åbergeben
+*		-2:	Nachricht int data[8] wurde √ºbergeben
 * 		-3:	Fenster wurde durch Closebutton geschlossen.
 *		-4:	Programm wurde beendet.
 *
-* RÅckgabe:	0	Dialog schlieûen
+* R√ºckgabe:	0	Dialog schlie√üen
 *			< 0	Fehlercode
 *
 *********************************************************************/
 
-#pragma warn -par
 
-WORD cdecl hdl_ftypes(DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *data)
+WORD cdecl hdl_ftypes(struct HNDL_OBJ_args args)
 {
+	DIALOG *d = args.dialog;
+	short exitbutton = args.obj;
+	short clicks = args.clicks;
+	void *data = args.data;
 	OBJECT *tree;
 
 
-	/* 1. Fall: Dialog soll geîffnet werden */
+	/* 1. Fall: Dialog soll ge√∂ffnet werden */
 	/* ------------------------------------ */
 
 	tree = adr_ftypes;
 
 	if (exitbutton == HNDL_INIT)
 	{
-		if (d_typ)			/* Dialog ist schon geîffnet ! */
+		if (d_typ)			/* Dialog ist schon ge√∂ffnet ! */
 		{
 			wind_set(wdlg_get_handle(d_typ), WF_TOP, 0,0,0,0);
 			return 0;		/* create verweigern */
@@ -141,13 +143,13 @@ WORD cdecl hdl_ftypes(DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *dat
 	{
 		close_dialog:
 		save_dialog_xy(d);
-		return 0;		/* ...dann schlieûen wir ihn auch */
+		return 0;		/* ...dann schlie√üen wir ihn auch */
 	}
 
 	if (exitbutton < 0)
 		return 1;
 
-	/* 4. Fall: Exitbutton wurde betÑtigt */
+	/* 4. Fall: Exitbutton wurde bet√§tigt */
 	/* ---------------------------------- */
 
 	if (clicks != 1)
@@ -187,4 +189,3 @@ WORD cdecl hdl_ftypes(DIALOG *d, EVNT *ev, int exitbutton, int clicks, void *dat
 	subobj_wdraw(d, exitbutton, exitbutton, 1);
 	return 1;		/* weiter */
 }
-#pragma warn +par

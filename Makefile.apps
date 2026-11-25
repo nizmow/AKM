@@ -1,0 +1,1151 @@
+CROSS_COMPILE ?= m68k-atari-mintelf-
+CC := $(CROSS_COMPILE)gcc
+VASM ?= vasmm68k_mot
+STRIP ?= $(CROSS_COMPILE)strip
+BUILD_DIR ?= build/atari/apps
+CFLAGS ?= -O2 -g -Wall -Wextra
+# Applications use the supplied MiNTLib's default stack ABI and 32-bit int.
+# Do not inherit the kernel's -mshort/-mfastcall flags or Pure C libraries.
+APP_FLAGS := -std=gnu11 -m68000
+.DEFAULT_GOAL := all
+
+APPLICAT_DIR := MagiC/APPS/APPLICAT/SRC
+APPLICAT_SOURCES := $(addprefix $(APPLICAT_DIR)/,APPLICAT.C ICONSEL.C ICA_DIAL.C \
+  ANW_DIAL.C TYP_DIAL.C ICP_DIAL.C PTH_DIAL.C SPC_DIAL.C READ_INF.C INF.C \
+  WINDOWS.C IMPORT/GEMUT_MT.C)
+APPLICAT_OBJECTS := $(patsubst $(APPLICAT_DIR)/%.C,$(BUILD_DIR)/applicat/%.o,$(APPLICAT_SOURCES))
+MGVIEW_DIR := MagiC/APPS/MGVIEW/SRC
+MGVIEW_SOURCES := $(addprefix $(MGVIEW_DIR)/,MGVIEW.C WINDOWS.C MGWIND.C MEMCHAR2.C)
+MGVIEW_OBJECTS := $(patsubst $(MGVIEW_DIR)/%.C,$(BUILD_DIR)/mgview/%.o,$(MGVIEW_SOURCES))
+MGNOTICE_DIR := MagiC/APPS/MGNOTICE.2/SRC
+MGNOTICE_GEMUT_DIR := MagiC/APPS/APPLICAT/SRC/IMPORT
+MGNOTICE_SOURCES := $(addprefix $(MGNOTICE_DIR)/,MGNOTICE.C MGNWIND.C \
+  OPT_DIAL.C WINDOWS.C)
+MGNOTICE_OBJECTS := $(patsubst $(MGNOTICE_DIR)/%.C,$(BUILD_DIR)/mgnotice/%.o,$(MGNOTICE_SOURCES))
+MGSEARCH_DIR := MagiC/APPS/MGSEARCH/SRC
+MGSEARCH_MYLIBS_DIR := MagiC/LIB/MYLIBS/SRC
+MGSEARCH_PATTERN_DIR := $(MGSEARCH_DIR)
+MGSEARCH_INCLUDES := -I"$(MGSEARCH_DIR)" -I"$(MGSEARCH_MYLIBS_DIR)" \
+  -I"$(MGSEARCH_PATTERN_DIR)"
+MGSEARCH_SOURCES := $(addprefix $(MGSEARCH_DIR)/,MGSEARCH.C SEARCH.C SRCH_WIN.C)
+MGSEARCH_OBJECTS := $(patsubst $(MGSEARCH_DIR)/%.C,$(BUILD_DIR)/mgsearch/%.o,$(MGSEARCH_SOURCES)) \
+  $(BUILD_DIR)/mgsearch/GEMUTILS.o $(BUILD_DIR)/mgsearch/WINDOWS.o \
+  $(BUILD_DIR)/mgsearch/PATTERN.o
+
+MAGXDESK_DIR := MagiC/APPS/MAGICDESK/MAGXDESK.5
+MAGXDESK_SOURCES := $(addprefix $(MAGXDESK_DIR)/,MAGXDESK.C SPEC.C \
+  DEFAULTS.C DIALOGS.C DLG_INFO.C DWINDOWS.C FILES.C IMGLOAD.C KACHEL.C \
+  KLICK.C ALLG.C DMENU.C DKLICK.C PATTERN.C LL.C SHELSORT.C)
+MAGXDESK_OBJECTS := $(patsubst $(MAGXDESK_DIR)/%.C,$(BUILD_DIR)/magxdesk/%.o,$(MAGXDESK_SOURCES))
+MGCOPY_DIR := MagiC/APPS/MGCOPY/SRC
+MGCOPY_GEMUT_DIR := MagiC/APPS/APPLICAT/SRC/IMPORT
+MGCOPY_INCLUDES := -I"$(MGCOPY_DIR)" -I"$(MGCOPY_GEMUT_DIR)"
+MGCOPY_SOURCES := $(addprefix $(MGCOPY_DIR)/,MGCOPY.C CPFILES.C BEG_DIAL.C DAT_DIAL.C)
+MGCOPY_OBJECTS := $(patsubst $(MGCOPY_DIR)/%.C,$(BUILD_DIR)/mgcopy/%.o,$(MGCOPY_SOURCES)) \
+  $(BUILD_DIR)/mgcopy/GEMUT_MT.o
+MGFORMAT_DIR := MagiC/APPS/MGFORMAT/SRC
+MGFORMAT_GEMUT_DIR := MagiC/APPS/APPLICAT/SRC/IMPORT
+MGFORMAT_INCLUDES := -I"$(MGFORMAT_DIR)" -I"$(MGFORMAT_GEMUT_DIR)"
+MGFORMAT_SOURCES := $(addprefix $(MGFORMAT_DIR)/,MGFORMAT.C FMT_DIAL.C CPY_DIAL.C FORMAT.C MGFORMAT_WDLG.C)
+MGFORMAT_OBJECTS := $(patsubst $(MGFORMAT_DIR)/%.C,$(BUILD_DIR)/mgformat/%.o,$(MGFORMAT_SOURCES)) \
+  $(BUILD_DIR)/mgformat/GEMUT_MT.o
+VT52_DIR := MagiC/APPS/VT52/SRC/VT52
+VT52_INCLUDE_DIR := MagiC/APPS/VT52/SRC/INCLUDE
+VT52_RESOURCE_DIR := $(VT52_DIR)/RESOURCE/DEUTSCH
+VT52_DRAGDROP_DIR := MagiC/APPS/VT52/SRC/LIB/QUELLEN/DRAGDROP
+VT52_INCLUDES := -I"$(VT52_DIR)" -I"$(VT52_INCLUDE_DIR)" -I"$(VT52_RESOURCE_DIR)"
+VT52_SOURCES := $(addprefix $(VT52_DIR)/,VT_MENU.C VT_EMU.C WLIB.C LIST_NEW.C)
+VT52_ASM_SOURCES := $(addprefix $(VT52_DIR)/,VT_AES.S VT_VDI.S VT_BIOS.S \
+  VT_XBIOS.S VT_BELL.S VT_SEM.S VT_MOVE.S VT_ETERM.S)
+VT52_OBJECTS := $(patsubst $(VT52_DIR)/%.C,$(BUILD_DIR)/vt52/%.o,$(VT52_SOURCES)) \
+  $(patsubst $(VT52_DIR)/%.S,$(BUILD_DIR)/vt52/%.o,$(VT52_ASM_SOURCES)) \
+  $(BUILD_DIR)/vt52/DRAGDROP.o
+
+COPS_DIR := MagiC/APPS/COPS
+COPS_SOURCES := $(addprefix $(COPS_DIR)/,COPS.C CALLBACK.C CPX_BIND.C \
+  ADAPTRSC.C FIX_RSC.C LIST.C PHSTUFF.C POPUP.C RC_INTER.C WLIB.C COPS_RSC.C)
+COPS_OBJECTS := $(patsubst $(COPS_DIR)/%.C,$(BUILD_DIR)/cops/%.o,$(COPS_SOURCES))
+COPS_ASM_OBJECTS := $(BUILD_DIR)/cops/CLEARCPU.o
+COPS_ASM_NORMALIZED := $(BUILD_DIR)/cops/CLEARCPU.s
+COPS_OUTPUT_DIR := $(abspath $(BUILD_DIR)/cops)
+COPS_SOURCE_DIR := $(abspath $(COPS_DIR))
+COPS_OUTPUT_LOWER := $(shell printf '%s' '$(COPS_OUTPUT_DIR)' | tr '[:upper:]' '[:lower:]')
+COPS_SOURCE_LOWER := $(shell printf '%s' '$(COPS_SOURCE_DIR)' | tr '[:upper:]' '[:lower:]')
+ifeq ($(COPS_OUTPUT_LOWER),$(COPS_SOURCE_LOWER))
+$(error BUILD_DIR=$(BUILD_DIR) aliases the COPS source directory)
+endif
+
+MCMD_DIR := MagiC/APPS/CMD/SRC
+MCMD_LANG ?= de
+MAS_NORMALIZER := MagiC/KERNEL/BUILD/GCC/mas_to_vasm.py
+
+# First standalone OSD port. The archived MIN-ATARI binary is the structural
+# reference: it is the same V4.10 source and must match byte-for-byte.
+OSD002_DIR := MagiC/KERNEL/VDI/SRC/MAGIC.DRV/OSD
+OSD_INCLUDE_DIR := MagiC/KERNEL/VDI/SRC/MAGICVDI.2/INCLUDE
+OSD002_SOURCE := $(OSD002_DIR)/OFF002.S
+OSD002_NORMALIZED := $(BUILD_DIR)/osd/src/OFF002.S
+OSD002_INCLUDES := $(addprefix $(BUILD_DIR)/osd/src/,\
+  LINEA.I TOS.I SEEDFILL.I NVDI_WK.I VDI.I DRIVER.I)
+OSD002_OUTPUT := $(BUILD_DIR)/osd/OFF002.OSD
+
+MCMD_SOURCES := $(wildcard $(MCMD_DIR)/*.S $(MCMD_DIR)/*.INC $(MCMD_DIR)/INTERN/*.S)
+MCMD_NORMALIZED := $(addprefix $(BUILD_DIR)/mcmd/src/,$(notdir $(MCMD_SOURCES)))
+
+$(BUILD_DIR)/osd/src/%.I: $(OSD_INCLUDE_DIR)/%.I $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(OSD002_NORMALIZED): $(OSD002_SOURCE) $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+# -nosym drops VASM's symbol table (the archived TOS header has slen=0).
+# -tos-flags=7 preserves the archived TOS header's stack/absolute flags.
+$(OSD002_OUTPUT): $(OSD002_NORMALIZED) $(OSD002_INCLUDES) Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 \
+	  -I"$(BUILD_DIR)/osd/src/" -o "$@" "$(OSD002_NORMALIZED)"
+
+.PHONY: off002 off002-test-driver
+off002: $(OSD002_OUTPUT)
+off002-test-driver: $(BUILD_DIR)/off002/OFF002.PRG
+
+$(BUILD_DIR)/off002/OFF002.PRG: MagiC/KERNEL/VDI/TESTDATA/OFF002.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+# Same V4.10 source family as OFF002, with a 4-colour/2-plane header. The
+# MIN-ATARI archive is the byte reference; the Release driver is V4.11.
+OSD004IP_NORMALIZED := $(BUILD_DIR)/osd/src/OFF004IP.S
+OSD004IP_OUTPUT := $(BUILD_DIR)/osd/OFF004IP.OSD
+
+$(OSD004IP_NORMALIZED): $(OSD002_DIR)/OFF004IP.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(OSD004IP_OUTPUT): $(OSD004IP_NORMALIZED) $(OSD002_INCLUDES) Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 -no-opt \
+	  -I"$(BUILD_DIR)/osd/src/" -o "$@" "$(OSD004IP_NORMALIZED)"
+
+.PHONY: off004ip off004ip-test-driver
+off004ip: $(OSD004IP_OUTPUT)
+off004ip-test-driver: $(BUILD_DIR)/off004ip/OFF004IP.PRG
+
+$(BUILD_DIR)/off004ip/OFF004IP.PRG: MagiC/KERNEL/VDI/TESTDATA/OFF004IP.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+# 16-colour, 4-plane interleaved offscreen driver from the same source family.
+OSD016IP_NORMALIZED := $(BUILD_DIR)/osd/src/OFF016IP.S
+OSD016IP_OUTPUT := $(BUILD_DIR)/osd/OFF016IP.OSD
+
+$(OSD016IP_NORMALIZED): $(OSD002_DIR)/OFF016IP.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(OSD016IP_OUTPUT): $(OSD016IP_NORMALIZED) $(OSD002_INCLUDES) Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 -no-opt \
+	  -I"$(BUILD_DIR)/osd/src/" -o "$@" "$(OSD016IP_NORMALIZED)"
+
+.PHONY: off016ip off016ip-test-driver
+off016ip: $(OSD016IP_OUTPUT)
+off016ip-test-driver: $(BUILD_DIR)/off016ip/OFF016IP.PRG
+
+$(BUILD_DIR)/off016ip/OFF016IP.PRG: MagiC/KERNEL/VDI/TESTDATA/OFF016IP.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+# 256-colour, 8-plane interleaved offscreen driver.
+OSD256IP_NORMALIZED := $(BUILD_DIR)/osd/src/OFF256IP.S
+OSD256IP_OUTPUT := $(BUILD_DIR)/osd/OFF256IP.OSD
+
+$(OSD256IP_NORMALIZED): $(OSD002_DIR)/OFF256IP.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(OSD256IP_OUTPUT): $(OSD256IP_NORMALIZED) $(OSD002_INCLUDES) Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 -no-opt \
+	  -I"$(BUILD_DIR)/osd/src/" -o "$@" "$(OSD256IP_NORMALIZED)"
+
+.PHONY: off256ip off256ip-test-driver
+off256ip: $(OSD256IP_OUTPUT)
+off256ip-test-driver: $(BUILD_DIR)/off256ip/OFF256IP.PRG
+
+$(BUILD_DIR)/off256ip/OFF256IP.PRG: MagiC/KERNEL/VDI/TESTDATA/OFF256IP.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+# Remaining packed/direct-colour OSD drivers. Their archived references span
+# different source versions, so parity is decided per target, not assumed.
+OSD_BATCH_NAMES := OFF016PK OFF256PK OFF32KFL OFF32KPK OFF16MOV
+OSD_BATCH_NOOPT := OFF016PK OFF32KFL OFF32KPK OFF16MOV
+OSD_BATCH_NORMALIZED := $(addprefix $(BUILD_DIR)/osd/src/,$(addsuffix .S,$(OSD_BATCH_NAMES)))
+OSD_BATCH_OUTPUTS := $(addprefix $(BUILD_DIR)/osd/,$(addsuffix .OSD,$(OSD_BATCH_NAMES))) \
+  $(BUILD_DIR)/osd/OFF65KPK.OSD
+OSD_BATCH_PROBES := $(addprefix $(BUILD_DIR)/osd-probes/,$(addsuffix .PRG,$(OSD_BATCH_NAMES))) \
+  $(BUILD_DIR)/osd-probes/OFF65KPK.PRG
+
+$(OSD_BATCH_NORMALIZED): $(BUILD_DIR)/osd/src/%.S: $(OSD002_DIR)/%.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(addprefix $(BUILD_DIR)/osd/,$(addsuffix .OSD,$(OSD_BATCH_NOOPT))): \
+  $(BUILD_DIR)/osd/%.OSD: $(BUILD_DIR)/osd/src/%.S $(OSD002_INCLUDES) Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 -no-opt \
+	  -I"$(BUILD_DIR)/osd/src/" -o "$@" "$<"
+
+# OFF256PK needs VASM's branch-size extension, which -no-opt disables. Its
+# source (V4.11) matches neither the V3.02 archive nor the V4.12 Release.
+$(BUILD_DIR)/osd/OFF256PK.OSD: $(BUILD_DIR)/osd/src/OFF256PK.S $(OSD002_INCLUDES) Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 \
+	  -I"$(BUILD_DIR)/osd/src/" -o "$@" "$<"
+
+# OFF65KPK.S comes from a checkout whose local `include\*.inc` tree is absent;
+# every other OSD source names the shared MAGICVDI.2 includes as `.I`. That
+# include tree also defined the `MD_*` write-mode aliases as VDI.I's names.
+$(BUILD_DIR)/osd/src/OFF65KPK.S: $(OSD002_DIR)/OFF65KPK.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+	sed -i -E -e 's/\.INC"/.I"/g' -e 's/\bMD_REPLACE\b/REPLACE/g' \
+	  -e 's/\bMD_XOR\b/EX_OR/g' -e 's/\bMD_ERASE\b/REV_TRANS/g' \
+	  -e 's/\br_planes\b/planes/g' "$@"
+
+$(BUILD_DIR)/osd/OFF65KPK.OSD: $(BUILD_DIR)/osd/src/OFF65KPK.S $(OSD002_INCLUDES) Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 \
+	  -I"$(BUILD_DIR)/osd/src/" -o "$@" "$<"
+
+$(OSD_BATCH_PROBES): $(BUILD_DIR)/osd-probes/%.PRG: MagiC/KERNEL/VDI/TESTDATA/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+.PHONY: osd-batch off016pk off256pk off32kfl off32kpk off16mov off65kpk \
+  off016pk-test-driver off256pk-test-driver off32kfl-test-driver \
+  off32kpk-test-driver off16mov-test-driver off65kpk-test-driver
+osd-batch: $(OSD_BATCH_OUTPUTS) $(OSD_BATCH_PROBES)
+off016pk: $(BUILD_DIR)/osd/OFF016PK.OSD
+off256pk: $(BUILD_DIR)/osd/OFF256PK.OSD
+off32kfl: $(BUILD_DIR)/osd/OFF32KFL.OSD
+off32kpk: $(BUILD_DIR)/osd/OFF32KPK.OSD
+off16mov: $(BUILD_DIR)/osd/OFF16MOV.OSD
+off65kpk: $(BUILD_DIR)/osd/OFF65KPK.OSD
+off016pk-test-driver: $(BUILD_DIR)/osd-probes/OFF016PK.PRG
+off256pk-test-driver: $(BUILD_DIR)/osd-probes/OFF256PK.PRG
+off32kfl-test-driver: $(BUILD_DIR)/osd-probes/OFF32KFL.PRG
+off32kpk-test-driver: $(BUILD_DIR)/osd-probes/OFF32KPK.PRG
+off16mov-test-driver: $(BUILD_DIR)/osd-probes/OFF16MOV.PRG
+off65kpk-test-driver: $(BUILD_DIR)/osd-probes/OFF65KPK.PRG
+
+# MFA (Atari) and MFM (MagiCMac) screen drivers. The older MFM sources still
+# name the NVDI field at offset 196 `_nvdi_PixMap_ptr`; the current include
+# calls the same field `_nvdi_vdi_setup_ptr`.
+SCREEN_DIR := MagiC/KERNEL/VDI/SRC/MAGIC.DRV
+SCREEN_MFA_NAMES := MFA2 MFA4 MFA16 MFA256 MFA32K
+SCREEN_MFM_NAMES := MFM2 MFM16 MFM16IP MFM16M MFM256 MFM32K MFM4IP
+SCREEN_NAMES := $(SCREEN_MFA_NAMES) $(SCREEN_MFM_NAMES)
+SCREEN_INCLUDE_NAMES := DRIVER.I HARDWARE.I LINEA.I NVDI_WK.I PIXMAP.I TOS.I VDI.I
+SCREEN_INCLUDES := $(addprefix $(BUILD_DIR)/screen/src/,$(SCREEN_INCLUDE_NAMES))
+SCREEN_NORMALIZED := $(addprefix $(BUILD_DIR)/screen/src/,$(addsuffix .S,$(SCREEN_NAMES)))
+SCREEN_OUTPUTS := $(addprefix $(BUILD_DIR)/screen/,$(addsuffix .SYS,$(SCREEN_NAMES)))
+SCREEN_MFA_OUTPUTS := $(addprefix $(BUILD_DIR)/screen/,$(addsuffix .SYS,$(SCREEN_MFA_NAMES)))
+SCREEN_MFM_OUTPUTS := $(addprefix $(BUILD_DIR)/screen/,$(addsuffix .SYS,$(SCREEN_MFM_NAMES)))
+
+$(BUILD_DIR)/screen/src/%.I: $(OSD_INCLUDE_DIR)/%.I $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(addprefix $(BUILD_DIR)/screen/src/,$(addsuffix .S,$(SCREEN_MFA_NAMES))): \
+  $(BUILD_DIR)/screen/src/%.S: $(SCREEN_DIR)/MFA/%.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(addprefix $(BUILD_DIR)/screen/src/,$(addsuffix .S,$(SCREEN_MFM_NAMES))): \
+  $(BUILD_DIR)/screen/src/%.S: $(SCREEN_DIR)/MFM/%.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(SCREEN_OUTPUTS): $(BUILD_DIR)/screen/%.SYS: $(BUILD_DIR)/screen/src/%.S $(SCREEN_INCLUDES) Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 -DDUMMY=0 \
+	  -D_nvdi_PixMap_ptr=196 -no-opt -opt-allbra \
+	  -I"$(BUILD_DIR)/screen/src/" -o "$@" "$<"
+
+SCREEN_PROBE := $(BUILD_DIR)/screen/SCREEN.PRG
+
+$(SCREEN_PROBE): MagiC/KERNEL/VDI/TESTDATA/SCREEN.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+.PHONY: screen-drivers screen-boot-probe mfa mfm \
+  mfa2 mfa4 mfa16 mfa256 mfa32k \
+  mfm2 mfm16 mfm16ip mfm16m mfm256 mfm32k mfm4ip
+screen-drivers: $(SCREEN_OUTPUTS)
+screen-boot-probe: $(SCREEN_PROBE)
+mfa: $(SCREEN_MFA_OUTPUTS)
+mfm: $(SCREEN_MFM_OUTPUTS)
+mfa2: $(BUILD_DIR)/screen/MFA2.SYS
+mfa4: $(BUILD_DIR)/screen/MFA4.SYS
+mfa16: $(BUILD_DIR)/screen/MFA16.SYS
+mfa256: $(BUILD_DIR)/screen/MFA256.SYS
+mfa32k: $(BUILD_DIR)/screen/MFA32K.SYS
+mfm2: $(BUILD_DIR)/screen/MFM2.SYS
+mfm16: $(BUILD_DIR)/screen/MFM16.SYS
+mfm16ip: $(BUILD_DIR)/screen/MFM16IP.SYS
+mfm16m: $(BUILD_DIR)/screen/MFM16M.SYS
+mfm256: $(BUILD_DIR)/screen/MFM256.SYS
+mfm32k: $(BUILD_DIR)/screen/MFM32K.SYS
+mfm4ip: $(BUILD_DIR)/screen/MFM4IP.SYS
+
+MAGXBOOT_DIR := MagiC/KERNEL/BIOS/ATARI/BOOT
+MAGXBOOT_SRC := $(BUILD_DIR)/magxboot/src
+MAGXBOOT_OUTPUTS := $(addprefix $(BUILD_DIR)/magxboot/,MAGXBOOT.TOS MAGXBOOT.PRG MAGXBO32.PRG)
+
+.PHONY: magxboot
+magxboot: $(MAGXBOOT_OUTPUTS)
+
+$(MAGXBOOT_SRC)/MAGXBOOT.S: $(MAGXBOOT_DIR)/MAGXBOOT.S $(MAS_NORMALIZER) \
+  NON-TOS/atari-utf8-conversion/atari-utf8.c Makefile.apps
+	python3 $(MAS_NORMALIZER) --atari-strings "$<" "$@"
+
+$(MAGXBOOT_SRC)/OSBIND.INC: MagiC/INC_AS/OSBIND.INC $(MAS_NORMALIZER) Makefile.apps
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(BUILD_DIR)/magxboot/MAGXBO32.PRG: MAGXBOOT_OUTSIDE := 1
+$(BUILD_DIR)/magxboot/MAGXBOOT.TOS $(BUILD_DIR)/magxboot/MAGXBO32.PRG: \
+  $(MAGXBOOT_SRC)/MAGXBOOT.S $(MAGXBOOT_SRC)/OSBIND.INC Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=7 \
+	  -DOUTSIDE=$(if $(MAGXBOOT_OUTSIDE),1,0) -I"$(MAGXBOOT_SRC)/" -o "$@" "$<"
+
+# The shipped loader and the archived normal PRG have identical contents.
+$(BUILD_DIR)/magxboot/MAGXBOOT.PRG: $(BUILD_DIR)/magxboot/MAGXBOOT.TOS
+	cp "$<" "$@"
+
+HARDCOPY_DIR := MagiC/KERNEL/XTENSION
+HARDCOPY_SRC := $(BUILD_DIR)/hardcopy/src
+
+.PHONY: hardcopy hardcopy-test-driver
+hardcopy: $(BUILD_DIR)/hardcopy/HARDCOPY.PRG
+hardcopy-test-driver: $(BUILD_DIR)/hardcopy/HCPROBE.PRG
+
+$(HARDCOPY_SRC)/HARDCOPY.S: $(HARDCOPY_DIR)/HARDCOPY.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(HARDCOPY_SRC)/OSBIND.INC: MagiC/INC_AS/OSBIND.INC $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(BUILD_DIR)/hardcopy/HARDCOPY.PRG: $(HARDCOPY_SRC)/HARDCOPY.S \
+  $(HARDCOPY_SRC)/OSBIND.INC Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Ftos -m68000 -noesc -nosym -tos-flags=1 \
+	  -I"$(HARDCOPY_SRC)/" -o "$@" "$<"
+
+$(BUILD_DIR)/hardcopy/HCPROBE.PRG: scripts/testdata/HCPROBE.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+-include $(BUILD_DIR)/hardcopy/HCPROBE.d
+
+.PHONY: mcmd mcmd-languages mcmd-test-driver
+mcmd: $(BUILD_DIR)/mcmd/$(MCMD_LANG)/MCMD.TOS
+mcmd-languages: $(foreach lang,de en fr,$(BUILD_DIR)/mcmd/$(lang)/MCMD.TOS)
+mcmd-test-driver: $(BUILD_DIR)/mcmd/NEOSTART.PRG $(BUILD_DIR)/mcmd/CHILD.TTP
+
+$(BUILD_DIR)/mcmd/src/%: $(MCMD_DIR)/% $(MAS_NORMALIZER) Makefile.apps
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(BUILD_DIR)/mcmd/src/%: $(MCMD_DIR)/INTERN/% $(MAS_NORMALIZER) Makefile.apps
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(BUILD_DIR)/mcmd/%/MCMD.TOS: $(MCMD_NORMALIZED) Makefile.apps
+	mkdir -p "$(@D)"
+	case "$*" in de) country=1;; fr) country=2;; en) country=3;; \
+	  *) echo "Unsupported MCMD language: $* (use de, en or fr)" >&2; exit 1;; esac; \
+	$(VASM) -Ftos -m68000 -noesc -DCOUNTRY=$$country \
+	  -I"$(BUILD_DIR)/mcmd/src/" -o "$@" "$(BUILD_DIR)/mcmd/src/CMD.S"
+
+$(BUILD_DIR)/mcmd/NEOSTART.PRG: MagiC/APPS/CMD/TESTDATA/NEOSTART.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mcmd/CHILD.TTP: MagiC/APPS/CMD/TESTDATA/CHILD.C MagiC/APPS/TOS_ARGS.H Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.TTP=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+MAGXCONF_DIR := MagiC/APPS/MAGXCONF/SRC
+MAGXCONF_LANG ?= de
+MAGXCONF_INCLUDES := OSBIND.INC AESBIND.INC MAGIX.INC
+MAGXCONF_NORMALIZED := $(addprefix $(BUILD_DIR)/magxconf/src/,$(MAGXCONF_INCLUDES)) \
+  $(BUILD_DIR)/magxconf/src/MAGXCONF.S
+
+.PHONY: magxconf magxconf-languages magxconf-test-driver
+magxconf: $(BUILD_DIR)/magxconf/$(MAGXCONF_LANG)/MAGXCONF.PRG \
+  $(BUILD_DIR)/magxconf/$(MAGXCONF_LANG)/MAGXCONF.ACC
+magxconf-languages: $(foreach lang,de en fr,$(BUILD_DIR)/magxconf/$(lang)/MAGXCONF.PRG \
+  $(BUILD_DIR)/magxconf/$(lang)/MAGXCONF.ACC)
+magxconf-test-driver: $(BUILD_DIR)/magxconf/NEOSTART.PRG
+
+$(BUILD_DIR)/magxconf/src/%.INC: MagiC/INC_AS/%.INC $(MAS_NORMALIZER) Makefile.apps
+	python3 $(MAS_NORMALIZER) --atari-strings "$<" "$@"
+
+$(BUILD_DIR)/magxconf/src/MAGXCONF.S: $(MAGXCONF_DIR)/MAGXCONF.S $(MAS_NORMALIZER) Makefile.apps
+	python3 $(MAS_NORMALIZER) --atari-strings "$<" "$@"
+
+$(BUILD_DIR)/magxconf/%/MAGXCONF.PRG: $(MAGXCONF_NORMALIZED) Makefile.apps
+	mkdir -p "$(@D)"
+	case "$*" in de) country=1;; fr) country=2;; en) country=3;; \
+	  *) echo "Unsupported MAGXCONF language: $* (use de, en or fr)" >&2; exit 1;; esac; \
+	$(VASM) -Ftos -m68000 -noesc -DCOUNTRY=$$country \
+	  -I"$(BUILD_DIR)/magxconf/src/" -o "$@" "$(BUILD_DIR)/magxconf/src/MAGXCONF.S"
+
+# The same executable detects program/accessory startup from its basepage.
+$(BUILD_DIR)/magxconf/%/MAGXCONF.ACC: $(BUILD_DIR)/magxconf/%/MAGXCONF.PRG
+	cp "$<" "$@"
+
+$(BUILD_DIR)/magxconf/NEOSTART.PRG: MagiC/APPS/MAGXCONF/TESTDATA/NEOSTART.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+
+.PHONY: all applicat mod-app cmdline mac2st dump fc split dis dis1 dis2 showfile limitmem limitmem-test-driver mgclock mgxclock mgxclock-test-driver vfatconf shutdown wbdaemon wbdaemon-test-driver flp-par flp-par0 flp-par1 magxconf-cpx tslice-cpx cops winframe winframe-demo xp-rastr load-img slbtest mod-app-test-driver mgview mgnotice mgnotice-test-driver mgsearch mgsearch-test-driver mgcopy mgcopy-test-driver mgformat mgformat-test-driver mgformat-hardware-kit vt52 vt52-test-driver magxdesk abi-check console-test-driver
+all: mod-app
+applicat: $(BUILD_DIR)/applicat/APPLICAT.APP $(BUILD_DIR)/applicat/applicat.rsc \
+  $(BUILD_DIR)/applicat/applicat.inf
+mod-app: $(BUILD_DIR)/mod-app/MOD_APP.TTP
+mgview: $(BUILD_DIR)/mgview/MGVIEW.APP
+mgnotice: $(BUILD_DIR)/mgnotice/MGNOTICE.APP $(BUILD_DIR)/mgnotice/mgnotice.rsc \
+  $(BUILD_DIR)/mgnotice/EDITOBJC.SLB
+mgnotice-test-driver: $(BUILD_DIR)/mgnotice/NEOSTART.PRG
+mgsearch: $(BUILD_DIR)/mgsearch/MGSEARCH.APP $(BUILD_DIR)/mgsearch/MGSEARCH.RSC
+mgsearch-test-driver: $(BUILD_DIR)/mgsearch/NEOSTART.PRG
+mgcopy: $(BUILD_DIR)/mgcopy/MGCOPY.APP $(BUILD_DIR)/mgcopy/MGCOPY.RSC
+mgcopy-test-driver: $(BUILD_DIR)/mgcopy/NEOSTART.PRG
+mgformat: $(BUILD_DIR)/mgformat/MGFORMAT.PRG $(BUILD_DIR)/mgformat/MGFORMAT.RSC
+mgformat-test-driver: $(BUILD_DIR)/mgformat/NEOSTART.PRG
+vt52: $(BUILD_DIR)/vt52/VT52.PRG $(BUILD_DIR)/vt52/VT52.RSC
+magxdesk: $(BUILD_DIR)/magxdesk/MAGXDESK.APP \
+  $(BUILD_DIR)/magxdesk/MAGXDESK.RSC $(BUILD_DIR)/magxdesk/MAGXDESL.RSC
+
+vt52-test-driver: $(BUILD_DIR)/vt52/NEOSTART.PRG $(BUILD_DIR)/vt52/VT52DEMO.TOS
+mgformat-hardware-kit: mgformat
+	rm -rf "$(BUILD_DIR)/mgformat-hardware"
+	mkdir -p "$(BUILD_DIR)/mgformat-hardware/ARCHIVE" \
+	  "$(BUILD_DIR)/mgformat-hardware/REBUILT"
+	cp "$(MGFORMAT_DIR)/../BIN/MGFORMAT.PRG" \
+	  "$(BUILD_DIR)/mgformat-hardware/ARCHIVE/MGFORMAT.PRG"
+	cp "$(MGFORMAT_DIR)/MGFORMAT.RSC" \
+	  "$(BUILD_DIR)/mgformat-hardware/ARCHIVE/MGFORMAT.RSC"
+	cp "$(BUILD_DIR)/mgformat/MGFORMAT.PRG" \
+	  "$(BUILD_DIR)/mgformat-hardware/REBUILT/MGFORMAT.PRG"
+	cp "$(BUILD_DIR)/mgformat/MGFORMAT.RSC" \
+	  "$(BUILD_DIR)/mgformat-hardware/REBUILT/MGFORMAT.RSC"
+	$(STRIP) -s "$(BUILD_DIR)/mgformat-hardware/REBUILT/MGFORMAT.PRG"
+	tar -czf "$(BUILD_DIR)/mgformat-hardware-kit.tar.gz" \
+	  -C "$(BUILD_DIR)/mgformat-hardware" .
+
+cmdline: $(BUILD_DIR)/cmdline/CMDLINE.PRG
+mac2st: $(BUILD_DIR)/mac2st/MAC2ST.TTP
+dump: $(BUILD_DIR)/dump/DUMP.TTP
+fc: $(BUILD_DIR)/fc/FC.TTP
+split: $(BUILD_DIR)/split/SPLIT.TTP
+dis: dis1 dis2
+dis1: $(BUILD_DIR)/dis1/DIS1.TTP
+dis2: $(BUILD_DIR)/dis2/DIS2.TTP
+showfile: $(BUILD_DIR)/showfile/SHOWFILE.TTP
+shutdown: $(BUILD_DIR)/shutdown/SHUTDOWN.PRG
+limitmem: $(BUILD_DIR)/limitmem/LIMITMEM.TTP
+limitmem-test-driver: $(BUILD_DIR)/limitmem/NEOSTEST.PRG
+mgclock: $(BUILD_DIR)/mgclock/MGCLOCK.PRG
+mgxclock: $(BUILD_DIR)/mgxclock/MGXCLOCK.PRG
+mgxclock-test-driver: $(BUILD_DIR)/mgxclock/NEOSTEST.PRG
+vfatconf: $(BUILD_DIR)/vfatconf/VFATCONF.PRG $(BUILD_DIR)/vfatconf/vfatconf.rsc
+wbdaemon: $(BUILD_DIR)/wbdaemon/WBDAEMON.PRG
+cops: $(BUILD_DIR)/cops/COPS.APP
+flp-par: flp-par0 flp-par1
+flp-par0: $(BUILD_DIR)/flp-par/FLP_PAR0.PRG
+flp-par1: $(BUILD_DIR)/flp-par/FLP_PAR1.PRG
+magxconf-cpx: $(BUILD_DIR)/cpx/MAGXCONF.CPX
+tslice-cpx: $(BUILD_DIR)/cpx/TSLICE.CPX
+winframe: $(BUILD_DIR)/winframe/WINFRAME.SLB $(BUILD_DIR)/winframe/WINFRAME.RSC
+
+winframe-demo: $(BUILD_DIR)/winframe-demo/WINFRAME.SLB $(BUILD_DIR)/winframe-demo/WINFRAME.RSC
+xp-rastr: $(BUILD_DIR)/xp-rastr/XP_RASTR.SLB
+load-img: $(BUILD_DIR)/load-img/LOAD_IMG.SLB
+slbtest: $(BUILD_DIR)/slbtest/SLBTEST.PRG
+wbdaemon-test-driver: $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG
+mod-app-test-driver: $(BUILD_DIR)/mod-app/NEOSTEST.PRG
+
+$(BUILD_DIR)/cops/%.o: $(COPS_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(COPS_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(COPS_ASM_NORMALIZED): $(COPS_DIR)/CLEARCPU.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(BUILD_DIR)/cops/CLEARCPU.o: $(COPS_ASM_NORMALIZED) Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -o "$@" "$<"
+
+$(BUILD_DIR)/cops/COPS.APP: $(COPS_OBJECTS) $(COPS_ASM_OBJECTS) Makefile.apps
+	$(CC) $(APP_FLAGS) $(COPS_OBJECTS) $(COPS_ASM_OBJECTS) \
+	  $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+-include $(COPS_OBJECTS:.o=.d)
+
+$(BUILD_DIR)/applicat/%.o: $(APPLICAT_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(APPLICAT_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/applicat/APPLICAT.APP: $(APPLICAT_OBJECTS) Makefile.apps
+	$(CC) $(APP_FLAGS) $(APPLICAT_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mgview/%.o: $(MGVIEW_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGVIEW_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgview/MGVIEW.APP: $(MGVIEW_OBJECTS) Makefile.apps
+	$(CC) $(APP_FLAGS) $(MGVIEW_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/magxdesk/%.o: $(MAGXDESK_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MAGXDESK_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/magxdesk/MAGXDESK.APP: $(MAGXDESK_OBJECTS) Makefile.apps
+	$(CC) $(APP_FLAGS) $(MAGXDESK_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/magxdesk/MAGXDESK.RSC: $(MAGXDESK_DIR)/MAGXDESK.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/magxdesk/MAGXDESL.RSC: $(MAGXDESK_DIR)/MAGXDESL.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+abi-check: $(BUILD_DIR)/abi-check/ABI_CHECK.o
+
+$(BUILD_DIR)/abi-check/ABI_CHECK.o: MagiC/APPS/ABI_CHECK.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"MagiC/APPS/MGVIEW/SRC" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+.PHONY: showfree crashdmp memexamn magxkern
+showfree: $(BUILD_DIR)/showfree/SHOWFREE.TOS
+crashdmp: $(BUILD_DIR)/crashdmp/CRASHDMP.TOS
+memexamn: $(BUILD_DIR)/memexamn/MEMEXAMN.TTP
+magxkern: $(BUILD_DIR)/magxkern/MAGXKERN.TTP
+
+$(BUILD_DIR)/showfree/SHOWFREE.TOS: MagiC/TOOLS/SHOWFREE/SHOWFREE.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.TOS=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/crashdmp/CRASHDMP.TOS: MagiC/TOOLS/CRASHDMP/SRC/CRASHDMP.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.TOS=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/memexamn/MEMEXAMN.TTP: MagiC/TOOLS/MEMEXAMN/SRC/MEMEXAMN.C \
+  MagiC/TOOLS/MEMEXAMN/SRC/MEMEXAMN.H Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.TTP=.d)" -IMagiC/TOOLS/MEMEXAMN/SRC -x c "$<" -x none \
+	  $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/magxkern/MAGXKERN.TTP: MagiC/TOOLS/MAGXKERN/SRC/MAGXKERN.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.TTP=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+diagnostic-test-driver: $(BUILD_DIR)/diagnostic/DIAG.PRG
+
+$(BUILD_DIR)/diagnostic/DIAG.PRG: MagiC/TOOLS/TESTDATA/DIAG_RUN.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+console-test-driver: $(BUILD_DIR)/console/RUNARG.PRG
+
+$(BUILD_DIR)/console/RUNARG.PRG: scripts/testdata/RUNARG.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+KEYB_DIR := MagiC/TOOLS/KEYB_SYS/SRC
+KEYB_NAMES := CZ DEI FRA SWG UK US
+KEYB_OUTPUTS := $(addprefix $(BUILD_DIR)/keyb-sys/KEYB_,$(addsuffix .PRG,$(KEYB_NAMES)))
+
+.PHONY: keyb-sys keyb-cz keyb-dei keyb-fra keyb-swg keyb-uk keyb-us
+keyb-sys: $(KEYB_OUTPUTS)
+keyb-cz: $(BUILD_DIR)/keyb-sys/KEYB_CZ.PRG
+keyb-dei: $(BUILD_DIR)/keyb-sys/KEYB_DEI.PRG
+keyb-fra: $(BUILD_DIR)/keyb-sys/KEYB_FRA.PRG
+keyb-swg: $(BUILD_DIR)/keyb-sys/KEYB_SWG.PRG
+keyb-uk: $(BUILD_DIR)/keyb-sys/KEYB_UK.PRG
+keyb-us: $(BUILD_DIR)/keyb-sys/KEYB_US.PRG
+
+$(KEYB_OUTPUTS): $(BUILD_DIR)/keyb-sys/%.PRG: $(KEYB_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -finput-charset=ISO-8859-1 \
+	  -fexec-charset=ISO-8859-1 -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+-include $(KEYB_OUTPUTS:.PRG=.d)
+
+$(BUILD_DIR)/mgcopy/%.o: $(MGCOPY_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(MGCOPY_INCLUDES) \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgcopy/GEMUT_MT.o: $(MGCOPY_GEMUT_DIR)/GEMUT_MT.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGCOPY_GEMUT_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgcopy/MGCOPY.APP: $(MGCOPY_OBJECTS) Makefile.apps
+	$(CC) $(APP_FLAGS) $(MGCOPY_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mgcopy/MGCOPY.RSC: $(MGCOPY_DIR)/MGCOPY.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/mgformat/%.o: $(MGFORMAT_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(MGFORMAT_INCLUDES) \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgformat/GEMUT_MT.o: $(MGFORMAT_GEMUT_DIR)/GEMUT_MT.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGFORMAT_GEMUT_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgformat/MGFORMAT.PRG: $(MGFORMAT_OBJECTS) Makefile.apps
+	$(CC) $(APP_FLAGS) $(MGFORMAT_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mgformat/MGFORMAT.RSC: $(MGFORMAT_DIR)/MGFORMAT.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/mgformat/NEOSTART.PRG: MagiC/APPS/MGFORMAT/TESTDATA/NEOSTART.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/vt52/%.o: $(VT52_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(VT52_INCLUDES) \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/vt52/%.o: $(VT52_DIR)/%.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/vt52/DRAGDROP.o: $(VT52_DRAGDROP_DIR)/DRAGDROP.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(VT52_INCLUDES) \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/vt52/VT52.PRG: $(VT52_OBJECTS) Makefile.apps
+	$(CC) $(APP_FLAGS) $(VT52_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/vt52/VT52.RSC: $(VT52_RESOURCE_DIR)/VT52.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/vt52/VT52DEMO.TOS: MagiC/APPS/VT52/TESTDATA/VT52DEMO.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.TOS=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/vt52/NEOSTART.PRG: MagiC/APPS/VT52/TESTDATA/NEOSTART.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mgcopy/NEOSTART.PRG: MagiC/APPS/MGCOPY/TESTDATA/NEOSTART.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mgsearch/%.o: $(MGSEARCH_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(MGSEARCH_INCLUDES) \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgsearch/GEMUTILS.o: $(MGSEARCH_MYLIBS_DIR)/GEMUTILS.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGSEARCH_MYLIBS_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgsearch/WINDOWS.o: $(MGSEARCH_MYLIBS_DIR)/WINDOWS.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGSEARCH_MYLIBS_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgsearch/PATTERN.o: $(MGSEARCH_PATTERN_DIR)/PATTERN.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGSEARCH_PATTERN_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgsearch/MGSEARCH.APP: $(MGSEARCH_OBJECTS) Makefile.apps
+	$(CC) $(APP_FLAGS) $(MGSEARCH_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mgsearch/MGSEARCH.RSC: $(MGSEARCH_DIR)/MGSEARCH.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/mgsearch/NEOSTART.PRG: MagiC/APPS/MGSEARCH/TESTDATA/NEOSTART.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mgnotice/%.o: $(MGNOTICE_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGNOTICE_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgnotice/GEMUT_MT.o: $(MGNOTICE_GEMUT_DIR)/GEMUT_MT.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGNOTICE_GEMUT_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgnotice/MGNOTICE.APP: $(MGNOTICE_OBJECTS) \
+  $(BUILD_DIR)/mgnotice/GEMUT_MT.o Makefile.apps
+	$(CC) $(APP_FLAGS) $(MGNOTICE_OBJECTS) $(BUILD_DIR)/mgnotice/GEMUT_MT.o \
+	  $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mgnotice/mgnotice.rsc: $(MGNOTICE_DIR)/MGNOTICE.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/mgnotice/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/mgnotice/NEOSTART.PRG: MagiC/APPS/MGNOTICE.2/TESTDATA/NEOSTART.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/applicat/applicat.rsc: $(APPLICAT_DIR)/APPLICAT.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/applicat/applicat.inf: MagiC/APPS/APPLICAT/BIN/MINIMAL/APPLICAT.INF
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/mod-app/NEOSTEST.PRG: MagiC/APPS/MOD_APP/TESTDATA/NEOSTEST.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/mod-app/MOD_APP.TTP: MagiC/APPS/MOD_APP/MOD_APP.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/cmdline/CMDLINE.PRG: MagiC/TOOLS/CMDLINE/SRC/CMDLINE.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mac2st/MAC2ST.TTP: MagiC/TOOLS/MAC2ST/SRC/MAC2ST.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/dump/DUMP.TTP: MagiC/TOOLS/DUMP/SRC/DUMP.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/fc/FC.TTP: MagiC/TOOLS/FC/SRC/FC.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+DIS_DIR := MagiC/TOOLS/DIS/SRC
+DIS1_SOURCES := $(addprefix $(DIS_DIR)/DIS1/,DIS1.C DEC.C SHELSORT.C)
+DIS1_OBJECTS := $(patsubst $(DIS_DIR)/DIS1/%.C,$(BUILD_DIR)/dis1/%.o,$(DIS1_SOURCES))
+DIS2_SOURCES := $(addprefix $(DIS_DIR)/DIS2/,DIS2.C DIS.C DISASS.C)
+DIS2_OBJECTS := $(patsubst $(DIS_DIR)/DIS2/%.C,$(BUILD_DIR)/dis2/%.o,$(DIS2_SOURCES))
+
+$(BUILD_DIR)/dis1/%.o: $(DIS_DIR)/DIS1/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(DIS_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/dis1/DIS1.TTP: $(DIS1_OBJECTS) Makefile.apps
+	$(CC) $(APP_FLAGS) $(DIS1_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/dis2/%.o: $(DIS_DIR)/DIS2/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(DIS_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/dis2/DIS2.TTP: $(DIS2_OBJECTS) Makefile.apps
+	$(CC) $(APP_FLAGS) $(DIS2_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/split/SPLIT.TTP: MagiC/TOOLS/SPLIT/SRC/SPLIT.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/showfile/SHOWFILE.TTP: MagiC/APPS/SHOWFILE/SRC/SHOWFILE.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+
+$(BUILD_DIR)/limitmem/NEOSTEST.PRG: MagiC/APPS/LIMITMEM/TESTDATA/LIMITMEMTEST.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+$(BUILD_DIR)/limitmem/LIMITMEM.TTP: MagiC/APPS/LIMITMEM/SRC/LIMITMEM.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/mgclock/MGCLOCK.PRG: MagiC/APPS/MGCLOCK/SRC/MGCLOCK.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mgxclock/MGXCLOCK.PRG: MagiC/APPS/MGXCLOCK/SRC/MGXCLOCK.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mgxclock/NEOSTEST.PRG: MagiC/APPS/MGXCLOCK/TESTDATA/NEOSTEST.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/vfatconf/VFATCONF.PRG: MagiC/APPS/VFATCONF/SRC/VFATCONF.C MagiC/APPS/VFATCONF/SRC/VFATCONF_GEM.C MagiC/APPS/VFATCONF/SRC/VFATCONF_GEM.H Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -finput-charset=UTF-8 \
+	  -MMD -MP -MF "$(@:.PRG=.d)" -x c MagiC/APPS/VFATCONF/SRC/VFATCONF.C \
+	  -x c MagiC/APPS/VFATCONF/SRC/VFATCONF_GEM.C -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/vfatconf/vfatconf.rsc: MagiC/APPS/VFATCONF/SRC/VFATCONF.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/shutdown/SHUTDOWN.PRG: MagiC/APPS/SHUTDOWN/SRC/SHUTDOWN.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) \
+	  -MMD -MP -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/wbdaemon/WBDAEMON.PRG: MagiC/APPS/WBDAEMON/SRC/WBDAEMON.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/flp-par/FLP_PAR0.PRG: MagiC/APPS/FLP_PAR/SRC/FLP_PAR0.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+$(BUILD_DIR)/flp-par/FLP_PAR1.PRG: MagiC/APPS/FLP_PAR/SRC/FLP_PAR1.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+
+CPX_DIR := MagiC/APPS/CPX
+CPX_OBJECTS := $(BUILD_DIR)/cpx/MAGXCONF.o $(BUILD_DIR)/cpx/CPX_ENTRY.o
+CPX_TSLICE_OBJECTS := $(BUILD_DIR)/cpx/TSLICE.o $(BUILD_DIR)/cpx/CPX_ENTRY.o
+
+.PHONY: cpx-abi-lint
+cpx-abi-lint:
+	python3 scripts/cpx_abi_lint.py
+
+$(BUILD_DIR)/cpx/MAGXCONF.o: | cpx-abi-lint
+$(BUILD_DIR)/cpx/TSLICE.o: | cpx-abi-lint
+
+$(BUILD_DIR)/cpx/%.o: $(CPX_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(CPX_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/cpx/CPX_ENTRY.o: $(CPX_DIR)/cpx_entry.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/cpx/MAGXCONF.elf: $(CPX_OBJECTS) $(CPX_DIR)/cpx.ld Makefile.apps
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,$(CPX_DIR)/cpx.ld \
+	  $(CPX_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
+
+$(BUILD_DIR)/cpx/MAGXCONF.CPX: $(BUILD_DIR)/cpx/MAGXCONF.elf \
+  $(CPX_DIR)/MAGXCONF.HDR scripts/elf_to_cpx.py
+	python3 scripts/elf_to_cpx.py "$<" "$(CPX_DIR)/MAGXCONF.HDR" "$@"
+
+$(BUILD_DIR)/cpx/TSLICE.elf: $(CPX_TSLICE_OBJECTS) $(CPX_DIR)/cpx.ld Makefile.apps
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,$(CPX_DIR)/cpx.ld \
+	  $(CPX_TSLICE_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
+
+$(BUILD_DIR)/cpx/TSLICE.CPX: $(BUILD_DIR)/cpx/TSLICE.elf \
+  $(CPX_DIR)/TSLICE.HDR scripts/elf_to_cpx.py
+	python3 scripts/elf_to_cpx.py "$<" "$(CPX_DIR)/TSLICE.HDR" "$@"
+
+$(BUILD_DIR)/wbdaemon/NEOSTEST.PRG: MagiC/APPS/WBDAEMON/TESTDATA/NEOSTEST.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
+	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+-include $(BUILD_DIR)/mod-app/MOD_APP.d
+-include $(BUILD_DIR)/cmdline/CMDLINE.d
+-include $(BUILD_DIR)/showfile/SHOWFILE.d
+-include $(BUILD_DIR)/limitmem/LIMITMEM.d
+-include $(BUILD_DIR)/limitmem/NEOSTEST.d
+-include $(BUILD_DIR)/mgclock/MGCLOCK.d
+-include $(BUILD_DIR)/mgxclock/MGXCLOCK.d
+-include $(BUILD_DIR)/mgxclock/NEOSTEST.d
+-include $(BUILD_DIR)/vfatconf/VFATCONF.d
+-include $(BUILD_DIR)/shutdown/SHUTDOWN.d
+-include $(BUILD_DIR)/wbdaemon/WBDAEMON.d
+-include $(BUILD_DIR)/wbdaemon/NEOSTEST.d
+-include $(BUILD_DIR)/flp-par/FLP_PAR0.d
+-include $(BUILD_DIR)/flp-par/FLP_PAR1.d
+-include $(BUILD_DIR)/cpx/MAGXCONF.d
+-include $(BUILD_DIR)/cpx/TSLICE.d
+-include $(BUILD_DIR)/off002/OFF002.d
+-include $(BUILD_DIR)/off004ip/OFF004IP.d
+-include $(BUILD_DIR)/off016ip/OFF016IP.d
+-include $(BUILD_DIR)/off256ip/OFF256IP.d
+-include $(OSD_BATCH_PROBES:.PRG=.d)
+
+WINFRAME_DIR := MagiC/KERNEL/WINFRAME
+WINFRAME_OBJECTS := $(BUILD_DIR)/winframe/WIN_SLB.o $(BUILD_DIR)/winframe/WIN_OBJS.o \
+  $(BUILD_DIR)/winframe/WINFRAME_ENTRY.o
+
+$(BUILD_DIR)/winframe/%.o: $(WINFRAME_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(WINFRAME_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/winframe/WINFRAME_ENTRY.o: $(WINFRAME_DIR)/WINFRAME_ENTRY.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/winframe/WINFRAME.elf: $(WINFRAME_OBJECTS) \
+  MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld Makefile.apps
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld \
+	  $(WINFRAME_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
+
+$(BUILD_DIR)/winframe/WINFRAME.SLB: $(BUILD_DIR)/winframe/WINFRAME.elf scripts/elf_to_slb.py
+	python3 scripts/elf_to_slb.py --name WINFRAME.SLB --version 1 "$<" "$@"
+
+$(BUILD_DIR)/winframe/WINFRAME.RSC: $(WINFRAME_DIR)/WINFRAME.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+-include $(BUILD_DIR)/winframe/WIN_SLB.d
+-include $(BUILD_DIR)/winframe/WIN_OBJS.d
+
+WINFRAME_DEMO_DIR := MagiC/KERNEL/WINFRAME.DEM
+WINFRAME_DEMO_OBJECTS := $(addprefix $(BUILD_DIR)/winframe-demo/,WIN_SLB.o WIN_OBJS.o) \
+  $(BUILD_DIR)/winframe-demo/WINFRAME_ENTRY.o
+
+$(BUILD_DIR)/winframe-demo/%.o: $(WINFRAME_DEMO_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(WINFRAME_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/winframe-demo/WINFRAME_ENTRY.o: $(WINFRAME_DIR)/WINFRAME_ENTRY.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/winframe-demo/WINFRAME.elf: $(WINFRAME_DEMO_OBJECTS) \
+  MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld Makefile.apps
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld \
+	  $(WINFRAME_DEMO_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
+
+$(BUILD_DIR)/winframe-demo/WINFRAME.SLB: $(BUILD_DIR)/winframe-demo/WINFRAME.elf scripts/elf_to_slb.py
+	python3 scripts/elf_to_slb.py --name WINFRAME.SLB --version 1 "$<" "$@"
+
+$(BUILD_DIR)/winframe-demo/WINFRAME.RSC: $(WINFRAME_DEMO_DIR)/WINFRAME.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+-include $(BUILD_DIR)/winframe-demo/WIN_SLB.d
+-include $(BUILD_DIR)/winframe-demo/WIN_OBJS.d
+
+XPRASTR_DIR := MagiC/EXTENSIO/XP_RASTR.SLB/SRC
+XPRASTR_OBJECTS := $(BUILD_DIR)/xp-rastr/XP_RASTR.o \
+  $(BUILD_DIR)/xp-rastr/FARBICON.o $(BUILD_DIR)/xp-rastr/XPRASTR_BRIDGE.o \
+  $(BUILD_DIR)/xp-rastr/XP_RASTR_ENTRY.o
+
+$(BUILD_DIR)/xp-rastr/XP_RASTR.o: $(XPRASTR_DIR)/XP_RASTR.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(XPRASTR_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/xp-rastr/FARBICON.s: $(XPRASTR_DIR)/FARBICON.S $(MAS_NORMALIZER) Makefile.apps
+	mkdir -p "$(@D)"
+	python3 $(MAS_NORMALIZER) "$<" "$@"
+
+$(BUILD_DIR)/xp-rastr/FARBICON.o: $(BUILD_DIR)/xp-rastr/FARBICON.s Makefile.apps
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/xp-rastr/XPRASTR_BRIDGE.o: $(XPRASTR_DIR)/XPRASTR_BRIDGE.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/xp-rastr/XP_RASTR_ENTRY.o: $(XPRASTR_DIR)/XP_RASTR_ENTRY.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/xp-rastr/XP_RASTR.elf: $(XPRASTR_OBJECTS) \
+  MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld Makefile.apps
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld \
+	  $(XPRASTR_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
+
+$(BUILD_DIR)/xp-rastr/XP_RASTR.SLB: $(BUILD_DIR)/xp-rastr/XP_RASTR.elf scripts/elf_to_slb.py
+	python3 scripts/elf_to_slb.py --name XP_RASTR.SLB --version 1 --exports 2 "$<" "$@"
+
+-include $(BUILD_DIR)/xp-rastr/XP_RASTR.d
+
+$(BUILD_DIR)/slbtest/LEGACY_CALLS.o: scripts/testdata/LEGACY_CALLS.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/slbtest/SLBTEST.PRG: scripts/testdata/SLBTEST.C \
+  $(BUILD_DIR)/slbtest/LEGACY_CALLS.o Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none \
+	  $(BUILD_DIR)/slbtest/LEGACY_CALLS.o $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+-include $(BUILD_DIR)/slbtest/SLBTEST.d
+
+LOADIMG_DIR := MagiC/TOOLS/LOAD_IMG.SLB/SRC
+LOADIMG_OBJECTS := $(BUILD_DIR)/load-img/LOAD_IMG.o \
+  $(BUILD_DIR)/load-img/IMGLOAD.o $(BUILD_DIR)/load-img/LOAD_IMG_RASTER.o \
+  $(BUILD_DIR)/load-img/LOAD_IMG_ENTRY.o
+
+$(BUILD_DIR)/load-img/LOAD_IMG.o: $(LOADIMG_DIR)/LOAD_IMG.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(LOADIMG_DIR)" -I"MagiC/INC_C" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/load-img/IMGLOAD.o: $(LOADIMG_DIR)/IMGLOAD.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(LOADIMG_DIR)" -I"MagiC/INC_C" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/load-img/LOAD_IMG_RASTER.o: $(LOADIMG_DIR)/LOAD_IMG_RASTER.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/load-img/LOAD_IMG_ENTRY.o: $(LOADIMG_DIR)/LOAD_IMG_ENTRY.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/load-img/LOAD_IMG.elf: $(LOADIMG_OBJECTS) \
+  MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld Makefile.apps
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,MagiC/EXTENSIO/EDIT_SLB/SRC/edit_slb.ld \
+	  $(LOADIMG_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
+
+$(BUILD_DIR)/load-img/LOAD_IMG.SLB: $(BUILD_DIR)/load-img/LOAD_IMG.elf scripts/elf_to_slb.py
+	python3 scripts/elf_to_slb.py --name LOAD_IMG.SLB --version 1 --exports 5 "$<" "$@"
+
+-include $(BUILD_DIR)/load-img/LOAD_IMG.d
+-include $(BUILD_DIR)/load-img/IMGLOAD.d
+-include $(APPLICAT_OBJECTS:.o=.d)
+-include $(MGVIEW_OBJECTS:.o=.d)
+EDIT_SLB_DIR := MagiC/EXTENSIO/EDIT_SLB/SRC
+EDIT_SLB_OBJECTS := $(BUILD_DIR)/edit-slb/EDIT_SLB.o $(BUILD_DIR)/edit-slb/EDITOB.o \
+  $(BUILD_DIR)/edit-slb/MEMCHAR2.o $(BUILD_DIR)/edit-slb/EDIT_ENTRY.o
+
+.PHONY: edit-slb
+edit-slb: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
+
+$(BUILD_DIR)/edit-slb/%.o: $(EDIT_SLB_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(EDIT_SLB_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/edit-slb/MEMCHAR2.o: MagiC/APPS/MGVIEW/SRC/MEMCHAR2.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(EDIT_SLB_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/edit-slb/EDIT_ENTRY.o: $(EDIT_SLB_DIR)/EDIT_ENTRY.S Makefile.apps
+	mkdir -p "$(@D)"
+	$(VASM) -Felf -m68000 -spaces -o "$@" "$<"
+
+$(BUILD_DIR)/edit-slb/EDITOBJC.elf: $(EDIT_SLB_OBJECTS) $(EDIT_SLB_DIR)/edit_slb.ld Makefile.apps
+	$(CC) -nostartfiles -m68000 -Wl,-m,m68kelf,--emit-relocs,-T,$(EDIT_SLB_DIR)/edit_slb.ld \
+	  $(EDIT_SLB_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem -lc -lgcc
+
+$(BUILD_DIR)/edit-slb/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.elf scripts/elf_to_slb.py
+	python3 scripts/elf_to_slb.py "$<" "$@"
+
+-include $(BUILD_DIR)/edit-slb/EDIT_SLB.d
+-include $(BUILD_DIR)/edit-slb/EDITOB.d
+-include $(BUILD_DIR)/edit-slb/MEMCHAR2.d
+
+MGEDIT_DIR := MagiC/APPS/MGEDIT/SRC
+MGEDIT_SOURCES := $(addprefix $(MGEDIT_DIR)/,MGEDIT.C MGEDWIND.C OPT_DIAL.C \
+  MGEDIT_GEM.C)
+MGEDIT_OBJECTS := $(patsubst $(MGEDIT_DIR)/%.C,$(BUILD_DIR)/mgedit/%.o,$(MGEDIT_SOURCES))
+
+.PHONY: mgedit
+mgedit: $(BUILD_DIR)/mgedit/MGEDIT.APP $(BUILD_DIR)/mgedit/mgedit.rsc \
+  $(BUILD_DIR)/mgedit/EDITOBJC.SLB
+
+$(BUILD_DIR)/mgedit/%.o: $(MGEDIT_DIR)/%.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGEDIT_DIR)" \
+	  -MMD -MP -MF "$(@:.o=.d)" -x c -c "$<" -o "$@"
+
+$(BUILD_DIR)/mgedit/MGEDIT.APP: $(MGEDIT_OBJECTS) Makefile.apps
+	$(CC) $(APP_FLAGS) $(MGEDIT_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
+$(BUILD_DIR)/mgedit/mgedit.rsc: $(MGEDIT_DIR)/MGEDIT.RSC
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+$(BUILD_DIR)/mgedit/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
+	mkdir -p "$(@D)"
+	cp "$<" "$@"
+
+-include $(MGEDIT_OBJECTS:.o=.d)
+-include $(MGSEARCH_OBJECTS:.o=.d)
+-include $(MAGXDESK_OBJECTS:.o=.d)
+-include $(BUILD_DIR)/mgsearch/NEOSTART.d
+-include $(MGCOPY_OBJECTS:.o=.d)
+-include $(BUILD_DIR)/mgcopy/NEOSTART.d
+-include $(MGFORMAT_OBJECTS:.o=.d)
+-include $(BUILD_DIR)/mgformat/NEOSTART.d
+-include $(MGNOTICE_OBJECTS:.o=.d)
+-include $(BUILD_DIR)/mgnotice/GEMUT_MT.d
+-include $(BUILD_DIR)/mgnotice/NEOSTART.d
+-include $(BUILD_DIR)/abi-check/ABI_CHECK.d
+-include $(BUILD_DIR)/console/RUNARG.d
+-include $(BUILD_DIR)/mac2st/MAC2ST.d
+-include $(BUILD_DIR)/dump/DUMP.d
+-include $(BUILD_DIR)/fc/FC.d
+-include $(BUILD_DIR)/split/SPLIT.d
+-include $(DIS1_OBJECTS:.o=.d)
+-include $(DIS2_OBJECTS:.o=.d)

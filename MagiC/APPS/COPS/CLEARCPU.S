@@ -1,6 +1,6 @@
-	.globl clear_cpu_cf
-	.globl clear_cpu_040
-	.globl clear_cpu_030
+	EXPORT clear_cpu_cf
+	EXPORT clear_cpu_040
+	EXPORT clear_cpu_030
 
 	SUPER
 
@@ -28,8 +28,8 @@ clear_cpu_040:
 	move.w	sr,d1
 	ori.w	#0x700,sr		; mask interrupts
 
-	.dc.w 0xf478				; cpusha dc for 060
-	.dc.w 0xf498				; cinva ic for 060
+	dc.w 0xf478				; cpusha dc for 060
+	dc.w 0xf498				; cinva ic for 060
 	move.w	d1,sr		; set back status register
 	rts
 
@@ -37,9 +37,9 @@ clear_cpu_030:
 	move.w	sr,d1
 	ori.w	#0x700,sr		; mask interrupts
 
-	.dc.l 0x4e7a0002		; movec cacr,d0
+	dc.l 0x4e7a0002		; movec cacr,d0
 	or.l	#0x808,d0		; clear data and instruction cache
-	.dc.l 0x4e7b0002		; movec d0,cacr
+	dc.l 0x4e7b0002		; movec d0,cacr
 	move.w	d1,sr		; set back status register
 
 	rts	

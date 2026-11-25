@@ -1,15 +1,14 @@
 /*********************************************************************
 *
-* Dieses Modul enth꼕t die Routinen f걊 den Dialog
+* Dieses Modul enth채lt die Routinen f체r den Dialog
 * "Datei/Ordner-Info anzeigen"
 *
 *********************************************************************/
 
-#include <mgx_dos.h>
-#include "k.h"
+#include "K.H"
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-#include "ll.h"
 
 #define INFO_FILE_NOBJS (FI_SIZER + 1)
 #define ALIAS_MAXLEN 255
@@ -21,13 +20,13 @@ typedef struct _ifd
 	WORD whdl;			/* Handle des Fensters oder -1 */
 	OBJECT *tree;		/* Objektbaum */
 
-	int isfolder;		/* Diese Instanz wird f걊 "Folder Info" verwendet. */
-	int isdrive;		/* Diese Instanz wird f걊 einen "Drive Info" verwendet. */
+	int isfolder;		/* Diese Instanz wird f체r "Folder Info" verwendet. */
+	int isdrive;		/* Diese Instanz wird f체r einen "Drive Info" verwendet. */
 	int isdeskalias;	/* Desktop-Icon (Datei oder Ordner) */
-	MYDTA f;			/* alle Infos 갶er die Datei */
+	MYDTA f;			/* alle Infos 체ber die Datei */
 	char old_name[65];	/* alter Dateiname */
 	char new_name[65];	/* neuer Dateiname */
-	XTED fname_xted;	/* F걊 den Dateinamen */
+	XTED fname_xted;	/* F체r den Dateinamen */
 	TEDINFO fname_ted;
 
 	char old_alias[ALIAS_MAXLEN + 1];
@@ -35,12 +34,12 @@ typedef struct _ifd
 	XTED alias_xted;
 	TEDINFO alias_ted;
 
-	WORD drv;			/* tats꼊hliches Laufwerk */
+	WORD drv;			/* tats채chliches Laufwerk */
 	char path[258];		/* logischer Pfad */
 	int is_8_3;
 	char extended_view;
 
-	CICONBLK cic;		/* F걊 das Icon rechts oben */
+	CICONBLK cic;		/* F체r das Icon rechts oben */
 	OBJECT _tree[INFO_FILE_NOBJS];
 
 	char _varstrings[0];	/* Alle nicht editierbaren Zeichenketten */
@@ -51,14 +50,11 @@ static INFO_FILE_DATA *info_file_dialogs;
 static int n_info_file_dialogs;
 
 static int _info_file(INFO_FILE_DATA *ifd, int further);
-static WORD cdecl hdl_info_file(
-				DIALOG *d, EVNT *events,
-				WORD exitbutton, WORD clicks,
-				void *data);
+static WORD cdecl hdl_info_file(struct HNDL_OBJ_args args);
 
 /*
  IDs der festen Zeichenketten im Info-Dialog, die je nach Instanz
- ge꼗dert werden, z.B. "Anzahl Bytes" oder Dateiname.
+ ge채ndert werden, z.B. "Anzahl Bytes" oder Dateiname.
 */
 static const int variable_strings[] =
 {
@@ -98,7 +94,7 @@ void do_info_file_dialogs(EVNT *w_ev)
 			wdlg_delete(ifd->dialog);
 			*prev = ifd->next;	/* ausklinken */
 			n_info_file_dialogs--;
-			Mfree(ifd);
+			free(ifd);
 		}
 	} 
 }
@@ -110,7 +106,7 @@ void do_info_file_dialogs(EVNT *w_ev)
 * <further> zeigt, ob danach noch weitere Dateien angezeigt
 * werden. Genau: Die Anzahl der Dateien, die noch folgt.
 * <number> ist die Nummer (0, 1, ...).
-* <drv> ist das tats꼊hliche Laufwerk.
+* <drv> ist das tats채chliche Laufwerk.
 * <path> ist der logische Pfad (kann Aliase enthalten)
 *
 ****************************************************************/
@@ -119,19 +115,19 @@ int info_file(char *path, int drv, MYDTA *f,
 			int isfolder, int isdrive, int isdeskalias,
 			int further, int number)
 {
-	INFO_FILE_DATA *ifd;	/* das Objekt, das die gesamte Dialog-Instanz enth꼕t */
+	INFO_FILE_DATA *ifd;	/* das Objekt, das die gesamte Dialog-Instanz enth채lt */
 	int ret;
 	int x,y;
 	int title_rsc_id;
 	char *wintitle;
 	static long len_of_varstrings = 0;
-	int *obx;
+	const int *obx;
 	register char *_varstrings;
 	register long l;
 
 
 
-	/* Beim ersten Aufruf die L꼗ge aller */
+	/* Beim ersten Aufruf die L채nge aller */
 	/* variablen G_STRINGs addieren       */
 	/* ---------------------------------- */
 
@@ -144,7 +140,7 @@ int info_file(char *path, int drv, MYDTA *f,
 	/* Dialog-Info-Struktur erstellen */
 	/* ------------------------------ */
 
-	ifd = Malloc(sizeof(INFO_FILE_DATA) + len_of_varstrings);
+	ifd = malloc(sizeof(INFO_FILE_DATA) + len_of_varstrings);
 	if (!ifd)			/* zuwenig Speicher */
 	{
 		err_alert(ENSMEM);
@@ -166,18 +162,18 @@ int info_file(char *path, int drv, MYDTA *f,
 	memcpy(&ifd->alias_ted, tree_datinf[FI_ALIAS].ob_spec.tedinfo, sizeof(TEDINFO));
 	ifd->tree[FI_ALIAS].ob_spec.tedinfo = &ifd->alias_ted;
 
-	/* Zu ver꼗dernde "free_string"s (feste Zeichenketten, nicht editierbar) erstellen */
+	/* Zu ver채ndernde "free_string"s (feste Zeichenketten, nicht editierbar) erstellen */
 	/* ------------------------------------------------------------------------------- */
 
 	for	(obx = variable_strings, _varstrings = ifd->_varstrings;
 		 *obx;
 		 obx++)
 	{
-		/* Die L꼗ge entspricht der im urspr걆glichen Baum, festgelegt in der .RSC-Datei. */
+		/* Die L채nge entspricht der im urspr체nglichen Baum, festgelegt in der .RSC-Datei. */
 		l = strlen(ifd->tree[*obx].ob_spec.free_string) + 1;	/* +1 wegen end-of-string */
 		/* Wir biegen den Zeiger in unserer Kopie des Objektbaums um. */
 		ifd->tree[*obx].ob_spec.free_string = _varstrings;
-		/* Zur Sicherheit, falls etwas schiefl꼞ft, initialisieren wir den Text mit einem Marker. */
+		/* Zur Sicherheit, falls etwas schiefl채uft, initialisieren wir den Text mit einem Marker. */
 		_varstrings[0] = '-';
 		_varstrings[1] = '\0';
 		_varstrings += l;
@@ -220,7 +216,7 @@ if (n_info_file_dialogs > 4)
 	{
 		fixed_dialog:
 		ret = _info_file(ifd, further);
-		Mfree(ifd);
+		free(ifd);
 		return ret;
 	}
 
@@ -266,7 +262,7 @@ if (n_info_file_dialogs > 4)
 
 /****************************************************************
 *
-* Gr뵞enanpassung f걊 den Dialog f걊 "Datei anzeigen"
+* Gr철횩enanpassung f체r den Dialog f체r "Datei anzeigen"
 *
 ****************************************************************/
 
@@ -278,7 +274,8 @@ static void resize_info_file_tree(INFO_FILE_DATA *ifd)
 	int vislen;
 	XTED *xted;
 	TEDINFO *t;
-	int editob, cursorpos;
+	int editob;
+	short cursorpos;
 
 
 	d = ifd->dialog;
@@ -354,14 +351,14 @@ static void resize_info_file_tree(INFO_FILE_DATA *ifd)
 
 /****************************************************************
 *
-* Initialisiert den Dialog f걊 "Datei anzeigen"
+* Initialisiert den Dialog f체r "Datei anzeigen"
 *
 ****************************************************************/
 
 static void cati(char *s, int i)
 {
 	s += strlen(s);
-	ultoa(i, s, 10);
+	sprintf(s, "%lu", (unsigned long)(unsigned int)i);
 }
 
 static int init_info_file_tree(INFO_FILE_DATA *ifd, int further)
@@ -413,11 +410,11 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int further)
 			goto fehler;
 	
 		/* Anzahl von Clustern auf dem Laufwerk: */
-		ultoa(diskinfo.b_total, tree[DI_CLUST].ob_spec.free_string, 10);
+		sprintf(tree[DI_CLUST].ob_spec.free_string, "%lu", (unsigned long)diskinfo.b_total);
 		/* Sektoren pro Cluster: */
-		ultoa(diskinfo.b_clsiz, tree[DI_SECCL].ob_spec.free_string, 10);
+		sprintf(tree[DI_SECCL].ob_spec.free_string, "%lu", (unsigned long)diskinfo.b_clsiz);
 		/* Bytes pro Sektor: */
-		ultoa(diskinfo.b_secsiz, tree[DI_BYSEC].ob_spec.free_string, 10);
+		sprintf(tree[DI_BYSEC].ob_spec.free_string, "%lu", (unsigned long)diskinfo.b_secsiz);
 		/* Bytes pro Cluster: */
 		diskinfo.b_secsiz *= diskinfo.b_clsiz;
 	
@@ -438,7 +435,7 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int further)
 		if (lw < 2)		/* A: oder B: */
 		{
 			long ser;
-			int bps,spc,res,nfats,ndirs,nsects,media,spf,spt,nsides,nhid,exec;
+			short bps, spc, res, nfats, ndirs, nsects, media, spf, spt, nsides, nhid, exec;
 			char *flp_info;
 
 
@@ -605,10 +602,10 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int further)
 		}
 		else
 		{
-			ultoa(n_ord, tree[OI_N_ORD].ob_spec.free_string, 10);
-			ultoa(n_dat, tree[OI_N_DAT].ob_spec.free_string, 10);
-			ultoa(n_vda, tree[OI_N_VDA].ob_spec.free_string, 10);
-			ultoa(b_vda, tree[OI_B_VDA].ob_spec.free_string, 10);
+			sprintf(tree[OI_N_ORD].ob_spec.free_string, "%u", (unsigned int)n_ord);
+			sprintf(tree[OI_N_DAT].ob_spec.free_string, "%u", (unsigned int)n_dat);
+			sprintf(tree[OI_N_VDA].ob_spec.free_string, "%u", (unsigned int)n_vda);
+			sprintf(tree[OI_B_VDA].ob_spec.free_string, "%lu", (unsigned long)b_vda);
 	
 			bytes[1] = b_dat + b_vda;
 		}
@@ -635,7 +632,7 @@ static int init_info_file_tree(INFO_FILE_DATA *ifd, int further)
 /****************************************************************
 *
 * Wird beim Beenden des Dialogs aufgerufen, wenn OK
-* angew꼑lt wurde.
+* angew채hlt wurde.
 *
 ****************************************************************/
 
@@ -683,7 +680,7 @@ static long exit_info_file_tree(INFO_FILE_DATA *ifd)
 		}
 	}
 
-	/* Attribute 꼗dern */
+	/* Attribute 채ndern */
 	/* ---------------- */
 
 	if ((!ifd->isfolder) && err >= E_OK && new_attr != ifd->f.attrib)
@@ -692,7 +689,7 @@ static long exit_info_file_tree(INFO_FILE_DATA *ifd)
 		set_dirty(err, ifd->path, ifd->drv, 2);
 	}
 
-	/* Alias 꼗dern */
+	/* Alias 채ndern */
 	/* ------------ */
 
 	if (err >= E_OK && (ifd->f.is_alias) && !(ifd->isdeskalias) &&
@@ -704,7 +701,7 @@ static long exit_info_file_tree(INFO_FILE_DATA *ifd)
 		set_dirty(err, ifd->path, ifd->drv, 2);
 	}
 
-	/* Laufwerknamen 꼗dern */
+	/* Laufwerknamen 채ndern */
 	/* -------------------- */
 
 	if ((err >= E_OK) && (ifd->isdrive) &&
@@ -721,7 +718,7 @@ static long exit_info_file_tree(INFO_FILE_DATA *ifd)
 		}
 	}
 
-	/* Dateinamen 꼗dern */
+	/* Dateinamen 채ndern */
 	/* ----------------- */
 
 	if ((err >= E_OK) && !(ifd->isdrive) &&
@@ -757,7 +754,7 @@ static long exit_info_file_tree(INFO_FILE_DATA *ifd)
 		err_alert(err);
 	}
 
-	/* Status f걊 erweiterte Informationen merken */
+	/* Status f체r erweiterte Informationen merken */
 	/* ------------------------------------------ */
 
 	settings.disk_extinfo = ifd->extended_view;
@@ -801,12 +798,14 @@ static int _info_file(INFO_FILE_DATA *ifd, int further)
 *********************************************************************/
 
 #pragma warn -par
-static WORD cdecl hdl_info_file(DIALOG *d, EVNT *events,
-				WORD obj, WORD clicks, void *data)
+static WORD cdecl hdl_info_file(struct HNDL_OBJ_args args)
 {
+	DIALOG *d = args.dialog;
+	WORD obj = args.obj;
+	void *data = args.data;
 	INFO_FILE_DATA *ifd;
 	OBJECT *tree;
-	int dummy;
+	WORD dummy;
 
 
 	if (obj < 0)					/* Nachricht? */
@@ -830,7 +829,7 @@ static WORD cdecl hdl_info_file(DIALOG *d, EVNT *events,
 		ifd = (INFO_FILE_DATA *) data;
 		tree = ifd->tree;
 
-		if (obj == FI_SIZER)		/* Gr뵞e 꼗dern */
+		if (obj == FI_SIZER)		/* Gr철횩e 채ndern */
 		{
 			graf_rubbox(
 						tree->ob_x, tree->ob_y,

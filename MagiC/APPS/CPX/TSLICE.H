@@ -108,10 +108,10 @@
 /* Zeitscheibendauer [ms]: */
 
 #define FS_PRIO_DE                        13 /* Free string */
-/* Hintergrundpriorit„t: */
+/* HintergrundprioritÃ¤t: */
 
 #define FS_PREEMPTIVE_DE                  14 /* Free string */
-/* Pr„emptives Multitasking */
+/* PrÃ¤emptives Multitasking */
 
 #define SAVE_DE                           15 /* Free string */
 /* Sichern */

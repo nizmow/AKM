@@ -27,7 +27,7 @@
 /*
 #include <sys/types.h>
 */
-#include "global.h"
+#include "GLOBAL.H"
 
 int16_t list_remove(void **root, void *entry, int32_t offset);
 void    list_insert(void **root, void *entry, int32_t offset);

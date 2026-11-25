@@ -2,8 +2,7 @@
 #define	min(x,y)   	(((x)<(y))?(x):(y))
 
 
-#include <mt_aes.h>
-#include "rc_inter.h"
+#include "RC_INTER.H"
 
 /** Compute the interesection of two rectangles
  *

@@ -1,17 +1,17 @@
 /*********************************************************************
 *
-* Dieses Modul enthÑlt die MenÅbearbeitung
+* Dieses Modul enth√§lt die Men√ºbearbeitung
 *
 *********************************************************************/
 
-#include <mgx_dos.h>
-#include "k.h"
+#include "MAGXDESK_GEM.H"
+#include "K.H"
 #include <stdlib.h>
 #include <string.h>
 
 int dirty_win = TRUE;
 int dirty_pgm = TRUE;
-int wndobj_len;	/* LÑnge fÅr MenÅeintrag */
+int wndobj_len;	/* L√§nge f√ºr Men√ºeintrag */
 
 
 /****************************************************************
@@ -29,9 +29,9 @@ void menu_init(void)
 
 /****************************************************************
 *
-* Rechnet Tastencodes in MenÅeintrÑge um.
+* Rechnet Tastencodes in Men√ºeintr√§ge um.
 *
-* RÅckgabe 1, falls Code verarbeitet.
+* R√ºckgabe 1, falls Code verarbeitet.
 *
 ****************************************************************/
 
@@ -129,12 +129,10 @@ int key_2_menu(int key, int kstate, int *t, int *e)
 			/* Alt-B */		case 0x3000:	title = MM_ANZEI; entry = M_ABILDR;break;
 			/* Alt-T */		case 0x1400:	title = MM_ANZEI; entry = M_ATEXT;	break;
 			
-			/*
-			/* Alt-H */		case 0x2300:	title = MM_ANZEI; entry = M_SPALTN;break;
-			/* Alt-G */		case 0x2200:	title = MM_ANZEI; entry = M_ZGROES;break;
-			/* Alt-D */		case 0x2000:	title = MM_ANZEI; entry = M_ZDATUM;break;
-			/* Alt-Z */		case 0x1500:	title = MM_ANZEI; entry = M_ZZEIT;	break;
-			*/
+			// Alt-H: case 0x2300: title = MM_ANZEI; entry = M_SPALTN; break;
+			// Alt-G: case 0x2200: title = MM_ANZEI; entry = M_ZGROES; break;
+			// Alt-D: case 0x2000: title = MM_ANZEI; entry = M_ZDATUM; break;
+			// Alt-Z: case 0x1500: title = MM_ANZEI; entry = M_ZZEIT; break;
 			
 			/* F1 */		case 0x3B00:	title = MM_ANZEI; entry = M_SNAME;	break;
 			/* F2 */		case 0x3C00:	title = MM_ANZEI; entry = M_SDATUM;break;
@@ -161,7 +159,7 @@ int key_2_menu(int key, int kstate, int *t, int *e)
 
 /****************************************************************
 *
-* FÅhrt Reaktionen auf AnwÑhlen von MenÅeintrÑgen aus.
+* F√ºhrt Reaktionen auf Anw√§hlen von Men√ºeintr√§gen aus.
 *
 ****************************************************************/
 
@@ -194,7 +192,7 @@ void do_menu(int title, int entry, int kbsh)
 			new_program(mp, NULL, TRUE);
 		else
 		{
-			/* damit bei "single mode" Titel weiû wird: */
+			/* damit bei "single mode" Titel wei√ü wird: */
 		     menu_tnormal(tree_menu, title, 1);
 			start_path(mp->path, NULL, 0);
 			return;
@@ -221,7 +219,7 @@ void do_menu(int title, int entry, int kbsh)
 			{
 				w = *pw;
 				if (w)
-					obj += walk_sel(w, 0L, NULL);	/* zÑhlen! */
+					obj += walk_sel(w, 0L, NULL);	/* z√§hlen! */
 			}
 			for	(wnr = 0,pw = windows; wnr <= NUM_WINDOWS; wnr++,pw++)
 			{
@@ -369,7 +367,7 @@ void do_menu(int title, int entry, int kbsh)
 
 /****************************************************************
 *
-* Aktiviert/Desaktiviert MenÅeintrÑge je nach Kontext.
+* Aktiviert/Desaktiviert Men√ºeintr√§ge je nach Kontext.
 * Und zwar "zeige Info" und "formatiere"
 *
 ****************************************************************/
@@ -379,8 +377,8 @@ void modify_menu(void)
 	static int last_top = -1;
 	static int last_sort_mode = -1;
 	static int last_show_mode = -1;
-	static int last_info = -1;		/* Informationen/ôffnen */
-	static int last_del = -1;		/* lîschen */
+	static int last_info = -1;		/* Informationen/√ñffnen */
+	static int last_del = -1;		/* l√∂schen */
 	static int last_search = -1;		/* suchen */
 	static int last_format = -1;
 	static int last_eject = -1;		/* Medium auswerfen */
@@ -418,7 +416,7 @@ void modify_menu(void)
 
 	icn = icsel(&w,&sicn);
 	info = (icn != 0);		/* wenn irgendwas selektiert ist */
-	eject = (top > 0);		/* wenn oberstes Fenster gÅltig */
+	eject = (top > 0);		/* wenn oberstes Fenster g√ºltig */
 
 	/* 1. Fall: kein oder mehrere Objekte selektiert */
 	/* --------------------------------------------- */
@@ -580,10 +578,10 @@ void modify_menu(void)
 
 /****************************************************************
 *
-* Baut das MenÅ "Objekte" zusammen.
+* Baut das Men√º "Objekte" zusammen.
 *
-* updwin:		Fenster haben sich geÑndert.
-* updpgm:		Programme haben sich geÑndert.
+* updwin:		Fenster haben sich ge√§ndert.
+* updpgm:		Programme haben sich ge√§ndert.
 *
 ****************************************************************/
 
@@ -595,7 +593,7 @@ void change_objs_menu(int updwin, int updpgm)
 	register WINDOW *w;
 	register MENUPROGRAM *mp;
 	register char *s;
-	int *prev;
+	short *prev;
 	int last;
 	int ftaste;
 	int newpgm = FALSE;
@@ -629,7 +627,7 @@ void change_objs_menu(int updwin, int updpgm)
 			if ((!mp) || (!mp->path[0]))
 			{
 				if (!newpgm)
-					newpgm = i;	/* merken, daû nicht alle */
+					newpgm = i;	/* merken, da√ü nicht alle */
 				continue;
 			}
 

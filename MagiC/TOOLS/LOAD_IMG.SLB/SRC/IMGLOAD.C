@@ -3,11 +3,8 @@
 	Kommentare ab: Spalte 60											*Spalte 60*
 */
 
-#include	<MGX_DOS.H>
-#include	<STDDEF.H>
-#include	<STRING.H>
-
-#include "imgload.h"
+#include "LOADIMG_SDK.H"
+#include "IMGLOAD.H"
 
 typedef struct
 {
@@ -30,15 +27,15 @@ static UBYTE *unpack_line2( UBYTE *img, UBYTE *des, WORD pat_len, WORD len );
 
 static UBYTE *img_buf;			/* Zeiger auf IMG-Buffer */
 static WORD unpacked_lines;		/* Anzahl der entpackten Zeilen */
-static LONG buf_len;			/* BufferlÑnge */
+static LONG buf_len;			/* Bufferl√§nge */
 static LONG buf_used;			/* Anzahl der benutzten Bytes */
 static LONG buf_offset;			/* Abstand zum Bufferanfang */
 static WORD fd;				/* GEMDOS-Handle des IMGs */
 static void *external_buf;
-static WORD pat_len;			/* LÑnge eines Musters in Bytes */
-static WORD line_len;			/* LÑnge einer Zeile in Bytes */
+static WORD pat_len;			/* L√§nge eines Musters in Bytes */
+static WORD line_len;			/* L√§nge einer Zeile in Bytes */
 static WORD img_pl;
-static LONG d_len;				/* verbleibende DateilÑnge */
+static LONG d_len;				/* verbleibende Dateil√§nge */
 
 static IMGHDR	head;
 
@@ -46,12 +43,12 @@ static IMGHDR	head;
 /* IMG laden und entpacken																						*/
 /* Funktionsresultat:	Zeiger auf das entpackte IMG (liegt im Standardformat vor!)			*/
 /*	name:						Dateiname																			*/
-/*	w:							hier wird die Breite in Pixeln zurÅckgeliefert							*/
-/*	h:							hier wird die Hîhe in Zeilen zurÅckgeliefert								*/
-/*	line_width:				hier wird die Zeilenbreite in Bytes zurÅckgeliefert					*/
-/*	planes:					hier wird die Anzahl der Ebenen zurÅckgeliefert							*/
+/*	w:							hier wird die Breite in Pixeln zur√ºckgeliefert							*/
+/*	h:							hier wird die H√∂he in Zeilen zur√ºckgeliefert								*/
+/*	line_width:				hier wird die Zeilenbreite in Bytes zur√ºckgeliefert					*/
+/*	planes:					hier wird die Anzahl der Ebenen zur√ºckgeliefert							*/
 /* palette:					Zeiger auf Zeiger auf Palettendaten (0: keine Palette vorhanden)	*/
-/*	pal_entries:			Anzahl der EintrÑge in der Palette 											*/
+/*	pal_entries:			Anzahl der Eintr√§ge in der Palette 											*/
 /*----------------------------------------------------------------------------------------*/ 
 LONG load_IMG( BYTE *name, WORD *w, WORD *h,
 			WORD *line_width, WORD *planes,
@@ -70,41 +67,41 @@ LONG load_IMG( BYTE *name, WORD *w, WORD *h,
 		return(retcode);
 
 	*w = head.w;														/* Breite in Pixeln */
-	*h = head.h;														/* Hîhe in Zeilen */
+	*h = head.h;														/* H√∂he in Zeilen */
 	*line_width = (( head.w + 15 ) & 0xfff0) / 8;	/* Breite in Bytes (Vielfaches von 2) */
 	*planes = head.planes;											/* Anzahl der Ebenen */
 	*palette = 0L;														/* keine Palettendaten */
-	*pal_entries = 0;													/* keine EintrÑge */
+	*pal_entries = 0;													/* keine Eintr√§ge */
 
-	plane_len = (LONG) ( *line_width ) * head.h;		/* LÑnge einer Ebene */
+	plane_len = (LONG) ( *line_width ) * head.h;		/* L√§nge einer Ebene */
 
-	if	( head.length > ( sizeof(IMGHDR) / 2 ))		/* mîglicherweise XIMG? */
+	if	( head.length > ( sizeof(IMGHDR) / 2 ))		/* m√∂glicherweise XIMG? */
 		{
 		BYTE	identify[6];
 
-		Fseek( sizeof( IMGHDR ), fd, 0 );					/* Dateiheader Åberspringen */
+		Fseek( sizeof( IMGHDR ), fd, 0 );					/* Dateiheader √ºberspringen */
 		Fread( fd, 6, identify );
 		if	( *(LONG *) identify == 'XIMG' )						/* XIMG-Kennung vorhanden? */
 			{
 			LONG	pal_len;
 			
-			pal_len = (head.length * 2 ) - 6 - sizeof( IMGHDR );	/* LÑnge der Palette in Bytes */
+			pal_len = (head.length * 2 ) - 6 - sizeof( IMGHDR );	/* L√§nge der Palette in Bytes */
 			
 			if ( pal_len > ( 256 * 6 ))
 				pal_len = 256 * 6;
 			
-			*palette = Malloc( pal_len );							/* Speicher fÅr Palette anfordern */
+			*palette = (WORD *)Malloc( pal_len );							/* Speicher fÔøΩr Palette anfordern */
 			if ( *palette )
 			{
-				*pal_entries = (WORD) pal_len / 6;				/* Anzahl der PaletteneintrÑge */
+				*pal_entries = (WORD) pal_len / 6;				/* Anzahl der Paletteneintr√§ge */
 				Fread( fd, pal_len, *palette );				/* Palettendaten einlesen */
 			}
 			}
-		Fseek( head.length * 2, fd, 0 );					/* Dateiheader Åberspringen */
+		Fseek( head.length * 2, fd, 0 );					/* Dateiheader √ºberspringen */
 		}
 
-	des = Malloc( plane_len * head.planes );					/* Buffer fÅr entpacktes Bild anfordern */
-	buf = Malloc((LONG) (*line_width) * head.planes );		/* Buffer fÅrs Entpacken einer Zeile */
+	des = (UBYTE *)Malloc( plane_len * head.planes );					/* Buffer fÔøΩr entpacktes Bild anfordern */
+	buf = (UBYTE *)Malloc((LONG) (*line_width) * head.planes );		/* Buffer fÔøΩrs Entpacken einer Zeile */
 
 	if	(( buf == 0L ) && ( des ))									/* konnte der Zeilenbuffer nicht angefordert werden? */
 		{
@@ -137,7 +134,7 @@ LONG load_IMG( BYTE *name, WORD *w, WORD *h,
 				dst += plane_len;
 			}
 			
-			tmp += *line_width;										/* nÑchste Zeile */
+			tmp += *line_width;										/* n√§chste Zeile */
 			}
 		}
 
@@ -151,7 +148,7 @@ LONG load_IMG( BYTE *name, WORD *w, WORD *h,
 }
 
 /*----------------------------------------------------------------------------------------*/ 
-/* IMG-Datei îffnen																								*/
+/* IMG-Datei √∂ffnen																								*/
 /* Funktionsresultat:	1: alles in Ordung 0: Fehler													*/
 /* name:						Dateiname																			*/
 /*----------------------------------------------------------------------------------------*/ 
@@ -170,7 +167,7 @@ static LONG open_img( BYTE *path )
 		d_len = xa.size;
 	else	goto err;
 
-	external_buf = Malloc( d_len );	/* Puffer anfordern */
+	external_buf = (void *)Malloc( d_len );	/* Puffer anfordern */
 
 	if	( !external_buf )
 		{
@@ -184,11 +181,11 @@ static LONG open_img( BYTE *path )
 	buf_len = d_len;
 			
 	Fread( fd, sizeof( IMGHDR ), &head );
-	Fseek( head.length * 2, fd, 0 );		/* Dateiheader Åberspringen */
-	d_len -= head.length * 2;		/* verbleibende DateilÑnge korrigieren */
-	fill_img_buf();				/* Buffer auffÅllen */
+	Fseek( head.length * 2, fd, 0 );		/* Dateiheader √ºberspringen */
+	d_len -= head.length * 2;		/* verbleibende Dateil√§nge korrigieren */
+	fill_img_buf();				/* Buffer auff√ºllen */
 	pat_len = head.pattern_length;	/* Bytes pro Muster */
-	line_len = ( head.w + 7 ) / 8;	/* LÑnge einer IMG-Zeile in Bytes */
+	line_len = ( head.w + 7 ) / 8;	/* L√§nge einer IMG-Zeile in Bytes */
 	img_pl = head.planes;
 	unpacked_lines = 0;				/* noch keine Zeile entpackt */
 
@@ -196,12 +193,12 @@ static LONG open_img( BYTE *path )
 }
 
 /*----------------------------------------------------------------------------------------*/ 
-/* IMG-Datei schlieûen																							*/
+/* IMG-Datei schlie√üen																							*/
 /* Funktionsresultat:	1																						*/
 /*----------------------------------------------------------------------------------------*/ 
 static WORD close_img( void )
 {
-	if ( external_buf )													/* Buffer Åber Malloc alloziert? */
+	if ( external_buf )													/* Buffer √ºber Malloc alloziert? */
 		Mfree( external_buf );
 
 	Fclose( fd );
@@ -221,36 +218,36 @@ static void unpack_line( UBYTE *des )
 	{
 		img_line = img_buf + buf_offset;
 		read = (LONG) ( unpack_line1( img_line, des, pat_len, line_len * head.planes ) - img_line );
-		buf_used -= read;													/* Anzahl der gÅltigen Bytes im Buffer */
+		buf_used -= read;													/* Anzahl der g√ºltigen Bytes im Buffer */
 		buf_offset += read;												/* Abstand zum Bufferstart */
 		unpacked_lines++;													/* eine weitere Zeile ist entpackt worden */
 	}
 }
 
 /*----------------------------------------------------------------------------------------*/ 
-/* Buffer zum ersten Mal fÅllen																				*/
+/* Buffer zum ersten Mal f√ºllen																				*/
 /* Funktionsresultat:	-																						*/
 /*----------------------------------------------------------------------------------------*/ 
 static void fill_img_buf( void )
 {
 	LONG	read;
 
-	read = buf_len;														/* Buffer komplett fÅllen */
+	read = buf_len;														/* Buffer komplett f√ºllen */
 	if ( read > d_len )													/* mehr Bytes als die Datei lang ist? */
 		read = d_len;	
 
 	buf_offset = 0;														/* Bufferstart */	
 	buf_used = Fread( fd, read, img_buf );	/* einlesen */
-	d_len -= buf_used;													/* noch vorhandene DateilÑnge verkleinern */
+	d_len -= buf_used;													/* noch vorhandene Dateil√§nge verkleinern */
 }
 
 /*----------------------------------------------------------------------------------------*/ 
 /* Zeile eines IMGs entpacken																					*/
-/* Funktionsresultat:	Zeiger auf die nÑchste Zeile im IMG-Format								*/
+/* Funktionsresultat:	Zeiger auf die n√§chste Zeile im IMG-Format								*/
 /*	img:						Zeiger auf die IMG-Zeile														*/
 /*	des:						Zeiger auf die Zielbitmap														*/
-/*	pat_len:					LÑnge eines IMG-Muster in Bytes												*/
-/*	len:						LÑnge einer entpackten Zeile in Bytes										*/
+/*	pat_len:					L√§nge eines IMG-Muster in Bytes												*/
+/*	len:						L√§nge einer entpackten Zeile in Bytes										*/
 /*----------------------------------------------------------------------------------------*/ 
 static UBYTE *unpack_line1( UBYTE *img, UBYTE *des, WORD pat_len, WORD len )
 {
@@ -270,12 +267,12 @@ static UBYTE *unpack_line1( UBYTE *img, UBYTE *des, WORD pat_len, WORD len )
 }
 
 /*----------------------------------------------------------------------------------------*/ 
-/* Zeile eines IMGs entpacken, vertikale Wiederholfaktoren dÅrfen nicht vorkommen			*/
-/* Funktionsresultat:	Zeiger auf die nÑchste Zeile im IMG-Format								*/
+/* Zeile eines IMGs entpacken, vertikale Wiederholfaktoren d√ºrfen nicht vorkommen			*/
+/* Funktionsresultat:	Zeiger auf die n√§chste Zeile im IMG-Format								*/
 /*	img:						Zeiger auf die IMG-Zeile														*/
 /*	des:						Zeiger auf die Zielbitmap														*/
-/*	pat_len:					LÑnge eines IMG-Muster in Bytes												*/
-/*	len:						LÑnge einer entpackten Zeile in Bytes										*/
+/*	pat_len:					L√§nge eines IMG-Muster in Bytes												*/
+/*	len:						L√§nge einer entpackten Zeile in Bytes										*/
 /*----------------------------------------------------------------------------------------*/ 
 static UBYTE *unpack_line2( UBYTE *img, UBYTE *des, WORD pat_len, WORD len )
 {
@@ -299,8 +296,8 @@ static UBYTE *unpack_line2( UBYTE *img, UBYTE *des, WORD pat_len, WORD len )
 					*des++ = img[j];
 			}
 																							
-			img += pat_len;												/* Musterdaten Åberspringen */
-			cnt *= pat_len;												/* LÑnge des Musters */
+			img += pat_len;												/* Musterdaten √ºberspringen */
+			cnt *= pat_len;												/* L√§nge des Musters */
 		}
 		else if ( tag == 0x80 )											/* Bit String? */
 		{
@@ -309,7 +306,7 @@ static UBYTE *unpack_line2( UBYTE *img, UBYTE *des, WORD pat_len, WORD len )
 			for ( i = 0; i < cnt; i++ )
 				*des++ = *img++;
 		}
-		else if (( tag & 0x80 ) == 0 )								/* weiûer Solid Run? */
+		else if (( tag & 0x80 ) == 0 )								/* wei√üer Solid Run? */
 		{
 			cnt = tag & 0x7f;												/* Anzahl der Wiederholungen */
 			

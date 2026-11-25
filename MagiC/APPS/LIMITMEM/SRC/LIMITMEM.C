@@ -3,20 +3,32 @@
 *  LIMITMEM			14.01.91
 *  ========
 *
-*  letzte énderung		29.7.95 (franz. Texte)
+*  letzte √Ñnderung		29.7.95 (franz. Texte)
 *
-*  Legt das Speicherlimit fÅr ein Programm fest.
+*  Legt das Speicherlimit f√ºr ein Programm fest.
 *
 * Projektdatei: TTP.PRJ
 *
 *********************************************************************/
 
-#include <tos.h>
-#include <magix.h>
-#include <tosdefs.h>
+#include <mint/errno.h>
+#include <mint/ostruct.h>
+#include <mint/osbind.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <country.h>
+
+typedef struct {
+	unsigned short ph_branch;
+	uint32_t ph_tlen, ph_dlen, ph_blen, ph_slen, ph_res1, ph_res2;
+	unsigned short ph_flag;
+} PH;
+
+#define RMODE_RW S_READWRITE
+#define RMODE_RD 0
+#define RMODE_WR 1
+#define Fshrink(handle) Fwrite((handle), 0L, (void *) -1L)
 
 char *nat_str(char *s);
 
@@ -36,9 +48,9 @@ int main(int argc, char *argv[])
 
 
 	Cconws(nat_str(
-		"\1\8\xff" "MagiC- Speicherfestlegung, Ω 1990-95 Andreas Kromke\r\n\n\0"
-		"\2\xff"   "MAGiC - Attribution de mÇmoire, Ω 1990-95 Andreas Kromke\r\n\n\0"
-		"\xff"     "MagiC- Memory Limitation, Ω 1990-95 Andreas Kromke\r\n\n"
+		"\1\x08\xff" "MagiC- Speicherfestlegung, (C) 1990-95 Andreas Kromke\r\n\n\0"
+		"\2\xff"   "MAGiC - Attribution de m√©moire, (C) 1990-95 Andreas Kromke\r\n\n\0"
+		"\xff"     "MagiC- Memory Limitation, \xbd 1990-95 Andreas Kromke\r\n\n"
 		));
 
 	/* Defaultkonfiguration einlesen */
@@ -62,7 +74,7 @@ int main(int argc, char *argv[])
 		{
 		err:
 		Cconws(nat_str(
-			"\2\xff"	"Syntaxe: LIMITMEM nom_de_fichier [kbytes_dÇc|-]\r\n\0"
+			"\2\xff"	"Syntaxe: LIMITMEM nom_de_fichier [kbytes_d√©c|-]\r\n\0"
 			"\xff"	"Syntax: LIMITMEM fname [kbytes_dec|-]\r\n"
 		));
 		return(1);
@@ -86,16 +98,16 @@ int main(int argc, char *argv[])
 
 void prtkb( long l )
 {
-     char	s[10];
+     char	s[16];
 
-	ltoa(l >> 10, s, 10);
+	snprintf(s, sizeof(s), "%ld", l >> 10);
 	Cconws(s);
 	Cconws(" kBytes\r\n");
 }
 
 long modify(long limit)
 {
-     DOSTIME  timedate;
+     _DOSTIME  timedate;
 	long ret;
 	long	magics[2];
 	char	c;
@@ -103,12 +115,12 @@ long modify(long limit)
      PH	header;
 
 
-     /* Dateiheader einlesen und DateilÑnge setzen */
+     /* Dateiheader einlesen und Dateil√§nge setzen */
      /* ------------------------------------------ */
 
 	read(sizeof(PH), &header);
 	if	(header.ph_branch != 0x601a || header.ph_flag)
-		return(EPLFMT);
+		return(-ENOEXEC);
 	reloc_offs = sizeof(PH)  + header.ph_tlen
 						+ header.ph_dlen
 						+ header.ph_slen;
@@ -124,14 +136,14 @@ long modify(long limit)
 
 	read(4L, &ret);
 	if	(!ret)
-		return(EPLFMT);
+		return(-ENOEXEC);
 
 	do	{
 		ret = Fread(file, 1L, &c);
 		if	(ret < 0L)
 			return(ret);
 		if	(ret == 0L)
-			return(EPLFMT);
+			return(-ENOEXEC);
 		}
 	while(c != 0);
 
@@ -144,12 +156,12 @@ long modify(long limit)
 	if	(ret < 0L)			/* Lesefehler */
 		return(ret);
 
-	if	(ret && (ret < 8L || magics[0] != 'MAGX'))
+	if	(ret && (ret < 8L || magics[0] != 0x4d414758L))
 		/* irgendwelche Daten sind da */
 		{
 		Cconws(nat_str(
-			"\1\8\xff" "UngÅltiges Programmformat, trotzdem fortfahren (J/N) ? \0"
-			"\2\xff"	 "Format de programme non valable, procÇder malgrÇ tout (O/N) ? \0"
+			"\1\x08\xff" "Ung√ºltiges Programmformat, trotzdem fortfahren (J/N) ? \0"
+			"\2\xff"	 "Format de programme non valable, proc√©der malgr√© tout (O/N) ? \0"
 			"\xff"     "Invalid program format, continue (Y/N) ? "
 			));
 		c = Cconin() & 0x5f;
@@ -159,15 +171,15 @@ long modify(long limit)
 		}
 
 	Cconws(nat_str(
-		"\1\8\xff" "\r\nAktuelle Grîûe des Heap: \0"
+		"\1\x08\xff" "\r\nAktuelle Gr√∂√üe des Heap: \0"
 		"\2\xff"   "\r\nTaille actuelle du Heap: \0"
 		"\xff"     "\r\nActual heap size: "
 		));
 	if	(magics[1] != -1L)
 		prtkb(magics[1]);
 	else Cconws(nat_str(
-			"\1\8\xff" "unbeschrÑnkt\r\n\0"
-			"\2\xff"   "illimitÇ\r\n\0"
+			"\1\x08\xff" "unbeschr√§nkt\r\n\0"
+			"\2\xff"   "illimit√©\r\n\0"
 			"\xff"     "unlimited\r\n"
 			));
 
@@ -182,8 +194,8 @@ long modify(long limit)
 	if	(limit == magics[1])
 		{
 		Cconws(nat_str(
-			"\1\8\xff" " Speicherfestlegung ist bereits wie gewÅnscht\r\n\0"
-			"\2\xff"   " Attribution de mÇmoire dÇjÖ comme demandÇe\r\n\0"
+			"\1\x08\xff" " Speicherfestlegung ist bereits wie gew√ºnscht\r\n\0"
+			"\2\xff"   " Attribution de m√©moire d√©j√† comme demand√©e\r\n\0"
 			"\xff" 	 " Memory limitation already installed\r\n"
 			));
 		return(0);
@@ -198,19 +210,19 @@ long modify(long limit)
 		{
 		shrink();
 		Cconws(nat_str(
-			"\1\8\xff" " SpeicherbeschrÑnkung aufgehoben\r\n\0"
-			"\2\xff"   " Limitation de mÇmoire ìtÇe\r\n\0"
+			"\1\x08\xff" " Speicherbeschr√§nkung aufgehoben\r\n\0"
+			"\2\xff"   " Limitation de m√©moire √¥t√©e\r\n\0"
 			"\xff" 	 " Memory limitation deinstalled\r\n"
 			));
 		}
 	else	{
-		magics[0] = 'MAGX';
+		magics[0] = 0x4d414758L;
 		magics[1] = limit;
 		write(8L, magics);
 		shrink();			/* sicherheitshalber */
 		Cconws(nat_str(
-			"\1\8\xff" " Speicher beschrÑnkt auf \0"
-			"\2\xff"   " MÇmoire limitÇe Ö \0"
+			"\1\x08\xff" " Speicher beschr√§nkt auf \0"
+			"\2\xff"   " M√©moire limit√©e √† \0"
 			"\xff" 	 " Memory limited to "
 			));
 		prtkb(magics[1]);
@@ -267,7 +279,7 @@ void shrink( void )
 
 /****************************************************************
 *
-* Ermittelt die NationalitÑt und wÑhlt Zeichenketten aus.
+* Ermittelt die Nationalit√§t und w√§hlt Zeichenketten aus.
 * Aufbau einer Zeichenkette:
 *
 * Nat1,Nat2,..,-1
@@ -280,42 +292,15 @@ void shrink( void )
 *
 ****************************************************************/
 
-#define _SYSBASE	((long *)			0x4f2)
 
 char *nat_str(char *s)
 {
-	static int nat = -1;
-	char	c;
-
-	if	(nat < 0)
-		{
-		long oldssp;
-		SYSHDR *syshdr;
-
-		/* NationalitÑt ermitteln */
-
-		oldssp    = Super(0L);
-		syshdr    = (SYSHDR *)  (* _SYSBASE);
-		syshdr	= syshdr->os_base;	/* fÅr AUTO- Ordner */
-		nat		= (syshdr->os_palmode) >> 1;
-		Super((char *) oldssp);
-		}
-
-	while(*s != -1)
-		{
-		do	{
-			c = *s++;
-			if	(c == nat)		/* NationalitÑt gefunden */
-				{
-				while(*s != -1)	/* andere NationalitÑten */
-					s++;			/*  Åberspringen */
-				return(s+1);
-				}
-			}
-		while(c != -1);
-		while(*s)
+	while (*s != -1) {
+		while (*s++ != -1)
+			;
+		while (*s)
 			s++;
 		s++;
-		}
-	return(s+1);		/* Default- String */
+	}
+	return s + 1;
 }

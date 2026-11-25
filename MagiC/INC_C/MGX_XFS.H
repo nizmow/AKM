@@ -3,12 +3,12 @@
 * MagiC 3/4/5
 * ===========
 *
-* Strukturen fÅr die Einbindung eines XFS.
-* FÅr die Implementation eines XFS in 'C' sind die korrespondierenden
-* CDECL_xxx Strukturen fÅr MX_XFS und MX_DEV definiert.
-* Dies ermîglicht die Verwendung eines beliebigen Compilers.
+* Strukturen f√ºr die Einbindung eines XFS.
+* F√ºr die Implementation eines XFS in 'C' sind die korrespondierenden
+* CDECL_xxx Strukturen f√ºr MX_XFS und MX_DEV definiert.
+* Dies erm√∂glicht die Verwendung eines beliebigen Compilers.
 *
-* Es wird <portab.h> benîtigt.
+* Es wird <portab.h> ben√∂tigt.
 *
 * Version: 10.5.97
 *
@@ -38,18 +38,18 @@ typedef struct {
      long (*evnt_sem)         ( WORD mode, void *sem, LONG timeout );
      void (*Pfree)            ( void *pd );
      WORD int_msize;
-     void *int_malloc         ( void );
-     void int_mfree           ( void *memblk );
-     void resv_intmem         ( void *mem, LONG bytes );
-     LONG diskchange          ( WORD drv );
+     void *(*int_malloc)      ( void );
+     void (*int_mfree)        ( void *memblk );
+     void (*resv_intmem)      ( void *mem, LONG bytes );
+     LONG (*diskchange)       ( WORD drv );
 /* Ab Kernelversion 1: */
-     LONG DMD_rdevinit		( struct _mx_dmd *dmd );
+     LONG (*DMD_rdevinit)     ( struct _mx_dmd *dmd );
 /* Ab Kernelversion 2: */
-     LONG proc_info			( WORD code, PD *pd );
+     LONG (*proc_info)        ( WORD code, PD *pd );
 /* Ab Kernelversion 4: */
-	LONG mxalloc			( LONG amount, WORD mode, PD *pd );
-	LONG mfree			( void *block );
-	LONG mshrink			( LONG newlen, void *block );
+     LONG (*mxalloc)          ( LONG amount, WORD mode, PD *pd );
+     LONG (*mfree)            ( void *block );
+     LONG (*mshrink)          ( LONG newlen, void *block );
 } MX_KERNEL;
 
 
@@ -275,7 +275,7 @@ typedef struct _cdecl_mx_xfs {
 typedef struct {
      UWORD     version;                 /* Versionsnummer */
      UWORD     num_drives;              /* max. Anzahl Laufwerke */
-     ULONG     max_secsizb;             /* max. Sektorgrîûe in Bytes */
+     ULONG     max_secsizb;             /* max. Sektorgr√∂‚Çße in Bytes */
      UWORD     min_nfats;               /* min. Anzahl FATs */
      UWORD     max_nfats;               /* max. Anzahl FATs */
      ULONG     min_nclsiz;              /* min. Anzahl Sektoren/Cluster */
@@ -293,14 +293,14 @@ typedef struct {
 #define   STDHDL4   4
 #define   STDHDL5   5
 
-/* Schreib-/Lesemodi fÅr Fgetchar und Fputchar */
+/* Schreib-/Lesemodi f√ºr Fgetchar und Fputchar */
 
 #define   CMODE_RAW      0
 #define   CMODE_COOKED   1
 #define   CMODE_ECHO     2
 
 /* Open- Modus von Dateien (Mag!X- intern)                                 */
-/* NOINHERIT wird nicht unterstÅtzt, weil nach TOS- Konvention nur die     */
+/* NOINHERIT wird nicht unterst√ºtzt, weil nach TOS- Konvention nur die     */
 /* Handles 0..5 vererbt werden                                             */
 /* HiByte wie unter MiNT verwendet                                         */
 
@@ -334,7 +334,7 @@ typedef struct {
 #define   O_TRUNC        0x400
 #define   O_EXCL         0x800
 
-/* unterstÅtzte Dcntl- Modi (Mag!X- spezifisch!) */
+/* unterst√ºtzte Dcntl- Modi (Mag!X- spezifisch!) */
 #define   KER_GETINFO    0x0100
 #define   KER_DOSLIMITS  0x0101
 #define   KER_INSTXFS    0x0200
@@ -345,10 +345,10 @@ typedef struct {
 #define	CDROMEJECT     0x4309	/* Kernel: Medium auswerfen */
 #endif
 
-/* unterstÅtzte Dcntl- Modi */
+/* unterst√ºtzte Dcntl- Modi */
 /* # define FUTIME       0x4603 */
 
-/* unterstÅtzte Fcntl- Modi */
+/* unterst√ºtzte Fcntl- Modi */
 #define   FSTAT          0x4600
 #define   FIONREAD       0x4601
 #define   FIONWRITE      0x4602
@@ -358,7 +358,7 @@ typedef struct {
 #define   SHMSETBLK      0x4d01
 #define   PBASEADDR      0x5002
 
-/* Modi und Codes fÅr Dpathconf() (-> MiNT) */
+/* Modi und Codes f√ºr Dpathconf() (-> MiNT) */
 
 #define   DP_MAXREQ      -1
 #define   DP_IOPEN       0
@@ -375,7 +375,7 @@ typedef struct {
 #define    DP_CASECONV   1
 #define    DP_CASEINSENS 2
 
-/* FÅr Psemaphore, die Modi 0/1 werden z.Zt. nicht unterstÅtzt */
+/* F√ºr Psemaphore, die Modi 0/1 werden z.Zt. nicht unterst√ºtzt */
 
 #define   PSEM_CRGET     0
 #define   PSEM_DESTROY   1

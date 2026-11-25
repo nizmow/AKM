@@ -28,8 +28,7 @@
 #ifndef _callback_h
 #define _callback_h
 
-#include "global.h"
-#include "cpx.h"
+#include "CPX.H"
 
 extern struct xcpb xctrl_pb;
 

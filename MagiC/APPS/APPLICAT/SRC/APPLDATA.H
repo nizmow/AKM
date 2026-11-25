@@ -1,12 +1,14 @@
 /*
 *
 * Diese Datei beschreibt den Aufbau der Datei APPLICAT.DAT
-* f걊 die Zuweisung von Icons und Eigenschaften an Programme
+* f체r die Zuweisung von Icons und Eigenschaften an Programme
 * und Dateitypen.
 *
 */
 
-/* Flags f걊 APPLICAT */
+#include <stdint.h>
+
+/* Flags f체r APPLICAT */
 #define PGMT_ISGEM		1		/* Benutzt GEM (PRG, APP) */
 #define PGMT_TP			2		/* Nimmt Parameter (GTP, TTP) */
 #define PGMT_SINGLE		4		/* single mode */
@@ -16,22 +18,22 @@
 #define PGMT_NO_PROPFNT	64		/* kein prop. AES-Zeichensatz */
 /* weitere Flags */
 #define PGMT_BATCH		256		/* BTP oder BAT */
-#define PGMT_NOEXE		-1		/* nicht ausf갿rbar */
+#define PGMT_NOEXE		-1		/* nicht ausf체hrbar */
 
 
-/* f걊 Icondatei: */
+/* f체r Icondatei: */
 
 struct ico_head
 {
 	long magic;                   /* ist 'AnKr' */
 	long version;                 /* ist z.Zt. 1L */
-	long n_ap2ic;                 /* L꼗ge der Tabelle ap2ic */
+	long n_ap2ic;                 /* L채nge der Tabelle ap2ic */
 	long p_ap2ic;                 /* Zeiger auf Tabelle ap2ic */
-	long n_da2ic;                 /* L꼗ge der Tabelle da2ic */
+	long n_da2ic;                 /* L채nge der Tabelle da2ic */
 	long p_da2ic;                 /* Zeiger auf Tabelle da2ic */
-	long n_pa2ic;				/* L꼗ge der Tabelle pa2ic */
+	long n_pa2ic;				/* L채nge der Tabelle pa2ic */
 	long p_pa2ic;				/* Zeiger Tabelle pa2ic */
-	long n_sp2ic;				/* L꼗ge der Tabelle sp2ic */
+	long n_sp2ic;				/* L채nge der Tabelle sp2ic */
 	long p_sp2ic;				/* Zeiger Tabelle sp2ic */
 	long n_icn;                   /* Anzahl CICONBLKs */
 	long p_icn;                   /* Zeiger auf Tabelle icn */
@@ -45,7 +47,7 @@ struct ico_ap
 {
 	long apname;             /* Zeiger auf Name ohne Extension */
 	long path;               /* -1L oder Zeiger auf Pfad */
-	int config;             /* -1 oder Konfigurationsbits */
+	int16_t config;             /* -1 or Konfigurationsbits */
 	long memlimit;
 	long icon_nr;            /* 0..n_icn-1 */
 };
@@ -70,6 +72,13 @@ struct ico_spec
 	long icon_nr;
 };
 
+_Static_assert(sizeof(struct ico_head) == 48, "APPLICAT.DAT header ABI");
+_Static_assert(sizeof(struct ico_ap) == 18, "APPLICAT.DAT application record ABI");
+_Static_assert(offsetof(struct ico_ap, memlimit) == 10, "APPLICAT.DAT config is 16-bit");
+_Static_assert(sizeof(struct ico_dat) == 12, "APPLICAT.DAT file-type record ABI");
+_Static_assert(sizeof(struct ico_path) == 8, "APPLICAT.DAT path record ABI");
+_Static_assert(sizeof(struct ico_spec) == 8, "APPLICAT.DAT special-object record ABI");
+
 
 /* im Speicher */
 /* ----------- */
@@ -78,7 +87,7 @@ typedef struct
 {
 	char *apname;
 	char *path;
-	int config;
+	int16_t config;
 	long memlimit;
 	CICONBLK *icon;
 } APPLICATION;

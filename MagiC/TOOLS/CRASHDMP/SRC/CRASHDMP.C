@@ -3,7 +3,7 @@
 *                          CRASHDMP		14.7.87
 *                          ========
 *
-*					  letzte énderung:	3.12.88
+*					  letzte √Ñnderung:	3.12.88
 *
 *
 * Zweck:  Die Daten der letzten Exception (Bomben) dekodieren und
@@ -14,9 +14,9 @@
 *******************************************************************/
 
 
-#include <tos.h>
+#include <mint/osbind.h>
 #include <stddef.h>
-#include <tosdefs.h>
+#include <stdint.h>
 
 
 #define P_COOKIES	((long *) 0x5a0)
@@ -25,7 +25,7 @@
 #define proc_regs	((long *) 0x384L)
 #define proc_pc	((long *) 0x3c4L)
 #define proc_usp	((long *) 0x3c8L)
-#define proc_stk	((int  *) 0x3ccL)
+#define proc_stk	((int16_t *) 0x3ccL)
 
 #define EN_BUS		2
 #define EN_ADDR	3
@@ -191,7 +191,7 @@ void main()
 /**************************************************************
 *
 * Rechnet Wort in <len> - stellige Hex- Zahl um und gibt die
-* Anfangsadresse des Strings zurÅck.
+* Anfangsadresse des Strings zur√ºck.
 *
 **************************************************************/
 
@@ -202,7 +202,7 @@ void setint(char *adresse, unsigned int wert)
 
 	for	(i = 0; i < 4; i++)
 		{
-		j      = (int) (wert & 15);     /* 4 Bit fÅr Hex- Ziffer isolieren */
+		j      = (int) (wert & 15);     /* 4 Bit f√ºr Hex- Ziffer isolieren */
 		wert >>= 4;
 		adresse[4-1-i] =  (j < 10) ? ('0'+(char) j) : ('a'+(char) (j-10));
 		}
@@ -212,7 +212,7 @@ void setint(char *adresse, unsigned int wert)
 /**************************************************************
 *
 * Rechnet Langwort in <len> - stellige Hex- Zahl um und gibt die
-* Anfangsadresse des Strings zurÅck.
+* Anfangsadresse des Strings zur√ºck.
 *
 **************************************************************/
 
@@ -223,7 +223,7 @@ void setlong(char *adresse, unsigned long wert)
 
 	for	(i = 0; i < 8; i++)
 		{
-		j      = (int) (wert & 15);     /* 4 Bit fÅr Hex- Ziffer isolieren */
+		j      = (int) (wert & 15);     /* 4 Bit f√ºr Hex- Ziffer isolieren */
 		wert >>= 4;
 		adresse[8-1-i] =  (j < 10) ? ('0'+(char) j) : ('a'+(char) (j-10));
 		}
@@ -243,7 +243,7 @@ void print_sr(int st)
 
 
 	Cconws("SR bei Auftreten des Fehlers: ");
-     if   (st < 0)
+     if   (st & 0x8000)
           Cconws(" TR");
      if   (st & (1 << 13))
           Cconws(" SUP");
@@ -286,7 +286,7 @@ void print_pc(long pc)
 
 void print_op(int op)
 {
-	Cconws("Fehlerauslîsender Opcode:      ");
+	Cconws("Fehlerausl\224sender Opcode:      ");
 	setlong(ausgabe+7, (long) op);
 	Cconws(ausgabe+7+4);
 	Cconws(CRLF);
@@ -308,7 +308,7 @@ void print_xt(int xt)
 						 "unbestimmt",
 						 "Supervisor Datenzugriff",
 						 "Supervisor Programm",
-						 "InterruptbestÑtigung" };
+						 "Interruptbest\204tigung" };
 
 
 	Cconws("Prozessorstatus:               ");

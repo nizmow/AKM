@@ -1,16 +1,15 @@
 /*
 *
-* Dieser Quelltext enthÑlt die eigentlichen Routinen fÅr
+* Dieser Quelltext enth√§lt die eigentlichen Routinen f√ºr
 * den Fensterrahmen-Manager
 *
 */
 
-#include <tos.h>
-#include <mt_aes.h>
+#include "WINFRAME_SDK.H"
 #include <string.h>
-#include "globals.h"
-#include "win_objs.h"
-#include "winframe.h"
+#include "GLOBALS.H"
+#include "WIN_OBJS.H"
+#include "WINFRAME.H"
 
 int title_h = 18;
 int winobjects_width = 18;		/* inkl. Rand */
@@ -25,7 +24,7 @@ int winobjects_height_m_1 = 17;	/* dito minus 1 */
 *
 ***************************************************************/
 
-void global_init()
+void global_init(void)
 {
 	register int *pi;
 	int fix_width_objs[] = {
@@ -46,7 +45,7 @@ void global_init()
 		adr_window[*pi].ob_height = winobjects_height;
 }
 
-void global_init2()
+void global_init2(void)
 {
 	TEDINFO *te;
 
@@ -54,13 +53,13 @@ void global_init2()
 	te = adr_window[O_INFO].ob_spec.tedinfo;
 	te->te_just  = 3;	/* TE_SPECIAL */
 	te->te_font  = 4;	/* PFINFO */
-	te->te_junk1 = (WORD) (((LONG) (settings->finfo_inw)) >> 16L);
-	te->te_junk2 = (WORD) (((LONG) (settings->finfo_inw)));
+	te->te_fontid = (WORD)((uintptr_t)settings->finfo_inw >> 16);
+	te->te_fontsize = (WORD)(uintptr_t)settings->finfo_inw;
 }
 
 /***************************************************************
 *
-* Slidergrîûe bzw. -position berechnen
+* Slidergr√∂√üe bzw. -position berechnen
 *
 * promille:		0..1000
 * maxpos:			tats. Bereich ist 0..maxpos-1
@@ -82,9 +81,9 @@ static WORD calc_slider( WORD promille, WORD maxpos )
 
 /***************************************************************
 *
-* Berechnet fÅr wind_calc() die Grîûe des Rahmens.
-* Der Rahmen kann dann entweder zur Innengrîûe addiert oder
-* von der Auûengrîûe abgezogen werden.
+* Berechnet f√ºr wind_calc() die Gr√∂√üe des Rahmens.
+* Der Rahmen kann dann entweder zur Innengr√∂√üe addiert oder
+* von der Au√üengr√∂√üe abgezogen werden.
 *
 ***************************************************************/
 
@@ -145,7 +144,7 @@ void wbm_create( WININFO *wi )
 *
 * Initialisiert ein Fenster, dessen Typ feststeht.
 * D.h. der Objektbaum wird verkettet.
-* Dabei erhalten alle unverrÅckbaren Objekte bereits ihre
+* Dabei erhalten alle unverr√ºckbaren Objekte bereits ihre
 * korrekte Position
 *
 ***************************************************************/
@@ -157,7 +156,7 @@ void wbm_skind( WININFO *wi )
 	WORD xl,yo;
 
 
-	/* Minimalgrîûe berechnen */
+	/* Minimalgr√∂√üe berechnen */
 	/* ---------------------- */
 
 	wi->min.g_w = wi->min.g_h = 2;
@@ -231,7 +230,7 @@ void wbm_skind( WININFO *wi )
 		wi->is_info = (wi->kind & INFO);
 		}
 
-	/* Rand berÅcksichtigen */
+	/* Rand ber√ºcksichtigen */
 	/* -------------------- */
 
 	xl = yo = 0;
@@ -359,7 +358,7 @@ void wbm_skind( WININFO *wi )
 *
 * MANAGER-FUNKTION
 *
-* Legt Sliderposition und -grîûe fest.
+* Legt Sliderposition und -gr√∂√üe fest.
 * Wird nur aufgerufen, wenn ein ensprechender VSLIDE/HSLIDE
 * angemeldet ist.
 *
@@ -413,7 +412,7 @@ void wbm_sslid( WININFO *wi, WORD vertical )
 *
 * MANAGER-FUNKTION
 *
-* Fensterposition und/oder -grîûe hat sich geÑndert.
+* Fensterposition und/oder -gr√∂√üe hat sich ge√§ndert.
 *
 ***************************************************************/
 
@@ -422,7 +421,6 @@ void wbm_ssize( WININFO *wi )
 	WORD frame[4];
 	register int i,xl,xr,yo,yu;
 	register OBJECT *tree = wi->tree;
-	register GRECT *og;
 	GRECT g;
 
 
@@ -446,13 +444,13 @@ void wbm_ssize( WININFO *wi )
 	if	(wi->work.g_w < 0)
 		wi->work.g_w = 0;
 	wi->work.g_h = wi->curr.g_h - frame[1];
-	og = (GRECT *) &(tree[O_FRAME].ob_x);
-	og->g_x = wi->curr.g_x;
-	og->g_y = wi->curr.g_y;
-	if	((og->g_w == wi->curr.g_w) && (og->g_h == wi->curr.g_h))
+	tree[O_FRAME].ob_x = wi->curr.g_x;
+	tree[O_FRAME].ob_y = wi->curr.g_y;
+	if ((tree[O_FRAME].ob_width == wi->curr.g_w) &&
+	    (tree[O_FRAME].ob_height == wi->curr.g_h))
 		return;
-	og->g_w = wi->curr.g_w;
-	og->g_h = wi->curr.g_h;
+	tree[O_FRAME].ob_width = wi->curr.g_w;
+	tree[O_FRAME].ob_height = wi->curr.g_h;
 
 	/* Fall: Ikonifiziertes Fenster */
 	/* ---------------------------- */
@@ -463,7 +461,7 @@ void wbm_ssize( WININFO *wi )
 		return;
 		}
 
-	/* Rand berÅcksichtigen */
+	/* Rand ber√ºcksichtigen */
 	/* -------------------- */
 
 	g = wi->curr;
@@ -645,7 +643,7 @@ void wbm_ssize( WININFO *wi )
 *
 * MANAGER-FUNKTION
 *
-* Der Text fÅr INFO oder NAME hat sich geÑndert.
+* Der Text f√ºr INFO oder NAME hat sich ge√§ndert.
 *
 ***************************************************************/
 
@@ -660,7 +658,7 @@ void wbm_sstr( WININFO *wi )
 *
 * MANAGER-FUNKTION
 *
-* Das Attribut-Bit hat sich geÑndert, d.h.
+* Das Attribut-Bit hat sich ge√§ndert, d.h.
 * SHADED, ACTIVE oder ICONIFIED
 *
 ***************************************************************/
@@ -713,7 +711,7 @@ void wbm_sattr( WININFO *wi, WORD chbits )
 *
 * MANAGER-FUNKTION
 *
-* Gibt fÅr den Fenstertyp <kind> den Rand zurÅck.
+* Gibt f√ºr den Fenstertyp <kind> den Rand zur√ºck.
 *
 ***************************************************************/
 
@@ -751,8 +749,8 @@ void wbm_calc( WORD kind, WORD *fg )
 *
 * MANAGER-FUNKTION
 *
-* Gibt fÅr die Mausposition (x,y) das zugehîrige Objekt
-* zurÅck.
+* Gibt f√ºr die Mausposition (x,y) das zugeh√∂rige Objekt
+* zur√ºck.
 *
 ***************************************************************/
 

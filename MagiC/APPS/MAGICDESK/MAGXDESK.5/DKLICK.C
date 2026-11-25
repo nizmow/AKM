@@ -1,29 +1,39 @@
 /*********************************************************************
 *
-* Dieses Modul enthÑlt die Bearbeitung aller Doppel-Mausklicks, also
+* Dieses Modul enth√§lt die Bearbeitung aller Doppel-Mausklicks, also
 *
-* 1) ôffnen   von Unterverzeichnissen
+* 1) √ñffnen   von Unterverzeichnissen
 * 2) Starten  von Programmen
 * 3) Anzeigen/Drucken von Dateien
 *
 *********************************************************************/
 
-#include <mgx_dos.h>
-#include "k.h"
+#include "MAGXDESK_GEM.H"
+#include "K.H"
 #include <string.h>
-#include <vdi.h>
+
+#define DD_TIMEOUT 4000L
+#define DD_OK 0
+#define DD_EXTSIZE 32
+
+typedef struct {
+	unsigned char length;
+	char command_tail[128];
+} DESK_COMMAND;
+
+_Static_assert(sizeof(DESK_COMMAND) == 129, "TOS command-tail record");
 
 
 
 /****************************************************************
 *
-* FÅr eine Datei wird die Standardapplikation ermittelt und ein
-* Zeiger auf APPLICATION zurÅckgeliefert, falls vorhanden.
+* F√ºr eine Datei wird die Standardapplikation ermittelt und ein
+* Zeiger auf APPLICATION zur√ºckgeliefert, falls vorhanden.
 *
 * Es gibt zwei Typen von Dateinamen:
 *
-* - "*.type" gibt eine Extension an, Groû/Kleinschrift egal
-* - "name" ist ein exakter Name, Groû/Kleinschrift wichtig.
+* - "*.type" gibt eine Extension an, Gro√ü/Kleinschrift egal
+* - "name" ist ein exakter Name, Gro√ü/Kleinschrift wichtig.
 *
 ****************************************************************/
 
@@ -40,10 +50,10 @@ APPLICATION *dfile_to_app(char *filepath)
 
 /****************************************************************
 *
-* FÅr ein Programm wird festgestellt, ob es sich um eine
+* F√ºr ein Programm wird festgestellt, ob es sich um eine
 * angemeldete Applikation handelt, und ggf. ein Zeiger auf
-* APPLICATION zurÅckgeliefert.
-* Groû-/Kleinschrift muû z.Zt. passen.
+* APPLICATION zur√ºckgeliefert.
+* Gro√ü-/Kleinschrift mu√ü z.Zt. passen.
 *
 ****************************************************************/
 
@@ -90,11 +100,11 @@ static void get_path_type(char *path, int *type, int *config,
 /*********************************************************************
 *
 * Untersuchung des Objekts <obj> in <wnr.
-* typ =   '_X'	Programm oder ACC, <config> ist gÅltig
-*		  'BX'	Batch, <config> ist gÅltig
-*		  'TX'	angemeldete Datei, <config> ist gÅltig
+* typ =   '_X'	Programm oder ACC, <config> ist g√ºltig
+*		  'BX'	Batch, <config> ist g√ºltig
+*		  'TX'	angemeldete Datei, <config> ist g√ºltig
 *		  '_T'	Text- Datei
-*		  'AT'	unaufgelîster Alias (symbolischer Link)
+*		  'AT'	unaufgel√∂ster Alias (symbolischer Link)
 *		  'DO'	Disk
 *		  '_O'	Ordner
 *		  '_F'	Fenster
@@ -104,24 +114,24 @@ static void get_path_type(char *path, int *type, int *config,
 *
 * config ist der Bitvektor, der anzeigt, ob es ein TOS- Programm,
 * oder single mode usw. ist.
-* Wenn eine APPLICATION existiert, Åberlagert (*a)->config config.
+* Wenn eine APPLICATION existiert, √ºberlagert (*a)->config config.
 *
 * Genau:
 *
 *	-	Klick auf Programmdatei, Programm ist angemeldet
-*		typ = _X, config ist Extension, (*a)->config Åberlagert
+*		typ = _X, config ist Extension, (*a)->config √ºberlagert
 *	-	Klick auf Programmdatei, nicht angemeldet oder ACC
 *		typ = _X, config ist Extension, (*a) ist NULL
 *	-	Klick auf Batchdatei
 *		typ = BX, config ist PGMT_BATCH, (*a) ist NULL
 *	-	Klick auf angemeldete Datei
-*		typ = TX, config ist -1, (*a) ist zugehîrige APP
+*		typ = TX, config ist -1, (*a) ist zugeh√∂rige APP
 *	-	Klick auf Textdatei
 *		typ = _T, config ist -1, (*a) ist NULL
-*	-	Klick auf unaufgelîsten Alias
+*	-	Klick auf unaufgel√∂sten Alias
 *		typ = AT, config ist -1, (*a) ist NULL
 *
-* RÅckgabe  0, falls Datei
+* R√ºckgabe  0, falls Datei
 *           1, falls Pfad (Disk oder Ordner oder Fenster)
 *		 -1, sonst
 *
@@ -150,7 +160,7 @@ int get_obj_type(WINDOW *w, int obj, char *path, MYDTA **f,
 	ret = obj_to_path(w, obj, path, f);
 	if (ret == 0)						/* Datei */
 	{
-		if ((*f) && ((*f)->is_alias == 2))	/* unaufgelîster Alias */
+		if ((*f) && ((*f)->is_alias == 2))	/* unaufgel√∂ster Alias */
 		{
 			*config = PGMT_NOEXE;
 			*type = 'AT';
@@ -193,14 +203,14 @@ static void init_xarg(char **nxt_xarg, long *xarg_free)
 
 	strcpy(*nxt_xarg, xa);
 	*nxt_xarg += 7;
-	*xarg_free -= 8;	/* Platz fÅr Doppel-EOS am Ende! */
+	*xarg_free -= 8;	/* Platz f√ºr Doppel-EOS am Ende! */
 }
 
 
 /****************************************************************
 *
-* FÅgt einen Parameter an eine Kommandozeile an.
-* RÅckgabe -1 bei öberlauf.
+* F√ºgt einen Parameter an eine Kommandozeile an.
+* R√ºckgabe -1 bei √úberlauf.
 * Wenn <do_spaces> gesetzt ist, werden Argumente mit Leerzeichen
 * in Hochkommata eingeschlossen und dabei Hochkommata verdoppelt.
 *
@@ -224,7 +234,7 @@ Cconws("\"\r\n");
 	{
 		extra_len = 3;		/* 2 Hochkommas + EOS */
 
-		/* Anzahl der Hochkommata zÑhlen */
+		/* Anzahl der Hochkommata z√§hlen */
 		/* ----------------------------- */
 
 		s = arg;
@@ -240,7 +250,7 @@ Cconws("\"\r\n");
 		while (s);
 	}
 	else
-		extra_len = 1;		/* fÅr EOS */
+		extra_len = 1;		/* f√ºr EOS */
 
 	if (len+extra_len > *xarg_free)
 	{
@@ -284,7 +294,7 @@ Cconws("\"\r\n");
 
 /****************************************************************
 *
-* Entfernt die ÅberflÅssigen ' aus einer ARGV-Kette.
+* Entfernt die √ºberfl√ºssigen ' aus einer ARGV-Kette.
 *
 ****************************************************************/
 
@@ -297,14 +307,14 @@ static void fix_xarg(char *xarg, char *nxt_xarg)
 
 	if (*xarg != '\xfe')		/* schon gewandelt ? */
 		return;				/* ja, alles OK */
-	s = xarg+7;				/* "\xfe" "ARGV= " Åberspr. */
+	s = xarg+7;				/* "\xfe" "ARGV= " √ºberspr. */
 
 	while (*s)
 	{
-		len = strlen(s);	/* LÑnge eines Arguments */
+		len = strlen(s);	/* L√§nge eines Arguments */
 		if ((s[0] == '\'') && (s[len-1] == '\''))
 		{
-			s[len-1] = EOS;			/* letztes ' lîschen */
+			s[len-1] = EOS;			/* letztes ' l√∂schen */
 			extra_len = 2;
 			if (strchr(s+1, '\''))
 			{
@@ -328,7 +338,7 @@ static void fix_xarg(char *xarg, char *nxt_xarg)
 			memcpy(s+len-extra_len, s+len, nxt_xarg-(s+len));
 			nxt_xarg -= extra_len;
 			*nxt_xarg = EOS;			/* neue Endkennung! */
-			len -= extra_len;			/* neue ArgumentlÑnge */
+			len -= extra_len;			/* neue Argumentl√§nge */
 		}
 		s += len + 1;
 	}
@@ -338,9 +348,9 @@ static void fix_xarg(char *xarg, char *nxt_xarg)
 /****************************************************************
 *
 * Wandelt einen ARGV-Block in eine normale Kommandozeile um.
-* Wenn <fail> == TRUE: RÅckgabe -1 bei öberlauf.
+* Wenn <fail> == TRUE: R√ºckgabe -1 bei √úberlauf.
 *
-* Dabei muû arg0 entfernt werden.
+* Dabei mu√ü arg0 entfernt werden.
 *
 ****************************************************************/
 
@@ -351,27 +361,27 @@ static int xarg2arg(char *xarg, char *nxt_xarg, int fail)
 
 
 	*nxt_xarg = EOS;			/* Endkennung */
-	s = xarg+7;				/* "\xfe" "ARGV= " Åberspr. */
+	s = xarg+7;				/* "\xfe" "ARGV= " √ºberspr. */
 	if (*s)
-		s += strlen(s)+1;		/* arg0 Åberspringen */
+		s += strlen(s)+1;		/* arg0 √ºberspringen */
 
 	len = (*s) ? (nxt_xarg - s - 1) : 0;
 
-	/* Wenn nur 126 Zeichen mîglich sind (normale Kommandozeile),	*/
-	/* aber die LÑnge grîûer ist, muû ARGV gemacht werden.			*/
-	/* Die ÅberflÅssigen ' bei Argumenten mit Leerzeichen kînnen 	*/
+	/* Wenn nur 126 Zeichen m√∂glich sind (normale Kommandozeile),	*/
+	/* aber die L√§nge gr√∂√üer ist, mu√ü ARGV gemacht werden.			*/
+	/* Die √ºberfl√ºssigen ' bei Argumenten mit Leerzeichen k√∂nnen 	*/
 	/* noch nicht entfernt werden (wg. VA_START).				*/
 	/* Anfangs-Bytekennung bleibt 0xfe							*/
 	/* ------------------------------------------------------------- */
 
 	if (fail && (len > 126))
-		return -1;			/* öberlauf */
+		return -1;			/* √úberlauf */
 
-	/* Wenn die Parameter kÅrzer als 126 Zeichen sind oder wenn	die	*/
-	/* KommandozeilenlÑnge unbegrenzt ist (fail == FALSE bei D&D und	*/
+	/* Wenn die Parameter k√ºrzer als 126 Zeichen sind oder wenn	die	*/
+	/* Kommandozeilenl√§nge unbegrenzt ist (fail == FALSE bei D&D und	*/
 	/* ARGV), wird die Kommandozeile umgewandelt, d.h. EOS durch	*/
 	/* Leerzeichen ersetzt.									*/
-	/* Anfangs-Bytekennung ist die ParameterlÑnge, bzw., wenn > 126,	*/
+	/* Anfangs-Bytekennung ist die Parameterl√§nge, bzw., wenn > 126,	*/
 	/* die 0.												*/
 	/* ------------------------------------------------------------- */
 
@@ -399,14 +409,14 @@ static int xarg2arg(char *xarg, char *nxt_xarg, int fail)
 
 /****************************************************************
 *
-* FÅr ein Programm wird der Parameterstring zusammengesetzt.
+* F√ºr ein Programm wird der Parameterstring zusammengesetzt.
 * Dateien im selben Verzeichnis wie das Programm werden ohne
-* vollstÑndigen Pfad Åbergeben.
+* vollst√§ndigen Pfad √ºbergeben.
 *
-* Wenn <pgm> = NULL, werden nur ganze Pfade Åbergeben
+* Wenn <pgm> = NULL, werden nur ganze Pfade √ºbergeben
 *
-* RÅckgabe: Anzahl Parameter
-*		  -1 bei öberlauf der Kommandozeile
+* R√ºckgabe: Anzahl Parameter
+*		  -1 bei √úberlauf der Kommandozeile
 *
 ****************************************************************/
 
@@ -454,10 +464,8 @@ static int get_param(char *pgm, WINDOW *w, int obj,
 					{
 						e = get_name(path);
 						rettc1 = *e;
-/*
-						if (!rettc1)
-							continue;		/* Nullname */
-*/
+						// if (!rettc1)
+						//	continue;		/* Nullname */
 						*e = EOS;
 						isne = strcmp(pgm, path);
 						*e = rettc1;
@@ -468,7 +476,7 @@ static int get_param(char *pgm, WINDOW *w, int obj,
 					if (isne)
 						e = path;
 					if (add_param(e, nxt_xarg, xarg_free, TRUE))
-						return -1;	/* öberlauf */
+						return -1;	/* √úberlauf */
 					nargs++;
 				}
 			}
@@ -512,7 +520,7 @@ static int ddcreate(int apid, int winid, int msx, int msy, int kstate, char exts
 {
 	int fd;
 	long i;
-	int msg[8];
+	short msg[8];
 	long fd_mask;
 	char c;
 	char *pipename = "U:\\PIPE\\DRAGDROP.AA";
@@ -637,26 +645,30 @@ static int ddstry(int fd, char *ext, char *name, long size)
 /*********************************************************************
 *
 * Drag&Drop ins fremde Fenster <whdl>.
-* RÅckgabe: 0	Erfolg
+* R√ºckgabe: 0	Erfolg
 *		 -1	fataler Fehler
 *
 *********************************************************************/
 
 int drag_and_drop(int whdl, int kbsh, int mx, int my)
 {
-	int client_id;
+	short client_id;
 	/* long oldpipesig; */
 	int fd;
 	int ret;
 	char *xarg,*nxt_xarg;
-	long xarg_free,datalen;
+	long xarg_free, datalen, xarg_addr;
 
 
 	if (!wind_get_int(whdl, WF_OWNER, &client_id))
 		return -1;
 
 	xarg_free = MAX_PARAMLEN;
-	xarg = nxt_xarg = Malloc(xarg_free+3);	/* Platz fÅr Kommandozeile */
+	xarg_addr = Malloc(xarg_free + 3);
+	if (xarg_addr <= 0)
+		xarg = nxt_xarg = NULL;
+	else
+		xarg = nxt_xarg = (char *) (intptr_t) xarg_addr;
 	if (!xarg)
 	{
 		err_alert(ENSMEM);
@@ -680,7 +692,7 @@ int drag_and_drop(int whdl, int kbsh, int mx, int my)
 			Rform_alert(1, ALRT_DD_FAILURE);
 		return -1;
 	}
-	/* gewÅnschte Dateitypen <exts> ignorieren */
+	/* gew√ºnschte Dateitypen <exts> ignorieren */
 
 	get_param("*", NULL, -1, &nxt_xarg, &xarg_free);
 	xarg2arg(xarg, nxt_xarg, FALSE);	/* umwandeln in normale Parameterliste */
@@ -689,7 +701,7 @@ int drag_and_drop(int whdl, int kbsh, int mx, int my)
 	ret = ddstry(fd, "ARGS", "", datalen);
 
 	if (ret == DD_OK)
-		Fwrite(fd, datalen, xarg+1);	/* exts+1 wg. ohne LÑnge */
+		Fwrite(fd, datalen, xarg+1);	/* exts+1 wg. ohne L√§nge */
 	else
 	{
 		Rform_alert(1, ALRT_DD_NO_CMDLN);
@@ -706,7 +718,7 @@ int drag_and_drop(int whdl, int kbsh, int mx, int my)
 *
 * Testet einen Pfad, ob er ein Programm darstellt, und gibt
 * ggf. eine Fehlermeldung aus.
-* gibt den Typ zurÅck.
+* gibt den Typ zur√ºck.
 *
 *********************************************************************/
 
@@ -727,7 +739,7 @@ int tst_exepath(char *path)
 *
 * Doppelklick auf Fenster <wnr> bzw. Desktopicon (wnr == 0)
 * Icon- Objeknummer <obj> bei Shift- Status <kbsh>.
-* RÅckgabe 1: Icon nach Aktion wieder deselektieren.
+* R√ºckgabe 1: Icon nach Aktion wieder deselektieren.
 *
 * Textdateien: CTRL		in Texteditor laden
 *
@@ -786,7 +798,7 @@ Cconws(path);
 	if (ret == 1)
 	{
 
-		/* Doppelklick auf Icon. Neues Fenster îffnen */
+		/* Doppelklick auf Icon. Neues Fenster √∂ffnen */
 		/* ------------------------------------------ */
 
 		if (!w->handle)
@@ -809,7 +821,7 @@ Cconws(path);
 				strcpy(w->path, path);
 				if (w->flags & WFLAG_ICONIFIED)
 				{
-					int msg[8];
+					short msg[8];
 
 					msg[0] = WM_UNICONIFY;
 					msg[1] = ap_id;
@@ -826,11 +838,11 @@ Cconws(path);
 	}
 
 	/* Doppelklick auf Datei (Programm oder Textdatei oder ...) 	*/
-	/*  1) Datei ist kein Programm, CTRL gedrÅckt:				*/
+	/*  1) Datei ist kein Programm, CTRL gedr√ºckt:				*/
 	/*		Datei(en) mit Standard- Editor aufrufen				*/
-	/*  2) Datei ist nicht ausfÅhrbar oder ALT gedrÅckt:			*/
+	/*  2) Datei ist nicht ausf√ºhrbar oder ALT gedr√ºckt:			*/
 	/*		Datei anzeigen									*/
-	/*  3) Datei ist ausfÅhrbar (PGM,BAT,angem. Datei):			*/
+	/*  3) Datei ist ausf√ºhrbar (PGM,BAT,angem. Datei):			*/
 	/*		starten										*/
 	/* ------------------------------------------------------------- */
 
@@ -877,14 +889,14 @@ Cconws(path);
 
 /****************************************************************
 *
-* Ein Fenster wird geîffnet, das den Pfad <path> und die
+* Ein Fenster wird ge√∂ffnet, das den Pfad <path> und die
 * Maske <mask> zeigt.
 * Wenn <sel_mask> != NULL ist, wird die entsprechende Datei
 * bzw. das Muster selektiert.
 *
 * Dies ist die Antwort auf die Nachricht AV_XOPENWIND.
 * Diese Routine wird aufgerufen, wenn MGSEARCH eine Datei an
-* MAGXDESK Åbergibt.
+* MAGXDESK √ºbergibt.
 *
 ****************************************************************/
 
@@ -901,8 +913,8 @@ static void set_selmask(WINDOW *w, char *sel_mask)
 		if (len > MAX_SELMASK)
 			len = MAX_SELMASK;
 		memcpy(wmask, sel_mask, len);
-		if (olen > len)			/* muûte abschneiden */
-			wmask[len-1] = '*';		/*  => dann '*' anhÑngen */
+		if (olen > len)			/* mu√üte abschneiden */
+			wmask[len-1] = '*';		/*  => dann '*' anh√§ngen */
 		wmask[len] = EOS;
 		upperstring(wmask);
 		upd_selmask(w);
@@ -979,7 +991,7 @@ void open_window(char *path, char *mask, char *sel_mask,
 
 /****************************************************************
 *
-* Ein neues Fenster mit Pfad <path> wird geîffnet.
+* Ein neues Fenster mit Pfad <path> wird ge√∂ffnet.
 *
 ****************************************************************/
 
@@ -991,7 +1003,7 @@ void opn_newwnd(char *path)
 
 /****************************************************************
 *
-* FÅr ein Programm wird der Pfad gesetzt.
+* F√ºr ein Programm wird der Pfad gesetzt.
 *
 * stdpath = TRUE: Das Programm wird in den Fensterpfaden
 * gestartet.
@@ -1045,35 +1057,35 @@ static long setpath(char *program, int stdpath)
 
 /****************************************************************
 *
-* Testet, ob ein Programm schon lÑuft, und schickt ggf. VA_START.
+* Testet, ob ein Programm schon l√§uft, und schickt ggf. VA_START.
 *
-* Liefert TRUE, wenn VA_START oder eine Ñquivalente Aktion
-* durchgefÅhrt werden konnte. Im Fall FALSE muû der Aufrufer
+* Liefert TRUE, wenn VA_START oder eine √§quivalente Aktion
+* durchgef√ºhrt werden konnte. Im Fall FALSE mu√ü der Aufrufer
 * das Programm starten.
 *
 * Ist <nxt_arg> != NULL, zeigt <param> auf einen allozierten
 * Block, in dem die Parameter liegen. Es wird dann eine
 * erweiterte AES-Nachricht verschickt, bei der der Block an
-* den Aufrufer Åbergeben wird.
+* den Aufrufer √ºbergeben wird.
 *
 ****************************************************************/
 
-static int do_va_start(char *program, COMMAND *param,
+static int do_va_start(char *program, DESK_COMMAND *param,
 				char *nxt_xarg, char *mem,
 				int app_knows_vastart, int prompt)
 {
 	char apname[9];
-	int msg[8];
+	short msg[8];
 	int dst_apid,ret;
 
 
-	/* Wenn mîglich, VA_START aufrufen */
+	/* Wenn m√∂glich, VA_START aufrufen */
 
 	get_app_name(program, apname);
 
 	if ((dst_apid = appl_find(apname)) >= 0)
 	{
-		/* Programm lÑuft schon ! */
+		/* Programm l√§uft schon ! */
 		msg[1] = ap_id;
 		msg[2] = 0;
 		if (app_knows_vastart)
@@ -1086,7 +1098,7 @@ static int do_va_start(char *program, COMMAND *param,
 				param->command_tail[param->length] = EOS;
 
 			msg[0] = VA_START;
-			msg[5] = 'XA';			/* Kennung fÅr erweitertes V.. */
+			msg[5] = 0x5841;		/* Kennung f√ºr erweitertes VA_START */
 			*((void **) (msg+3)) = param->command_tail;
 
 			xmsg.dst_apid = dst_apid;
@@ -1095,7 +1107,7 @@ static int do_va_start(char *program, COMMAND *param,
 			xmsg.msgbuf = msg;
 
 			if (mem)
-				Mshrink(0, mem, strlen(mem+1)+3);
+				Mshrink(mem, (long) strlen(mem + 1) + 3L);
 			if (0 >= appl_write(-2, 16, &xmsg))
 			{
 				Mfree(mem);
@@ -1103,13 +1115,13 @@ static int do_va_start(char *program, COMMAND *param,
 			}
 			else
 			{
-				/* Wenn keine Kommandozeile Åbergeben wurde und
+				/* Wenn keine Kommandozeile √ºbergeben wurde und
 				   kein Fehler aufgetreten ist, App nach oben! */
 				if (!param->length)
 				{
 					/* erst alle Fenster ... */
 					wind_set_int(0, WF_TOPALL, dst_apid);
-					/* dann MenÅ und Hintergrund */
+					/* dann Men√º und Hintergrund */
 					wind_set_int(-1, WF_TOP, dst_apid);
 				}
 			}
@@ -1140,7 +1152,7 @@ static int do_va_start(char *program, COMMAND *param,
 *
 * Ein Programm <path> wird gestartet.
 *
-* Programmtyp muû ermittelt werden.
+* Programmtyp mu√ü ermittelt werden.
 *
 ****************************************************************/
 
@@ -1184,7 +1196,7 @@ Cconws("#\r\n");
 *
 * Ein Hilfsprogramm der Shell wird gestartet.
 * Wenn <is_multi> = FALSE ist, wird ein AV_START geschickt,
-* falls das Programm schon lÑuft.
+* falls das Programm schon l√§uft.
 *
 * <isargv> ist meistens FALSE, bis auf den Aufruf von
 * MGCOPY.
@@ -1206,7 +1218,7 @@ void start_util_program(char *name, int is_multi, int isargv,
 	if (!isargv)
 	{
 		x = xargs;
-		datalen = 254L;	/* zusÑtzl. Nullbyte berÅcksichtigen */
+		datalen = 254L;	/* zus√§tzl. Nullbyte ber√ºcksichtigen */
 		init_xarg(&x, &datalen);
 		add_param(".", &x, &datalen, TRUE);	/* Dummy - arg0 */
 		if (arg1)
@@ -1221,7 +1233,7 @@ void start_util_program(char *name, int is_multi, int isargv,
 
 	if (setpath(cmd, FALSE))
 		return;
-	if (!is_multi && do_va_start(cmd, (COMMAND *) arg1, NULL, NULL,
+	if (!is_multi && do_va_start(cmd, (DESK_COMMAND *) arg1, NULL, NULL,
 				TRUE, FALSE))
 		return;
 	shel_write(TRUE, TRUE, SHW_PARALLEL, cmd, arg1);
@@ -1233,24 +1245,24 @@ void start_util_program(char *name, int is_multi, int isargv,
 * Ein Programm wird gestartet.
 *
 *	-	Klick auf Programmdatei, Programm ist angemeldet
-*		config ist Extension, ap->config Åberlagert
+*		config ist Extension, ap->config √ºberlagert
 *	-	Klick auf Programmdatei, nicht angemeldet
 *		config ist Extension, ap ist NULL
 *	-	Klick auf Batchdatei
 *		config ist PGMT_BATCH, ap ist NULL
 *	-	Klick auf angemeldete Datei
-*		config ist -1, a ist zugehîrige APP
+*		config ist -1, a ist zugeh√∂rige APP
 *
 * Wenn w == NULL ist, werden keine Parameter in Form von
-* selektierten Icons angehÑngt (z.B. bei ^B).
+* selektierten Icons angeh√§ngt (z.B. bei ^B).
 * Wenn kbsh = -1 ist, wird statt res_exec() eine -1 geliefert.
 *
-* Es wird zunÑchst eine lange Kommandozeile (max 10k) erstellt,
-* die wenn sie keine Dateinamen mit Leerstellen enthÑlt sowie
-* kÅrzer als 127 Bytes ist, in eine normale Kommandozeile
+* Es wird zun√§chst eine lange Kommandozeile (max 10k) erstellt,
+* die wenn sie keine Dateinamen mit Leerstellen enth√§lt sowie
+* k√ºrzer als 127 Bytes ist, in eine normale Kommandozeile
 * gewandelt wird.
 *
-* RÅckgabe:	0	Programm nicht gestartet
+* R√ºckgabe:	0	Programm nicht gestartet
 *			1	Programm gestartet
 *
 ****************************************************************/
@@ -1262,7 +1274,7 @@ int start_program(char *path, char *tail, int config, APPLICATION *ap,
 	char *arg1;					/* argv[1] */
 
 	char *xarg,*nxt_xarg;
-	long xarg_free;
+	long xarg_free, xarg_addr;
 	int is_long_arg;
 
 	char *shw_cmd;
@@ -1278,14 +1290,18 @@ int start_program(char *path, char *tail, int config, APPLICATION *ap,
 
 
 
-	if (kbsh == -1)		/* fÅr VA/AV_STARTPROG */
+	if (kbsh == -1)		/* f√ºr VA/AV_STARTPROG */
 	{
 		do_res_exec = FALSE;
 		kbsh = 0;
 	}
 
 	xarg_free = MAX_PARAMLEN;
-	xarg = nxt_xarg = Malloc(xarg_free + 3);	/* Platz fÅr Kommandozeile */
+	xarg_addr = Malloc(xarg_free + 3);
+	if (xarg_addr <= 0)
+		xarg = nxt_xarg = NULL;
+	else
+		xarg = nxt_xarg = (char *) (intptr_t) xarg_addr;
 	if (!xarg)
 	{
 		err_alert(ENSMEM);
@@ -1339,15 +1355,15 @@ int start_program(char *path, char *tail, int config, APPLICATION *ap,
 		}
 	}
 
-	/* Das Programm selbst muû als ARG0 eingetragen werden.	*/
-	/* Bei der Umwandlung muû der Parameter entfernt werden.	*/
+	/* Das Programm selbst mu√ü als ARG0 eingetragen werden.	*/
+	/* Bei der Umwandlung mu√ü der Parameter entfernt werden.	*/
 	/* -------------------------------------------------------- */
 
 	if (add_param(program, &nxt_xarg, &xarg_free, TRUE))
 		goto end_ret;
 
-	/* alle aktivierten Icons auûer dem doppelgeklickten werden als	*/
-	/* Parameter Åbernommen (nicht bei Batchprozessor Åber ^B).		*/
+	/* alle aktivierten Icons au√üer dem doppelgeklickten werden als	*/
+	/* Parameter √ºbernommen (nicht bei Batchprozessor √ºber ^B).		*/
 	/* ------------------------------------------------------------- */
 
 
@@ -1371,7 +1387,7 @@ int start_program(char *path, char *tail, int config, APPLICATION *ap,
 	if (add_args < 0)
 		goto end_ret;
 
-	/* Wenn mîglich, wird die Liste der Parameter in eine normale	*/
+	/* Wenn m√∂glich, wird die Liste der Parameter in eine normale	*/
 	/* Kommandozeile gewandelt.								*/
 	/* ------------------------------------------------------------- */
 
@@ -1390,7 +1406,7 @@ int start_program(char *path, char *tail, int config, APPLICATION *ap,
 		xarg[0] = (char) strlen(xarg+1);
 	}
 
-	/* Ein kleiner Patch fÅr uralte Programme */
+	/* Ein kleiner Patch f√ºr uralte Programme */
 	/* -------------------------------------- */
 
 	if (!is_long_arg && (xarg[0] < 126))
@@ -1404,7 +1420,7 @@ int start_program(char *path, char *tail, int config, APPLICATION *ap,
 	if (setpath(execpath, stdpath))
 		goto end_ret;
 
-	/* Nachsehen, ob die Datei Åberhaupt existiert	*/
+	/* Nachsehen, ob die Datei √ºberhaupt existiert	*/
 	/* ---------------------------------------------- */
 
 	err_file = program;
@@ -1420,7 +1436,7 @@ int start_program(char *path, char *tail, int config, APPLICATION *ap,
 
 	if (config & PGMT_ACC)
 	{
-		if (do_va_start(program, (COMMAND *) xarg, nxt_xarg, xarg,
+		if (do_va_start(program, (DESK_COMMAND *) xarg, nxt_xarg, xarg,
 			 		!(config & PGMT_NVASTART), TRUE))
 			return 1;
 		fix_xarg(xarg, nxt_xarg);
@@ -1431,7 +1447,7 @@ int start_program(char *path, char *tail, int config, APPLICATION *ap,
 		goto end_ret;
 	}
 
-	/* Parameter fÅr "MAGXDESK resident" oder "nichtresident"	*/
+	/* Parameter f√ºr "MAGXDESK resident" oder "nichtresident"	*/
 	/*	und Parameter "doex" setzen.						*/
 	/* -------------------------------------------------------- */
 
@@ -1470,14 +1486,14 @@ int start_program(char *path, char *tail, int config, APPLICATION *ap,
 
 
 	/* Im Fall "Multitasking starten" wird einfach der Aufruf		*/
-	/* gemacht, und MAGXDESK lÑuft weiter						*/
+	/* gemacht, und MAGXDESK l√§uft weiter						*/
 	/* ------------------------------------------------------------- */
 
 	err_file = NULL;
 	if (isover == SHW_PARALLEL)
 	{
 		/* TOS-Programme kennen kein VA_START */
-		if (do_va_start(program, (COMMAND *) xarg, nxt_xarg, xarg,
+		if (do_va_start(program, (DESK_COMMAND *) xarg, nxt_xarg, xarg,
 			 		(isgr && !(config & PGMT_NVASTART)), isgr))
 			return 1;
 
@@ -1490,13 +1506,13 @@ int start_program(char *path, char *tail, int config, APPLICATION *ap,
 		goto end_ret;
 	}
 
-	/* Andernfalls werden alle Fenster geschlossen und gelîscht,	*/
-	/* um Speicher fÅr das aufrufende Programm freizumachen.		*/
-	/* Auch MenÅ und Hintergrund abschalten.					*/
+	/* Andernfalls werden alle Fenster geschlossen und gel√∂scht,	*/
+	/* um Speicher f√ºr das aufrufende Programm freizumachen.		*/
+	/* Auch Men√º und Hintergrund abschalten.					*/
 	/* ------------------------------------------------------------- */
 
 	save_status(FALSE);
-	close_all_wind();	/* Fenster/MenÅ/Hintergrund */
+	close_all_wind();	/* Fenster/Men√º/Hintergrund */
 
 	/* Hier wird MAGXDESK nichtresident verlassen.				*/
 	/* Als letzte Aktion werden die Einstellungen abgespeichert		*/
@@ -1515,7 +1531,7 @@ int start_program(char *path, char *tail, int config, APPLICATION *ap,
 	xarg = NULL;
 	v_clsvwk(vdi_handle);
 	wind_update(END_UPDATE);
-	/* Falls per ^O gestartet: MenÅtitel deselektieren */
+	/* Falls per ^O gestartet: Men√ºtitel deselektieren */
 	tree_menu[MM_DATEI].ob_state &= ~SELECTED;
 	if (do_res_exec)
 		res_exec();

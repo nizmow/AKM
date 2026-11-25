@@ -1,22 +1,21 @@
 /*
 *
-* EnthÑlt die spezifischen Routinen fÅr den Dialog
-* "Icons fÅr Pfade/Ordner/Disks auswÑhlen"
+* Enth√§lt die spezifischen Routinen f√ºr den Dialog
+* "Icons f√ºr Pfade/Ordner/Disks ausw√§hlen"
 *
 */
 
-#include <mgx_dos.h>
-#include <mt_aes.h>
+#include "APPLICAT_GEM.H"
 #include <string.h>
 #include <stdlib.h>
-#include "gemut_mt.h"
-#include "applicat.h"
-#include "appl.h"
-#include "inf.h"
-#include "appldata.h"
-#include "pth_dial.h"
-#include "iconsel.h"
-#include "icp_dial.h"
+#include "IMPORT/GEMUT_MT.H"
+#include "APPLICAT.H"
+#include "APPL.H"
+#include "INF.H"
+#include "APPLDATA.H"
+#include "PTH_DIAL.H"
+#include "ICONSEL.H"
+#include "ICP_DIAL.H"
 
 
 /* Das "Fenster" */
@@ -35,7 +34,7 @@ static int visible_len = -1;
 
 static int showindex_to_icnobj(int index)
 {
-	static const int icons[] =
+	static const WORD icons[] =
 	{ FLICON1, FLICON2, FLICON3, FLICON4, FLICON5 };
 
 	return icons[index];
@@ -68,13 +67,13 @@ static int pthobj_to_showindex(int objnr)
 
 /*********************************************************************
 *
-* KÅrzt einen Pfadnamen sinnvoll ab.
-* Der Pfad muû mit X:\ beginnen.
+* K√ºrzt einen Pfadnamen sinnvoll ab.
+* Der Pfad mu√ü mit X:\ beginnen.
 * Er wird, wenn er zu lang ist, auf
 *
 *	X:\...\lastdirs
 *
-* gekÅrzt.
+* gek√ºrzt.
 *
 *********************************************************************/
 
@@ -107,10 +106,10 @@ void abbrev_path(char *dst, char *src, int len)
 
 /*********************************************************************
 *
-* Scrolle den Inhalt des "Fensters" so, daû die Zeile fÅr
+* Scrolle den Inhalt des "Fensters" so, da√ü die Zeile f√ºr
 * den Pfad <path> oben sichtbar ist.
 *
-* Wenn <path> nicht gefunden, RÅckgabe -1
+* Wenn <path> nicht gefunden, R√ºckgabe -1
 *
 *********************************************************************/
 
@@ -145,15 +144,13 @@ static int scroll_win_path(DIALOG *d, char *path)
 
 /*********************************************************************
 *
-* Auswahl- und Setzroutinen fÅr die Scrollbox
+* Auswahl- und Setzroutinen f√ºr die Scrollbox
 *
 *********************************************************************/
 
-#pragma warn -par
-static void cdecl select_item(LIST_BOX *box, OBJECT *tree,
-			LBOX_ITEM *item, void *user_data,
-			WORD obj_index, WORD last_state)
+static void cdecl select_item(struct SLCT_ITEM_args args)
 {
+	LBOX_ITEM *item = args.item;
 	struct pth_file *mypth = (struct pth_file *) item;
 
 	if (mypth->sel)
@@ -162,10 +159,11 @@ static void cdecl select_item(LIST_BOX *box, OBJECT *tree,
 		selected_path = NULL;
 }
 
-static WORD cdecl set_item(LIST_BOX *box, OBJECT *tree,
-			LBOX_ITEM *item, WORD index,
-			void *user_data, GRECT *rect, WORD offset)
+static WORD cdecl set_item(struct SET_ITEM_args args)
 {
+	OBJECT *tree = args.tree;
+	LBOX_ITEM *item = args.item;
+	WORD index = args.obj_index;
 	struct pth_file *mypth = (struct pth_file *) item;
 	OBJECT *dob;
 	OBJECT *sob;
@@ -234,7 +232,6 @@ static WORD cdecl set_item(LIST_BOX *box, OBJECT *tree,
 */
 	return index;
 }
-#pragma warn .par
 
 
 /*********************************************************************
@@ -270,16 +267,16 @@ static LBOX_ITEM *cat_paths(void)
 
 /*********************************************************************
 *
-* Initialisierung der Objektklasse "Icon fÅr Pfad auswÑhlen"
+* Initialisierung der Objektklasse "Icon f√ºr Pfad ausw√§hlen"
 *
 *********************************************************************/
 
 void icp_dial_init_rsc(void)
 {
 	int /* dummy,*/ i;
-	static const int ctrl_objs[5] =
+	static const WORD ctrl_objs[5] =
 	{ FL_BK, FL_UP, FL_DOWN, FL_BSL, FL_SLID };
-	static const int objs[5] =
+	static const WORD objs[5] =
 	{ FLD1, FLD2, FLD3, FLD4, FLD5 };
 
 
@@ -298,12 +295,12 @@ void icp_dial_init_rsc(void)
 					select_item,
 					set_item,
 					cat_paths(),	/* Items */
-					5,		/* Anzahl sichtbarer EintrÑge */
+					5,		/* Anzahl sichtbarer Eintr√§ge */
 					0,		/* erster sichtbarer Eintrag */
 					ctrl_objs,
 					objs,
 					LBOX_VERT + LBOX_REAL + LBOX_SNGL + LBOX_TOGGLE,
-					20,		/* Scrollverzîgerung */
+					20,		/* Scrollverz√∂gerung */
 					NULL,	/* user data */
 					NULL,
 					0,0,0,0
@@ -326,19 +323,19 @@ static int delete_pth(int pth)
 
 	for	(i = pth, p = pthx + pth; i < pthn - 1; i++,p++)
 	{
-		*p = *(p + 1);		/* Elemente rÅcken von rechts nach */
+		*p = *(p + 1);		/* Elemente r√ºcken von rechts nach */
 	}
-	pthn--;		/* Anzahl der belegten EintrÑge verringern */
+	pthn--;		/* Anzahl der belegten Eintr√§ge verringern */
 
 	lbox_set_items(sbox, cat_paths());
 	lbox_set_slider(sbox, lbox_get_first(sbox), NULL);
 
-	/* AufrÑumarbeiten */
+	/* Aufr√§umarbeiten */
 	/* --------------- */
 
 	if (d_icp)
 	{
-		/* Der Pfad-Icon-Dialog ist geîffnet. */
+		/* Der Pfad-Icon-Dialog ist ge√∂ffnet. */
 		lbox_update(sbox, NULL);
 		subobj_wdraw(d_icp, FL_BK, FL_BK, MAX_DEPTH);
 		subobj_wdraw(d_icp, FL_BSL, FL_BSL, MAX_DEPTH);
@@ -350,9 +347,9 @@ static int delete_pth(int pth)
 
 /*********************************************************************
 *
-* TrÑgt einen neuen Pfad in die globale Tabelle pthx[] ein bzw Ñndert
+* Tr√§gt einen neuen Pfad in die globale Tabelle pthx[] ein bzw √§ndert
 * einen bestehenden.
-* Die Pfade werden so sortiert, daû die absoluten Pfade, d.h. die,
+* Die Pfade werden so sortiert, da√ü die absoluten Pfade, d.h. die,
 * die mit "X:\" beginnen, vorn sind.
 *
 *********************************************************************/
@@ -418,7 +415,7 @@ int insert_pth(struct pth_file *new, struct pth_file *old)
 	{
 		/* Die Tabelle pthx[] ist voll. */
 		Rform_alert(1, ALRT_OVERFLOW, NULL);
-		return -3;		/* öberlauf */
+		return -3;		/* √úberlauf */
 	}
 
 	for	(newpos = 0,mypth = pthx; newpos < pthn; newpos++, mypth++)
@@ -442,7 +439,7 @@ int insert_pth(struct pth_file *new, struct pth_file *old)
 	pthx[i].iconnr = new->iconnr;
 	pthx[i].sel = /* pthx[i].sel_icon = */ FALSE;
 
-	/* AufrÑumarbeiten */
+	/* Aufr√§umarbeiten */
 	/* --------------- */
 
 	lbox_set_items(sbox, cat_paths());
@@ -450,7 +447,7 @@ int insert_pth(struct pth_file *new, struct pth_file *old)
 	lbox_update(sbox, NULL);
 	if (d_icp)
 	{
-		/* Der Dialog ist gerade geîffnet. */
+		/* Der Dialog ist gerade ge√∂ffnet. */
 		subobj_wdraw(d_icp, FL_BK, FL_BK, MAX_DEPTH);
 		subobj_wdraw(d_icp, FL_BSL, FL_BSL, MAX_DEPTH);
 	}
@@ -474,7 +471,7 @@ static void deselect_path(DIALOG *d)
 
 /*********************************************************************
 *
-* Das Icon fÅr Pfad <mypth> hat sich geÑndert.
+* Das Icon f√ºr Pfad <mypth> hat sich ge√§ndert.
 *
 *********************************************************************/
 
@@ -488,7 +485,7 @@ static void chg_icon(int mypth, int iconnr)
 
 	if (!d_icp)
 	{
-		/* Der Dialog ist gerade nicht geîffnet. */
+		/* Der Dialog ist gerade nicht ge√∂ffnet. */
 		return;
 	}
 
@@ -561,13 +558,13 @@ static void icp_draw_subobj(int objnr)
 }
 
 int icp_get_target_obj(int x, int y, int whdl, OBJECT **tree,
-			int *objnr, void (**set_icon)(int iconnr, int objnr),
+			WORD *objnr, void (**set_icon)(int iconnr, int objnr),
 			void (**drawfn)(int objnr))
 {
 	GRECT dummy;
 
 	if (!d_icp)
-		return FALSE;		/* Objekt ungÅltig */
+		return FALSE;		/* Objekt ung√ºltig */
 
 	if (whdl != wdlg_get_handle(d_icp))
 		return FALSE;
@@ -589,27 +586,30 @@ int icp_get_target_obj(int x, int y, int whdl, OBJECT **tree,
 /*********************************************************************
 *
 * Behandelt die Exit- Objekte des Icondialogs
-* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angewÑhlt.
+* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angew√§hlt.
 *
 * objnr = -1:	Initialisierung.
 *			d->user_data und d->dialog_tree initialisieren!
 *			<data> ist Zeiger auf Argumentzeiger,
 *			d.h.		char *data[2]
 *			<clicks> ist Parameter, z.Zt. immer 0
-*		-2:	Nachricht int data[8] wurde Åbergeben
+*		-2:	Nachricht int data[8] wurde √ºbergeben
 * 		-3:	Fenster wurde durch Closebutton geschlossen.
 *		-4:	Programm wurde beendet.
-*		-5:	Initialisierung _NACH_ ôffnen des Fensters
+*		-5:	Initialisierung _NACH_ √ñffnen des Fensters
 *
-* RÅckgabe:	0	Dialog schlieûen
+* R√ºckgabe:	0	Dialog schlie√üen
 *			< 0	Fehlercode
 *
 *********************************************************************/
 
-#pragma warn -par
 
-WORD cdecl icp_wdlg_cb(DIALOG *d, EVNT *ev, int exitbutton, int nclicks, void *data)
+WORD cdecl icp_wdlg_cb(struct HNDL_OBJ_args args)
 {
+	DIALOG *d = args.dialog;
+	short exitbutton = args.obj;
+	short nclicks = args.clicks;
+	void *data = args.data;
 	int pth;
 	static char *path;
 	OBJECT *tree;
@@ -617,7 +617,7 @@ WORD cdecl icp_wdlg_cb(DIALOG *d, EVNT *ev, int exitbutton, int nclicks, void *d
 	struct dialog_userdata *du;
 
 
-	/* 1. Fall: Dialog soll geîffnet werden */
+	/* 1. Fall: Dialog soll ge√∂ffnet werden */
 	/* ------------------------------------ */
 
 	tree = adr_icp_dialog;
@@ -625,7 +625,7 @@ WORD cdecl icp_wdlg_cb(DIALOG *d, EVNT *ev, int exitbutton, int nclicks, void *d
 
 	if (exitbutton == HNDL_INIT)
 	{
-		if (d_icp)			/* Dialog ist schon geîffnet ! */
+		if (d_icp)			/* Dialog ist schon ge√∂ffnet ! */
 			return 0;		/* create verweigern */
 
 		if (is_multiwindow)
@@ -643,7 +643,7 @@ WORD cdecl icp_wdlg_cb(DIALOG *d, EVNT *ev, int exitbutton, int nclicks, void *d
 		return 1;
 	}
 
-	/* 1a. Fall: Dialog ist geîffnet worden */
+	/* 1a. Fall: Dialog ist ge√∂ffnet worden */
 	/* ------------------------------------ */
 
 	if ((exitbutton == HNDL_OPEN) && (du->mode == 2))
@@ -669,13 +669,13 @@ WORD cdecl icp_wdlg_cb(DIALOG *d, EVNT *ev, int exitbutton, int nclicks, void *d
 	{	/* Wenn Dialog geschlossen werden soll... */
 		close_dialog:
 		d_icp = NULL;
-		return 0;		/* ...dann schlieûen wir ihn auch */
+		return 0;		/* ...dann schlie√üen wir ihn auch */
 	}
 
 	if (exitbutton < 0)
 		return 1;
 
-	/* 4. Fall: Exitbutton wurde betÑtigt */
+	/* 4. Fall: Exitbutton wurde bet√§tigt */
 	/* ---------------------------------- */
 
 		/* Doppelklick auf Pfadnamen */
@@ -710,7 +710,7 @@ WORD cdecl icp_wdlg_cb(DIALOG *d, EVNT *ev, int exitbutton, int nclicks, void *d
 	if (nclicks != 1)
 		goto ende;
 
-	/* Scrollbox angewÑhlt */
+	/* Scrollbox angew√§hlt */
 	/* ------------------- */
 
 	if (exitbutton == FLICON1)
@@ -736,7 +736,7 @@ WORD cdecl icp_wdlg_cb(DIALOG *d, EVNT *ev, int exitbutton, int nclicks, void *d
 	{
 		lbox_do(sbox, exitbutton);
 
-		/* select-Status geÑndert ? */
+		/* select-Status ge√§ndert ? */
 
 		if (!selected_path &&
 			 !(adr_icp_dialog[DEL_FLD].ob_state & DISABLED))
@@ -770,7 +770,7 @@ WORD cdecl icp_wdlg_cb(DIALOG *d, EVNT *ev, int exitbutton, int nclicks, void *d
 		goto ende;
 	}
 
-		/* Pfad lîschen */
+		/* Pfad l√∂schen */
 		/* ------------ */
 
 	if (exitbutton == DEL_FLD)
@@ -804,4 +804,3 @@ WORD cdecl icp_wdlg_cb(DIALOG *d, EVNT *ev, int exitbutton, int nclicks, void *d
 	subobj_wdraw(d, exitbutton, exitbutton, 1);
 	return 1;		/* weiter */
 }
-#pragma warn +par

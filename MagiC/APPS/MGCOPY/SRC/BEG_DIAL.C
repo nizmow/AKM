@@ -1,26 +1,22 @@
 /*
 *
-* EnthÑlt die spezifischen Routinen fÅr den Hauptdialog
-* fÅr "Dateien kopieren/verschieben/aliasen/lîschen"
+* Enth√§lt die spezifischen Routinen f√ºr den Hauptdialog
+* f√ºr "Dateien kopieren/verschieben/aliasen/l√∂schen"
 *
-* sowie fÅr den Fortschrittsdialog mit dem Balken.
+* sowie f√ºr den Fortschrittsdialog mit dem Balken.
 *
 */
 
 #define DEBUG 0
 
-#include <mgx_dos.h>
-#if DEBUG
+#include "MGCOPY_GEM.H"
 #include <stdio.h>
-#endif
-#include <mt_aes.h>
 #include <string.h>
 #include <stdlib.h>
-#include "gemut_mt.h"
-#include "mgcopy.h"
-#include "beg_dial.h"
-#include "cpfiles.h"
-#include "globals.h"
+#include "MGCOPY.H"
+#include "BEG_DIAL.H"
+#include "CPFILES.H"
+#include "GLOBALS.H"
 
 #define OUTPUT_FNAME_LEN	30
 
@@ -29,22 +25,22 @@ int working_is_expanded;
 static OBJECT *adr_beg_iconified;
 static int	is_iconified,working_is_iconified;
 static long n_dat,n_ord;	/* Anzahl Dateien/Ordner */
-static long used_src;	/* Benîtigter Speicherplatz */
-static long netto_src;	/* fÅr den Fortschrittsbalken */
+static long used_src;	/* Ben√∂tigter Speicherplatz */
+static long netto_src;	/* f√ºr den Fortschrittsbalken */
 /* Ziel: */
-static long cl_used_dst;	/* soviel brÑuchte eine Kopie */
+static long cl_used_dst;	/* soviel br√§uchte eine Kopie */
 static long cl_free_dst;	/* soviele Cluster sind auf Zielpfad frei */
-static long clsize_dst;	/* Clustergrîûe Zielpfad */
+static long clsize_dst;	/* Clustergr√∂√üe Zielpfad */
 
 
-static char *delete_text;	/* =	"Lîsche Dateien";	*/
+static char *delete_text;	/* =	"L√∂sche Dateien";	*/
 static char *copy_text;		/* =	"Kopiere Dateien";	*/
 static char *alias_text;		/* =	"Aliase erstellen";	*/
 static char *move_text;		/* =	"Verschiebe Dateien";	*/
 
-static char *titel;			/* einer der fÅnf vorherigen */
+static char *titel;			/* einer der f√ºnf vorherigen */
 
-static char *work_ak_text;	/* die gerade ausgefÅhrte Aktion */
+static char *work_ak_text;	/* die gerade ausgef√ºhrte Aktion */
 static char *work_dt_text;	/* die gerade bearbeitete Datei */
 
 
@@ -149,10 +145,10 @@ long beg_dial_prepare( int argc, char *argv[],
 		"Netto-Speicherbedarf auf Quelle: %ld Bytes\n"
 		"Brutto-Speicherbedarf auf Quelle: %ld Bytes\n"
 		"\n"
-		"freien Speicher auf Ziel prÅfen: %c\n"
+		"freien Speicher auf Ziel pr\201fen: %c\n"
 		"Zielpfad: %s\n"
 		"Brutto-Speicherbedarf auf Ziel: %ld Cluster\n"
-		"Clustergrîûe auf Ziel: %ld Bytes\n"
+		"Clustergr\224\236e auf Ziel: %ld Bytes\n"
 		"Freie Cluster auf Ziel: %ld\n",
 
 		n_dat,
@@ -191,7 +187,7 @@ long beg_dial_prepare( int argc, char *argv[],
 	return(err);
 }
 
-static long count_bytes;		/* zum RunterzÑhlen */
+static long count_bytes;		/* zum Runterz√§hlen */
 static long beg_count_bytes;
 
 /*********************************************************************
@@ -199,15 +195,21 @@ static long beg_count_bytes;
 * down_cnt:
 *  ord =  3: Forschrittsbalken um <bytes> weiter
 *  ord =  2: Aktion anzeigen
-*  ord =  0: Dateien herunterzÑhlen
-*  ord =  1: Ordner herunterzÑhlen
+*  ord =  0: Dateien herunterz√§hlen
+*  ord =  1: Ordner herunterz√§hlen
 *
 *********************************************************************/
 
+static void ultoa(unsigned long value, char *buffer, int base)
+{
+	(void) base;
+	sprintf(buffer, "%lu", value);
+}
+
 void down_cnt( int ord, char *aktion, char *path, long bytes )
 {
-	int  obj;
-	long cnt;
+	int  obj = 0;
+	long cnt = 0;
 	char *z;
 	OBJECT *tree = adr_working;
 	char *s;
@@ -394,6 +396,8 @@ void beg_dial_action( int argc, char *argv[],
 						(char *) &thi, (char *) (&param));
 		if	(copy_id <= 0)
 			{
+			action_error = ENSMEM;
+			run_status = DLG_FINISHED;
 			form_xerr(ENSMEM, NULL);
 			wdlg_close(d_working, NULL, NULL);
 			wdlg_delete(d_working);
@@ -407,35 +411,38 @@ void beg_dial_action( int argc, char *argv[],
 /*********************************************************************
 *
 * Behandelt die Exit- Objekte des Dialogs
-* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angewÑhlt.
+* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angew√§hlt.
 *
 * objnr = -1:	Initialisierung.
 *			d->user_data und d->dialog_tree initialisieren!
-*		-2:	Nachricht int data[8] wurde Åbergeben
+*		-2:	Nachricht int data[8] wurde √ºbergeben
 * 		-3:	Fenster wurde durch Closebutton geschlossen.
 *		-4:	Programm wurde beendet.
 *
-* RÅckgabe:	0	Dialog schlieûen
+* R√ºckgabe:	0	Dialog schlie√üen
 *			< 0	Fehlercode
 *
 *********************************************************************/
 
 #pragma warn -par
-WORD	cdecl hdl_beg( DIALOG *d, EVNT *events, WORD exitbutton,
-				WORD clicks, void *data )
+WORD	cdecl hdl_beg( struct HNDL_OBJ_args args )
 {
+	DIALOG *d = args.dialog;
+	EVNT *events = args.events;
+	WORD exitbutton = args.obj;
+	WORD clicks = args.clicks;
 	long kbytes;
 	OBJECT *tree;
 
 
-	/* 1. Fall: Dialog soll geîffnet werden */
+	/* 1. Fall: Dialog soll ge√∂ffnet werden */
 	/* ------------------------------------ */
 
 	tree = adr_beg;
 
 	if	(exitbutton == HNDL_INIT)
 		{
-		if	(d_beg)			/* Dialog ist schon geîffnet ! */
+		if	(d_beg)			/* Dialog ist schon ge√∂ffnet ! */
 			return(0);
 
 		switch(clicks)			/* action */
@@ -538,18 +545,18 @@ WORD	cdecl hdl_beg( DIALOG *d, EVNT *events, WORD exitbutton,
 	if	(exitbutton == HNDL_CLSD)	/* Wenn Dialog geschlossen werden soll... */
 		{
 
-		if	(run_status == DLG_RUNNING)	/* Aktion lÑuft ! */
+		if	(run_status == DLG_RUNNING)	/* Aktion l√§uft ! */
 			goto ende;				/* ignorieren ?!??! */
 
 		close_dialog:
 		run_status = DLG_FINISHED;
-		return(0);		/* ...dann schlieûen wir ihn auch */
+		return(0);		/* ...dann schlie√üen wir ihn auch */
 		}
 
 	if	(exitbutton < 0)	/* unbekannte Unterfunktion */
 		return(1);
 
-	/* 4. Fall: Exitbutton wurde betÑtigt */
+	/* 4. Fall: Exitbutton wurde bet√§tigt */
 	/* ---------------------------------- */
 
 	if	(clicks != 1)
@@ -557,7 +564,7 @@ WORD	cdecl hdl_beg( DIALOG *d, EVNT *events, WORD exitbutton,
 
 	if	(exitbutton == CPMVD_AB)			/* Abbruch */
 		{
-		if	(run_status == DLG_WAITING)	/* keine Aktion lÑuft */
+		if	(run_status == DLG_WAITING)	/* keine Aktion l√§uft */
 			goto close_dialog;
 		goto ende;		/* ignorieren ?!!??? */
 		}
@@ -579,7 +586,7 @@ WORD	cdecl hdl_beg( DIALOG *d, EVNT *events, WORD exitbutton,
 
 		if	(run_status == DLG_RUNNING)	/* OK ? */
 			{
-			return(0);		/* Dialog schlieûen */
+			return(0);		/* Dialog schlie√üen */
 			}
 		}
 
@@ -596,34 +603,37 @@ WORD	cdecl hdl_beg( DIALOG *d, EVNT *events, WORD exitbutton,
 /*********************************************************************
 *
 * Behandelt die Exit- Objekte des Fortschrittsdialogs
-* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angewÑhlt.
+* Das Exit-Objekt <objnr> wurde mit <clicks> Klicks angew√§hlt.
 *
 * objnr = -1:	Initialisierung.
 *			d->user_data und d->dialog_tree initialisieren!
-*		-2:	Nachricht int data[8] wurde Åbergeben
+*		-2:	Nachricht int data[8] wurde √ºbergeben
 * 		-3:	Fenster wurde durch Closebutton geschlossen.
 *		-4:	Programm wurde beendet.
 *
-* RÅckgabe:	0	Dialog schlieûen
+* R√ºckgabe:	0	Dialog schlie√üen
 *			< 0	Fehlercode
 *
 *********************************************************************/
 
 #pragma warn -par
-WORD	cdecl hdl_work( DIALOG *d, EVNT *events, WORD exitbutton,
-				WORD clicks, void *data )
+WORD	cdecl hdl_work( struct HNDL_OBJ_args args )
 {
+	DIALOG *d = args.dialog;
+	EVNT *events = args.events;
+	WORD exitbutton = args.obj;
+	WORD clicks = args.clicks;
 	OBJECT *tree;
 
 
-	/* 1. Fall: Dialog soll geîffnet werden */
+	/* 1. Fall: Dialog soll ge√∂ffnet werden */
 	/* ------------------------------------ */
 
 	tree = adr_working;
 
 	if	(exitbutton == HNDL_INIT)
 		{
-		if	(d_working)		/* Dialog ist schon geîffnet ! */
+		if	(d_working)		/* Dialog ist schon ge√∂ffnet ! */
 			return(0);
 
 		work_ak_text[0] = EOS;
@@ -677,7 +687,7 @@ WORD	cdecl hdl_work( DIALOG *d, EVNT *events, WORD exitbutton,
 	if	(exitbutton == HNDL_CLSD)	/* Wenn Dialog geschlossen werden soll... */
 		{
 
-		if	(run_status == DLG_RUNNING)	/* Aktion lÑuft ! */
+		if	(run_status == DLG_RUNNING)	/* Aktion l√§uft ! */
 			{
 			exitbutton = WORK_STOP;
 			goto do_abbruch;
@@ -685,13 +695,13 @@ WORD	cdecl hdl_work( DIALOG *d, EVNT *events, WORD exitbutton,
 
 		close_dialog:
 		run_status = DLG_FINISHED;
-		return(0);		/* ...dann schlieûen wir ihn auch */
+		return(0);		/* ...dann schlie√üen wir ihn auch */
 		}
 
 	if	(exitbutton < 0)	/* unbekannte Unterfunktion */
 		return(1);
 
-	/* 4. Fall: Exitbutton wurde betÑtigt */
+	/* 4. Fall: Exitbutton wurde bet√§tigt */
 	/* ---------------------------------- */
 
 	if	(clicks != 1)
@@ -731,7 +741,7 @@ WORD	cdecl hdl_work( DIALOG *d, EVNT *events, WORD exitbutton,
 
 	if	(exitbutton == WORK_STOP)		/* Abbruch */
 		{
-		if	(run_status == DLG_WAITING)	/* keine Aktion lÑuft */
+		if	(run_status == DLG_WAITING)	/* keine Aktion l√§uft */
 			{
 			goto close_dialog;
 			}
@@ -743,11 +753,11 @@ WORD	cdecl hdl_work( DIALOG *d, EVNT *events, WORD exitbutton,
 
 		if	(copy_id > 0)
 			{
-			int message[8];
+			WORD message[8] = {0};
 
 			message[0] = 1031;		/* Nachrichtennummer */
 			message[1] = ap_id;		/* Absender */
-			message[2] = 0;		/* öberlÑnge */
+			message[2] = 0;		/* √úberl√§nge */
 			appl_write(copy_id, 16, message);
 			}
 		abbruch = TRUE;

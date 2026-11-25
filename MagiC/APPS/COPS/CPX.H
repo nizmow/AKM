@@ -25,8 +25,8 @@
 #define _cpx_h
 
 #include <setjmp.h>
-#include <mt_aes.h>
-#include "global.h"
+#include <stddef.h>
+#include "GLOBAL.H"
 
 
 #define	PH_MAGIC 0x601a		/* Magic des Programmheaders */
@@ -61,18 +61,18 @@ struct cl_segm
 
 struct cpxhead
 {
-	unsigned int16_t magic;
+	uint16_t magic;
 
-	unsigned int16_t flags;
+	uint16_t flags;
 #define CPX_SETONLY		0x0001		/* Set Only CPX Flag 		*/
 #define CPX_BOOTINIT	0x0002		/* Boot Initialization Flag	*/
 #define CPX_RESIDENT	0x0004		/* RAM Resident Flag		*/
 #define CPX_WAS_RESIDENT 0x8000		/* used internally by config.cpx */
 
 	int32_t cpx_id;
-	unsigned int16_t cpx_version;
+	uint16_t cpx_version;
 	char i_text[14];
-	unsigned int16_t icon[48];
+	uint16_t icon[48];
 
 	struct
 	{
@@ -197,9 +197,9 @@ struct xcpb
 	GRECT * cdecl (*GetNextRect)(void);
 	void    cdecl (*Set_Evnt_Mask)(struct Set_Evnt_Mask_args);
 	int16_t   cdecl (*XGen_Alert)(struct XGen_Alert_args);
-	int16_t   cdecl (*CPX_Save)(void *ptr, int32_t bytes);
+	int16_t   cdecl (*CPX_Save)(void *ptr, long bytes);
 	void *  cdecl (*Get_Buffer)(void);
-	int16_t   cdecl (*getcookie)(int32_t cookie, int32_t *p_value);
+	int16_t   cdecl (*getcookie)(long cookie, long *p_value);
 
 	int16_t Country_Code;
 
@@ -225,6 +225,16 @@ typedef struct
 	int16_t cdecl (*cpx_hook)(int16_t event, int16_t *msg, MRETS *mrets, int16_t *key, int16_t *nclicks);
 	void  cdecl (*cpx_close)(int16_t flag);
 } CPXINFO;
+
+/* Classic TOS file records and XCONTROL's 16-bit stack ABI. */
+_Static_assert(sizeof(long) == 4, "CPX longwords must be 32 bits");
+_Static_assert(sizeof(struct program_header) == 28, "TOS program header size");
+_Static_assert(sizeof(struct cpxhead) == 512, "CPX disk header size");
+_Static_assert(offsetof(struct cpxhead, buffer) == 142, "CPX data buffer offset");
+_Static_assert(sizeof(struct xcpb) == 90, "XCONTROL parameter block size");
+_Static_assert(offsetof(struct xcpb, Xform_do) == 52, "Xform_do callback slot");
+_Static_assert(sizeof(CPXINFO) == 40, "CPX callback table size");
+_Static_assert(offsetof(struct Xform_do_args, msg) == 6, "packed Xform_do arguments");
 
 
 /* Documented alert message numbers for XGen_Alert  */

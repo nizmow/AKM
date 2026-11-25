@@ -1,4 +1,4 @@
-/* Resource Datei Indizes fÅr MGSEARCH */
+/* Resource Datei Indizes f√ºr MGSEARCH */
 
 #define T_SEARCH         0   /* Formular/Dialog */
 #define SRCH_OK          2   /* BUTTON in Baum T_SEARCH */

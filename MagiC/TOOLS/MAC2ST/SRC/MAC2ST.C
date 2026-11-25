@@ -2,8 +2,9 @@
 * Konvertiert CR -> CR/LF
 */
 
-#include <tos.h>
-#include <tosdefs.h>
+#include <mint/osbind.h>
+
+#define RMODE_RD 0
 
 
 int main(int argc, char *argv[])

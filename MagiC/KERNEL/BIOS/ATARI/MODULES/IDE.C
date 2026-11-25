@@ -6,14 +6,12 @@
 */
 
 #include <stddef.h>
-#include <stdio.h>
-#include <tos.h>
 
 #define _hz_200 (ULONG*)0x4baL
 #define GPIP (UBYTE*)0xfffffa01L
 
 
-#include "ide.h"
+#include "IDE.H"
 
 
 
@@ -63,9 +61,7 @@ typedef struct
 	volatile UBYTE	asrdor;
 } IDEREGS;
 
-#if offsetof(IDEREGS,asrdor) != 0x39
-#error "Fehler in IDEREGS"
-#endif
+_Static_assert(offsetof(IDEREGS, asrdor) == 0x39, "Fehler in IDEREGS");
 
 
 /* Platz für die IDE-Daten */
@@ -456,7 +452,7 @@ IDEWrite (unit device, ULONG sector, WORD count, void *data)
 }
 
 
-/*
+#if 0
 
 /* Error-Register auslesen */
 
@@ -472,4 +468,4 @@ IDEError (void)
 	return (WORD)ide_error();
 }
 
-*/
+#endif

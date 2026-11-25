@@ -1,6 +1,6 @@
 /*********************************************************************
 *
-* Dieses Modul enth„lt die Pattern-Match-Routine.
+* Dieses Modul enthÃ¤lt die Pattern-Match-Routine.
 *
 *********************************************************************/
 
@@ -9,21 +9,19 @@
 #define TRUE  1
 #define FALSE 0
 #define EOS   '\0'
-#define NULL  ((void *) 0L)
 
 
 /*********************************************************************
 *
-*  Meine "toupper" mit Bercksichtigung von Umlauten.
+*  Meine "toupper" mit BerÃ¼cksichtigung von Umlauten.
 *
 *********************************************************************/
 
-#pragma warn -pia
-char toupper(unsigned char c)
+char mgx_toupper(unsigned char c)
 {
 	register char *s;
-	static char lower_s[] = "„”‚…†‡‘¤°±³´À";
-	static char upper_s[] = "™š¶€’¥·¸²µÁ";
+	static char lower_s[] = "\204\224\201\202\205\206\207\221\244\260\261\263\264\300";
+	static char upper_s[] = "\216\231\232\220\266\217\200\222\245\267\270\262\265\301";
 
 	if (c < 'a')
 		return c;
@@ -33,26 +31,29 @@ char toupper(unsigned char c)
 		return c;
 	return upper_s[s - lower_s];
 }
-#pragma warn +pia
 
 
 /*********************************************************************
 *
-* Wandelt eine Zeichenkette in Groschrift um.
+* Wandelt eine Zeichenkette in GroÃŸschrift um.
 *
 *********************************************************************/
 
 void upperstring(char *s)
 {
 	while (*s)
-		*s++ = toupper(*s);
+	{
+		*s = mgx_toupper((unsigned char) *s);
+		s++;
+	}
 }
+
 
 
 /*********************************************************************
 *
 * Pattern-Match-Routine.
-* vollst„ndige regul„re Ausdrcke mit Rekursion.
+* vollstÃ¤ndige regulÃ¤re AusdrÃ¼cke mit Rekursion.
 *
 *********************************************************************/
 
@@ -71,7 +72,7 @@ int pattern_match(char *pattern, char *fname)
 			continue;
 		}
 
-		if ((*pattern == '?') || (toupper(*fname) == *pattern))
+		if ((*pattern == '?') || (mgx_toupper((unsigned char) *fname) == *pattern))
 		{
 			pattern++;
 			fname++;
@@ -95,5 +96,5 @@ int pattern_match(char *pattern, char *fname)
 
 	while ((*pattern) == '*')
 		pattern++;
-	return !(*pattern);	/* OK, wenn nur '*'e brig */
+	return !(*pattern);	/* OK, wenn nur '*'e Ã¼brig */
 }

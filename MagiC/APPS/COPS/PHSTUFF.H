@@ -24,9 +24,8 @@
 #ifndef _phstuff_h
 #define _phstuff_h
 
-#include <mt_aes.h>
-#include "global.h"
-#include "cpx.h"
+#include "GLOBAL.H"
+#include "CPX.H"
 
 void *load_cpx(CPX_DESC *cpx_desc, const char *cpx_path, long *cmplt_size, int16_t load_header);
 int16_t unload_cpx(void *addr);

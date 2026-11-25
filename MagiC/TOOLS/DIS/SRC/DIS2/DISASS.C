@@ -8,6 +8,8 @@
 ***************************************************************/
 
 
+#include <stdint.h>
+
 #define FALSE             (0)
 #define TRUE              (1)
 
@@ -28,7 +30,7 @@
 #define MOD_PRED  4      /* Adr.ind. predecrement      -(An)      */
 #define MOD_OFFS  5      /* Adr.ind. mit Offset     xxxx(An)      */
 #define MOD_INDX  6      /* Adr.ind. mit Index        xx(An,Rn.f) */
-#define MOD_SPEC  7      /* zusÑtzliche Adressierungsarten: */
+#define MOD_SPEC  7      /* zus√§tzliche Adressierungsarten: */
 #define REG_ABSH  0      /* absolute short              xxxx      */
 #define REG_ABLO  1      /* absolute long               xxxxxxxx  */
 #define REG_RELA  2      /* PC- relativ             xxxx(PC)      */
@@ -40,12 +42,12 @@ static int  reg, mode, reg1, opmode, format, befehl, ill_opcode;
 static int  isturbo = FALSE;		/* Flag: Turbo - C */
 static long endcopyr;
 static long mv_os_fnr_adr = 0L;	/* Adresse nach move.w #xx,-(sp)	*/
-static int  os_fnr;				/* letzte mîgliche Funktionsnummer */
-int    code[100];
+static int  os_fnr;				/* letzte m√∂gliche Funktionsnummer */
+int16_t code[100];
 int    cindex;
 long   befehlsadresse;
 
-extern long adr;				/* Adresse des NéCHSTEN Codeworts */
+extern long adr;				/* Adresse des N√ÑCHSTEN Codeworts */
 extern long origin;
 extern int  reloc_search(long adresse, int is_kill);
 extern int  label_search(long adresse, int is_kill);
@@ -63,7 +65,7 @@ extern void getcode(void);
 extern int  iscode, isasc, isadr, isobj, ismas, issize, is30;
 extern int  ismem;
 extern long m_beg,m_end;
-extern unsigned *rlo_obj;	/* bei Objektdatei: alle Reloc.daten */
+extern uint16_t *rlo_obj;	/* bei Objektdatei: alle Reloc.daten */
 extern long text_len,data_len, stk_len;
 
 
@@ -165,7 +167,7 @@ static void write_pcrel_short( void )
 /***************************************************
 * Schreibt (wenn jeweils durch Flags verlangt)
 * alle gelesenen Code-Worte und Adressen heraus.
-* Wenn cindex = -1 ist, wird angenommen, daû der
+* Wenn cindex = -1 ist, wird angenommen, da√ü der
 * Code aus einem Byte (auf code[0] erweitert) besteht.
 ***************************************************/
 
@@ -307,9 +309,9 @@ void comment(int tab_pos, int do_code, int do_asc)
 
 
 /***************************************************
-* öberprÅft die ZulÑssigkeit der
-* Adressierungsarten fÅr alle Befehle.
-* RÅckgabe  TRUE fÅr Fehler.
+* √úberpr√ºft die Zul√§ssigkeit der
+* Adressierungsarten f√ºr alle Befehle.
+* R√ºckgabe  TRUE f√ºr Fehler.
 ***************************************************/
 
 int adfehler(int tabelle)
@@ -322,20 +324,20 @@ int adfehler(int tabelle)
       switch (tabelle) {
                     /* Daten */
         case 1: return(mode == MOD_ADIR);
-                    /* alle auûer unmittelbar */
+                    /* alle au√üer unmittelbar */
         case 2: return ((mode == MOD_SPEC) && (reg == REG_IMME));
-                    /* Daten verÑnderbar */
+                    /* Daten ver√§nderbar */
         case 3: return( (mode == MOD_ADIR) ||
                         ((mode == MOD_SPEC) && (reg > REG_ABLO)) );
-                    /* Speicher verÑnderbar */
+                    /* Speicher ver√§nderbar */
         case 4: return( (mode <  MOD_AIND) ||
                         ((mode == MOD_SPEC) && (reg > REG_ABLO)) );
-                    /* verÑnderbar */
+                    /* ver√§nderbar */
         case 5: return  ((mode == MOD_SPEC) && (reg > REG_ABLO));
                     /* Steuerung */
         case 6: return( ((mode <  MOD_OFFS) && (mode != MOD_AIND) ) ||
                         ((mode == MOD_SPEC) && (reg == REG_IMME)) );
-                    /* Steuerung verÑnderbar oder -(An) */
+                    /* Steuerung ver√§nderbar oder -(An) */
         case 7: return( (mode < MOD_AIND) || (mode == MOD_POSI) ||
                         ((mode == MOD_SPEC) && (reg > REG_ABLO)) );
                     /* Steuerung oder (An)+ */
@@ -347,7 +349,7 @@ int adfehler(int tabelle)
 
 
 /***************************************************
-* Dekodiert und schreibt die Operandengrîûe.
+* Dekodiert und schreibt die Operandengr√∂√üe.
 ***************************************************/
 
 void write_format(void)
@@ -385,7 +387,7 @@ void write_areg(int nummer)
 
 
 /***************************************************
-*  Schreibt ein Adreû- oder Datenregister
+*  Schreibt ein Adre√ü- oder Datenregister
 ***************************************************/
 
 void write_adreg(int nummer)
@@ -410,7 +412,7 @@ void zuweisung(void)
 
 
 /***************************************************
-*  Dekodiert Bedingungs- Codes fÅr DBcc, Bcc, Scc.
+*  Dekodiert Bedingungs- Codes f√ºr DBcc, Bcc, Scc.
 ***************************************************/
 
 char *bedingung(int cond)
@@ -424,7 +426,7 @@ char *bedingung(int cond)
 * Bearbeitet die Adressierungsarten
 ***************************************************/
 
-/* Decodiert das bei d(An,Ri) zusÑtzlich benîtigte Wort. */
+/* Decodiert das bei d(An,Ri) zus√§tzlich ben√∂tigte Wort. */
 void indexregister(int ispc)
 {
      register int nummer;
@@ -450,7 +452,7 @@ void indexregister(int ispc)
 
 void adressierung(void)
 {
-     writepos(OPR_POS);   /* Tabulatorposition fÅr Operandenfeld */
+     writepos(OPR_POS);   /* Tabulatorposition f√ºr Operandenfeld */
      switch (mode) {
        case MOD_DDIR:
              write_dreg(reg);
@@ -551,8 +553,8 @@ void adressierung(void)
 
 
 /***************************************************
-* Ausgabefunktion, wenn erkannt wurde, daû kein
-* gÅltiger Befehlscode vorliegt.
+* Ausgabefunktion, wenn erkannt wurde, da√ü kein
+* g√ºltiger Befehlscode vorliegt.
 ***************************************************/
 
 void nocode( void )
@@ -626,7 +628,8 @@ int decode0(void)
 		format = (reg1 & 3) - 1;
 		if	(reg == 4 && mode == 7)		/* CAS2 */
 			{
-			register int i,du[2],dc[2],r[2];
+			register int i;
+			int du[2],dc[2],r[2];
 
 			for	(i = 0; i < 2; i++)
 				{
@@ -806,7 +809,8 @@ int move(void)
 
 void movemreg(void)
 {
-#define ISREG(i) ((mode == MOD_PRED) ? ((regs << i) < 0) : ((regs >> i) & 1))
+#define ISREG(i) ((mode == MOD_PRED) ? \
+	(((uint16_t) regs >> (15 - (i))) & 1) : (((uint16_t) regs >> (i)) & 1))
 
      register int i, regs, incr;
               int isnotfirst;
@@ -829,7 +833,7 @@ void movemreg(void)
 
      while((i >= 0) && (i < 16)) {      /* insgesamt 16 Register */
           if (ISREG(i)) {
-             if   (isnotfirst)          /* erstes '/' unterdrÅcken */
+             if   (isnotfirst)          /* erstes '/' unterdr√ºcken */
                   writechr('/');
              isnotfirst = TRUE;
 		   write_adreg(i);
@@ -865,7 +869,7 @@ int decode4(void)
 		writestr((opmode) ? "div" : "mul");
 		writechr((dir & 0x800) ? 's' : 'u');
 
-		/* Die Codierung von divx(l).l ist widersprÅchlich, hier */
+		/* Die Codierung von divx(l).l ist widerspr√ºchlich, hier */
 		/* widersprechen sich pasm/masm/bug/pd gegenseitig, die  */
 		/* korrekte Codierung ist nicht zu erkennen			  */
 
@@ -1275,7 +1279,7 @@ int branch(void)
 
 
 /***************************************************
-* Bearbeitet ausschlieûlich MOVEQ.
+* Bearbeitet ausschlie√ülich MOVEQ.
 ***************************************************/
 
 int moveq(void)
@@ -1585,9 +1589,9 @@ int shiftrot(void)
 		sh_typ    = instr_typ + dir;
 		writestr(shtyp_str + 5 * sh_typ);
 		write_format();
-		if	(immreg)		/* IF2, ZÑhler im Datenregister */
+		if	(immreg)		/* IF2, Z√§hler im Datenregister */
                write_dreg(count);
-          else { /* ELSE2, ZÑhler direkt */
+          else { /* ELSE2, Z√§hler direkt */
                if (count == 0)
                   count = 8;
                writechr('#');
@@ -1636,15 +1640,15 @@ int pmmu(void)
 
 	getcode();
 	c = code[cindex];
-	d = c & 7;				/* 3 Bit fÅr Datenregnr. oder #fc */
+	d = c & 7;				/* 3 Bit f√ºr Datenregnr. oder #fc */
 	c >>= 3;
-	fc = c & 3;				/* 2 Bit fÅr fc-Typ (Dn,#,xfc) */
+	fc = c & 3;				/* 2 Bit f√ºr fc-Typ (Dn,#,xfc) */
 	c >>= 2;
-	mask = c & 15;				/* 4 Bit fÅr Maske */
+	mask = c & 15;				/* 4 Bit f√ºr Maske */
 	c >>= 4;
-	subf2 = c & 7;				/* 3 Bit fÅr Subfunktion2 */
+	subf2 = c & 7;				/* 3 Bit f√ºr Subfunktion2 */
 	c >>= 3;
-	subf = c & 15;				/* 4 Bit fÅr Subfunktion */
+	subf = c & 15;				/* 4 Bit f√ºr Subfunktion */
 
 	switch(subf)
 		{
@@ -1746,7 +1750,7 @@ void disass(int is_opcode)
 		endcopyr = (befehl & 0xff) + 2L;
 		}
 
-	/* Reloziertes Langwort oder die Stackgrîûe von Turbo */
+	/* Reloziertes Langwort oder die Stackgr√∂√üe von Turbo */
 	if	(reloc_search(befehlsadresse, FALSE) ||
 		 (isturbo && befehlsadresse == 2L))
 		{
@@ -1826,7 +1830,7 @@ void disass(int is_opcode)
 		return;
 		}
 
-	/* Falls spÑter ein Systemaufruf kommt, wird hier die	*/
+	/* Falls sp√§ter ein Systemaufruf kommt, wird hier die	*/
 	/* Funktionsnummer gemerkt						*/
 
 	if	(befehl == 0x3f3c)	/* "MOVE.W #XX,-(SP)" */

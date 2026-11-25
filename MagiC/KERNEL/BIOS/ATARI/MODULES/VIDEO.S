@@ -285,7 +285,7 @@ prbo_offset_st:
  adda.w   #$3e80,a0      ; Offset der Bildschirmmitte bei ST-High/ST-Mid/ST-Low
 
 prbo_image:
- lea      prbo_image(pc),a1        ; Image der Bombe
+ lea      prbo_gfx(pc),a1        ; Image der Bombe
  moveq    #15,d6                   ; 16 Zeilen
  add.w    d7,d7
 prbo_bloop:
@@ -328,7 +328,7 @@ prbo_restab2:
  DC.W     $140
 
 
-prbo_image:
+prbo_gfx:
  DC.W     %0000011000000000
  DC.W     %0010100100000000
  DC.W     %0000000010000000
@@ -944,11 +944,11 @@ VsS_tstVS:               move.w    SP_SHIFT.w,d1
                               and.w          #$ff9f,d1 ;setze internen VS & HS
                               btst      #1,d0               ;use external VSync?
                               beq.b          VsS_tstHS
-                              bset.b    #5,d1               ;ext. VS
+                              bset.l    #5,d1               ;ext. VS
 
 VsS_tstHS:               btst      #2,d0               ;use external HSync?
                               beq.b          VsS_setSync
-                              bset.b    #6,d1               ;ext. HS
+                              bset.l    #6,d1               ;ext. HS
 
 VsS_setSync:        move.w    d1,SP_SHIFT.w
                               rte

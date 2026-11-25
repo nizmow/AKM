@@ -27,8 +27,7 @@
 /*----------------------------------------------------------------------------------------*/
 
 #include <stddef.h>
-#include <mt_aes.h>
-#include "list.h"
+#include "LIST.H"
 
 #define	NEXT(ptr, offset)	(*(void **) ((char *)ptr + offset))
 
@@ -39,7 +38,7 @@
 /* entry:		Zeiger auf den Eintrag */
 /*----------------------------------------------------------------------------------------*/
 int16_t
-list_remove(void **root, void *entry, long offset)
+list_remove(void **root, void *entry, int32_t offset)
 {
 	void *search = (void *)((char *)root - offset); /* virtueller Anfangseintrag */
 
@@ -67,7 +66,7 @@ list_remove(void **root, void *entry, long offset)
 /*	entry:		Zeiger auf den Eintrag */
 /*----------------------------------------------------------------------------------------*/
 void
-list_insert(void **root, void *entry, long offset)
+list_insert(void **root, void *entry, int32_t offset)
 {
 	NEXT(entry, offset) = *root;
 	*root = entry;
@@ -80,7 +79,7 @@ list_insert(void **root, void *entry, long offset)
 /*	entry:		Zeiger auf den Eintrag */
 /*----------------------------------------------------------------------------------------*/
 void
-list_append(void **root, void *entry, long offset)
+list_append(void **root, void *entry, int32_t offset)
 {
 	void *append = (void *)((char *) root - offset); /* virtueller Anfangseintrag */
 
@@ -98,7 +97,7 @@ list_append(void **root, void *entry, long offset)
 /*	cmp_entries:	Vergleichsfunktion */
 /*----------------------------------------------------------------------------------------*/
 void *
-list_search(void *root, long what, long offset, int16_t (*cmp_entries)(long what, void *entry))
+list_search(void *root, int32_t what, int32_t offset, int16_t (*cmp_entries)(int32_t what, void *entry))
 {
 	void *search = root;
 
@@ -119,7 +118,7 @@ list_search(void *root, long what, long offset, int16_t (*cmp_entries)(long what
 /*	root:		Zeiger auf den ersten Eintrag */
 /*----------------------------------------------------------------------------------------*/
 long
-list_count(void *root, long offset)
+list_count(void *root, int32_t offset)
 {
 	long count = 0;
 

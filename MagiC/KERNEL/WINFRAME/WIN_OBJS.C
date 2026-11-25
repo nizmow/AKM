@@ -1,20 +1,25 @@
 /*
 *
-* Dieser Quelltext enthÑlt die Routinen fÅr
+* Dieser Quelltext enth√§lt die Routinen f√ºr
 * die USERDEFs
 *
 */
 
-#include <tos.h>
-#include <mt_aes.h>
-#include <vdi.h>
+#include "WINFRAME_SDK.H"
 #if DEBUG
 #include <stdio.h>
 #endif
 #include <string.h>
-#include "globals.h"
-#include "win_objs.h"
-#include "winframe.h"
+#include "GLOBALS.H"
+#include "WIN_OBJS.H"
+#include "WINFRAME.H"
+
+_Static_assert(offsetof(WININFO, tree) == 94, "WININFO tree offset");
+_Static_assert(offsetof(WININFO, frame_userblk) == 574, "WININFO frame USERBLK offset");
+_Static_assert(offsetof(WININFO, is_sizer) == 582, "WININFO sizer flag offset");
+_Static_assert(offsetof(WININFO, ted_name) == 590, "WININFO name TEDINFO offset");
+_Static_assert(offsetof(WININFO, ted_info) == 618, "WININFO info TEDINFO offset");
+_Static_assert(sizeof(WININFO) == 646, "WININFO size");
 
 int border = 2;
 int title_h = 16;
@@ -78,13 +83,13 @@ void global_init2()
 	te = adr_window[O_INFO].ob_spec.tedinfo;
 	te->te_just  = 3;	/* TE_SPECIAL */
 	te->te_font  = 4;	/* PFINFO */
-	te->te_junk1 = (WORD) (((LONG) (settings->finfo_inw)) >> 16L);
-	te->te_junk2 = (WORD) (((LONG) (settings->finfo_inw)));
+	te->te_fontid = (WORD) (((LONG) (settings->finfo_inw)) >> 16L);
+	te->te_fontsize = (WORD) (((LONG) (settings->finfo_inw)));
 }
 
 /***************************************************************
 *
-* Slidergrîûe bzw. -position berechnen
+* Slidergr√∂√üe bzw. -position berechnen
 *
 * promille:		0..1000
 * maxpos:			tats. Bereich ist 0..maxpos-1
@@ -106,9 +111,9 @@ static WORD calc_slider( WORD promille, WORD maxpos )
 
 /***************************************************************
 *
-* Berechnet fÅr wind_calc() die Grîûe des Rahmens.
-* Der Rahmen kann dann entweder zur Innengrîûe addiert oder
-* von der Auûengrîûe abgezogen werden.
+* Berechnet f√ºr wind_calc() die Gr√∂√üe des Rahmens.
+* Der Rahmen kann dann entweder zur Innengr√∂√üe addiert oder
+* von der Au√üengr√∂√üe abgezogen werden.
 *
 ***************************************************************/
 
@@ -145,7 +150,7 @@ static void wcalc_frame( WININFO *wi, WORD *fg )
 
 static void draw_greypixel( WORD x, WORD y )
 {
-	int pxy[4];
+	short pxy[4];
 
 	pxy[0] = pxy[2] = x;
 	pxy[1] = pxy[3] = y;
@@ -155,8 +160,8 @@ static void draw_greypixel( WORD x, WORD y )
 
 static void draw_blkframe( GRECT *g )
 {
-	int pxy[10];
-	register int *p;
+	short pxy[10];
+	register short *p;
 
 
 	p = pxy;
@@ -176,8 +181,8 @@ static void draw_blkframe( GRECT *g )
 
 static void draw_3dframe_lo( GRECT *g )
 {
-	int pxy[6];
-	register int *p;
+	short pxy[6];
+	register short *p;
 
 
 	p = pxy;
@@ -193,8 +198,8 @@ static void draw_3dframe_lo( GRECT *g )
 
 static void draw_3dframe_ru( GRECT *g )
 {
-	int pxy[6];
-	register int *p;
+	short pxy[6];
+	register short *p;
 
 
 	p = pxy;
@@ -211,14 +216,14 @@ static void draw_3dframe_ru( GRECT *g )
 
 /***************************************************************
 *
-* Zeichenroutine fÅr das Rahmen-Objekt
+* Zeichenroutine f√ºr das Rahmen-Objekt
 *
 ***************************************************************/
 
 static WORD cdecl frame_ubcode( PARMBLK *pb )
 {
 	WININFO *wi = (WININFO *) pb->pb_parm;
-	int pxy[14];
+	short pxy[14];
 	GRECT *g;
 	int ob_rahmen;
 	int npt;
@@ -243,7 +248,7 @@ static WORD cdecl frame_ubcode( PARMBLK *pb )
 		goto ende;
 	vs_clip(vdi_handle, TRUE, pxy);
 
-	/* Ñuûeren Rand ausgeben (Schwarz) */
+	/* √§u√üeren Rand ausgeben (Schwarz) */
 	/* ------------------------------- */
 
 	g = (GRECT *) &pb->pb_x;
@@ -296,7 +301,7 @@ static WORD cdecl frame_ubcode( PARMBLK *pb )
 		g->g_h -= border + ob_rahmen;
 		}
 
-	/* ggf. rechts unten ein Rechteck fÅr den SIZER */
+	/* ggf. rechts unten ein Rechteck f√ºr den SIZER */
 	/* -------------------------------------------- */
 
 	if	(wi->is_sizer)
@@ -332,14 +337,14 @@ static WORD cdecl frame_ubcode( PARMBLK *pb )
 		draw_greypixel( g->g_x + g->g_w - 1, g->g_y);
 	
 		vsl_color(vdi_handle, WHITE);
-		/* unten: weiû */
+		/* unten: wei√ü */
 		pxy[0] = g->g_x + 1;
 		pxy[1] = pxy[3] = g->g_y + g->g_h - 1;
 		pxy[2] = g->g_x + g->g_w - 1;
 		if	(wi->is_sizer)
 			pxy[2] -= winobjects_width_m_1;
 		v_pline(vdi_handle, 2, pxy);
-		/* rechts: weiû */
+		/* rechts: wei√ü */
 		pxy[0] = pxy[2] = g->g_x + g->g_w - 1;
 		pxy[1] = g->g_y + 1;
 		pxy[3] = g->g_y + g->g_h - 1;
@@ -447,7 +452,7 @@ void wbm_create( WININFO *wi )
 *
 * Initialisiert ein Fenster, dessen Typ feststeht.
 * D.h. der Objektbaum wird verkettet.
-* Dabei erhalten alle unverrÅckbaren Objekte bereits ihre
+* Dabei erhalten alle unverr√ºckbaren Objekte bereits ihre
 * korrekte Position
 *
 ***************************************************************/
@@ -459,7 +464,7 @@ void wbm_skind( WININFO *wi )
 	WORD xl,yo;
 
 
-	/* Minimalgrîûe berechnen */
+	/* Minimalgr√∂√üe berechnen */
 	/* ---------------------- */
 
 	wi->min.g_w = wi->min.g_h = border + border + 6;
@@ -533,10 +538,10 @@ void wbm_skind( WININFO *wi )
 		wi->is_info = (wi->kind & INFO);
 		}
 
-	/* Rand berÅcksichtigen */
+	/* Rand ber√ºcksichtigen */
 	/* -------------------- */
 
-	xl = yo = border+3;	/* 2 Pixel auûen + grauer Bereich + 1 Pixel innen */
+	xl = yo = border+3;	/* 2 Pixel au√üen + grauer Bereich + 1 Pixel innen */
 
 	/* obere Elemente */
 	/* -------------- */
@@ -662,7 +667,7 @@ void wbm_skind( WININFO *wi )
 *
 * MANAGER-FUNKTION
 *
-* Legt Sliderposition und -grîûe fest.
+* Legt Sliderposition und -gr√∂√üe fest.
 * Wird nur aufgerufen, wenn ein ensprechender VSLIDE/HSLIDE
 * angemeldet ist.
 *
@@ -716,7 +721,7 @@ void wbm_sslid( WININFO *wi, WORD vertical )
 *
 * MANAGER-FUNKTION
 *
-* Fensterposition und/oder -grîûe hat sich geÑndert.
+* Fensterposition und/oder -gr√∂√üe hat sich ge√§ndert.
 *
 ***************************************************************/
 
@@ -770,11 +775,11 @@ void wbm_ssize( WININFO *wi )
 		return;
 		}
 
-	/* Rand berÅcksichtigen */
+	/* Rand ber√ºcksichtigen */
 	/* -------------------- */
 
 	g = wi->curr;
-	i = border+3;	/* 2 Pixel auûen + grauer Bereich + 1 Pixel innen */
+	i = border+3;	/* 2 Pixel au√üen + grauer Bereich + 1 Pixel innen */
 	g.g_x = i;
 	g.g_y = i;
 	g.g_w -= i+i;
@@ -952,7 +957,7 @@ void wbm_ssize( WININFO *wi )
 *
 * MANAGER-FUNKTION
 *
-* Der Text fÅr INFO oder NAME hat sich geÑndert.
+* Der Text f√ºr INFO oder NAME hat sich ge√§ndert.
 *
 ***************************************************************/
 
@@ -967,7 +972,7 @@ void wbm_sstr( WININFO *wi )
 *
 * MANAGER-FUNKTION
 *
-* Das Attribut-Bit hat sich geÑndert, d.h.
+* Das Attribut-Bit hat sich ge√§ndert, d.h.
 * SHADED, ACTIVE oder ICONIFIED
 *
 ***************************************************************/
@@ -1022,7 +1027,7 @@ void wbm_sattr( WININFO *wi, WORD chbits )
 *
 * MANAGER-FUNKTION
 *
-* Gibt fÅr den Fenstertyp <kind> den Rand zurÅck.
+* Gibt f√ºr den Fenstertyp <kind> den Rand zur√ºck.
 *
 ***************************************************************/
 
@@ -1062,8 +1067,8 @@ void wbm_calc( WORD kind, WORD *fg )
 *
 * MANAGER-FUNKTION
 *
-* Gibt fÅr die Mausposition (x,y) das zugehîrige Objekt
-* zurÅck.
+* Gibt f√ºr die Mausposition (x,y) das zugeh√∂rige Objekt
+* zur√ºck.
 *
 ***************************************************************/
 

@@ -12,7 +12,7 @@
 * Kommando- Argumente:
 *        zu disassemblierende Programmdatei, z.B. "filename.prg"
 *        oder Objektdatei im GEMDOS- Format, z.B. "filename.o"
-*		(im zweiten Fall muû die Extension ".o" sein!
+*		(im zweiten Fall mu√ü die Extension ".o" sein!
 *        Optional das Argument "-mhex1-hex2", falls ein Speicherbereich
 *         anstelle der Datei disassembliert werden soll.
 *
@@ -21,25 +21,23 @@
 *    wenn vorhanden:  Symbol-Tabelle      "filename.sym"
 * 
 *  rlo- Datei beginnt mit 5 Langworten:
-*     l_text, l_data, l_bss, l_sym, l_stk (fÅr Turbo-C)
+*     l_text, l_data, l_bss, l_sym, l_stk (f√ºr Turbo-C)
 *  Die rlo- Datei wird nicht erstellt, wenn entweder die Programmdatei nicht
-*   ausfÅhrbar ist oder der Speicher disassembliert werden soll.
-*  Im Fall "Objektdatei" enthÑlt die rlo- Datei nur die oben genannten
+*   ausf√ºhrbar ist oder der Speicher disassembliert werden soll.
+*  Im Fall "Objektdatei" enth√§lt die rlo- Datei nur die oben genannten
 *   5 Langworte.
 *
-*  lbl- Datei enthÑlt zunÑchst ein Langwort mit der TabellenlÑnge.
-*  (Anzahl der Tabellen- EintrÑge).
+*  lbl- Datei enth√§lt zun√§chst ein Langwort mit der Tabellenl√§nge.
+*  (Anzahl der Tabellen- Eintr√§ge).
 *
 *  Wertet Optionen m (Speicher disassemblieren) 
 *   und n (bei ".o" keine 0007 testen) aus.
 *
 *******************************************************************/
 
-#include <tos.h>
+#include "DIS_COMPAT.H"
 #include <stdlib.h>
 #include <string.h>
-#include <tosdefs.h>
-#include <magix.h>
 #include <stddef.h>
 
 #define FALSE             (0)
@@ -47,34 +45,29 @@
 #define EOS               '\0'
 #define CRLF              "\15\12"
 
-struct symbol {
-  char symname[8];
-  int  symtype;
-  long symvalue;
-  };
-#define SLEN ( (long) sizeof(struct symbol) ) 
+#define SLEN ( (long) sizeof(struct symbol) )
 
 
 
 int  prg_file,rlo_file,lbl_file;
 long *tab;                    /* Relocation- und Label- Tabelle */
-long tab_max;                 /* TabellenlÑnge */
+long tab_max;                 /* Tabellenl√§nge */
 struct symbol *symboltab;	/* Symboltabelle */
-int	sym_max;				/* TabellenlÑnge */
-int  *datei;
+int	sym_max;				/* Tabellenl√§nge */
+int16_t *datei;
 long adr;                     /* gerade zu disassemblierende Adresse */
-int  isexe;                   /* Programm ist ausfÅhrbar */
+int  isexe;                   /* Programm ist ausf√ºhrbar */
 int  isobj;				/* Objektdatei */
 int	is0007;				/* Opcode- Flag auswerten */
 int  iserror;
 int  ismem;                   /* Flag, falls Speicher disassemblieren */
-int	is30;				/* Flag, falls 68030- Opcodes erwÅnscht	*/
+int	is30;				/* Flag, falls 68030- Opcodes erw√ºnscht	*/
 long m_beg,m_end;             /* Bereich bei Option m */
-long text_len;				/* LÑnge des Textsegments */
-long data_len;				/* LÑnge des Datensegments */
-long bss_len;				/* LÑnge des BSS- Segments */
-long sym_len;				/* LÑnge der Symboltabelle */
-long stk_len;				/* LÑnge des Stacks (Turbo-C) */
+long text_len;				/* L√§nge des Textsegments */
+long data_len;				/* L√§nge des Datensegments */
+long bss_len;				/* L√§nge des BSS- Segments */
+long sym_len;				/* L√§nge der Symboltabelle */
+long stk_len;				/* L√§nge des Stacks (Turbo-C) */
 long relo_pos;				/* Dateipos. der Relocation- Daten */
 long sym_pos;				/* Dateipos. der Symboltabelle */
 
@@ -95,9 +88,7 @@ extern void decode(void);
 extern void shelsort(void *base, size_t count, size_t size, int (*compar)());
 
 
-void main (argc, argv)
-int   argc;
-char *argv[];
+int main (int argc, char *argv[])
 {
      register long retcode, flength;
      register char *argname;
@@ -111,7 +102,7 @@ char *argv[];
      isexe = is0007 = TRUE;
      isobj = is30 = FALSE;
 
-     /* PrÅfen, ob genug Argumente Åbergeben wurden */
+     /* Pr√ºfen, ob genug Argumente √ºbergeben wurden */
      /* ------------------------------------------- */
      if   (argc < 2) {
           usage:
@@ -130,9 +121,9 @@ char *argv[];
           goto newline;
           }
 
-     /* PrÅfen, ob die Option m gewÅnscht wurde */
-     /* PrÅfen, ob die Option n gewÅnscht wurde */
-     /* PrÅfen, ob die Option 3 gewÅnscht wurde */
+     /* Pr√ºfen, ob die Option m gew√ºnscht wurde */
+     /* Pr√ºfen, ob die Option n gew√ºnscht wurde */
+     /* Pr√ºfen, ob die Option 3 gew√ºnscht wurde */
      /* --------------------------------------- */
 
      ismem = FALSE;
@@ -158,7 +149,7 @@ char *argv[];
           			is30 = TRUE;
 		}
 
-     /* PrÅfen, ob die zu disassemblierende Datei existiert */
+     /* Pr√ºfen, ob die zu disassemblierende Datei existiert */
      /* --------------------------------------------------- */
 
      if   (!ismem) {
@@ -169,9 +160,9 @@ char *argv[];
                newline: cerrws(CRLF);
                Pterm(1);
                }
-          flength =  dta.d_length;     /* DateilÑnge ermitteln */
+          flength =  dta.d_length;     /* Dateil√§nge ermitteln */
           makepath(path, argname, dta.d_fname);   /* Pfad und Name zusammensetzen */
-          if   (0L > (retcode = Fopen(path, RMODE_RD))) {        /* Datei îffnen */
+          if   (0L > (retcode = Fopen(path, RMODE_RD))) {        /* Datei √∂ffnen */
                cerrws("Cannot open ");
                cerrws(path);
                goto newline;
@@ -179,19 +170,19 @@ char *argv[];
           prg_file = (int) retcode;
 
 
-          /* Wenn Datei ausfÅhrbar, ProgrammlÑnge aus Segmentangaben holen */
-          /* Sonst DateilÑnge verwenden */
+          /* Wenn Datei ausf√ºhrbar, Programml√§nge aus Segmentangaben holen */
+          /* Sonst Dateil√§nge verwenden */
 
           if   (lies_header())
           	{
-               fws(HDL_CON,dta.d_fname);                   /* GEMDOS- Header prÅfen */
+               fws(HDL_CON,dta.d_fname);                   /* GEMDOS- Header pr√ºfen */
                fws(HDL_CON," is not a program file\r\n");
                isexe = FALSE;
                data_len = bss_len = sym_len = 0L;
                text_len = flength;
                }
 		else {
-			/* PrÅfen, ob es sich um eine GEMDOS- Objektdatei handelt */
+			/* GEMDOS object files carry a valid 0x601a header. */
 			isobj = (strlen(path) > 1 &&
 				   path[strlen(path) - 2] == '.' &&
 				   path[strlen(path) - 1] == 'O');
@@ -206,13 +197,13 @@ char *argv[];
           makenam(path,dta.d_fname);
           }
 
-     /* Speicher fÅr Tabellen holen */
+     /* Speicher f√ºr Tabellen holen */
      /* --------------------------- */
 
      if   (ismem)
-          datei = (int *) m_beg;
+          datei = (int16_t *) m_beg;
      else {
-     	if   (0L == (datei = (int *)  Malloc(text_len+data_len+100L)))
+     	if   (0L == (datei = (int16_t *)  Malloc(text_len+data_len+100L)))
      		{
                memerr: cerrws("Not enough Memory");
                goto err;
@@ -253,7 +244,7 @@ char *argv[];
      makeext(dta.d_fname,".sym");
      symtab_write(sym_len,dta.d_fname);          /* Symboldatei schreiben */
 
-     makeext(dta.d_fname,".lbl");                 /* Workfiles erîffnen */
+     makeext(dta.d_fname,".lbl");                 /* Workfiles er√∂ffnen */
      if   (0L > (retcode  = Fcreate(dta.d_fname, 0))) {
           err1: cerrws("Cannot create workfiles");
           err:  if  (!ismem) Fclose(prg_file);
@@ -270,7 +261,7 @@ char *argv[];
                }
           rlo_file = (int) retcode;
 
-          puffer[0] = text_len;            /* SegmentlÑngen auf rlo- Datei */
+          puffer[0] = text_len;            /* Segmentl√§ngen auf rlo- Datei */
           puffer[1] = data_len;            /* ...schreiben */
           puffer[2] = bss_len;
           puffer[3] = sym_len;
@@ -393,7 +384,7 @@ long *z1, *z2;
 /**************************************************************
 *
 * Rechnet Langwort in 8stellige Hex- Zahl um und gibt die
-* Anfangsadresse des Strings zurÅck.
+* Anfangsadresse des Strings zur√ºck.
 *
 **************************************************************/
 
@@ -405,7 +396,7 @@ long wert;
 
      string[8] = string[9] = EOS;
      for (i = 0; i < 8; i++) {
-         j      = (int) (wert & 15);     /* 4 Bit fÅr Hex- Ziffer isolieren */
+         j      = (int) (wert & 15);     /* 4 Bit f√ºr Hex- Ziffer isolieren */
          wert >>= 4;
          string[7-i] =  (j < 10) ? ('0'+(char) j) : ('a'+(char) (j-10));
          }
@@ -416,8 +407,8 @@ long wert;
 /**************************************************************
 *
 * Tauscht im Dateinamen <name> die Extension durch <ext> aus.
-* Hat <name> noch keine Extension, wird sie angehÑngt.
-* <ext> muû mit Punkt angegeben werden!
+* Hat <name> noch keine Extension, wird sie angeh√§ngt.
+* <ext> mu√ü mit Punkt angegeben werden!
 *
 **************************************************************/
 
@@ -440,9 +431,9 @@ char name[],ext[];
 
 /**************************************************************
 *
-* Liest den GEMDOS- Header der Eingabedatei und die Grîûen der
+* Liest den GEMDOS- Header der Eingabedatei und die Gr√∂√üen der
 * Programm- Segmente.
-* RÅckgabe TRUE, wenn Fehler.
+* R√ºckgabe TRUE, wenn Fehler.
 *
 **************************************************************/
 
@@ -470,7 +461,7 @@ int lies_header( void )
           return(FALSE);
           }
      else {
-          Fseek(0L,prg_file,0);         /* Dateipointer zurÅckstellen */
+          Fseek(0L,prg_file,0);         /* Dateipointer zur√ºckstellen */
           relo_pos = -1L;
           return(TRUE);
           }
@@ -576,7 +567,7 @@ int objrelo( void )
 *
 * Schreibt einen String <string> auf die Datei mit dem handle
 * <file>. 
-* Es wird genau dann TRUE zurÅckgegeben, wenn ein Fehler
+* Es wird genau dann TRUE zur√ºckgegeben, wenn ein Fehler
 * aufgetreten ist.
 *
 **************************************************************/
@@ -598,11 +589,7 @@ char string[];
 
 void cerrws(char *string)
 {
-	extern BASPAG *_BasPag;
-
-
-	Fwrite( (_BasPag->p_stdfh[STDERR]) ? STDERR : HDL_CON,
-		  strlen(string), string);
+	Fwrite(HDL_CON, (long) strlen(string), string);
 }
 
 
@@ -612,7 +599,7 @@ void cerrws(char *string)
 * auf die der Filepointer bereits zeigt.
 * Falls die Symboltabelle existiert, wird sie unter dem Namen
 * <name> abgespeichert (als ASCII- Datei).
-* Es wird genau dann TRUE zurÅckgegeben, wenn ein Fehler
+* Es wird genau dann TRUE zur√ºckgegeben, wenn ein Fehler
 * aufgetreten ist.
 *
 **************************************************************/
@@ -622,6 +609,7 @@ void printtype(int file, int i)
 	char	ausgabe[100];
 
 	ausgabe[0] = EOS;
+	i = (int) (unsigned short) i;	/* Symboltyp ist 16 Bit */
 	if	(i & 0x8800)	/* definiert UND undefiniert */
 		i &= ~0x8000;
      if	(i & 0x0100)	strcat(ausgabe, "bss  ");
@@ -632,8 +620,8 @@ void printtype(int file, int i)
      if	(i & 0x2000)	strcat(ausgabe, "global ");
      if	(i & 0x4000)	strcat(ausgabe, "equated ");
      if	(i & 0x8000)	strcat(ausgabe, "defined ");
-     if	(i == 0)		strcat(ausgabe, "Weiû der Geier");
-	/* rechtsbÅndige Leerstellen entfernen */
+     if	(i == 0)		strcat(ausgabe, "Wei\236 der Geier");
+	/* rechtsb√ºndige Leerstellen entfernen */
 	while(ausgabe[0] != EOS &&
 		 ausgabe[strlen(ausgabe) - 1] == ' ')
 		ausgabe[strlen(ausgabe) - 1] = EOS;
@@ -650,7 +638,7 @@ int symtab_write(long symtablen, char *name)
 	register int  i;
 
 
-	/* Existiert Åberhaupt eine Symboltabelle ? */
+	/* Existiert √ºberhaupt eine Symboltabelle ? */
 	if	(symtablen <= 0L)
 		return(FALSE);
 
@@ -676,7 +664,7 @@ int symtab_write(long symtablen, char *name)
 			}
 		fws (sym_file, "* ");
 		typ = symboleintrag.symtype;
-		symboleintrag.symtype = 0; /* symname mit '\0' abschlieûen */
+		symboleintrag.symtype = 0; /* symname mit '\0' abschlie√üen */
 		for (i = 0; i < 8; i++)    /* auf 8 Stellen erweitern */
 			if	(symboleintrag.symname[i] == EOS)
 		 		symboleintrag.symname[i]  =  ' ';
@@ -699,16 +687,16 @@ int symtab_write(long symtablen, char *name)
 
 /**************************************************************
 *
-* Versucht, mîglichst alle Adressen des Programms ausfindig zu
+* Versucht, m√∂glichst alle Adressen des Programms ausfindig zu
 * machen, auf die irgendwo im Programm Bezug genommen wird.
-* Dazu werden zunÑchst alle relokatiblen Adressen betrachtet
+* Dazu werden zun√§chst alle relokatiblen Adressen betrachtet
 * (aus Relocation- Tabelle in tab[]), dann alle relativ mit
 * "bsr", "bra", "bcc", "dbcc" oder "offset(PC)" adressierten
 * Labels im Text- Segment gesucht.
-* Anschlieûend wird die Tabelle sortiert und abgespeichert.
+* Anschlie√üend wird die Tabelle sortiert und abgespeichert.
 * (jedes Label als Langwort seines Adressenwerts).
-* Die maximale TabellenlÑnge long tab_max ist global.
-* Es wird genau dann TRUE zurÅckgegeben, wenn ein Fehler
+* Die maximale Tabellenl√§nge long tab_max ist global.
+* Es wird genau dann TRUE zur√ºckgegeben, wenn ein Fehler
 * aufgetreten ist.
 *
 **************************************************************/
@@ -763,7 +751,7 @@ void label_prg( void )
 
 
 	for	(i = 1L; i <= tab[0]; i++)
-		{ 					/* tab[0] enthÑlt akt. TabellenlÑnge */
+		{ 					/* tab[0] enth√§lt akt. Tabellenl√§nge */
          	if	( (tab[i] & 1L) ||                   /* ungerade Adresse */
                 (tab[i] > text_len+data_len) ||    /* out of ... */
                 (tab[i] < 0L) ) {                  /* ... range  */
@@ -774,19 +762,19 @@ void label_prg( void )
 		}
 
                                  /* Tabelle ordnen, doppelte Elemente... */
-     ordne();                    /* ...entfernen und LÑnge setzen */
+     ordne();                    /* ...entfernen und L√§nge setzen */
 
      adr = 0L;
      while (adr < text_len)
            decode();             /* Befehl dekodieren und ggf. Label... */
-                                 /* ...in Tabelle einfÅgen */
+                                 /* ...in Tabelle einf√ºgen */
 }
 
 
 void label_obj( void )
 {
      register	long i;
-			int 		puffer;
+			uint16_t	puffer;
 	register 	long 	offset;
 
 
@@ -826,9 +814,9 @@ void label_obj( void )
 			}
 		offset += 2;
 		}
-     tab[0] = i - 1L;			/* aktuelle TabellenlÑnge setzen */
+     tab[0] = i - 1L;			/* aktuelle Tabellenl√§nge setzen */
 							/* Tabelle ordnen, doppelte Elemente... */
-	ordne();					/* ...entfernen und LÑnge setzen */
+	ordne();					/* ...entfernen und L√§nge setzen */
 
 	/* Labels aus Symbol- Tabelle holen */
 	/* -------------------------------- */
@@ -872,8 +860,8 @@ void label_obj( void )
 
 /***********************************
 *
-* FÅgt ein Label zur Tabelle zu.
-*  RÅckgabe: TRUE     Tabelle voll
+* F√ºgt ein Label zur Tabelle zu.
+*  R√ºckgabe: TRUE     Tabelle voll
 *     sonst  FALSE
 *
 ***********************************/
@@ -890,12 +878,12 @@ int add_tab(long lbl)
      while(TRUE) {
           if   (links > rechts) {
                pos = links;
-               if (tab[0] >= tab_max)   /* bei pos einfÅgen */
-                  return(TRUE);         /* öberlauf */
+               if (tab[0] >= tab_max)   /* bei pos einf√ºgen */
+                  return(TRUE);         /* √úberlauf */
                for (links = tab[0]+1L; links > pos; links--)
                    tab[links] = tab[links - 1L];
                tab[links] = lbl;
-               (tab[0])++;              /* Tabelle ist lÑnger geworden */
+               (tab[0])++;              /* Tabelle ist l√§nger geworden */
                return(FALSE);
                }
           mitte = (rechts + links) >> 1L;

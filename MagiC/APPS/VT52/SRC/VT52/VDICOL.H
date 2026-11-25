@@ -4,7 +4,7 @@
 */
 
 #include	<Types2B.h>
-#include	<stddef.h>														/* wird fÅr offsetof() benîtigt */
+#include	<stddef.h>														/* wird f√ºr offsetof() ben√∂tigt */
 #include	<VDI.H>
 
 #ifndef	__VDICOL__
@@ -14,20 +14,20 @@
 
 #ifndef	__COLORMAP__
 
-#define	VARIABLE_ARRAY_SIZE	1										/* Konstante fÅr variabel groûe Felder (muû wegen C++ bzw. Ansi-Strict >= 1 sein) */
+#define	VARIABLE_ARRAY_SIZE	1										/* Konstante f√ºr variabel gro√üe Felder (mu√ü wegen C++ bzw. Ansi-Strict >= 1 sein) */
 
 #define	REFS_ARE_PTRS	1
 
 typedef struct
 {
-	int16	red;																/* Rot-IntensitÑt in Promille (0-1000) */
-	int16	green;															/* GrÅn-IntensitÑt in Promille (0-1000) */
-	int16	blue;																/* Blau-IntensitÑt in Promille (0-1000) */
+	int16	red;																/* Rot-Intensit√§t in Promille (0-1000) */
+	int16	green;															/* Gr√ºn-Intensit√§t in Promille (0-1000) */
+	int16	blue;																/* Blau-Intensit√§t in Promille (0-1000) */
 } RGB1000;
 
 
 /*----------------------------------------------------------------------------------------*/
-/* Konstanten fÅr Pixelformate																				*/
+/* Konstanten f√ºr Pixelformate																				*/
 /*----------------------------------------------------------------------------------------*/
 #define	PX_1COMP		0x01000000L										/* Pixel besteht aus einer benutzten Komponente: Farbindex */
 #define	PX_2COMP		0x02000000L										/* Pixel besteht aus zwei benutzten Komponenten, z.B. AG */
@@ -66,14 +66,14 @@ typedef struct
 #define	PX_48BIT		0x00000030L										/* Pixel besteht aus 48 Bit */
 #define	PX_64BIT		0x00000040L										/* Pixel besteht aus 64 Bit */
 
-#define	PX_CMPNTS	0x0f000000L										/* Maske fÅr Anzahl der Pixelkomponenten */
-#define	PX_FLAGS		0x00f00000L										/* Maske fÅr diverse Flags */
-#define	PX_PACKING	0x00030000L										/* Maske fÅr Pixelformat */
-#define	PX_USED		0x0000ff00L										/* Maske fÅr Anzahl der benutzten Bits */
-#define	PX_BITS		0x000000ffL										/* Maske fÅr Anzahl der Bits pro Pixel */
+#define	PX_CMPNTS	0x0f000000L										/* Maske f√ºr Anzahl der Pixelkomponenten */
+#define	PX_FLAGS		0x00f00000L										/* Maske f√ºr diverse Flags */
+#define	PX_PACKING	0x00030000L										/* Maske f√ºr Pixelformat */
+#define	PX_USED		0x0000ff00L										/* Maske f√ºr Anzahl der benutzten Bits */
+#define	PX_BITS		0x000000ffL										/* Maske f√ºr Anzahl der Bits pro Pixel */
 
 /*----------------------------------------------------------------------------------------*/
-/* Pixelformate fÅr ATARI-Grafik																				*/
+/* Pixelformate f√ºr ATARI-Grafik																				*/
 /*----------------------------------------------------------------------------------------*/
 #define	PX_ATARI1	( PX_PACKED + PX_1COMP + PX_USES1 + PX_1BIT )
 #define	PX_ATARI2	( PX_IPLANES + PX_1COMP + PX_USES2 + PX_2BIT )
@@ -82,7 +82,7 @@ typedef struct
 #define	PX_FALCON15	( PX_PACKED + PX_3COMP + PX_USES16 + PX_16BIT )
 
 /*----------------------------------------------------------------------------------------*/
-/* Pixelformate fÅr Macintosh																					*/
+/* Pixelformate f√ºr Macintosh																					*/
 /*----------------------------------------------------------------------------------------*/
 #define	PX_MAC1		( PX_PACKED + PX_1COMP + PX_USES1 + PX_1BIT )
 #define	PX_MAC4		( PX_PACKED + PX_1COMP + PX_USES4 + PX_4BIT )
@@ -91,7 +91,7 @@ typedef struct
 #define	PX_MAC32		( PX_xFIRST + PX_PACKED + PX_3COMP + PX_USES24 + PX_32BIT )
 
 /*----------------------------------------------------------------------------------------*/
-/* Pixelformate fÅr Grafikkarten																				*/
+/* Pixelformate f√ºr Grafikkarten																				*/
 /*----------------------------------------------------------------------------------------*/
 #define	PX_VGA1		( PX_PACKED + PX_1COMP + PX_USES1 + PX_1BIT )
 #define	PX_VGA4		( PX_PLANES + PX_1COMP + PX_USES4 + PX_4BIT )
@@ -106,14 +106,14 @@ typedef struct
 #define	PX_NOVA32	( PX_PACKED + PX_3COMP + PX_USES24 + PX_32BIT )
 
 /*----------------------------------------------------------------------------------------*/
-/* Pixelformate fÅr Drucker																					*/
+/* Pixelformate f√ºr Drucker																					*/
 /*----------------------------------------------------------------------------------------*/
 #define	PX_PRN1		( PX_PACKED + PX_1COMP + PX_USES1 + PX_1BIT )
 #define	PX_PRN8		( PX_PACKED + PX_1COMP + PX_USES8 + PX_8BIT )
 #define	PX_PRN32		( PX_xFIRST + PX_PACKED + PX_3COMP + PX_USES24 + PX_32BIT )
 
 /*----------------------------------------------------------------------------------------*/
-/* bevorzugte (schnelle) Pixelformate fÅr Bitmaps 														*/
+/* bevorzugte (schnelle) Pixelformate f√ºr Bitmaps 														*/
 /*----------------------------------------------------------------------------------------*/
 
 #define	PX_PREF1		( PX_PACKED + PX_1COMP + PX_USES1 + PX_1BIT )
@@ -183,7 +183,7 @@ typedef struct																/* Farbtabelle */
 	int32	map_id;															/* Kennung der Farbtabelle */
 	int32	color_space;													/* Farbraum */
 	int32	flags;															/* interne Flags */
-	int32	no_colors;														/* Anzahl der FarbeintrÑge */
+	int32	no_colors;														/* Anzahl der Farbeintr√§ge */
 
 	int32	reserved1;
 	int32	reserved2;
@@ -193,9 +193,9 @@ typedef struct																/* Farbtabelle */
 	COLOR_ENTRY	colors[VARIABLE_ARRAY_SIZE];
 } COLOR_TAB;
 
-#define	sizeof_COLOR_TAB	offsetof( COLOR_TAB, colors )		/* StrukturlÑnge ohne variablen Anhang */
+#define	sizeof_COLOR_TAB	offsetof( COLOR_TAB, colors )		/* Strukturl√§nge ohne variablen Anhang */
 
-/* vordefinierte Tabelle mit 256 EintrÑgen */
+/* vordefinierte Tabelle mit 256 Eintr√§gen */
 typedef struct																/* Farbtabelle */
 {
 	int32	magic;															/* 'ctab' */
@@ -206,7 +206,7 @@ typedef struct																/* Farbtabelle */
 	int32	map_id;															/* Kennung der Farbtabelle */
 	int32	color_space;													/* Farbraum */
 	int32	flags;															/* interne Flags */
-	int32	no_colors;														/* Anzahl der FarbeintrÑge */
+	int32	no_colors;														/* Anzahl der Farbeintr√§ge */
 
 	int32	reserved1;
 	int32	reserved2;
@@ -235,10 +235,10 @@ typedef INVERSE_CTAB	*ITAB_REF;
 
 #define	CBITMAP_MAGIC	CHAR_CONST32('cbtm')
 
-typedef struct	_gcbitmap												/* îffentliche Bitmapbeschreibung (mit Versionsheader) */
+typedef struct	_gcbitmap												/* √∂ffentliche Bitmapbeschreibung (mit Versionsheader) */
 {
 	int32			magic;													/* Strukturkennung 'cbtm' */
-	int32			length;													/* StrukturlÑnge */
+	int32			length;													/* Strukturl√§nge */
 	int32			format;													/* Strukturformat (0) */
 	int32			reserved;												/* reserviert (0) */
 
@@ -261,17 +261,17 @@ typedef struct	_gcbitmap												/* îffentliche Bitmapbeschreibung (mit Versi
 
 
 /*----------------------------------------------------------------------------------------*/
-/* Transfermodi fÅr Bitmaps																					*/
+/* Transfermodi f√ºr Bitmaps																					*/
 /*----------------------------------------------------------------------------------------*/
 
 /* Moduskonstanten */
-#define	T_NOT					4											/* Konstante fÅr Invertierung bei logischen Transfermodi */
-#define	T_COLORIZE			16											/* Konstante fÅr EinfÑrbung */
+#define	T_NOT					4											/* Konstante f√ºr Invertierung bei logischen Transfermodi */
+#define	T_COLORIZE			16											/* Konstante f√ºr Einf√§rbung */
 
 #define	T_LOGIC_MODE		0
 #define	T_DRAW_MODE			32
-#define	T_ARITH_MODE		64											/* Konstante fÅr Arithmetische Transfermodi */
-#define	T_DITHER_MODE		128										/* Konstante fÅrs Dithern */
+#define	T_ARITH_MODE		64											/* Konstante f√ºr Arithmetische Transfermodi */
+#define	T_DITHER_MODE		128										/* Konstante f√ºrs Dithern */
 
 /* logische Transfermodi */
 #define	T_LOGIC_COPY		T_LOGIC_MODE+0
@@ -302,7 +302,7 @@ typedef struct	_gcbitmap												/* îffentliche Bitmapbeschreibung (mit Versi
 /* Strukturen																										*/
 /*----------------------------------------------------------------------------------------*/
 
-typedef struct																/* Rechteck fÅr 16-Bit-Koordinaten */
+typedef struct																/* Rechteck f√ºr 16-Bit-Koordinaten */
 {
 	int16	x1;
 	int16	y1;
@@ -310,7 +310,7 @@ typedef struct																/* Rechteck fÅr 16-Bit-Koordinaten */
 	int16	y2;
 } RECT16;
 
-typedef struct																/* Rechteck fÅr 32-Bit-Koordinaten */
+typedef struct																/* Rechteck f√ºr 32-Bit-Koordinaten */
 {
 	int32	x1;
 	int32	y1;
@@ -320,18 +320,18 @@ typedef struct																/* Rechteck fÅr 32-Bit-Koordinaten */
 
 typedef struct
 {
-	int32	size;					/* LÑnge der Struktur, muû vor vqt_xfntinfo() gesetzt werden */
-	int16	format;				/* Fontformat, z.B. 4 fÅr TrueType */
+	int32	size;					/* L√§nge der Struktur, mu√ü vor vqt_xfntinfo() gesetzt werden */
+	int16	format;				/* Fontformat, z.B. 4 f√ºr TrueType */
 	int16	id;					/* Font-ID, z.B. 6059 */
 	int16	index;				/* Index */
-	int8	font_name[50];		/* vollstÑndiger Fontname, z.B. "Century 725 Italic BT" */
+	int8	font_name[50];		/* vollst√§ndiger Fontname, z.B. "Century 725 Italic BT" */
 	int8	family_name[50];	/* Name der Fontfamilie, z.B. "Century725 BT" */
 	int8	style_name[50];	/* Name des Fontstils, z.B. "Italic" */
 	int8	file_name1[200];	/* Name der 1. Fontdatei, z.B. "C:\FONTS\TT1059M_.TTF" */
 	int8	file_name2[200];	/* Name der optionalen 2. Fontdatei */
 	int8	file_name3[200];	/* Name der optionalen 3. Fontdatei */
-	int16	pt_cnt;				/* Anzahl der Punkthîhen fÅr vst_point(), z.B. 10 */
-	int16	pt_sizes[64];		/* verfÅgbare Punkthîhen, z.B. { 8, 9, 10, 11, 12, 14, 18, 24, 36, 48 } */
+	int16	pt_cnt;				/* Anzahl der Punkth√∂hen f√ºr vst_point(), z.B. 10 */
+	int16	pt_sizes[64];		/* verf√ºgbare Punkth√∂hen, z.B. { 8, 9, 10, 11, 12, 14, 18, 24, 36, 48 } */
 } XFNT_INFO;
 
 /*----------------------------------------------------------------------------------------*/

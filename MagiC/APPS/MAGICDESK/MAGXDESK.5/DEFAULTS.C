@@ -1,17 +1,27 @@
 /*********************************************************************
 *
-* Dieses Modul enthÑlt das Laden und Abspeichern der Defaults
+* Dieses Modul enth√§lt das Laden und Abspeichern der Defaults
 *
 *********************************************************************/
 
 #define  PGM_I_VERSION	1
 
-#include <mgx_dos.h>
-#include "k.h"
+/*
+ * MAGX.INF layout as exposed through the AES shell buffer:
+ * the desktop status starts INF_DATA_OFFSET bytes after the '#_CTR'
+ * line.  Those bytes are the opaque control-field data, not text.
+ */
+#define INF_BUF_SIZE	65536U
+#define INF_READ_MAX	65535L
+#define INF_DATA_OFFSET	128U
+/* 0xffff is the kernel's "return the size" sentinel for shel_get(). */
+#define SHELL_IO_MAX	65534U
+
+#include "K.H"
 #include <stdlib.h>
 #include <string.h>
-#include <portab.h>
-#include "kachel.h"
+#include "KACHEL.H"
+#include <stdio.h>
 
 
 /****************************************************************
@@ -27,34 +37,34 @@ char inf_name[] = "A:\\MAGX.INF";
 char desk_path[128];
 
 char *apdatabuf = NULL;
-long n_apps = 0L;		/* TabellenlÑnge */
+long n_apps = 0L;		/* Tabellenl√§nge */
 APPLICATION *apps;		/* Tabelle */
 CICONBLK *std_app_icon;
 
-long n_dfiles = 0L;		/* TabellenlÑnge */
+long n_dfiles = 0L;		/* Tabellenl√§nge */
 DATAFILE *dfiles;		/* Tabelle */
 CICONBLK *std_dat_icon;
 
-long n_paths = 0L;		/* TabellenlÑnge */
+long n_paths = 0L;		/* Tabellenl√§nge */
 PATHNAME *paths;		/* Tabelle */
-CICONBLK *std_fld_icon;	/* fÅr Ordner */
+CICONBLK *std_fld_icon;	/* f√ºr Ordner */
 
-long n_specs = 0L;		/* TabellenlÑnge */
+long n_specs = 0L;		/* Tabellenl√§nge */
 SPECIALOBJECT *specs;	/* Tabelle */
 
-CICONBLK *std_dsk_icon;	/* fÅr Laufwerk */
-CICONBLK *std_bat_icon;	/* fÅr Batchdatei */
-CICONBLK *std_prt_icon;	/* fÅr Drucker */
-CICONBLK *std_tra_icon;	/* fÅr Papierkorb */
-CICONBLK *std_dev_icon;	/* fÅr Devices */
-CICONBLK *std_par_icon;	/* fÅr Elter-Verzeichnis ".." */
+CICONBLK *std_dsk_icon;	/* f√ºr Laufwerk */
+CICONBLK *std_bat_icon;	/* f√ºr Batchdatei */
+CICONBLK *std_prt_icon;	/* f√ºr Drucker */
+CICONBLK *std_tra_icon;	/* f√ºr Papierkorb */
+CICONBLK *std_dev_icon;	/* f√ºr Devices */
+CICONBLK *std_par_icon;	/* f√ºr Elter-Verzeichnis ".." */
 
 
 
 /****************************************************************
 *
 * Liest die vom Hilfsprogramm APPLICAT erstellte Datei, die
-* die angemeldeten Dateitypen sowie die Icons enthÑlt.
+* die angemeldeten Dateitypen sowie die Icons enth√§lt.
 *
 ****************************************************************/
 
@@ -96,7 +106,12 @@ static void init_app_icons(void)
 
 /****************************************************************
 *
-* Hilfsfunktion fÅr load_app_icons()
+* Hilfsfunktion f√ºr load_app_icons()
+*
+* <buf> always belongs to the cache: APPLICAT allocates the live
+* 'AK' attachment with GEMDOS Malloc(), and load_app_icons() below
+* does the same for applicat.dat.  Release it with Mfree(), never
+* with libc free().
 *
 ****************************************************************/
 
@@ -107,20 +122,20 @@ static int _load_app_icons(char *buf)
 	CICONBLK *stdci;
 	struct ico_head *ich;
 	register long i,j;
-	long flen;
 	register APPLICATION *ap;
 	register DATAFILE *da;
 	register PATHNAME *pa;
 	register SPECIALOBJECT *sp;
-	struct
+	struct __attribute__((__packed__, __aligned__(2)))
 	{
-		long     magic;
-		int      subfn;
-		int      numicns;
+		long magic;
+		WORD subfn;
+		WORD numicns;
 		CICONBLK **cictab;
-		char     *data;
-		char     *endptr;
+		char *data;
+		char *endptr;
 	} magic_rcfix;
+	_Static_assert(sizeof(magic_rcfix) == 20, "MagiC resource fix header ABI");
 
 
 	ich = (struct ico_head *) buf;
@@ -136,14 +151,14 @@ static int _load_app_icons(char *buf)
 
 	if ((ich->magic != 'AnKr') || (ich->version != 2))
 	{
-		Mfree(buf);
+		(void) Mfree(buf);
 		return -1;
 	}
 
 	init_app_icons();		/* immer erst Standard-Icons */
 	if (apdatabuf)
 	{
-		Mfree(apdatabuf);
+		(void) Mfree(apdatabuf);
 		n_apps = n_dfiles = n_paths = n_specs = 0L;
 	}
 
@@ -170,8 +185,12 @@ static int _load_app_icons(char *buf)
 	magic_rcfix.data = (char *) icons;
 	magic_rcfix.data += n_icons * sizeof(CICONBLK *);
 	rsrc_rcfix((RSHDR *) &magic_rcfix);
-	flen = magic_rcfix.endptr - buf;
-	Mshrink(0, buf, flen);
+
+	/*
+	 * Keep <buf> as the cache base and keep the GEMDOS block at the
+	 * size Malloc() returned.  rsrc_rcfix() stores absolute pointers
+	 * into this block, so Mshrink()/realloc() would make them stale.
+	 */
 
 	/* relozieren */
 
@@ -250,7 +269,7 @@ static int _load_app_icons(char *buf)
 
 /****************************************************************
 *
-* LÑdt alle Icons aus der von APPLICAT erstellten Datenbank
+* L√§dt alle Icons aus der von APPLICAT erstellten Datenbank
 * "applicat.dat"
 *
 ****************************************************************/
@@ -277,7 +296,10 @@ void load_app_icons(void)
 	else
 		goto err;
 
-	buf = Malloc(flen);
+	if (flen < (long) sizeof(struct ico_head))
+		goto err;
+
+	buf = (char *) (uintptr_t) Malloc(flen);
 	if (!buf)
 	{
 		err:
@@ -289,7 +311,7 @@ void load_app_icons(void)
 	Fclose(fd);
 	if (retcode != flen)
 	{
-		Mfree(buf);
+		(void) Mfree(buf);
 		return;
 	}
 
@@ -299,12 +321,12 @@ void load_app_icons(void)
 
 /****************************************************************
 *
-* Legt die Icons fÅr den Desktop-Hintergrund fest
+* Legt die Icons f√ºr den Desktop-Hintergrund fest
 *
-* initial = TRUE:	ob_x ist die Iconposition, Ñndere
-*				ob_x entsprechend so, daû das Icon selbst
+* initial = TRUE:	ob_x ist die Iconposition, √§ndere
+*				ob_x entsprechend so, da√ü das Icon selbst
 *				auf derselben Position bleibt.
-*		= FALSE:	ob_x nicht verÑndern
+*		= FALSE:	ob_x nicht ver√§ndern
 *
 ****************************************************************/
 
@@ -323,7 +345,7 @@ static void set_deskt_icons(int initial)
 			i < n_deskicons; i++,o++,ic++)
 	{
 		type = ic->icon_type;
-		if (type)				/* Icon gÅltig */
+		if (type)				/* Icon g√ºltig */
 		{
 			txt = ic->text;
 			name = NULL;
@@ -404,8 +426,8 @@ void re_read_icons(void *data)
 * Sucht in der Icon-Datenbank nach einer Applikation.
 * fname ist der Programmname ohne Pfad. Die Programmnamen
 * in der Icondatei liegen ohne Dateinamenerweiterung (extension) vor,
-* es sind keine Wildcards zulÑssig.
-* Groû-/Kleinschreibung wird ignoriert.
+* es sind keine Wildcards zul√§ssig.
+* Gro√ü-/Kleinschreibung wird ignoriert.
 *
 ****************************************************************/
 
@@ -438,16 +460,16 @@ APPLICATION * find_application(char *fname)
 
 /****************************************************************
 *
-* Sucht in der Icon-Datenbank nach einer nicht ausfÅhrbaren Datei.
+* Sucht in der Icon-Datenbank nach einer nicht ausf√ºhrbaren Datei.
 * fname ist der Dateiname ohne Pfad. Die Dateinamen
 * in der Icondatei liegen in folgenden Formen vor:
 *
 *	exakter Name
 *	*.ext
 *
-* ZunÑchst werden die exakten Namen ÅberprÅft, sie liegen in
+* Zun√§chst werden die exakten Namen √ºberpr√ºft, sie liegen in
 * der Tabelle vorn.
-* Groû-/Kleinschreibung wird ignoriert.
+* Gro√ü-/Kleinschreibung wird ignoriert.
 *
 ****************************************************************/
 
@@ -479,7 +501,7 @@ DATAFILE * find_datafile(char *fname)
 /***************************************************************
 *
 * Sucht in der Icon-Datenbank nach einem Ordner.
-* Groû-/Kleinschreibung wird ignoriert.
+* Gro√ü-/Kleinschreibung wird ignoriert.
 *
 ****************************************************************/
 
@@ -519,7 +541,7 @@ PATHNAME * find_path(char *path, char *just_name)
 * Sucht den Programmnamen <fname> in der Icon-Datenbank
 * <fname> ist der Programmname ohne Pfad
 *
-* RÅckgabe:	Zeiger auf Iconblk
+* R√ºckgabe:	Zeiger auf Iconblk
 *
 ****************************************************************/
 
@@ -548,7 +570,7 @@ CICONBLK * pgmname_to_iconblk(char *fname)
 * Sucht den Dateinamen <fname> in der Icon-Datenbank
 * <fname> ist der Dateiname ohne Pfad
 *
-* RÅckgabe:	Zeiger auf Iconblk
+* R√ºckgabe:	Zeiger auf Iconblk
 *
 ****************************************************************/
 
@@ -567,9 +589,9 @@ CICONBLK * datname_to_iconblk(char *fname)
 *
 * Sucht ein Laufwerk in der Icon-Datenbank
 * <diskname> ist 'A' oder 'C' usw.
-* Optional wird die Icon-Beschriftung zurÅckgegeben.
+* Optional wird die Icon-Beschriftung zur√ºckgegeben.
 *
-* RÅckgabe:	Zeiger auf Iconblk
+* R√ºckgabe:	Zeiger auf Iconblk
 *
 ****************************************************************/
 
@@ -591,11 +613,11 @@ CICONBLK * diskname_to_iconblk(int diskname, char **name)
 /****************************************************************
 *
 * Sucht <path> in der Icon-Datenbank
-* <path> ist der volle Pfad mit abschlieûendem '\'.
-* <nurname> ist ggf. der Ordnername mit abschlieûendem '\'
+* <path> ist der volle Pfad mit abschlie√üendem '\'.
+* <nurname> ist ggf. der Ordnername mit abschlie√üendem '\'
 *	oder NULL, dann wird er berechnet.
 *
-* RÅckgabe:	Zeiger auf Iconblk.
+* R√ºckgabe:	Zeiger auf Iconblk.
 *
 ****************************************************************/
 
@@ -614,8 +636,8 @@ CICONBLK * foldername_to_iconblk(char *path, char *just_name)
 
 /****************************************************************
 *
-* Gib Zeiger auf Iconblk fÅr des Elter-Verzeichnis ..
-*           (ein RÅckwÑrtspfeil)
+* Gib Zeiger auf Iconblk f√ºr des Elter-Verzeichnis ..
+*           (ein R√ºckw√§rtspfeil)
 *
 ****************************************************************/
 #pragma warn -par
@@ -628,7 +650,7 @@ CICONBLK * parentname_to_iconblk(char *path, char *just_name)
 
 /****************************************************************
 *
-* Gib Zeiger auf Iconblk fÅr eine Batch-Datei
+* Gib Zeiger auf Iconblk f√ºr eine Batch-Datei
 *
 ****************************************************************/
 #pragma warn -par
@@ -641,7 +663,7 @@ CICONBLK * batchname_to_iconblk(char *fname)
 
 /****************************************************************
 *
-* Gib Zeiger auf Iconblk fÅr eine GerÑte-Datei ("device")
+* Gib Zeiger auf Iconblk f√ºr eine Ger√§te-Datei ("device")
 *
 ****************************************************************/
 #pragma warn -par
@@ -654,7 +676,7 @@ CICONBLK * devicename_to_iconblk(char *fname)
 
 /****************************************************************
 *
-* Gib Zeiger auf Iconblk fÅr einen Alias (symbolic link)
+* Gib Zeiger auf Iconblk f√ºr einen Alias (symbolic link)
 *
 ****************************************************************/
 #pragma warn -par
@@ -672,7 +694,7 @@ CICONBLK * alias_to_iconblk(char *fname)
 
 /****************************************************************
 *
-* Gib Zeiger auf Iconblk fÅr weitere Objekte (Drucker, Papierkorb, ...)
+* Gib Zeiger auf Iconblk f√ºr weitere Objekte (Drucker, Papierkorb, ...)
 *
 ****************************************************************/
 CICONBLK * specialkey_to_iconblk(long key)
@@ -692,19 +714,19 @@ CICONBLK * specialkey_to_iconblk(long key)
 /****************************************************************
 *
 * Rechnet Koordinaten linear um. Der Wert <value> wurde bei
-* Bildschirmgrîûe <old> abgespeichert, jetzt ist die
-* Bildschirmgrîûe <new>.
+* Bildschirmgr√∂√üe <old> abgespeichert, jetzt ist die
+* Bildschirmgr√∂√üe <new>.
 *
 ****************************************************************/
 
-static void recalc(int *value, int old, int new)
+static void recalc(short *value, int old, int new)
 {
 	unsigned long tmp;
 
 	tmp    = (unsigned long) *value;
 	tmp   *= new;
 	tmp   /= old;
-	*value = (int) tmp;
+	*value = (short) tmp;
 }
 
 
@@ -718,7 +740,7 @@ void set_desktop(void)
 {
 	register OBJECT *o;
 	static USERBLK desktop;
-	extern int work_out[];
+	extern short work_out[];
 
 
 	tile_exit();		/* falls noch alte Kachel da */
@@ -737,7 +759,7 @@ void set_desktop(void)
 		}
 		else
 		{
-			Mfree(*bg_tile_path);
+			free(*bg_tile_path);
 			*bg_tile_path = NULL;
 		}
 	}
@@ -751,11 +773,15 @@ void set_desktop(void)
 
 /****************************************************************
 *
-* Hilfsfunktionen fÅr load_status()
+* Hilfsfunktionen f√ºr load_status()
 *
 ****************************************************************/
 
 static char *s;
+/* Only status_to_ascii() uses these; the scanner helpers above are
+   bounded by the trailing EOS in their input buffer. */
+static char *s_end;
+static int s_overflow;
 
 /*
 *  Liest eine Zeile bis zum Zeilenende.
@@ -776,7 +802,7 @@ static int scnlin(void)
 }
 
 /*
-*  Liest eine Zeichenkette bis zum nÑchsten ' '
+*  Liest eine Zeichenkette bis zum n√§chsten ' '
 */
 
 static void scnstr(char *t)
@@ -831,11 +857,29 @@ static char scnflg(void)
 }
 
 
+/*
+*  Gr√∂√üe des AES- Shell- Puffers.
+*
+*  Der Wert -1 ist der MagiC- Sentinel "liefere die Puffergr√∂√üe"
+*  (keine Byteanzahl).  GEMlib deklariert shel_get() mit einem
+*  vorzeichenbehafteten short, obwohl MagiC die Gr√∂√üe als unsigned
+*  int (0..65535) zur√ºckgibt.  Daher das Ergebnis als unsigned short
+*  erweitern; 0 bedeutet nach MagiC- Dokumentation einen Fehler.
+*/
+
+static unsigned int shell_buf_size(void)
+{
+	int size = shel_get(NULL, (short) -1);
+
+	return (unsigned int) (unsigned short) size;
+}
+
+
 /****************************************************************
 *
-* LÑdt bzw. setzt alle Defaults.
+* L√§dt bzw. setzt alle Defaults.
 * pass == 0: gmemptr initialisieren, d.h. n_icons,
-*            bestimmen und Speicher fÅr icon
+*            bestimmen und Speicher f√ºr icon
 *		   allozieren
 * pass == 1: Status  laden
 *
@@ -845,7 +889,7 @@ void load_status(int pass)
 {
 	register int i,dx,dy,icw,ich;
 	char **p;
-	int dummy;
+	short dummy;
 	char dummy_s[128];
 	int i_version;
 	char *inf;
@@ -863,7 +907,7 @@ void load_status(int pass)
 	if (!pass)
 	{
 		if (gmemptr)
-			Mfree(gmemptr);
+			free(gmemptr);
 		gmemptr = NULL;
 
 		icon = NULL;
@@ -873,8 +917,9 @@ void load_status(int pass)
 
 	if (pass)
 	{
+		ln_icns = 0;	/* bei fehlenden INF- Daten alle Icons leeren */
 
-		/* zunÑchst sicherheitshalber Defaults setzen */
+		/* zun√§chst sicherheitshalber Defaults setzen */
 		/* ------------------------------------------ */
 
 		(tree_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext)[0] = EOS;
@@ -913,13 +958,13 @@ void load_status(int pass)
 		settings.desk_patt_4 = 7;
 		settings.desk_raster = 1;
 		if (bg_tile_1)
-			Mfree(bg_tile_1);
+			free(bg_tile_1);
 		if (bg_tile_4)
-			Mfree(bg_tile_4);
+			free(bg_tile_4);
 		if (bg_tile_8)
-			Mfree(bg_tile_8);
+			free(bg_tile_8);
 		if (bg_tile_m)
-			Mfree(bg_tile_m);
+			free(bg_tile_m);
 		bg_tile_1 = bg_tile_4 = bg_tile_8 = bg_tile_m = NULL;
 
 		strcpy(ext_bat, "BAT");
@@ -948,16 +993,40 @@ void load_status(int pass)
 	/* Jetzt die Inf- Datei aus dem AES- Puffer holen */
 	/* ---------------------------------------------- */
 
-	len = shel_get(NULL, -1);	/* LÑnge des INF- Puffers ermitteln */
-	inf = Malloc((long) (len+1));
+	len = shell_buf_size();		/* L√§nge des INF- Puffers ermitteln */
+	inf = malloc((size_t) len + 1);
 	if (inf == NULL)
 	{
 		err_alert(ENSMEM);
 		return;
 	}
-	inf[len] = EOS;
-	shel_get(inf, len);
-	s = inf + 128;			/* Beginn der Desktop- Daten */
+	inf[0] = EOS;
+	if (len >= INF_DATA_OFFSET)
+	{
+		unsigned int read_len =
+				(len > SHELL_IO_MAX) ? SHELL_IO_MAX : len;
+
+		/*
+		 * Eine Lesel√§nge von 0xffff w√ºrde im 16-Bit- AES- Aufruf
+		 * wieder als Sentinel "liefere die Gr√∂√üe" ankommen.
+		 */
+		inf[read_len] = EOS;
+		if (!shel_get(inf, read_len))
+		{
+			inf[0] = EOS;
+			s = inf;		/* Lesefehler: Defaults verwenden */
+		}
+		else
+			s = inf + INF_DATA_OFFSET;	/* Beginn der Desktop- Daten */
+	}
+	else
+	{
+		/*
+		 * Ohne 128-Byte- Kontrollfeld gibt es keine Desktop- Daten;
+		 * nicht √ºber <inf> hinaus lesen.
+		 */
+		s = inf;
+	}
 
 	ln_wind = 1;					/* erstes Fenster */
 	ln_pgms = 0;
@@ -970,13 +1039,13 @@ void load_status(int pass)
 		Rform_alert(1, ALRT_ERR_AT_INF);
 		goto install;
 	}
-	s += 5;					/* #_DSK Åberspringen */
+	s += 5;					/* #_DSK √ºberspringen */
 	scnstr(dummy_s);			/* "MAGXDESK" */
 	scnstr(dummy_s);			/* Vxx.xx */
 	i_version = scndez();
 	if (i_version != PGM_I_VERSION)
 		goto err;				/* falsche INF- Version */
-	if (!scnlin())			/* Zeile #_DSK Åberspringen */
+	if (!scnlin())			/* Zeile #_DSK √ºberspringen */
 		goto err;
 
 	/* Wir beginnen mit dem Einlesen */
@@ -986,7 +1055,7 @@ void load_status(int pass)
 	old_h = desk_g.g_h;
 	ln_icns = 0;		/* erstes Icon */
 
-	/* Die groûe Schleife fÅrs Einlesen */
+	/* Die gro√üe Schleife f√ºrs Einlesen */
 	/* -------------------------------- */
 
 	for (; *s; scnlin())
@@ -1071,7 +1140,7 @@ void load_status(int pass)
 				g->g_w = scndez();
 				g->g_h = scndez();
 
-				/* Fensterpositionen fÅr Auflîsung umrechnen */
+				/* Fensterpositionen f√ºr Aufl√∂sung umrechnen */
 				/* ----------------------------------------- */
 
 				if (old_w != desk_g.g_w)
@@ -1101,6 +1170,7 @@ void load_status(int pass)
 				int shift,flags;
 
 				shift = scndez();
+				flags = 0;
 				if (shift < 0)
 				{
 					switch (shift)
@@ -1119,7 +1189,7 @@ void load_status(int pass)
 
 				scnbstr(buf);
 
-				if (*buf)	/* Fenster geîffnet */
+				if (*buf)	/* Fenster ge√∂ffnet */
 				{
 					name = get_name(buf);
 					strcpy(buf2, name);
@@ -1133,7 +1203,7 @@ void load_status(int pass)
 			case 'IC':
 				if (pass)
 				{
-					int *obx,*oby;
+					short *obx,*oby;
 					int ich = tree_icons[I_DSK].ob_height + 1;
 
 
@@ -1186,7 +1256,7 @@ void load_status(int pass)
 				scnbstr(dummy_s);
 				if ((i = (int) strlen(dummy_s)) > 0)
 				{
-					*p = Malloc(i + 1);
+					*p = malloc((size_t) i + 1);
 					if (*p)
 						strcpy(*p, dummy_s);
 				}
@@ -1242,14 +1312,14 @@ void load_status(int pass)
 	} /* END FOR */
 
 	install:
-	Mfree(inf);
+	free(inf);
 
 	if (!pass)		/* wollte nur n_icons bestimmen */
 	{
 
 
 		n_deskicons = ln_icns + PLUSICONS;
-		gmemptr = Malloc(sizeof(ICON)        * n_deskicons +
+		gmemptr = malloc(sizeof(ICON)        * n_deskicons +
 					  sizeof(OBJECT)      * (n_deskicons+1));
 		if (!gmemptr)
 		{
@@ -1324,50 +1394,72 @@ void load_status(int pass)
 
 /****************************************************************
 *
-* Hilfsfunktion fÅr status_to_ascii()
+* Hilfsfunktion f√ºr status_to_ascii()
+*
+* H√§lt immer ein Byte f√ºr das abschlie√üende EOS frei.  Bei √úberlauf
+* wird nicht weiter geschrieben; status_to_ascii() liefert dann -1.
+*
+****************************************************************/
+static void putchr(char c)
+{
+	if (s_overflow)
+		return;
+	if (s >= s_end - 1)
+	{
+		s_overflow = 1;
+		return;
+	}
+	*s++ = c;
+}
+
+
+/****************************************************************
+*
+* Hilfsfunktion f√ºr status_to_ascii()
 *
 ****************************************************************/
 static void prtdez(int i)
 {
-	*s++ = ' ';
-	itoa(i, s, 10);
-	while (*s++)
-		;
-	s--;
+	char buf[12];	/* Vorzeichen + 10 Ziffern + EOS */
+	const char *p;
+
+	sprintf(buf, "%d", i);
+	putchr(' ');
+	for (p = buf; *p; p++)
+		putchr(*p);
 }
 
 
 /****************************************************************
 *
-* Hilfsfunktion fÅr status_to_ascii()
+* Hilfsfunktion f√ºr status_to_ascii()
 *
 ****************************************************************/
 static void prtflg(int i)
 {
-	*s++ = (i) ? '1' : '0';
+	putchr((i) ? '1' : '0');
 }
 
 
 /****************************************************************
 *
-* Hilfsfunktion fÅr status_to_ascii()
+* Hilfsfunktion f√ºr status_to_ascii()
 *
 ****************************************************************/
 static void prtstr(const char *str)
 {
-	while ((*s++ = *str++) != '\0')
-		;
-	s--;
+	while (*str)
+		putchr(*str++);
 }
 
 
 /****************************************************************
 *
-* Hilfsfunktion fÅr save_status()
+* Hilfsfunktion f√ºr save_status()
 *
 ****************************************************************/
 
-static void status_to_ascii(char *inf)
+static int status_to_ascii(char *inf, unsigned int limit)
 {
 	register int i;
 	register WINDOW **pw,*w;
@@ -1376,7 +1468,12 @@ static void status_to_ascii(char *inf)
 	GRECT *g;
 
 
+	if (limit < 2)
+		return -1;
+
 	s = inf;
+	s_end = inf + limit;
+	s_overflow = 0;
 
 	/* 1. Zeile: "#_DSK MAGXDESK Vx.xx" */
 	/* -------------------------------- */
@@ -1388,10 +1485,10 @@ static void status_to_ascii(char *inf)
 
 	/* 2. Zeile: "#_DSW w h t a bb cccc ddddddddddddd"	*/
 	/* w	 Bildschirmbreite							*/
-	/* h  Bildschirmhîhe								*/
+	/* h  Bildschirmh√∂he								*/
 	/* t	 Sortiertyp 0..4							*/
 	/* a  '0'/'1' = Anzeigen als Bilder/als Text 		*/
-	/* b  '08'/'09'/'10' = Punktgrîûe fÅr Text			*/
+	/* b  '08'/'09'/'10' = Punktgr√∂√üe f√ºr Text			*/
 	/* c  1col/isgr/isdat/iszeit						*/
 	/* d  settings.blitstate							*/
 	/*	 settings.cnfm_del								*/
@@ -1412,7 +1509,7 @@ static void status_to_ascii(char *inf)
 	prtdez(desk_g.g_h);
 	prtdez(deflt_topwnr);
 	prtdez(settings.sort_mode - M_SNAME);
-	*s++ = ' ';
+	putchr(' ');
 	prtflg(settings.show_mode == M_ATEXT);
 /*
 	if (settings.points == M_8_PKT)
@@ -1423,16 +1520,16 @@ static void status_to_ascii(char *inf)
 	i = 10;
 
 	prtdez(i);
-	*s++ = ' ';
+	putchr(' ');
 	prtflg(settings.show_single_col);
 	prtflg(settings.show_file_size);
 	prtflg(settings.show_file_date);
 	prtflg(settings.show_file_time);
-	*s++ = ' ';
+	putchr(' ');
 	prtflg(settings.rtbutt_dclick);	/* Alt: blitstate */
 	prtflg(settings.cnfm_del);
 	prtflg(settings.cnfm_copy);
-	*s++ = settings.mode_ovwr + '0';
+	putchr(settings.mode_ovwr + '0');
 	prtflg(settings.check_free);
 	prtflg(settings.use_pp);
 	prtflg(settings.resident);
@@ -1441,7 +1538,7 @@ static void status_to_ascii(char *inf)
 	prtflg(settings.disk_extinfo);	/* V4: resvd0 */
 	prtflg(settings.dnam_init);
 	prtflg(settings.auto_reload_off);		/* v5.05, was resvd1 */
-	*s++ = '0';	/* resvd2 */
+	putchr('0');	/* resvd2 */
 
 	/* 3. Zeile: "#_DS2 aaaa b c x d e f g h i j"		*/
 	/* a	 settings.copy_resident						*/
@@ -1481,7 +1578,7 @@ static void status_to_ascii(char *inf)
 	/* 5. Zeile: "#_DK4 path"						*/
 	/* 6. Zeile: "#_DK8 path"						*/
 	/* 7. Zeile: "#_DKM path"						*/
-	/* Pfade fÅr Kachel-IMGs							*/
+	/* Pfade f√ºr Kachel-IMGs							*/
 
 	if (bg_tile_1 && *bg_tile_1)
 	{
@@ -1560,14 +1657,14 @@ static void status_to_ascii(char *inf)
 			else
 				prtdez(w->yscroll);
 
-			*s++ = ' ';
+			putchr(' ');
 			prtstr(w->path);
 			prtstr(w->maske);
 		}
 		else
 			prtdez(0);
-		*s++ = '\r';
-		*s++ = '\n';
+		putchr('\r');
+		putchr('\n');
 	}
 
 	/* "#_DIC typ c x y path" */
@@ -1581,17 +1678,17 @@ static void status_to_ascii(char *inf)
 		{
 			prtstr("#_DIC");
 			prtdez(ic->icon_type);
-			*s++ = ' ';
-			*s++ = (ic->isdisk) ? (ic->isdisk) : '@';
+			putchr(' ');
+			putchr((ic->isdisk) ? (ic->isdisk) : '@');
 			prtdez(o->ob_x - desk_g.g_x + o->ob_spec.iconblk->ib_xicon);
 			prtdez(o->ob_y - desk_g.g_y);
 			if (ic->icon_type >= ITYP_ORDNER)
 			{
-				*s++ = ' ';
+				putchr(' ');
 				prtstr(ic->text);
 			}
-			*s++ = '\r';
-			*s++ = '\n';
+			putchr('\r');
+			putchr('\n');
 		}
 	}
 
@@ -1606,8 +1703,8 @@ static void status_to_ascii(char *inf)
 	{
 		prtstr("#_DPG ");
 		prtstr(menuprograms[i].path);
-		*s++ = '\r';
-		*s++ = '\n';
+		putchr('\r');
+		putchr('\n');
 	}
 
 	/* "#_DPP line" */
@@ -1616,10 +1713,47 @@ static void status_to_ascii(char *inf)
 	prtstr("#_DPP ");
 	prtstr(tree_ttppar[TTPPAR_1].ob_spec.tedinfo->te_ptext);
 	prtstr(tree_ttppar[TTPPAR_2].ob_spec.tedinfo->te_ptext);
-	*s++ = '\r';
-	*s++ = '\n';
+	putchr('\r');
+	putchr('\n');
 
 	*s = '\0';
+	return s_overflow ? -1 : 0;
+}
+
+
+/*
+*  Sucht die Zeile "#_CTR" in den tats√§chlich gelesenen <len> Bytes
+*  und liefert den Offset der darauffolgenden Daten.  Wie in den
+*  ausgelieferten MAGX.INF- Dateien darf ein Kommentar hinter #_CTR
+*  stehen; er wird bis zum Zeilenende √ºbersprungen.  -1 bedeutet:
+*  Abschnitt fehlt oder eine Zeile endet nicht mit CR/LF.  Es wird nie
+*  √ºber <inf> + <len> hinaus gelesen.
+*/
+
+static long find_ctr_data(const char *inf, long len)
+{
+	long pos = 0;
+
+	while (len - pos >= 5 && memcmp(inf + pos, "#_CTR", 5) != 0)
+	{
+		while (pos < len && inf[pos] != '\r')
+			pos++;
+		if (len - pos < 2 || inf[pos + 1] != '\n')
+			return -1;
+		pos += 2;
+	}
+
+	if (len - pos < 5)
+		return -1;
+
+	/* #_CTR gefunden: Rest der Zeile bis CR/LF √ºberspringen. */
+	pos += 5;
+	while (pos < len && inf[pos] != '\r')
+		pos++;
+	if (len - pos < 2 || inf[pos + 1] != '\n')
+		return -1;
+
+	return pos + 2;
 }
 
 
@@ -1634,12 +1768,12 @@ void save_status(int is_inf)
 {
 	char *inf,*t;
 	int handle = 0;
-	long doserr;
+	long doserr,flen;
 	WINDOW *tw;
 
 
 	Mgraf_mouse(HOURGLASS);
-	inf = (char *) Malloc(65536L);
+	inf = malloc(INF_BUF_SIZE);
 	if (inf == NULL)
 	{
 		doserr = ENSMEM;
@@ -1670,48 +1804,114 @@ void save_status(int is_inf)
 		if (doserr < E_OK)
 			goto end_ret;
 
-		doserr = Fread(handle, 32768L, inf);
+		doserr = Fread(handle, INF_READ_MAX, inf);
 		if (doserr < E_OK)
 			goto end_ret;
+		flen = doserr;
 
-		s = inf;
-		while (strncmp(s, "#_CTR", 5))
+		if (flen == INF_READ_MAX)
 		{
-			if (!scnlin())
+			/*
+			 * Mehr als INF_READ_MAX Bytes: Beim Schreiben w√ºrde der
+			 * Rest verlorengehen.  Daher vor jeder √Ñnderung ablehnen.
+			 */
+			char extra;
+
+			doserr = Fread(handle, 1L, &extra);
+			if (doserr < E_OK)
+				goto end_ret;
+			if (doserr > 0)
 			{
-				err2:
 				doserr = ERROR;
-				goto end_ret;			/* unerwartetes Dateiende */
+				goto end_ret;
 			}
 		}
-		if (!scnlin())
-			goto err2;
-		t = s;					/* Beginn der neuen Daten */
-		shel_get(s, 128);
-		tw = top_window();
-		deflt_topwnr = (tw) ? tw->wnr : -1;
-		status_to_ascii(t + 128);
-		Fseek(t - inf, handle, SEEK_SET);	/* Dateizeiger auf Kontrollfeld */
-		doserr = Fwrite(handle, 128 + strlen(t + 128), t);
-		if (doserr != 128 + strlen(t + 128))
+		inf[flen] = EOS;
+
+		doserr = find_ctr_data(inf, flen);
+		if (doserr < 0)
 		{
-			if (doserr >= E_OK)
-				doserr = EWRITF;
+			doserr = ERROR;
+			goto end_ret;		/* Abschnitt fehlt oder ist ung√ºltig */
+		}
+
+		t = inf + doserr;			/* Beginn der neuen Daten */
+		if (t - inf > (long) (INF_BUF_SIZE - INF_DATA_OFFSET) ||
+				shell_buf_size() < INF_DATA_OFFSET)
+		{
+			doserr = ERROR;
 			goto end_ret;
 		}
-		Fshrink(handle);
+
+		if (!shel_get(t, INF_DATA_OFFSET))
+		{
+			doserr = ERROR;
+			goto end_ret;		/* Kontrollfeld nicht lesbar */
+		}
+		tw = top_window();
+		deflt_topwnr = (tw) ? tw->wnr : -1;
+		if (status_to_ascii(t + INF_DATA_OFFSET,
+				INF_BUF_SIZE -
+				(unsigned int) (t + INF_DATA_OFFSET - inf)) < 0)
+		{
+			doserr = ERROR;
+			goto end_ret;		/* Status pa√üt nicht in den Puffer */
+		}
+
+		Fseek(t - inf, handle, SEEK_SET);	/* Dateizeiger auf Kontrollfeld */
+		{
+			long outlen =
+					(long) INF_DATA_OFFSET +
+					(long) strlen(t + INF_DATA_OFFSET);
+
+			doserr = Fwrite(handle, outlen, t);
+			if (doserr != outlen)
+			{
+				if (doserr >= E_OK)
+					doserr = EWRITF;
+				goto end_ret;
+			}
+		}
+		(void) Fwrite(handle, 0L, (void *) (intptr_t) -1);
 	}
 	else
 	{
-		unsigned int len;
+		unsigned int len,read_len,put_len;
 
 		doserr = E_OK;
-		len = shel_get(NULL, -1);
-		shel_get(inf, len);
-		inf[len] = EOS;
+		len = shell_buf_size();
+		if (len < INF_DATA_OFFSET)
+		{
+			/*
+			 * Der Puffer kann das 128-Byte- Kontrollfeld nicht
+			 * aufnehmen; nichts √ºberschreiben.
+			 */
+			Rform_alert(1, ALRT_OVL_AES_BUF);
+			goto end_ret;
+		}
+		read_len = (len > SHELL_IO_MAX) ? SHELL_IO_MAX : len;
+		if (!shel_get(inf, read_len))
+		{
+			Rform_alert(1, ALRT_OVL_AES_BUF);
+			goto end_ret;
+		}
+		inf[read_len] = EOS;
 		s = inf;
-		status_to_ascii(s + 128);
-		if (!shel_put(inf, 128 + ((unsigned int) strlen(inf+128) + 1)))
+		if (status_to_ascii(inf + INF_DATA_OFFSET,
+				INF_BUF_SIZE - INF_DATA_OFFSET) < 0)
+		{
+			Rform_alert(1, ALRT_OVL_AES_BUF);
+			goto end_ret;
+		}
+
+		put_len = INF_DATA_OFFSET +
+				((unsigned int) strlen(inf + INF_DATA_OFFSET) + 1);
+		if (put_len > len || put_len > SHELL_IO_MAX)
+		{
+			Rform_alert(1, ALRT_OVL_AES_BUF);
+			goto end_ret;
+		}
+		if (!shel_put(inf, put_len))
 			Rform_alert(1, ALRT_OVL_AES_BUF);
 	}
 
@@ -1720,11 +1920,11 @@ void save_status(int is_inf)
 	if (handle > 0)
 		Fclose(handle);
 	if (inf)
-		Mfree(inf);
+		free(inf);
 
 	if (!is_inf && gmemptr)
 	{
-		Mfree(gmemptr);
+		free(gmemptr);
 		gmemptr = NULL;
 
 		icon = NULL;
@@ -1739,13 +1939,13 @@ void save_status(int is_inf)
 
 /****************************************************************
 *
-* LÑdt alle Defaults neu von Laufwerk <drv>
+* L√§dt alle Defaults neu von Laufwerk <drv>
 *
 ****************************************************************/
 
 void reload_status(int drv)
 {
-	int handle;
+	int handle = 0;
 	char *inf;
 	char olddrv;
 	long doserr;
@@ -1755,7 +1955,7 @@ void reload_status(int drv)
 	olddrv = inf_name[0];
 	if (drv >= 0)
 		inf_name[0] = drv + 'A';
-	inf = (char *) Malloc(65536L);
+	inf = malloc(INF_BUF_SIZE);
 	if (inf == NULL)
 	{
 		doserr = ENSMEM;
@@ -1770,7 +1970,7 @@ void reload_status(int drv)
 		{
 			inf_name[0] = olddrv;
 			Mgraf_mouse(ARROW);
-			Mfree(inf);
+			free(inf);
 			return;
 		}
 		goto getit;
@@ -1786,11 +1986,11 @@ void reload_status(int drv)
 		Mgraf_mouse(ARROW);
 		err_alert(doserr);
 		if (inf)
-			Mfree(inf);
+			free(inf);
 		return;
 	}
 
-	doserr = Fread(handle, 65535L, inf);
+	doserr = Fread(handle, INF_READ_MAX, inf);
 	Fclose(handle);
 	if (doserr < E_OK)
 		goto err;
@@ -1809,7 +2009,7 @@ void reload_status(int drv)
 		goto err2;
 	shel_put(s, (unsigned int) strlen(s) + 1);
 	getit:
-	Mfree(inf);
+	free(inf);
 
 	close_all_wind();
 	load_status(0);

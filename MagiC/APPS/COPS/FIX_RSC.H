@@ -24,15 +24,14 @@
 #ifndef _fix_rsc_h
 #define _fix_rsc_h
 
-#include <mt_aes.h>
-#include "cops_rsc.h"
-#include "global.h"
+#include "GLOBAL.H"
+#include "COPS_RSC.H"
 
 struct foobar;
 
 void fix_rsc(int16_t num_objs, int16_t num_frstr, int16_t num_frimg, int16_t num_tree,
 	     OBJECT *rs_object, TEDINFO *rs_tedinfo, char *rs_string[],
-	     ICONBLK *rs_iconblk, BITBLK *rs_bitblk, long *rs_frstr,
-	     long *rs_frimg, long *rs_trindex, struct foobar *rs_imdope);
+	     ICONBLK *rs_iconblk, BITBLK *rs_bitblk, int32_t *rs_frstr,
+	     int32_t *rs_frimg, int32_t *rs_trindex, struct foobar *rs_imdope);
 
 #endif /* _fix_rsc_h */

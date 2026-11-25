@@ -7,11 +7,11 @@
 
 #define DEBUG 0
 
-#include	<PORTAB.H>
-#include <AES.H>
-#include <TOS.H>
-#include <STRING.H>
-#include	<STDARG.H>
+#include	<portab.h>
+#include <aes.h>
+#include <tos.h>
+#include <string.h>
+#include	<stdarg.h>
 
 #define WF_ICONIFY       26                                 /* AES 4.1     */
 #define WF_UNICONIFY     27                                 /* AES 4.1     */
@@ -105,7 +105,7 @@ extern WORD	aes_flags;
 #include	"OBJCSYSV.H"
 #endif
 
-#include "wdialog.h"
+#include "WDIALOG.H"
 
 /*----------------------------------------------------------------------------------------*/ 
 /* extern aus WDINTRFC.S																						*/
@@ -139,7 +139,7 @@ DIALOG	*wdlg_create( HNDL_OBJ handle_exit, OBJECT *tree, void *user_data, WORD c
 	
 	if ( d )
 	{
-		d->magic1 = 'wdlg';												/* Magic 'wdlg' */
+		d->magic1 = 0x77646c67L;												/* Magic 'wdlg' */
 		d->version = 0x10000L;											/* Versionsnummer 1.0 */
 
 		d->flags = flags;
