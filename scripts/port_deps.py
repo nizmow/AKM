@@ -18,18 +18,14 @@ PATH_TOKEN_RE = re.compile(r"(?i)(?:[a-z]:[\\/]|\.{0,2}[\\/])[^\s()\[\]]+")
 EXTERNAL_LIBRARIES = {
     "tcnstart.o", "pcstdlib.lib", "pctoslib.lib", "pcgemlib.lib", "pcextlib.lib",
 }
-SOURCE_LIBRARIES = {
-    "mt_aes.lib": "MagiC/LIB/MT_AES",
-    "mt_dos.lib": "MagiC/LIB/MT_DOS",
-    "magxlib.lib": "MagiC/LIB/MAGIXLIB",
-    "emu_dbg.lib": "MagiC/APPS/EMUDBG.LIB",
-    "pcmxstrt.o": "MagiC/LIB/PCMXSTRT",
-}
+# The old MT_AES/MT_DOS/MAGIXLIB/EMUDBG/PCMXSTRT trees are archived only;
+# they are not live source candidates in this checkout.
+SOURCE_LIBRARIES = {}
 
 
 def repository_index():
     index = {}
-    for base in (ROOT / "MagiC", ROOT / "core", ROOT / "base"):
+    for base in (ROOT / "core", ROOT / "base", ROOT / "kernel", ROOT / "release"):
         if not base.exists():
             continue
         for path in base.rglob("*"):

@@ -19,12 +19,12 @@ all: magic
 vfat: $(BUILD_DIR)/vfat.o
 
 # Provide DOS-era lowercase include names without renaming the original files.
-$(INCLUDE_DIR)/portab.h: MagiC/TOOLS/SHOWFREE/IMPORT/PORTAB.H
+$(INCLUDE_DIR)/portab.h: kernel/INC/PORTAB.H
 $(INCLUDE_DIR)/tos.h: base/applicat/SRC/IMPORT/TOS.H
-$(INCLUDE_DIR)/tosdefs.h: MagiC/INC_C/TOSDEFS.H
-$(INCLUDE_DIR)/magx.h: MagiC/INC_C/MAGX.H
-$(INCLUDE_DIR)/mgx_xfs.h: MagiC/INC_C/MGX_XFS.H
-$(INCLUDE_DIR)/mgx_dfs.h: MagiC/INC_C/MGX_DFS.H
+$(INCLUDE_DIR)/tosdefs.h: kernel/INC/TOSDEFS.H
+$(INCLUDE_DIR)/magx.h: kernel/INC/MAGX.H
+$(INCLUDE_DIR)/mgx_xfs.h: kernel/INC/MGX_XFS.H
+$(INCLUDE_DIR)/mgx_dfs.h: kernel/INC/MGX_DFS.H
 $(INCLUDE_DIR)/vfat_imp.h: kernel/DOS/INC/VFAT_IMP.H
 $(HEADERS):
 	mkdir -p $(@D)

@@ -16,7 +16,7 @@ from neost_server import NeoSTServer
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
-ORIGINAL = ROOT / "MagiC/APPS/LIMITMEM/BIN/LIMITMEM.TTP"
+ORIGINAL = ROOT / "base/limitmem/BIN/LIMITMEM.TTP"
 GCC_APP = BUILD / "apps/limitmem/LIMITMEM.TTP"
 DRIVER = BUILD / "apps/limitmem/NEOSTEST.PRG"
 CASE_LINE = re.compile(r"^CASE\s+(\d+)\s+(-?\d+)\s*$", re.MULTILINE)

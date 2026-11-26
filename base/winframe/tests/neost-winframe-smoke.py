@@ -18,8 +18,8 @@ from neost_image import MagiCImage
 from neost_screen import diff_stats
 
 BUILD = ROOT / "build/atari"
-ARCHIVE = ROOT / "MagiC/Releases/MAGIC.A/GEMSYS/MAGIC/XTENSION/WINFRAME.SLB"
-ARCHIVE_RSC = ROOT / "MagiC/Releases/MAGIC.A/GEMSYS/MAGIC/XTENSION/WINFRAME.RSC"
+ARCHIVE = ROOT / "base/winframe/tests/WINFRAME.SLB"
+ARCHIVE_RSC = ROOT / "base/winframe/tests/WINFRAME.RSC"
 REBUILT = BUILD / "apps/winframe/WINFRAME.SLB"
 REBUILT_RSC = BUILD / "apps/winframe/WINFRAME.RSC"
 GUEST_SLB = "::/GEMSYS/MAGIC/XTENSION/WINFRAME.SLB"

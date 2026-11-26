@@ -105,7 +105,7 @@ Verify literal bytes in the compiled output separately when changing encoding.
 split a double-quoted path in a raw TOS command tail when the tail began with an
 ordinary option. Original PCMXSTRT handled it. See the
 [upstream parser](https://github.com/freemint/mintlib/blob/master/mintlib/crtinit.c).
-MOD_APP and APPLICAT share `MagiC/APPS/TOS_ARGS.H`, preserving single/double
+MOD_APP and APPLICAT share `shared/tos-args/TOS_ARGS.H`, preserving single/double
 quotes and doubled apostrophes in raw tails while retaining MiNTLib's parsed
 ARGV vector for extended arguments. Storage belongs to each caller and lives
 through its `main`; no replacement CRT or heap allocation is needed. The
@@ -124,7 +124,7 @@ throwaway verification, not yet a reusable automated application test framework.
 
 ### CMDLINE
 
-`make -f Makefile.apps cmdline` builds `MagiC/TOOLS/CMDLINE/SRC/CMDLINE.C` as
+`make -f Makefile.apps cmdline` builds `base/cmdline/SRC/CMDLINE.C` as
 `build/atari/apps/cmdline/CMDLINE.PRG`. The port uses MiNTLib's public
 `mint/basepage.h`, `mint/osbind.h` and GEMlib `gem.h` interfaces, linking `-lgem`;
 it reads command-tail/environment fields through `BASEPAGE` rather than fixed
@@ -135,7 +135,8 @@ ARGV-style launches. For ARGV, the archived environment dump retains `ARGV=`;
 MiNTLib NULs its leading `A` before `main` to consume the reserved marker. The
 other environment bytes matched. This is expected MiNTLib startup behavior, not
 a functional failure. Runtime basepage addresses were excluded; captures are
-under `build/atari/neost-cmdline/`.
+under `build/atari/neost-cmdline/`. No checked-in task or script reproduces
+that comparison; the temporary Pexec driver and captures are evidence only.
 
 ### SHOWFILE
 
@@ -191,7 +192,7 @@ and unusual file/directory forms remain untested.
 ### LIMITMEM
 
 `make -f Makefile.apps limitmem` builds
-`MagiC/APPS/LIMITMEM/SRC/LIMITMEM.C` as
+`base/limitmem/SRC/LIMITMEM.C` as
 `build/atari/apps/limitmem/LIMITMEM.TTP`, using MiNTLib's public headers and
 the default application ABI. The legacy source was converted with the
 repository Atari-to-UTF-8 converter and adapted in place. The executable-header
@@ -215,7 +216,7 @@ replacement was established. Non-English runtime selection remains unverified.
 
 ### MGCLOCK
 
-`mise run apps -- mgclock` builds `MagiC/APPS/MGCLOCK/SRC/MGCLOCK.C` as
+`mise run apps -- mgclock` builds `base/mgclock/SRC/MGCLOCK.C` as
 `build/atari/apps/mgclock/MGCLOCK.PRG`. The port uses MiNTLib's public
 `<gem.h>` AES/VDI bindings and `<mint/osbind.h>` date/time calls, linked with
 `-lgem`; it needs no resource file. The restored source is the original
@@ -308,7 +309,7 @@ timing and data durability remain unmeasured.
 ### FLP_PAR0 / FLP_PAR1
 
 `mise run apps -- flp-par` builds `FLP_PAR0.PRG` and `FLP_PAR1.PRG` from the
-original sources in `MagiC/APPS/FLP_PAR/SRC/`. The Atari-encoded files were
+original sources in `base/flp-par/SRC/`. The Atari-encoded files were
 decoded to canonical UTF-8 and adapted in place: legacy `<tos.h>`/`<magx.h>`
 became MiNTLib's public `<mint/sysbind.h>`, with local `SCB_FLPAR` value
 `0x800L`. Separate `flp-par0`/`flp-par1` targets use `Sconfig(mode, bitset)`,
@@ -322,7 +323,8 @@ probe. Both began with `SCB_FLPAR` unset and recorded
 `00000000 → 00000800 → 00000000`, child statuses `0, 0`, and no changes to other
 configuration bits. Evidence: `build/atari/neost-flp-par-clear-runtime/` and
 `build/atari/neost-flp-par-archive-baseline/`. Physical parallel-floppy transfer
-remains untested.
+remains untested. No checked-in task or script reproduces the Pexec probe; the
+runs above were one-off NeoST sessions.
 
 ### VFATCONF
 
@@ -377,24 +379,28 @@ registered, and the host extracted matching bytes after exit, so the writeback
 session persisted that file. Exact periodic-flush latency remains unmeasured.
 
 `mise run apps -- mgxclock-test-driver` builds `mgxclock/NEOSTEST.PRG`
-under the selected build directory. For the lifecycle scenario, use a
-disposable MagiC disk: replace its normal WBDAEMON startup entry with MGXCLOCK,
+under the selected build directory from `base/mgxclock/TESTDATA/NEOSTEST.C`.
+For the lifecycle scenario, use a disposable MagiC disk: replace its normal
+WBDAEMON startup entry with MGXCLOCK,
 then add the probe as `ZZPROBE.PRG` in the same `#_APP` folder. No other
 writeback daemon may run in this fixture. The probe waits 1.5 seconds, checks
 registration, writes `C:\WBFLUSH.TXT`, sends `AP_TERM`, and requires the clock
-to disappear and the slot to clear before writing PASS/FAIL and observations to
-`C:\MGXTEST.TXT`. The PASS check detects both the generic-long binding error
-and a daemon that ignores `AP_TERM`; a clock screenshot alone does not.
+to disappear and the slot to clear before writing PASS/FAIL and observations
+to `C:\MGXTEST.TXT`. The PASS check detects both the generic-long binding error
+and a daemon that ignores `AP_TERM`; a clock screenshot alone does not. No
+checked-in NeoST scenario runner exists for this sequence: the
+`mise run apps -- mgxclock` build and the `mgxclock-test-driver` probe build
+are the repeatable parts.
 
 ### APPLICAT
 
 `mise run apps -- applicat` compiles the eleven application modules plus the
 shared `shared/gemut/GEMUT_MT.C` helper using public MiNTLib/GEMlib headers and
 `-lgem`. Output is `build/atari/apps/applicat/APPLICAT.APP`. Objects build
-under `build/atari/apps/base/` so generated dependencies from the old
+under `build/atari/apps/base/` so generated dependencies from the pre-retirement
 `MagiC/APPS/APPLICAT` source tree cannot break populated builds. The target also
 copies the default German resource as `applicat.rsc` and the minimal association
-fixture from `BIN/MINIMAL` as `applicat.inf`. The source-tree INF is not a safe
+fixture from `base/applicat/BIN/MINIMAL` as `applicat.inf`. The source-tree INF is not a safe
 starter: it references external icon resources and old developer paths.
 
 Run with the bundle directory as the working directory. The editor requires
@@ -446,7 +452,7 @@ and the existing `calc_ic` possibly-uninitialized warning remain.
 The original PRJ identifies three C modules, a register-ABI assembly delimiter
 scanner and GEM utilities. The GCC build uses those C modules, public GEMlib,
 local workstation/top-window operations and a bounded C `memchr2` instead of
-linking Pure C objects. Raw-tail quoting reuses `MagiC/APPS/TOS_ARGS.H` while
+linking Pure C objects. Raw-tail quoting reuses `shared/tos-args/TOS_ARGS.H` while
 retaining true ARGV startup. Edited source is UTF-8; displayed file bytes remain
 Atari bytes, not host Unicode text.
 
@@ -608,12 +614,14 @@ resources remain unverified.
 
 `mise run apps -- mgsearch` builds `build/atari/apps/mgsearch/MGSEARCH.APP`
 and copies the default German `MGSEARCH.RSC`. It compiles the consumer-specific
-`GEMUTILS`/`WINDOWS` sources from `MagiC/LIB/MYLIBS/SRC` and an app-local copy
+`GEMUTILS`/`WINDOWS` sources from `base/mgsearch/SRC` and an app-local copy
 of `core/magxdesk/SRC/PATTERN.C`; the pattern helper is `mg_toupper` because MiNTLib's
 libc already exports `toupper`. The old `MAGXLIB.LIB` is not linked: modern
 GEMlib supplies `form_xdo`, `form_xdial`, `objc_sysvar` and `wind_find`.
+MGSEARCH owns those five `GEMUTILS`/`WINDOWS` files; the other helper variants
+remain in the historical `MagiC/LIB/MYLIBS/SRC` tree (pre-retirement snapshot).
 
-The public-SDK bridge is `MagiC/LIB/MYLIBS/SRC/GEMUTILS_SDK.H`. It defines the
+The public-SDK bridge is `base/mgsearch/SRC/GEMUTILS_SDK.H`. It defines the
 16-bit `WORD`, the 52-byte MiNT `XATTR` record and the old GEM constants that
 MiNTLib no longer exports by default. `Dxreaddir` comes from `mintbind.h`.
 `GEMUTILS` remains the older variant: its `Rgetstring(WORD)` signature and
@@ -783,6 +791,9 @@ library build without a caller proves no useful contract.
 Do not merge similar `MYLIBS` variants. `GEMUTILS` exposes
 `Rgetstring(WORD)`, while `GEMUT_MT` requires `Rgetstring(WORD, WORD *)`; the
 application-local `WINDOWS.H` copies also differ in callback and message types.
+The active `GEMUTILS`/`WINDOWS` copies are owned by their consumer in
+`base/mgsearch/SRC`; the historical `MagiC/LIB/MYLIBS/SRC` retains the legacy `GEMUT_MT`,
+`GEMUT_M2`, `WDIALOG` and `LL` variants.
 Build only the variant a consumer uses. MGSEARCH is the first current
 `GEMUTILS`/`WINDOWS` consumer; link-test GEMlib's equivalents (`form_xdo`,
 `form_xdial`, `objc_sysvar`, `wind_find`) against its PRJ's `MAGXLIB.LIB`
@@ -840,7 +851,7 @@ verify binding, relocation packaging and the client/library pair; a link-time
 
 `mise run release:core` invokes `scripts/make-release.py`, which asks Make for
 the exact rebuilt file targets in its package map before assembling
-`build/atari/release/core-de.zip` with the retained Release inputs.
+`build/atari/release/core-de.zip` with the retained inputs from `release/atari`.
 Rebuilt inputs are the kernel, `MAGXBOOT.TOS`, MAGXDESK and its
 resources, APPLICAT, MGCOPY/MGSEARCH/MGEDIT/MGVIEW/MGNOTICE/MGFORMAT, VT52,
 VFATCONF, SHUTDOWN, WBDAEMON, MOD_APP, MCMD, SHOWFILE, COPS as `COPS.ACC`,
@@ -888,9 +899,10 @@ The kernel target does not rebuild the desktop, boot loader or external drivers.
 ### 2. Pick one small, owned slice
 
 Identify the original source, its build fragment and its callers. Read the
-original `.PRJ` files as well as link manifests: `BUILD/ATARI/M.INP` alone omitted
+original `.PRJ` files as well as link manifests: the historical
+`BUILD/ATARI/M.INP` (in the pre-retirement snapshot) alone omitted
 VDI `SETUP.C`, which actually defines the required `MM_init` routine and is
-listed in `MAGICVDI.PRJ`.
+listed in `kernel/VDI/SRC/MAGICVDI.2/MAGICVDI.PRJ`.
 
 Examples of narrow build targets:
 
@@ -1034,7 +1046,7 @@ hardware. A smaller ST build may also be faster, but measure it.
 `mise run apps -- vt52` builds `VT52.PRG` and its German `VT52.RSC` into
 `build/atari/apps/vt52/`. The target compiles the C modules and the eight
 assembly modules with VASM, and builds `DRAGDROP` from
-`SRC/LIB/QUELLEN/DRAGDROP/DRAGDROP.C` instead of linking the archived library.
+`base/vt52/SRC/LIB/QUELLEN/DRAGDROP/DRAGDROP.C` instead of linking the archived library.
 
 Porting changes:
 
@@ -1186,7 +1198,7 @@ disk errors and other machine/video configurations are outside this scenario.
 The DE/EN/FR standalone checks passed under NeoST 0.6.5/MagiC 6.20/TOS 2.06:
 each rebuilt program returned status 0, and all 16 captured guest files per
 language matched fixed expectations. Evidence:
-`build/atari/neost-mcmd-20261126-122547/`.
+`build/atari/neost-mcmd-20261126-152226/`.
 
 ## MAGXCONF program/accessory
 
@@ -1197,7 +1209,7 @@ program and accessory files are identical copies: the original startup code
 detects the mode from the basepage parent pointer. Do not invent a separate
 compile-time accessory ABI or confuse these outputs with `MAGXCONF.CPX`.
 
-The source includes the existing `MagiC/INC_AS/{OSBIND,AESBIND,MAGIX}.INC`.
+The source includes the existing `shared/asm/{OSBIND,AESBIND,MAGIX}.INC`.
 The shared MAS normalizer and VASM's native TOS writer replace the old tool
 chain. Canonical `MAGXCONF.S` is UTF-8; `--atari-strings` restores Atari bytes
 inside assembly literals, and `-noesc` retains literal backslashes. COUNTRY
@@ -1248,7 +1260,7 @@ All DE/EN/FR program and accessory lifecycle comparisons passed under NeoST
 states, unchanged masks after Cancel, isolated bit changes after OK/Save,
 four-byte-only executable modifications, and saved-mask restoration after each
 accessory reboot. Full captures retain the caption-revision differences.
-Evidence: `build/atari/neost-magxconf-20261121-110743/`.
+Evidence: `build/atari/neost-magxconf-20261126-153748/`.
 
 ## MAGXCONF.CPX
 
@@ -1313,7 +1325,7 @@ retained unchanged. Evidence:
 ## DIS1/DIS2
 
 `mise run apps -- dis` builds `build/atari/apps/dis1/DIS1.TTP` and
-`build/atari/apps/dis2/DIS2.TTP` from `MagiC/TOOLS/DIS/SRC`. The Atari ST
+`build/atari/apps/dis2/DIS2.TTP` from `base/dis/SRC`. The Atari ST
 sources were decoded to canonical UTF-8; runtime banner bytes were replaced
 with explicit octal escapes (`\277` for `™`, `\275` for `©`, `\236` for `ß`).
 Comments may remain UTF-8; execution strings must not.
@@ -1355,8 +1367,8 @@ only the driver's `STATUS` line, and the post-exit screenshot is the desktop.
 Banners, usage and diagnostics therefore remain outside the automated check.
 Raw `-e`, code/address/ASCII comments, 68030, MAS output, range, signed-word
 and MOVEM edge cases, error cases and a recognized DRI object are covered.
-The object fixture is `MagiC/LIB/PCMXSTRT/BIN/PCMXSTRT.O`; its archived DIS1
-workfiles and symbol table feed both DIS2 builds. `TST/T.O` is a Pure C
+The object fixture is `base/dis/tests/PCMXSTRT.O`; its archived DIS1
+workfiles and symbol table feed both DIS2 builds. `base/dis/TST/T.O` is a Pure C
 (`0x4efa`) object and is not treated as a DRI object. Interactive usage, `-t`
 stdout capture and MagiC-kernel-specific behavior are not. Evidence:
 `build/atari/neost-dis-20261122-113653/`.
@@ -1425,7 +1437,7 @@ Contracts worth preserving:
   tracked source/archive on a case-insensitive checkout.
 - Relocated objects build under `build/atari/apps/base/cops/`, while the
   executable remains `build/atari/apps/cops/COPS.APP`. This avoids stale
-  dependency files that still name the old `MagiC/APPS/COPS` source tree.
+  dependency files that still name the pre-retirement `MagiC/APPS/COPS` source tree.
 
 `test:cops-neost` validates the `#_APP`/`#_ACC` paths, disables the accessory,
 removes inherited CPX modules and `COPS.INF` settings, and installs only
@@ -1447,7 +1459,8 @@ them with `scripts/mas_to_vasm.py`, including the
 archived TOS executable has `slen=0`; `-tos-flags=7` preserves the header flag
 word. The resulting V4.10 `OFF002.OSD` is byte-identical to the archived
 MIN-ATAR file, including its TOS header, driver entry offsets and relocation
-stream. The shipped Release driver is V4.11 and has different code/data sizes
+stream. The retained Release reference (`core/osd/tests/release/OFF002.OSD`) is
+V4.11 and has different code/data sizes
 and entry offsets; do not treat this source as a byte-identical V4.11 rebuild.
 
 `v_opnbm()` is a VDI 100 call with `contrl[5]=1`, 20 intin words and the MFDB
@@ -1461,10 +1474,11 @@ bitmap hash; see `core/osd/tests/OFF002.C`.
 `mise run apps -- off004ip` builds `build/atari/apps/osd/OFF004IP.OSD` from
 `core/osd/SRC/OFF004IP.S` through the same MAS-to-VASM
 normalization and include set as OFF002. It is byte-identical to the archived
-V4.10 `MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF004IP.OSD`. VASM's default
+V4.10 `core/osd/tests/archive/MIN-ATAR/OFF004IP.OSD`. VASM's default
 optimization rewrites `movem.l (sp)+,a0/a2` as two `movea.l` instructions; the
-archive keeps the MOVEM encoding, so this target passes `-no-opt`. The shipped
-Release driver is V4.11 with different text/data sizes and entry offsets; it is
+archive keeps the MOVEM encoding, so this target passes `-no-opt`. The retained
+Release reference (`core/osd/tests/release/OFF004IP.OSD`) is V4.11 with
+different text/data sizes and entry offsets; it is
 not a byte reference.
 
 `mise run test:osd-off004ip-neost` builds the driver and a probe
@@ -1488,9 +1502,9 @@ untested.
 
 `mise run apps -- off016ip` builds `build/atari/apps/osd/OFF016IP.OSD` from
 `core/osd/SRC/OFF016IP.S`. It is byte-identical to the
-archived V4.10 `MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF016IP.OSD`; like
+archived V4.10 `core/osd/tests/archive/MIN-ATAR/OFF016IP.OSD`; like
 OFF004IP it needs `-no-opt` so VASM keeps the archive's `movem` restores. The
-shipped Release driver also reports header version 4.10 but has different
+retained Release reference reports header version 4.10 as well but has different
 text/data sizes and entry offsets, so it is a structural comparison only.
 
 `mise run test:osd-off016ip-neost` builds the driver and
@@ -1516,8 +1530,8 @@ stability remain untested.
 `mise run apps -- off256ip` builds `build/atari/apps/osd/OFF256IP.OSD` from
 `core/osd/SRC/OFF256IP.S` with the same includes and
 `-no-opt` as OFF016IP. It is byte-identical to both the archived V4.10
-`MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF256IP.OSD` and the shipped Release
-copy (same SHA-256, 22,558 bytes, text length 0x5798). The source uses
+`core/osd/tests/archive/MIN-ATAR/OFF256IP.OSD` and the retained Release
+reference `core/osd/tests/release/OFF256IP.OSD` (same SHA-256, 22,558 bytes, text length 0x5798). The source uses
 `movea.l (a2),a0` where the original spelling was
 `movea.l _color_map_ptr(a2),a0`; `_color_map_ptr` is `EQU 0`, and the archived
 assembler folded the zero displacement while VASM `-no-opt` does not. Without
@@ -1594,7 +1608,8 @@ long-term stability remain untested.
 ### KEYB_SYS keyboard-table generators
 
 `mise run apps -- keyb-sys` builds `KEYB_{CZ,DEI,FRA,SWG,UK,US}.PRG` under
-`build/atari/apps/keyb-sys/`; individual `keyb-cz`…`keyb-us` targets build one.
+`build/atari/apps/keyb-sys/` from `base/keyb-sys/SRC`; individual
+`keyb-cz`…`keyb-us` targets build one.
 `ALL.PRJ` omits the DEI project, so all six projects are listed explicitly.
 
 The six sources are Atari-encoded and stay that way. They are compiled with
@@ -1626,10 +1641,11 @@ them at boot; no MagiC image or live keyboard driver is involved.
 ### HARDCOPY extension
 
 `mise run apps -- hardcopy` assembles `build/atari/apps/hardcopy/HARDCOPY.PRG`
-from `MagiC/KERNEL/XTENSION/HARDCOPY.S` (normalized with `mas_to_vasm.py`) and
-the shared `MagiC/INC_AS/OSBIND.INC`, using VASM `-Ftos -tos-flags=1`. The
-archived `MagiC/KERNEL/XTENSION/HARDCOPY.PRG` and the Release
-`MagiC/Releases/MAGIC.A/EXTRAS/HARDCOPY.PRG` are byte-identical references.
+from `base/hardcopy/HARDCOPY.S` (normalized with `mas_to_vasm.py`) and
+the shared `shared/asm/OSBIND.INC`, using VASM `-Ftos -tos-flags=1`. The
+archived `base/hardcopy/HARDCOPY.PRG` and the retained Release reference
+`scripts/testdata/release/HARDCOPY.PRG` are byte-identical; the pre-retirement
+`MagiC/Releases/MAGIC.A/EXTRAS/HARDCOPY.PRG` is the historical Release origin.
 `mise run apps -- hardcopy-test-driver` builds `HCPROBE.PRG`, which reads
 `scr_dump` ($502), launches `C:\GEMSYS\MAGIC\HCP\HARDCOPY.PRG`, and reads the
 hook again.
@@ -1661,12 +1677,13 @@ unverified.
 `mise run apps -- magxboot` assembles `MAGXBOOT.TOS`, `MAGXBOOT.PRG` and the
 `OUTSIDE` variant `MAGXBO32.PRG` under `build/atari/apps/magxboot/` from
 `core/magxboot/SRC/MAGXBOOT.S`, normalized with `mas_to_vasm.py --atari-strings`, and the shared
-`MagiC/INC_AS/OSBIND.INC`. `OUTSIDE`, `RESIDENT` and `MODIFY` come from the
+`shared/asm/OSBIND.INC`. `OUTSIDE`, `RESIDENT` and `MODIFY` come from the
 source; the recipe passes `OUTSIDE` only for the `MAGXBO32` variant, whose
 32-KB page alignment and virtual-memory title lines are guarded by an `IFND`
-default so an unparameterized assembly still works. The shipped
-`MagiC/Releases/MAGIC.A/AUTO/MAGXBOOT.TOS` and the archived
-`core/magxboot/SRC/MAGXBOOT.PRG` are byte-identical references.
+default so an unparameterized assembly still works. The archived
+`core/magxboot/tests/MAGXBOOT.TOS` and
+`core/magxboot/SRC/MAGXBOOT.PRG` are byte-identical references; the former is
+also the pre-retirement Release `AUTO/MAGXBOOT.TOS`.
 The rebuilt `MAGXBOOT.PRG` is produced as a copy of the rebuilt TOS; that pair
 differs from the references only by the encodings noted below, so do not compare
 the rebuilt PRG against the shipped binary for byte equality.
@@ -1774,16 +1791,16 @@ archived/rebuilt screens pixel-for-pixel. The fixture's booted MAGXCONF dialog
 provides the visible frame; the test does not drag, resize, shade or exercise
 scrollbar paths. Evidence: `build/atari/neost-winframe-20261122-141115/`.
 
-`MagiC/KERNEL/WINFRAME.DEM` is the separate 1.7.98 example project for the
+`base/winframe-demo` is the separate 1.7.98 example project for the
 same manager. It produces the same `WINFRAME.SLB` filename but owns a
-16-object `WINFRAME.RSC` (the Release resource is the production 20-object
-tree and differs byte-for-byte) and declares `wsizeof = 542` for its `WININFO`;
+16-object `WINFRAME.RSC` (the production archive in `base/winframe/tests` is
+the 20-object tree and differs byte-for-byte) and declares `wsizeof = 542` for its `WININFO`;
 the kernel allocates each window created through `wind_create` from that
 value. Its 18-pixel title makes the
 booted frame visibly different from the production library. Build it with
 `mise run apps -- winframe-demo`, which writes
-`build/atari/apps/winframe-demo/` and reuses the production
-`WINFRAME_ENTRY.S` register-to-stack bridges; the kernel ABI is unchanged.
+`build/atari/apps/winframe-demo/` from `base/winframe-demo` and reuses the
+production `WINFRAME_ENTRY.S` register-to-stack bridges; the kernel ABI is unchanged.
 
 The port replaces `mgx_dos.h`/`mt_aes.h` and `PARMDATA`/`_mt_aes` with public
 `AESPB`/`aes()`, maps `te_junk1`/`te_junk2` to GEMlib's
@@ -1802,11 +1819,12 @@ shading, slider movement and unload remain untested.
 
 ### PDLG.SLB
 
-`MagiC/EXTENSIO/PDLG_SLB` holds the localized print-dialog cores
+The historical `MagiC/EXTENSIO/PDLG_SLB` tree holds the localized print-dialog cores
 (`PDLG.C`, `PDLGSUB.C`, `PDLGDRV.C`, `PDLGQD.C`, `PDLGMGMC.C`, `RSRCFIX.C`),
 per-language `PDLG.H`/`PDLG.INC`/`PDLG.RSC`, and three PRJ variants selecting
-`COUNTRY=1/2/3`. The Release tree ships the selected language as
-`GEMSYS/MAGIC/XTENSION/PDLG.SLB`.
+`COUNTRY=1/2/3`. Pre-retirement releases shipped the selected language as
+`GEMSYS/MAGIC/XTENSION/PDLG.SLB`; it is not in the retained `release/atari`
+set.
 
 An independent build is not yet available. Beyond the obsolete include paths,
 the projects reference kernel dialog infrastructure absent from this tree:
@@ -1815,7 +1833,7 @@ the projects reference kernel dialog infrastructure absent from this tree:
 `adaptrsc.c`, `cookies.c`, `vdi.s`, `mac_api.s` and `wdtos.s`. COPS contains
 `LIST.C`/`POPUP.C`/`ADAPTRSC.C`, but those are application adapters, not the
 kernel copies named by the PRJ. `kernel/AES/SRC/WDIALOG/WDIALOG.H`,
-`LISTBOX.H`, `MagiC/LIB/MT_AES/SRC/PRDIALOG.H` and the WINFRAME SLB entry
+`LISTBOX.H`, the historical `MagiC/LIB/MT_AES/SRC/PRDIALOG.H` and the WINFRAME SLB entry
 pattern cover part of the ABI, so reconstruction is plausible; the missing
 files are not obtainable verbatim from the repository or its release archives.
 
@@ -1854,16 +1872,18 @@ fixture before claiming functional parity.
 
 ### XP_RASTR.SLB and LOAD_IMG.SLB
 
-`mise run apps -- xp-rastr` builds `XP_RASTR.SLB`; `mise run apps -- load-img`
-builds `LOAD_IMG.SLB`. Both use explicit SLB headers with exported function
-tables: XP_RASTR has two functions and LOAD_IMG has five. The generic packager
-validates the declared export count and each exported pointer relocation.
+`mise run apps -- xp-rastr` builds `XP_RASTR.SLB` from `base/xp-rastr/SRC`;
+`mise run apps -- load-img` builds `LOAD_IMG.SLB`. Both use explicit SLB
+headers with exported function tables: XP_RASTR has two functions and LOAD_IMG
+has five. The generic packager validates the declared export count and each
+exported pointer relocation.
 
 XP_RASTR's assembly helpers (`_vq_scrninfo`, `_vq_color`, `W_mul_L`,
 `L_div_W`) take register arguments. `XPRASTR_BRIDGE.S` provides stack-to-register
 wrappers and preserves D2/A2 around the VDI calls. The C source uses public
 GEMlib `VDIPB` and MiNTLib allocation/VDI types. LOAD_IMG's C source uses
-public GEMlib/MiNTLib types; its local `XATTR` mirrors the MiNT layout because
+public GEMlib/MiNTLib types and builds from `base/load-img/SRC`, including its
+migrated `IMGLOAD.H`; its local `XATTR` mirrors the MiNT layout because
 the SDK does not expose that name.
 
 Keep the public version-1 calling convention, not the compiler's default
@@ -1883,12 +1903,13 @@ calls the legacy `xp_rasterC` callback with an 18-byte stack record and
 preserves D2, which that callback may clobber. A packed C parameter alone
 would not protect the register.
 
-Do not use the shipped Release `LOAD_IMG.SLB` as a source-level oracle.
-The archived binary under `base/load-img/BIN` decodes in export 0, with
-a per-plane byte stride. The Release binary initializes a private image
+Do not use the retained Release reference `scripts/testdata/release/LOAD_IMG.SLB`
+as a source-level oracle. The source-tree archive under `base/load-img/BIN`
+decodes in export 0, with
+a per-plane byte stride. The Release reference initializes a private image
 handle in export 0, reports an all-plane stride there, and decodes in
 export 2. Compare the full load → convert → draw path; do not compare raw
 descriptor buffers or accept both strides in a single buffer-size formula.
-The Release and rebuilt versions both rendered the test XIMG but produced
+The Release reference and rebuilt versions both rendered the test XIMG but produced
 different realized colours. The port does not claim Release-equivalent
 colour rendering.

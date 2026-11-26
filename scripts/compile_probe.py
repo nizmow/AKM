@@ -29,7 +29,10 @@ def include_dirs(source_root):
     root = ROOT / source_root
     directories = [root]
     directories.extend(sorted({path.parent for path in root.rglob("*.h")}))
-    directories.extend([ROOT / "MagiC/INC_C", ROOT / "MagiC/KERNEL/INC"])
+    # Match the demo's Make rule: its SDK header belongs to production WINFRAME.
+    if source_root == "base/winframe-demo":
+        directories.append(ROOT / "base/winframe")
+    directories.append(ROOT / "kernel/INC")
     return [path.relative_to(ROOT) for path in directories if path.is_dir()]
 
 

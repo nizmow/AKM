@@ -23,7 +23,7 @@ from neost_screen import diff_stats, read_ppm
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
-ARCHIVE = ROOT / "MagiC/KERNEL/VDI/DRIVERS/ATARI"
+ARCHIVE = ROOT / "core/mfa/tests/archive"
 MODES = (
     {"label": "high", "dev": b"1 0", "mono": True, "driver": "MFA2"},
     {"label": "medium", "dev": b"3 0", "mono": False, "driver": "MFA4"},

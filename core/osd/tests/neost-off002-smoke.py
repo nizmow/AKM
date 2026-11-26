@@ -30,8 +30,8 @@ ROOT = Path(__file__).resolve().parents[3]
 BUILD = ROOT / "build/atari"
 REBUILT = BUILD / "apps/osd/OFF002.OSD"
 PROBE = BUILD / "apps/off002/OFF002.PRG"
-MIN_ARCHIVE = ROOT / "MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF002.OSD"
-RELEASE = ROOT / "MagiC/Releases/MAGIC.A/GEMSYS/OFF002.OSD"
+MIN_ARCHIVE = ROOT / "core/osd/tests/archive/MIN-ATAR/OFF002.OSD"
+RELEASE = ROOT / "core/osd/tests/release/OFF002.OSD"
 
 
 def parse_tos(path: Path) -> dict:

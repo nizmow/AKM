@@ -505,7 +505,7 @@ is taken after the driver returns to the desktop. Banners, usage and diagnostics
 remain a documented gap.
 
 - DIS1 on `T.PRG`, `U.PRG`, `T.O`, `-3 T.PRG`, a recognized DRI object
-  (`MagiC/LIB/PCMXSTRT/BIN/PCMXSTRT.O`) and no arguments.
+  (`base/dis/tests/PCMXSTRT.O`) and no arguments.
   `T.O` is a Pure C (`0x4efa`) object, not a DRI object.
 - DIS2 raw input (`-e`) with default, code/address/ASCII, 68030 and MAS/absolute
   output options, a hexadecimal range, signed 16-bit displacement and MOVEM
@@ -579,8 +579,9 @@ event-CPX callbacks and CPXs beyond the two fixtures remain untested.
 `mise run test:cops-accessory-neost` builds `build/atari/apps/cops/COPS.APP`
 through `base/cops/tests/neost-cops-accessory-smoke.py`, clones the MagiC image,
 removes inherited `GEMSYS\MAGIC\START\COPS.*` and
-`AUTO\ACCS\COPS.ACC`, then installs the Release accessory, the rebuilt
-executable under the same `COPS.ACC` guest name, or nothing for the control.
+`AUTO\ACCS\COPS.ACC`, then installs the archived accessory
+(`base/cops/tests/COPS.ACC`), the rebuilt executable under the same `COPS.ACC`
+guest name, or nothing for the control.
 It fixes `TSLICE.CPX` and requires `MAGX.INF` to keep `#_ACC C:\AUTO\ACCS` and
 `#_APP C:\GEMSYS\MAGIC\START`.
 
@@ -597,7 +598,7 @@ untested. Evidence goes to `build/atari/neost-cops-accessory-*`.
 `mise run release:core` builds the exact file targets listed in the package
 map, then writes `build/atari/release/core-de.zip` and a sorted SHA-256 manifest.
 The package combines rebuilt kernel, boot loader, MAGXDESK, applications, MFA/OSD drivers,
-COPS and CPX modules with retained Release data: `MAGX.INF`, desktop
+COPS and CPX modules with retained data from `release/atari`: `MAGX.INF`, desktop
 associations, help, patterns and localized German resources. The retained
 `MAGX.INF` has its `PDLG.SLB` line removed; PDLG is excluded as optional print
 support. TT/Falcon/MFM, Mac-specific programs, historical demos and ROMs are
@@ -610,7 +611,7 @@ missing or empty rebuilt input. It then clones a MagiC image, removes `AUTO`,
 ZIP, and verifies every installed member's hash; a failed removal stops the run
 before any member is copied. The clean payload must boot to
 MAGXDESK, open its menu and open the COPS panel. Only `HDDRIVER.SYS` remains
-from the fixture's boot infrastructure; it and retained Release CPX/desktop
+from the fixture's boot infrastructure; it and retained `release/atari` CPX/desktop
 files are not rebuilt. The profile is a mono MegaSTE/TOS 2.06 boot; file
 operations and shutdown are exercised separately against the produced payload
 (MGCOPY suite and `SHUTDOWN.PRG`), not by this runner.
@@ -646,8 +647,9 @@ MegaSTE/ST-low clones. Two further boots omit one library from `C:\SLBAUDIT`
 (and from every inherited search path); the probe must report a negative
 `Slbopen` status for that name instead of silently using another copy. It calls
 the packed legacy XP export, checks an exact four-plane expansion, and calls
-LOAD_IMG exports 0 → 2 → 3 → 1 to load, convert, draw and free `PAT6.IMG`. It
-checks that drawing changes the screen and compares the realized VDI colours
+LOAD_IMG exports 0 → 2 → 3 → 1 to load, convert, draw and free `PAT6.IMG`
+(from `release/atari/GEMSYS/GEMDESK/PAT/16/PAT6.IMG`). It checks that
+drawing changes the screen and compares the realized VDI colours
 of the 64×64 image, not palette indices,
 bitmap storage or private descriptor fields. The success marker is written
 after closing both libraries. Evidence goes to `build/atari/neost-slb-consumer-*`.
@@ -655,7 +657,8 @@ after closing both libraries. Evidence goes to `build/atari/neost-slb-consumer-*
 The default baseline is the source-tree `BIN` archives. The runner sets only
 the minimal-allocation bit in a disposable copy of the source-tree LOAD_IMG
 header; without it `Slbopen` returned `-39` on the fixture. To make the same
-strict comparison against the unmodified shipped LOAD_IMG, run
+strict comparison against the unmodified retained Release reference
+(`scripts/testdata/release/LOAD_IMG.SLB`), run
 `mise run test:slb-consumer-neost -- --baseline release` with the same image and
 ROM settings. That baseline loads and draws, but its XIMG colours
 differ from the source port; it is not a passing Release-equivalence test.
@@ -669,9 +672,10 @@ pointers and the classic TOS relocation stream.
 
 `mise run test:osd-off002-neost` builds `OFF002.OSD` and a small VDI probe.
 The build uses VASM's TOS output with `-nosym` and `-tos-flags=7`; it must be
-byte-identical to `MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF002.OSD`. The
-Release `GEMSYS/OFF002.OSD` is V4.11 and differs in text/data size and entry
-offsets; the runner records that comparison but does not claim equivalence.
+byte-identical to `core/osd/tests/archive/MIN-ATAR/OFF002.OSD`. The
+retained Release reference `core/osd/tests/release/OFF002.OSD` is V4.11 and
+differs in text/data size and entry offsets; the runner records that comparison
+but does not claim equivalence.
 
 The MagiC scenario installs the rebuilt driver and probe in a disposable image,
 boots `MAGXBOOT.TOS`, then asks VDI for `v_opnbm()` with a caller-owned 64x64,
@@ -689,9 +693,10 @@ Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
 
 `mise run test:osd-off004ip-neost` builds `OFF004IP.OSD` and a VDI probe. The
 build must be byte-identical to
-`MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF004IP.OSD`; VASM runs with `-no-opt`
-so the archived `movem` encoding is preserved. Release V4.11 is recorded as a
-structural difference, not a byte reference.
+`core/osd/tests/archive/MIN-ATAR/OFF004IP.OSD`; VASM runs with `-no-opt`
+so the archived `movem` encoding is preserved. The retained Release reference
+(`core/osd/tests/release/OFF004IP.OSD`) V4.11 is recorded as a structural
+difference, not a byte reference.
 
 The scenario installs archive and rebuild as `C:\GEMSYS\OFF004IP.OSD` in
 separate clones of the same MagiC image, boots `MAGXBOOT.TOS`, and opens a
@@ -714,10 +719,11 @@ scenario.
 
 `mise run test:osd-off016ip-neost` builds `OFF016IP.OSD` and a VDI probe. The
 build must be byte-identical to
-`MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF016IP.OSD`; VASM runs with `-no-opt`
-to preserve the archived `movem` encoding. The Release driver reports the same
-header version but differs in text/data size and entry offsets, so it is
-recorded structurally, not as a byte reference.
+`core/osd/tests/archive/MIN-ATAR/OFF016IP.OSD`; VASM runs with `-no-opt`
+to preserve the archived `movem` encoding. The retained Release reference
+`core/osd/tests/release/OFF016IP.OSD` reports the same header version but
+differs in text/data size and entry offsets, so it is recorded structurally,
+not as a byte reference.
 
 The scenario installs archive and rebuild as `C:\GEMSYS\OFF016IP.OSD` in
 separate clones, requests a 16-colour, 4-plane, non-packed interleaved 64x64
@@ -739,8 +745,9 @@ scenario.
 
 `mise run test:osd-off256ip-neost` builds `OFF256IP.OSD` and a VDI probe. The
 build must be byte-identical to
-`MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF256IP.OSD`; the shipped Release file
-is the same V4.10 binary. VASM runs with `-no-opt`, so the source uses the
+`core/osd/tests/archive/MIN-ATAR/OFF256IP.OSD`; the retained Release reference
+`core/osd/tests/release/OFF256IP.OSD` is the same V4.10 binary. VASM runs with
+`-no-opt`, so the source uses the
 folded `movea.l (a2),a0` spelling for the zero-displacement colour-map load
 that the archived assembler shortened.
 
@@ -816,7 +823,7 @@ generated tables, not that MagiC's keyboard driver loads them at boot.
 It builds the loader and shared screen probe, then boots three disposable
 clones with an unchanged `MAGIC.RAM`:
 
-- the shipped `MAGIC.A/AUTO/MAGXBOOT.TOS`;
+- the archived `core/magxboot/tests/MAGXBOOT.TOS`;
 - the rebuild from `build/atari/apps/magxboot/MAGXBOOT.TOS`;
 - a clone with `C:\AUTO\MAGXBOOT.TOS` deleted.
 
@@ -836,7 +843,8 @@ not booted.
 `mise run test:hardcopy-neost` builds `HARDCOPY.PRG` and `HCPROBE.PRG`, then
 boots three disposable clones:
 
-- the archived `MagiC/KERNEL/XTENSION/HARDCOPY.PRG`;
+- the archived `base/hardcopy/HARDCOPY.PRG` and the retained Release reference
+  `scripts/testdata/release/HARDCOPY.PRG` (the runner asserts they are identical);
 - the rebuild from `build/atari/apps/hardcopy/HARDCOPY.PRG`;
 - a clone without the extension.
 
@@ -905,7 +913,8 @@ MFM needs a MagiCMac host, so the other nine outputs are structural-only.
 ## NeoST: WINFRAME.SLB window frames
 
 `mise run test:winframe-neost` builds the alternate window-frame library,
-installs archived and rebuilt copies into separate MagiC clones, and also boots
+installs the archived `base/winframe/tests/WINFRAME.SLB`/`WINFRAME.RSC` and
+rebuilt copies into separate MagiC clones, and also boots
 a clone with `#_SLB 0 WINFRAME.SLB` disabled:
 
 ```sh
@@ -924,8 +933,8 @@ behavior are not exercised. Evidence is written to a fresh
 ## NeoST: WINFRAME.DEM example library
 
 `mise run test:winframe-demo-neost` builds the separate
-`MagiC/KERNEL/WINFRAME.DEM` example project, installs the demo's own
-16-object `WINFRAME.RSC` (not the Release production resource) beside the
+`base/winframe-demo` example project, installs the demo's own
+16-object `WINFRAME.RSC` (not the production 20-object resource) beside the
 archived and rebuilt libraries, and boots a clone with
 `#_SLB 0 WINFRAME.SLB` disabled:
 

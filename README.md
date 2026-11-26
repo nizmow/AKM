@@ -26,12 +26,37 @@ The tag also preserves MAGXDESK v4, MGNOTICE v1, the Mac-integrated MGEDIT7,
 and the old CMD source. For example, list the archived MAGXDESK v4 files with
 `git ls-tree -r original-import -- MagiC/APPS/MAGICDESK/MAGXDESK.4`.
 
+## Historical source tree
+
+The `MagiC/` tree that held the imported sources before the `base/`, `core/`
+and `release/atari` layout was retired from the working checkout. Its contents
+remain in the annotated tag `pre-magic-retirement` (commit `88eb5ee`, full
+`88eb5ee0cf5e8a4b8b11c62e688f0f7cc31beef1`): unported
+applications and tools, legacy libraries and includes, kernel build manifests,
+the pre-retirement `MagiC/Releases/MAGIC.A` installation tree and its release
+ZIPs. The tag is local until it is published; until then, use the commit hash
+as the portable identifier:
+
+```sh
+# Commit fallback and local-tag use:
+git show 88eb5ee:MagiC/KERNEL/BUILD/ATARI/M.INP
+git ls-tree -r 88eb5ee -- MagiC/KERNEL/VDI/DRIVERS/OSD
+
+# Once the annotated tag is fetched:
+git fetch origin tag pre-magic-retirement
+git ls-tree -r pre-magic-retirement -- MagiC/APPS
+```
 
 For AKM's build and porting work, see the [project roadmap](docs/ROADMAP.md)
 and the [Atari porting guide](docs/porting/README.md).
 
 
 # Included (among others)
+
+The list describes the imported upstream material. The current checkout carries
+ported and active sources under `base/` and `core/` plus retained installation
+data under `release/atari`; unported sources and archived binaries listed here
+are historical and remain in the snapshot described above.
 
 Applications:
 
@@ -61,7 +86,13 @@ Upload complete as of 2018-11-20
 
 # MagiC for Atari Releases
 
-See MagiC/Releases/. Installation instructions included. Should mainly be in sync with MagicOnLinux.
+Retained installation files live under [`release/atari`](release/atari), using
+guest-relative paths (`AUTO/`, `GEMSYS/`, `LANG/`). Installation instructions
+are included as `INSTALL.TXT`. Rebuilt executables, drivers and loaders are
+produced by the build rather than stored there. The pre-retirement
+`MagiC/Releases/` tree and its old release ZIPs are in the historical snapshot
+described above; the installation content should mainly stay in sync with
+MagicOnLinux.
 
 # Atari cross-toolchain container
 
@@ -267,9 +298,10 @@ NeoST/MagiC cases create, edit, save and reopen a note with identical screens
 and byte-identical `.NOT` output.
 
 `mise run apps -- mgsearch` builds `build/atari/apps/mgsearch/`: `MGSEARCH.APP`
-and `MGSEARCH.RSC`. The target compiles the consumer-specific `GEMUTILS`/
-`WINDOWS` variant and an app-local copy of `core/magxdesk/SRC/PATTERN.C`
-against public GEMlib; the older `MAGXLIB.LIB` dependency is not linked.
+and `MGSEARCH.RSC`. The target compiles the MGSEARCH-owned `GEMUTILS`/
+`WINDOWS` variant from `base/mgsearch/SRC` and an app-local copy of
+`core/magxdesk/SRC/PATTERN.C` against public GEMlib; the older `MAGXLIB.LIB`
+dependency is not linked.
 
 `mise run apps -- mgcopy` builds `build/atari/apps/mgcopy/`: `MGCOPY.APP` and
 its German `MGCOPY.RSC`. The port uses the shared `GEMUT_MT.C` helper, public
@@ -419,8 +451,9 @@ podman run --rm --network=none --userns=keep-id -v "$PWD:/work" -w /work \
 
 The output is `build/atari/MAGIC.RAM`. `kernel.elf` retains symbols and relocations;
 `kernel.map` records the link layout. GCC builds the original C modules and VASM
-assembles the original BIOS/GEMDOS/VDI/AES modules. The link follows
-`MagiC/KERNEL/BUILD/ATARI/M.INP`, with the BIOS header first and `ENDE` last.
+assembles the original BIOS/GEMDOS/VDI/AES modules. The `KERNEL_OBJECTS` list
+in `Makefile` follows the legacy `BUILD/ATARI/M.INP` order, with the BIOS header
+first and `ENDE` last; the original manifest is in the historical snapshot.
 The packager emits the TOS header and delta relocation table expected by
 `MAGXBOOT`; zero-initialized storage is included in DATA because that loader
 copies only TEXT+DATA. It checks the BIOS/AES headers and movable pointers.
@@ -440,8 +473,8 @@ deterministic `build/atari/release/core-de.zip` plus a SHA-256 manifest.
 `mise run test:release-neost` builds the profile, verifies two identical packs,
 installs only the ZIP on a cleaned MagiC clone and boots MAGXDESK and COPS.
 PDLG.SLB, Mac/TT/Falcon variants and historical demos are excluded; retained
-Release files and third-party boot drivers are recorded separately, not
-claimed as rebuilt.
+files from `release/atari` and third-party boot drivers are recorded separately,
+not claimed as rebuilt.
 
 For the boot-only German mono MegaSTE profile, run `mise run release:minimal`
 to build `build/atari/release/minimal-de.zip` and its manifest. This profile
@@ -449,10 +482,11 @@ ships the kernel, loader, MAGXDESK, MCMD fallback and mono VDI drivers without
 COPS, WBDAEMON, optional extensions or third-party CPXs.
 `mise run test:release-minimal-neost` checks the clean boot.
 
-The VDI `SETUP.C` listed in `MAGICVDI.PRJ` is linked alongside the `M.INP`
-modules. VASM's `-spaces` option is required for MAS expressions such as relative
-keyboard dispatch entries. UTF-8 assembly strings are encoded as Atari ST bytes;
-legacy byte strings are preserved. Legacy compiler warnings remain visible.
+The VDI `SETUP.C` listed in `kernel/VDI/SRC/MAGICVDI.2/MAGICVDI.PRJ` is linked
+alongside the historical `M.INP` module order. VASM's `-spaces` option is
+required for MAS expressions such as relative keyboard dispatch entries. UTF-8
+assembly strings are encoded as Atari ST bytes; legacy byte strings are
+preserved. Legacy compiler warnings remain visible.
 
 Build the filesystem kernel component from the repository root:
 
@@ -465,14 +499,20 @@ This produces `build/atari/filesystem.o`, a relocatable 68000 ELF component link
 
 - GCC-built `kernel/DOS/VFAT.C` (long-filename record creation and directory reading);
 - assembly `kernel/DOS/VFAT_S.S` (device-call glue and LFN checksum);
-- assembly `DOS/XFS_VDOS.S` (DOS filesystem driver);
-- assembly `ALLG/SRC/STD.S` (kernel memory, string and other runtime routines).
+- assembly `kernel/DOS/XFS_VDOS.S` (DOS filesystem driver);
+- assembly `kernel/ALLG/SRC/STD.S` (kernel memory, string and other runtime routines).
 
 `make vfat` still builds only `build/atari/vfat.o`.
 The C flags retain 16-bit integers and register calls:
 `-std=gnu11 -mshort -mfastcall -ffreestanding -fno-builtin -fno-strict-aliasing`.
 Both C and assembly compilation check shared structure offsets.
 C include aliases and MAS-to-VASM inputs are generated under `build/atari`.
+
+The Atari kernel's shared headers and BIOS support live under `kernel/INC`
+and `kernel/BIOS`, with module lists in `kernel/mk`. The legacy manifests under
+the historical `MagiC/KERNEL/BUILD` tree document the original layout; read
+them from the `pre-magic-retirement` snapshot.
+
 The syntax adapter handles comments, include names, zero-based `OFFSET` blocks,
 named macro arguments/local labels and expression spelling; instructions remain
 Motorola assembly. Selected complete STD routines get separate ELF sections for
