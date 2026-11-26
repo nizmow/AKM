@@ -15,8 +15,8 @@ import re
 import sys
 
 DEFAULT_SOURCES = (
-    Path(__file__).resolve().parent.parent / "MagiC/APPS/CPX/MAGXCONF.C",
-    Path(__file__).resolve().parent.parent / "MagiC/APPS/CPX/TSLICE.C",
+    Path(__file__).resolve().parent.parent / "base/cpx/MAGXCONF.C",
+    Path(__file__).resolve().parent.parent / "base/cpx/TSLICE.C",
 )
 
 # Function-pointer members in CPXINFO and XCPB (cpxhead.h).

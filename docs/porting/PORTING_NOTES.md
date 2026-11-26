@@ -16,7 +16,7 @@ the GCC sysroot at `/usr/m68k-atari-mintelf/sys-root/usr/include`. In particular
 come from GEMlib. Use these public headers for ordinary application ports.
 
 Legacy headers are not part of that SDK. The repository has a Borland-era
-`TOS.H` snapshot under `MagiC/APPS/APPLICAT/SRC/IMPORT/`, plus MagiC-specific
+`TOS.H` snapshot under `base/applicat/SRC/IMPORT/`, plus MagiC-specific
 imports and libraries there. CMDLINE has no local `TOS.H`/`AES.H` or project
 file identifying its original include path, so the exact source of the
 `<tos.h>` and `<aes.h>` it once used is not established here. The similarly
@@ -140,7 +140,7 @@ under `build/atari/neost-cmdline/`.
 ### SHOWFILE
 
 `make -f Makefile.apps showfile` builds
-`MagiC/APPS/SHOWFILE/SRC/SHOWFILE.C` as
+`base/showfile/SRC/SHOWFILE.C` as
 `build/atari/apps/showfile/SHOWFILE.TTP`, using MiNTLib's public
 `mint/osbind.h` and the default application ABI. The legacy source was converted
 with `NON-TOS/atari-utf8-conversion/atari-utf8.c -r`, then adapted in place,
@@ -246,7 +246,7 @@ long-term stability, other desktops/OS versions or MagiC process termination.
 ### SHUTDOWN
 
 `mise run apps -- shutdown` builds
-`MagiC/APPS/SHUTDOWN/SRC/SHUTDOWN.C` as
+`base/shutdown/SRC/SHUTDOWN.C` as
 `build/atari/apps/shutdown/SHUTDOWN.PRG` with MiNTLib/GEMlib and the default
 application ABI. The German and French alert strings are ASCII C literals with
 explicit Atari ST byte escapes (`\236` sharp S, `\202` e-acute, `\201`
@@ -274,7 +274,7 @@ throwaway build that forced the final sync to fail showed
 
 ### WBDAEMON
 
-`mise run apps -- wbdaemon` builds `MagiC/APPS/WBDAEMON/SRC/WBDAEMON.C` as
+`mise run apps -- wbdaemon` builds `base/wbdaemon/SRC/WBDAEMON.C` as
 `build/atari/apps/wbdaemon/WBDAEMON.PRG`. The source uses MiNTLib's `<gem.h>`,
 `<mint/osbind.h>` and `<mint/sysbind.h>` instead of legacy `<aes.h>`, `<tos.h>`
 and `<magx.h>`. AES message words use `short`, matching the 16-bit AES message
@@ -327,7 +327,7 @@ remains untested.
 ### VFATCONF
 
 `make -f Makefile.apps vfatconf` builds
-`MagiC/APPS/VFATCONF/SRC/VFATCONF.C` as
+`base/vfatconf/SRC/VFATCONF.C` as
 `build/atari/apps/vfatconf/VFATCONF.PRG` and copies the default German resource
 to the expected lowercase `vfatconf.rsc` name. The build uses MiNTLib/GEMlib;
 `VFATCONF_GEM.C` replaces only the legacy GEMUTILS calls this app needs.
@@ -389,8 +389,10 @@ and a daemon that ignores `AP_TERM`; a clock screenshot alone does not.
 ### APPLICAT
 
 `mise run apps -- applicat` compiles the eleven application modules plus the
-application's `IMPORT/GEMUT_MT.C` helper using public MiNTLib/GEMlib headers and
-`-lgem`. Output is `build/atari/apps/applicat/APPLICAT.APP`. The target also
+shared `shared/gemut/GEMUT_MT.C` helper using public MiNTLib/GEMlib headers and
+`-lgem`. Output is `build/atari/apps/applicat/APPLICAT.APP`. Objects build
+under `build/atari/apps/base/` so generated dependencies from the old
+`MagiC/APPS/APPLICAT` source tree cannot break populated builds. The target also
 copies the default German resource as `applicat.rsc` and the minimal association
 fixture from `BIN/MINIMAL` as `applicat.inf`. The source-tree INF is not a safe
 starter: it references external icon resources and old developer paths.
@@ -551,11 +553,11 @@ TOS image, not that ELF carrier. The separate `EDIT.PRG` demo is not rebuilt.
 
 ### MGNOTICE
 
-`mise run apps -- mgnotice` builds `MagiC/APPS/MGNOTICE.2/SRC` as
+`mise run apps -- mgnotice` builds `base/mgnotice/SRC` as
 `build/atari/apps/mgnotice/MGNOTICE.APP`, packages the default German
 `mgnotice.rsc`, and copies the independently built `EDITOBJC.SLB`. The source
 was converted to UTF-8 and adapted to public MiNTLib/GEMlib interfaces. It
-reuses the shared `GEMUT_MT.C` utility implementation; `MagiC/APPS/GEMUT_MT_SDK.H`
+reuses the shared `GEMUT_MT.C` utility implementation; `shared/gemut/GEMUT_MT_SDK.H`
 now holds the public-SDK definitions used by both APPLICAT and MGNOTICE, while
 `APPLICAT_GEM.H` remains a thin compatibility include. APPLICAT compiles again
 after that move; its earlier runtime evidence was not rerun.
@@ -579,7 +581,7 @@ ABI boundaries that mattered:
 - `notice_path` is a writable array; the code changes its drive byte from
   `Dgetdrv()`. `sprintf` replaces the nonstandard `itoa`.
 
-`python3 scripts/neost-mgnotice-smoke.py` builds the application, test helper
+`python3 base/mgnotice/tests/neost-mgnotice-smoke.py` builds the application, test helper
 and SLB, then boots archived and rebuilt bundles in separate MagiC 6.20/TOS 2.06
 clones. It creates a note with Ctrl-N, types `hello`, leaves edit mode with Esc,
 quits with Ctrl-Q, compares every UI state, extracts the saved note, and reboots
@@ -619,7 +621,7 @@ MiNTLib no longer exports by default. `Dxreaddir` comes from `mintbind.h`.
 The legacy event call uses GEMlib's single 32-bit interval, and the short
 `wind_get`/`wind_set` calls are expanded to their four-value SDK forms.
 
-`python3 scripts/neost-mgsearch-smoke.py` builds the application and its delayed
+`python3 base/mgsearch/tests/neost-mgsearch-smoke.py` builds the application and its delayed
 `NEOSTART.PRG`, then boots archived and rebuilt bundles in separate MagiC
 6.20/TOS 2.06 clones with the same German resource. It types `*.ZZZ` into the
 dialog, submits it, and compares the initial, typed and result screens. The
@@ -707,7 +709,7 @@ legacy 13-argument `evnt_multi` with the public MT call, and the old GEMDOS
 `MGFORMAT.PRG` must be started after MAGXDESK owns the desktop; the test helper
 waits in `C:\GEMSYS\MAGIC\START`.
 
-`python3 scripts/neost-mgformat-smoke.py` builds the application and delayed
+`python3 base/mgformat/tests/neost-mgformat-smoke.py` builds the application and delayed
 helper, boots archived and rebuilt bundles from separate MagiC 6.20/TOS 2.06
 clones with `C:\AUTO\MAGXBOOT.TOS`, and compares the `-f A:` format dialog.
 The dialog screens differ only in the desktop free-bytes status line. NeoST's
@@ -1252,12 +1254,12 @@ Evidence: `build/atari/neost-magxconf-20261121-110743/`.
 ## MAGXCONF.CPX
 
 `mise run apps -- magxconf-cpx` builds `build/atari/apps/cpx/MAGXCONF.CPX`
-from the original `MagiC/APPS/CPX/MAGXCONF.C`. A CPX file is a 512-byte
+from the original `base/cpx/MAGXCONF.C`. A CPX file is a 512-byte
 `struct cpxhead` followed by a classic TOS program: 28-byte header, text, data,
 BSS size and TOS relocation deltas. The unchanged `MAGXCONF.HDR` supplies the
 header/icon/title; `MAGXCONF.RSC/.RSO/.RSH` remain the original resource
 inputs. `scripts/elf_to_cpx.py` packages the linked relocatable ELF, and
-`MagiC/APPS/CPX/cpx.ld` keeps text/data/BSS contiguous from zero.
+`base/cpx/cpx.ld` keeps text/data/BSS contiguous from zero.
 
 The external XCONTROL CPX SDK headers were not in the repository. `cpxhead.h`
 and `cpxdata.h` reproduce the classic `XCPB`, `CPXINFO`, `CPXHEAD`, resource
@@ -1363,7 +1365,7 @@ stdout capture and MagiC-kernel-specific behavior are not. Evidence:
 ## TSLICE.CPX
 
 `mise run apps -- tslice-cpx` builds `build/atari/apps/cpx/TSLICE.CPX` from
-`MagiC/APPS/CPX/TSLICE.C`, using the same 512-byte header, `cpx.ld` layout and
+`base/cpx/TSLICE.C`, using the same 512-byte header, `cpx.ld` layout and
 `elf_to_cpx.py` packaging as `MAGXCONF.CPX`. The saved
 timeslice/priority record remains first in DATA and is written by `CPX_Save`.
 
@@ -1393,7 +1395,7 @@ untested. Evidence: `build/atari/neost-tslice-cpx-20261122-120331/`.
 ## COPS
 
 `mise run apps -- cops` builds `build/atari/apps/cops/COPS.APP` in application
-mode. The legacy `MagiC/APPS/COPS/INCLUDE` headers are not placed on the include
+mode. The legacy `base/cops/SRC/INCLUDE` headers are not placed on the include
 path: they supplied Pure C `MT_AES.H`/`MGX_DOS.H` declarations and would shadow
 the toolchain's `stdio.h`, `stdint.h` and GEMlib headers. The source now uses
 public `gem.h`/`gemx.h` and `mint/*.h`; `GLOBAL.H` keeps only the records MiNTLib
@@ -1420,8 +1422,11 @@ Contracts worth preserving:
   drops `SUPER`, converts `0x` literals and fixes directives. Verified object
   bytes contain `cpushl`, `cpusha`, `cinva` and both `movec %cacr` forms.
 - The build rejects a `BUILD_DIR` whose `cops` output directory aliases
-  `MagiC/APPS/COPS`; otherwise normalization or linking could overwrite the
+  `base/cops/SRC`; otherwise normalization or linking could overwrite the
   tracked source/archive on a case-insensitive checkout.
+- Relocated objects build under `build/atari/apps/base/cops/`, while the
+  executable remains `build/atari/apps/cops/COPS.APP`. This avoids stale
+  dependency files that still name the old `MagiC/APPS/COPS` source tree.
 
 `test:cops-neost` validates the `#_APP`/`#_ACC` paths, disables the accessory,
 removes inherited CPX modules and `COPS.INF` settings, and installs only
@@ -1880,7 +1885,7 @@ preserves D2, which that callback may clobber. A packed C parameter alone
 would not protect the register.
 
 Do not use the shipped Release `LOAD_IMG.SLB` as a source-level oracle.
-The archived binary under `TOOLS/LOAD_IMG.SLB/BIN` decodes in export 0, with
+The archived binary under `base/load-img/BIN` decodes in export 0, with
 a per-plane byte stride. The Release binary initializes a private image
 handle in export 0, reports an all-plane stride there, and decodes in
 export 2. Compare the full load → convert → draw path; do not compare raw

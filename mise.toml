@@ -106,7 +106,7 @@ run = "python3 scripts/cpx_abi_lint.py && python3 -m unittest discover -s script
 [tasks."test:mod-app-neost"]
 description = "Compare archived and GCC MOD_APP under NeoST"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-mod-app-smoke.py"
+run = "python3 base/mod-app/tests/neost-mod-app-smoke.py"
 
 [tasks."test:mgcopy-neost"]
 description = "Verify rebuilt MGCOPY file operations under NeoST/MagiC"
@@ -116,12 +116,12 @@ run = "python3 core/mgcopy/tests/neost-mgcopy-smoke.py"
 [tasks."test:mgformat-neost"]
 description = "Compare archived and rebuilt MGFORMAT startup dialog under NeoST/MagiC"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-mgformat-smoke.py"
+run = "python3 base/mgformat/tests/neost-mgformat-smoke.py"
 
 [tasks."test:vt52-neost"]
 description = "Compare archived and rebuilt VT52 terminal session under NeoST/MagiC"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-vt52-smoke.py"
+run = "python3 base/vt52/tests/neost-vt52-smoke.py"
 
 [tasks."test:console-tools-neost"]
 description = "Compare archived and rebuilt MAC2ST, DUMP, FC and SPLIT under NeoST"
@@ -146,12 +146,12 @@ run = "python3 scripts/neost-mgclock-smoke.py"
 [tasks."test:mgnotice-neost"]
 description = "Compare archived and rebuilt MGNOTICE note lifecycle under NeoST"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-mgnotice-smoke.py"
+run = "python3 base/mgnotice/tests/neost-mgnotice-smoke.py"
 
 [tasks."test:mgsearch-neost"]
 description = "Compare archived and rebuilt MGSEARCH dialogs and results under NeoST"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-mgsearch-smoke.py"
+run = "python3 base/mgsearch/tests/neost-mgsearch-smoke.py"
 
 [tasks."test:magxdesk-neost"]
 description = "Compare archived and rebuilt MAGXDESK v5 startup under NeoST"
@@ -171,17 +171,17 @@ run = "python3 scripts/neost-magxconf-smoke.py"
 [tasks."test:tslice-cpx-neost"]
 description = "Compare archived and rebuilt TSLICE.CPX dialog under MagiC"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-tslice-cpx-smoke.py"
+run = "python3 base/cpx/tests/neost-tslice-cpx-smoke.py"
 
 [tasks."test:magxconf-cpx-neost"]
 description = "Compare archived and rebuilt MAGXCONF.CPX boot init and dialog under MagiC"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-magxconf-cpx-smoke.py"
+run = "python3 base/cpx/tests/neost-magxconf-cpx-smoke.py"
 
 [tasks."test:winframe-neost"]
 description = "Compare archived and rebuilt WINFRAME.SLB window frames under MagiC"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-winframe-smoke.py"
+run = "python3 base/winframe/tests/neost-winframe-smoke.py"
 
 [tasks."test:winframe-demo-neost"]
 description = "Compare the archived and rebuilt WINFRAME.DEM example library under MagiC"
@@ -241,12 +241,12 @@ run = "python3 core/osd/tests/neost-osd-batch-smoke.py --driver off16mov"
 [tasks."test:cops-neost"]
 description = "Compare archived and rebuilt COPS panel and CPX dialogs on MagiC"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-cops-smoke.py"
+run = "python3 base/cops/tests/neost-cops-smoke.py"
 
 [tasks."test:cops-accessory-neost"]
 description = "Compare the shipped and rebuilt COPS accessory lifecycle on MagiC"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-cops-accessory-smoke.py"
+run = "python3 base/cops/tests/neost-cops-accessory-smoke.py"
 
 [tasks."test:keyb-sys-neost"]
 description = "Compare all six KEYB_SYS generators with their archives under NeoST"

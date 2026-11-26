@@ -98,7 +98,7 @@ behavior under a different desktop/OS version.
 
 ## NeoST: MGNOTICE archived/rebuilt lifecycle
 
-`scripts/neost-mgnotice-smoke.py` builds `MGNOTICE.APP`, its German resource,
+`base/mgnotice/tests/neost-mgnotice-smoke.py` builds `MGNOTICE.APP`, its German resource,
 the rebuilt `EDITOBJC.SLB` and the `NEOSTART.PRG` test helper. It then runs the
 archived and rebuilt bundles in separate clones of the same MagiC image:
 
@@ -125,7 +125,7 @@ Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
-  python3 scripts/neost-mgnotice-smoke.py --output build/atari/neost-mgnotice-check
+  python3 base/mgnotice/tests/neost-mgnotice-smoke.py --output build/atari/neost-mgnotice-check
 ```
 
 Use `--partition-offset` for a different MagiC partition offset. The source
@@ -134,7 +134,7 @@ resize and alternate resources are outside this scenario.
 
 ## NeoST: MGSEARCH archived/rebuilt dialog and search
 
-`scripts/neost-mgsearch-smoke.py` builds `MGSEARCH.APP`, its German resource and
+`base/mgsearch/tests/neost-mgsearch-smoke.py` builds `MGSEARCH.APP`, its German resource and
 the delayed `NEOSTART.PRG` helper, then runs the archived and rebuilt bundles in
 separate clones of the same MagiC image:
 
@@ -149,7 +149,7 @@ Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
-  python3 scripts/neost-mgsearch-smoke.py --output build/atari/neost-mgsearch-check
+  python3 base/mgsearch/tests/neost-mgsearch-smoke.py --output build/atari/neost-mgsearch-check
 ```
 
 Use `--partition-offset` for a different MagiC partition offset. The source
@@ -174,7 +174,7 @@ Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
-  python3 scripts/neost-mgformat-smoke.py --output build/atari/neost-mgformat-check
+  python3 base/mgformat/tests/neost-mgformat-smoke.py --output build/atari/neost-mgformat-check
 ```
 
 Physical formatting and disk-copy effects are outside this scenario: NeoST
@@ -436,7 +436,7 @@ of the same MagiC image:
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
-  python3 scripts/neost-magxconf-cpx-smoke.py
+  python3 base/cpx/tests/neost-magxconf-cpx-smoke.py
 ```
 
 The runner installs a scratch CPX copy with `SCB_NFAST` as its saved default, so
@@ -454,7 +454,7 @@ mise run lint:cpx-abi
 mise run test:cpx-abi
 ```
 
-The lint defaults to `MagiC/APPS/CPX/MAGXCONF.C` and `TSLICE.C`. Explicit
+The lint defaults to `base/cpx/MAGXCONF.C` and `TSLICE.C`. Explicit
 source paths can be passed to `python3 scripts/cpx_abi_lint.py`. Known XCPB
 callback members may only be used as the first argument to their approved
 bridge; direct calls, pointer extraction and the wrong bridge are rejected.
@@ -532,7 +532,7 @@ Panels through the desktop menu:
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
- python3 scripts/neost-tslice-cpx-smoke.py
+ python3 base/cpx/tests/neost-tslice-cpx-smoke.py
 ```
 
 It double-clicks the `MagiC Timeslice` CPX, requires the dialog to differ from
@@ -545,7 +545,7 @@ scheduler behavior under load remain outside the scenario.
 ## NeoST: COPS control-panel manager
 
 `mise run test:cops-neost` builds `build/atari/apps/cops/COPS.APP` and runs
-`scripts/neost-cops-smoke.py`. Each case clones the MagiC image and first
+`base/cops/tests/neost-cops-smoke.py`. Each case clones the MagiC image and first
 requires `MAGX.INF` to name `C:\GEMSYS\MAGIC\START` for `#_APP` and
 `C:\AUTO\ACCS` for `#_ACC`. It disables `AUTO\ACCS\COPS.ACC` by renaming it to
 `.ACX`, deletes inherited `C:\CPX\*.CPX`/`*.CPZ` and `COPS.INF` settings from
@@ -578,8 +578,9 @@ event-CPX callbacks and CPXs beyond the two fixtures remain untested.
 
 ## NeoST: COPS accessory mode
 
-`mise run test:cops-accessory-neost` builds `build/atari/apps/cops/COPS.APP`,
-clones the MagiC image, removes inherited `GEMSYS\MAGIC\START\COPS.*` and
+`mise run test:cops-accessory-neost` builds `build/atari/apps/cops/COPS.APP`
+through `base/cops/tests/neost-cops-accessory-smoke.py`, clones the MagiC image,
+removes inherited `GEMSYS\MAGIC\START\COPS.*` and
 `AUTO\ACCS\COPS.ACC`, then installs the Release accessory, the rebuilt
 executable under the same `COPS.ACC` guest name, or nothing for the control.
 It fixes `TSLICE.CPX` and requires `MAGX.INF` to keep `#_ACC C:\AUTO\ACCS` and
@@ -911,7 +912,7 @@ a clone with `#_SLB 0 WINFRAME.SLB` disabled:
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
- python3 scripts/neost-winframe-smoke.py
+ python3 base/winframe/tests/neost-winframe-smoke.py
 ```
 
 The scenario switches `MAGX.INF` to ST-low colour (`#_DEV 2 0`) because

@@ -1,0 +1,841 @@
+/*******************************************************************
+*
+*             APPLICAT.APP                             21.03.94
+*             ============
+*                                 letzte Änderung:	2.5.98
+*
+* geschrieben mit Pure C V1.1
+* Projektdatei: APPLICAT.PRJ
+*
+* Modul zur Iconauswahl und Anwendung anmelden.
+* Parameter:
+*
+*	-c				; APPLICAT.DAT neu aufbauen
+*
+*	-aa	appath		; Applikation anmelden
+*	-ad	appath dat	; angemeldete Datei modifizieren
+*
+*	-ia	appath		; Icon für Programm anmelden
+*	-id	apname dat	; Icon für Datei anmelden
+*					; ggf. <apname> == "<>"
+*	-io	opath		; Icon für Ordner/Disk anmelden
+*	-is	key[4]		; Icon für "special object" anmelden
+*
+*
+* ----------------------------------------------------------------
+*
+* Textdatei für APPLICAT:
+* Konfigurationsdatei applicat.inf:
+*
+*	magic			; Zeile mit "applicat.inf" und Versionsnummer
+*	[Programmname]
+*	.... (Programmdaten):
+*		Icon mit RSC-Dateiname, Icon-Name und Index (oder Leerzeile)
+*		kompletter Pfad oder Leerzeile
+*		Konfigurationsangaben im Klartext ("TTP", "Single")
+*		Dateitypen, jeweils einer pro Zeile
+*	[Programmname]
+*	.... (Programmdaten)
+*	[Dateityp]
+*	.... (Dateidaten)
+*		Icon mit RSC-Dateiname, Icon-Name und Index (oder Leerzeile)
+*
+*	
+*
+* Binärdatei für MAGXDESK:
+* Konfigurationsdatei magxdesk.icn:
+*
+*	long magic;		'APNF'
+*	int ver;			0	(Versionskennung)
+*	int n_icons;
+*	int n_pgm;		Anzahl Programmeinträge
+*	int n_dat;		Anzahl Dateieinträge
+*	long offs_pgm;
+*	long offs_dat;		Zeiger auf Tabelle der Daten-Dateien
+*	void *pgmx[n_pgm];	Angemeldete Programme
+*	void *datx[n_dat];	Angemeldete Dateitypen
+*	void *icons[n_icons];
+*
+*	 Icons:
+*	ICONBLK
+*
+*	 Programme:
+*	char name[?];		Dateiname ohne Extension, nullterminiert,
+*	char cpath[?]		kompletter Pfadname nullterminiert,
+*					auf gerade Adresse erweitert
+*					ggf. '\0', wenn kein Pfad bekannt ist.
+*	int icon;		Index für Icon (ggf. auch Standardicon)
+*	int config;		Konfigurationsbits (TTP/Single...)
+*	int types[?];		Index auf Dateitypen, durch -1
+*					abgeschlossen
+*
+*	 Daten:
+*	char name[?];		Extension, nullterminiert,
+*					auf gerade Adresse erweitert
+*	int icon;		Index für Icon (ggf. auch Standardicon)
+*
+*
+****************************************************************/
+
+#include "APPLICAT_GEM.H"
+#include "TOS_ARGS.H"
+#include <string.h>
+#include <stdlib.h>
+#include "WINDOWS.H"
+#include "APPLICAT.H"
+#include "GEMUT_MT.H"
+#include "APPL.H"
+#include "ANW_DIAL.H"
+#include "TYP_DIAL.H"
+#include "ICA_DIAL.H"
+#include "ICP_DIAL.H"
+#include "PTH_DIAL.H"
+#include "SPC_DIAL.H"
+#include "INF.H"
+#include "READ_INF.H"
+#include "APPLDATA.H"
+#include "ICONSEL.H"
+#define _HZ_200     ((long *)          0x4ba)
+
+short gl_hhbox, gl_hwbox, gl_hhchar, gl_hwchar;
+int ap_id;
+short is_3d;
+GRECT scrg;
+
+int is_multiwindow;		/* alle Fenster sind offen */
+
+int spcn = 0;			/* Anzahl Spezialobjekte */
+int pthn = 0;			/* Anzahl Pfade */
+int datn = 0;			/* Anzahl Dateitypen */
+int pgmn = 0;			/* Anzahl Programme */
+int icnn = 0;			/* Anzahl Icons */
+int linn = 0;			/* Anzahl Zeilen */
+int rscn = 0;			/* Anzahl RSC-Dateien */
+struct pgm_file pgmx[MAX_PGMN];
+struct dat_file datx[MAX_DATN];
+struct pth_file pthx[MAX_PTHN];
+struct spc_file spcx[MAX_SPCN];
+struct icon icnx[MAX_ICNN];
+struct item_line linx[MAX_LINN];
+struct iconfile rscx[MAX_RSCN];
+
+
+void open_work(void);
+void close_work(void);
+
+const char *applicat_inf_filename = "applicat.inf";
+
+void Mgraf_mouse(int type);
+
+/* Dialoge */
+
+DIALOG *d_ica = NULL;			/* Icons für Applikationen */
+OBJECT *adr_ica_dialog;
+
+DIALOG *d_icp = NULL;			/* Icons für Pfade */
+OBJECT *adr_icp_dialog;
+
+DIALOG *d_spc = NULL;			/* Spezial-Icons */
+OBJECT *adr_spc_dialog;
+
+DIALOG *d_anw = NULL;			/* Anwendung anmelden */
+OBJECT *adr_anwndg;
+
+DIALOG *d_pth = NULL;			/* Pfade anmelden */
+OBJECT *adr_newpath;
+
+DIALOG *d_typ = NULL;			/* Dateityp anmelden */
+OBJECT *adr_ftypes;
+
+
+/****************************************************************
+*
+* Hilfsfunktion für getHz200
+*
+****************************************************************/
+
+static long _getHz200(void)
+{
+	return *_HZ_200;
+}
+
+
+/****************************************************************
+*
+* Systemzeit für Intervall-Berechnungen
+*
+****************************************************************/
+
+long getHz200(void)
+{
+	return Supexec(_getHz200);
+}
+
+
+/****************************************************************
+*
+* Doppelklick-Zeit in Millisekunden,
+* muß mit 5 multipliziert werden für 5-ms-Einheiten für den 200-Hz-Timer
+*
+****************************************************************/
+
+unsigned get_dclick_interval_ms(void)
+{
+	/* Tabelle aus dem MagiC-Kernel */
+	static const unsigned dclick_tab[] =
+	{
+		450,	/* in ms */
+		330,
+		275,
+		220,
+		165
+	};
+
+	unsigned v = (unsigned) evnt_dclick(0, 0);
+	if (v > 4)
+	{
+		v = 4;
+	}
+	
+	return dclick_tab[v];
+}
+
+
+/*********************************************************************
+*
+* Aktionen von der Kommandozeile auswerten
+*
+*********************************************************************/
+
+static int process_action(const char action[2], char *args[2])
+{
+	if (action[0] == 'i')
+	{
+		open_iconsel();
+		switch(action[1])
+		{
+			case 'a':
+		 		d_ica = xy_wdlg_init(
+		 				ica_wdlg_cb,
+		 				adr_ica_dialog,
+		 				IDENT_APPLICATIONS,
+		 				0,
+		 				args,
+		 				STR_WINTITLE_APP);
+				if (!d_ica)
+				{
+					return 1;	/* Fehler */
+				}
+				break;
+
+			case 'd':
+		 		d_ica = xy_wdlg_init(
+		 				ica_wdlg_cb,
+		 				adr_ica_dialog,
+		 				IDENT_APPLICATIONS,
+		 				1,
+		 				args,
+		 				STR_WINTITLE_APP);
+				if (!d_ica)
+				{
+					return 1;	/* Fehler */
+				}
+				break;
+
+			case 'o':
+		 		d_icp = xy_wdlg_init(
+		 				icp_wdlg_cb,
+		 				adr_icp_dialog,
+		 				IDENT_PATHS,
+		 				0,
+		 				args,
+		 				STR_WINTITLE_PTH);
+				if (!d_icp)
+				{
+					return 1;	/* Fehler */
+				}
+				break;
+
+			case 's':
+		 		d_spc = xy_wdlg_init(
+		 				spc_wdlg_cb,
+		 				adr_spc_dialog,
+		 				IDENT_SPECIAL,
+		 				0,
+		 				args,
+		 				STR_WINTITLE_SPC);
+				if (!d_spc)
+				{
+					return 1;	/* Fehler */
+				}
+				break;
+		}
+	}
+	else
+	if (action[0] == 'a')
+	{
+ 		d_ica = xy_wdlg_init(
+ 				ica_wdlg_cb,
+ 				adr_ica_dialog,
+ 				IDENT_APPLICATIONS,
+ 				2,
+ 				args,
+ 				STR_WINTITLE_APP);
+		if (!d_ica)
+		{
+			return 1;	/* Fehler */
+		}
+	}
+	else
+	{
+		is_multiwindow = TRUE;
+
+ 		d_ica = xy_wdlg_init(
+ 				ica_wdlg_cb,
+ 				adr_ica_dialog,
+ 				IDENT_APPLICATIONS,
+ 				0,
+ 				args,
+ 				STR_WINTITLE_APP);
+		if (!d_ica)
+		{
+			return 1;	/* Fehler */
+		}
+
+ 		d_icp = xy_wdlg_init(
+ 				icp_wdlg_cb,
+ 				adr_icp_dialog,
+ 				IDENT_PATHS,
+ 				0,
+ 				args,
+ 				STR_WINTITLE_PTH);
+		if (!d_icp)
+		{
+			return 1;	/* Fehler */
+		}
+
+ 		d_spc = xy_wdlg_init(
+ 				spc_wdlg_cb,
+ 				adr_spc_dialog,
+ 				IDENT_SPECIAL,
+ 				0,
+ 				args,
+ 				STR_WINTITLE_SPC);
+		if (!d_spc)
+		{
+			return 1;	/* Fehler */
+		}
+	}
+	
+	return 0;	/* kein Fehler */
+}
+
+
+/*********************************************************************
+*
+* Tastatureingaben behandeln
+*
+*********************************************************************/
+
+static int handle_key(EVNT *w_ev)
+{
+	short whdl;
+	WORD intin2;
+	short message[8];
+	short dummy;
+	WINDOW *w;
+
+	if (w_ev->key == 0x1011)	/* Ctrl-Q */
+	{
+		return 1;		/* Beenden */
+	}
+
+	if (w_ev->key == 0x1615)	/* Ctrl-U */
+	{
+		/* unser oberstes Fenster <whdl> ermitteln */
+		intin2 = ap_id;		/* Eingabewert! */
+		wind_get(0, WF_BOTTOM, &intin2, &whdl, &dummy, &dummy);
+		/* schicke mir selbst eine Nachricht */
+		if (whdl > 0)
+		{
+			message[0] = WM_CLOSED;
+			message[1] = ap_id;
+			message[2] = 0;
+			message[3] = whdl;
+			message[4] = message[5] =
+			message[6] = message[7] = 0;
+			appl_write(ap_id, 16, message);
+		}
+	}
+	else
+	if (w_ev->key == 0x1117)	/* Ctrl-W */
+	{
+		/* unser unterstes Fenster <whdl> ermitteln */
+		intin2 = ap_id;		/* Eingabewert! */
+		wind_get(-1, WF_BOTTOM, &intin2, &whdl,	&dummy, &dummy);
+		/* schicke mir selbst eine Nachricht */
+		if (whdl > 0)
+		{
+			message[0] = WM_TOPPED;
+			message[1] = ap_id;
+			message[2] = 0;
+			message[3] = whdl;
+			message[4] = message[5] =
+			message[6] = message[7] = 0;
+			appl_write(ap_id, 16, message);
+		}
+	}
+	else
+	{
+		w = whdl2window(top_whdl());
+		if (!w)
+		{
+			/* Taste nicht bearbeitet! */
+			return 0;	/* Programm nicht beenden */
+		}
+
+		w->hdl_key(w, w_ev->kstate, w_ev->key);
+	}
+
+	w_ev->mwhich &= ~MU_KEYBD;	/* bearbeitet */
+	return 0;	/* Programm nicht beenden */
+}
+
+
+/********************************************
+* Hauptprogramm
+********************************************/
+
+int main(int argc, char *argv[])
+{
+	EVNT w_ev;
+	struct tos_args raw_args;
+	char action[2] = {0,0};
+	char *args[2] = { NULL, NULL };
+	WINDOW *w;
+	short dummy;
+	const int wait_nclicks = 1;		/* Fast Click */
+	unsigned long last_clicktime = 0;
+	unsigned dclick_interval_hz200;		/* in 5-ms-Einheiten */
+
+
+	argc = tos_arguments(argc, &argv, &raw_args);
+	Pdomain(PDOM_MINT);
+	if ((ap_id = appl_init()) < 0)
+	{
+		Pterm(-1);
+	}
+
+	Mrsrc_load("applicat.rsc", NULL);
+	objc_sysvar(0, MX_ENABLE3D, 0, 0, &is_3d, &dummy);
+	wind_get_grect(SCREEN, WF_WORKXYWH, &scrg);
+	vdi_handle = graf_handle(&gl_hwchar, &gl_hhchar, &gl_hwbox, &gl_hhbox);
+
+	/* Kommandozeile auswerten */
+	/* ----------------------- */
+
+	if ((argc > 1) && (argv[1][0] != '-'))
+	{
+		/* optional first parameter for debugging purposes:
+		   name and path of INF file */
+		applicat_inf_filename = argv[1];
+		argv++;
+		argc--;
+	}
+
+	if (argc > 1)
+	{
+		if (argv[1][0] != '-')
+		{
+			par_err:
+			Rform_alert(1, ALRT_ERRARG, NULL);
+			return -1;
+		}
+
+		action[0] = argv[1][1];
+		if (!action[0])
+			goto par_err;
+		action[1] = argv[1][2];
+		if (argc > 2)
+			args[0] = argv[2];
+		if (argc > 3)
+			args[1] = argv[3];
+	}
+
+	/* INF- Datei einlesen */
+	/* ------------------- */
+
+	if (get_inf())
+		return -1;
+
+	open_work();
+	load_icons();
+	load_int_icons();
+
+	if ((action[0] == 'c') && (!action[1]))
+	{
+		/* nicht interaktiv, nur compilieren */
+		put_inf();
+		goto fehler;
+	}
+
+	/* Dialog "Registrierte Programme" */
+	rsrc_gtree(T_APPS, &adr_ica_dialog);
+	ica_dial_init_rsc();
+
+	/* Dialog "Registrierte Pfade */
+	rsrc_gtree(T_FOLDRS, &adr_icp_dialog);
+	icp_dial_init_rsc();
+
+	/* Dialog "Default-Icons" */
+	rsrc_gtree(T_SPECIA, &adr_spc_dialog);
+	spc_dial_init_rsc();
+
+	rsrc_gtree(T_ANWNDG, &adr_anwndg);
+	anw_dial_init_rsc();
+
+	rsrc_gtree(T_FTYPES, &adr_ftypes);
+	typ_dial_init_rsc();
+
+	rsrc_gtree(T_NEWFLD, &adr_newpath);
+	pth_dial_init_rsc();
+
+
+	init_iconsel();
+
+	Mgraf_mouse(ARROW);
+
+	is_multiwindow = FALSE;
+
+	if (process_action(action, args))
+	{
+		goto fehler;
+	}
+
+	for (;;)
+	{
+		/* Das eingestellte Doppelklick-Intervall könnte geändert worden sein. */
+		dclick_interval_hz200 = get_dclick_interval_ms() / 5;
+
+		EVNT_multi(MU_KEYBD | MU_BUTTON | MU_MESAG,
+				   wait_nclicks, 1, 1, NULL, NULL, 0L, &w_ev);
+
+		/* Doppelklick der linken Maustaste erkennen */
+
+		if (w_ev.mbutton & 1)
+		{
+			unsigned long clicktime = (unsigned long)getHz200();
+			if (clicktime - last_clicktime < dclick_interval_hz200)
+			{
+				w_ev.mclicks = 2;
+			}
+			last_clicktime = clicktime;
+		}
+
+		/* Tastatur */
+
+		if (w_ev.mwhich & MU_KEYBD)
+		{
+			if (handle_key(&w_ev))
+			{
+				break;	/* Programm beenden */
+			}
+		}
+
+		/* Maus-Button */
+
+		if (w_ev.mwhich & MU_BUTTON)
+		{
+			w = whdl2window(wind_find(w_ev.mx, w_ev.my));
+			if (w)
+			{
+				w->button(w, w_ev.kstate, w_ev.mx, w_ev.my,
+						w_ev.mbutton, w_ev.mclicks);
+				w_ev.mwhich &= ~MU_BUTTON;	/* bearbeitet */
+			}
+		}
+
+		if (w_ev.mwhich & MU_MESAG)
+		{
+			if (w_ev.msg[0] == AP_TERM)
+			{
+				close_work();
+				return 0;
+			}
+/*
+			if (w_ev.msg[0] == AV_START)
+			{
+			}
+*/
+
+			if (((w_ev.msg[0] >= 20) &&
+					(w_ev.msg[0] < 40)) ||		/* WM_XX */
+				 	(w_ev.msg[0] >= 1040))
+			{
+				w = whdl2window(w_ev.msg[3]);
+				if (w)
+				{
+					w->message(w, w_ev.kstate, w_ev.msg);
+					w_ev.mwhich &= ~MU_MESAG;	/* bearbeitet */
+				}
+			}
+		}
+
+
+		if (d_ica && !wdlg_evnt(d_ica, &w_ev))
+			break;
+		if (d_icp && !wdlg_evnt(d_icp, &w_ev))
+			break;
+		if (d_spc && !wdlg_evnt(d_spc, &w_ev))
+			break;
+
+		if (d_typ && !wdlg_evnt(d_typ, &w_ev))
+		{
+			Mfree(wdlg_get_udata(d_typ));
+			wdlg_close(d_typ, NULL, NULL);
+			wdlg_delete(d_typ);
+			d_typ = NULL;
+		}
+
+		if (d_anw && !wdlg_evnt(d_anw, &w_ev))
+		{
+			Mfree(wdlg_get_udata(d_anw));
+			wdlg_close(d_anw, NULL, NULL);
+			wdlg_delete(d_anw);
+			d_anw = NULL;
+		}
+
+		if (d_pth && !wdlg_evnt(d_pth, &w_ev))
+		{
+			Mfree(wdlg_get_udata(d_pth));
+			wdlg_close(d_pth, NULL, NULL);
+			wdlg_delete(d_pth);
+			d_pth = NULL;
+		}
+
+	} /* END FOREVER */
+
+	fehler:
+	close_work();
+	return 0;
+}
+
+
+char *err_file;
+
+long err_alert(long e)
+{
+	form_xerr(e, err_file);
+	err_file = NULL;
+	return e;
+}
+
+
+/*************************************************************
+*
+* Einen Fensterdialog öffnen
+*
+*************************************************************/
+
+DIALOG *xy_wdlg_init(
+			HNDL_OBJ hndl_obj,
+			OBJECT *tree,
+			char *ident,
+			int code,
+			void *data,
+			int title_code
+			)
+{
+	int whdl;
+	register WINDEFPOS *wd;
+	int x,y;
+	DIALOG *d;
+	struct dialog_userdata *du;
+
+
+	if (NULL == (du = (struct dialog_userdata *)Malloc(sizeof(*du))))
+		return NULL;
+
+	if ((wd = def_wind_pos(ident)) != NULL)
+	{
+		x = wd->g.g_x;
+		y = wd->g.g_y + gl_hhbox;
+	}
+	else
+		x = y = -1;
+
+	du->ident = ident;
+	du->mode = 0;
+	d = wdlg_create(
+			hndl_obj,
+			tree,
+			du,			/* user_data */
+			code,
+			data,
+			0			/* flags */
+			);
+
+	if (d)
+	{
+		whdl = wdlg_open(
+			d,
+			Rgetstring(title_code, NULL),
+			NAME + CLOSER + MOVER,
+			x,y,
+			0,			/* code */
+			NULL);		/* data */
+		if (whdl <= 0)
+		{
+			wdlg_delete(d);
+			d = NULL;
+			Rform_alert(1, ALRT_ERRWINDOPEN, NULL);
+		}
+	}
+
+	if (!d)
+		Mfree(du);
+
+	return d;
+}
+
+
+/*************************************************************
+*
+* Fensterdialog soll geschlossen werden. Vorher Position
+* sichern.
+*
+*************************************************************/
+
+void save_dialog_xy(DIALOG *d)
+{
+	register WINDEFPOS *wd;
+	OBJECT *tree;
+	GRECT dummy;
+	struct dialog_userdata *du;
+
+
+	du = wdlg_get_udata(d);
+	wdlg_get_tree(d, &tree, &dummy);
+	wd = def_wind_pos(du->ident);
+	if ((!wd) && (n_windefpos < MAXWINDEFPOS))
+	{
+		wd = windefpos+n_windefpos;	/* freien Eintrag suchen */
+		strcpy(wd->name, du->ident);
+		n_windefpos++;
+	}
+
+	if (wd)
+	{
+		wd->g.g_x = tree->ob_x;
+		wd->g.g_y = tree->ob_y - gl_hhbox;
+	}
+}
+
+
+/****************************************************************
+*
+* Malt ein Unterobjekt eines Fensters
+*
+****************************************************************/
+
+void subobj_wdraw(void *d, int obj, int startob, int depth)
+{
+	OBJECT *tree;
+	GRECT g;
+
+
+	wdlg_get_tree(d, &tree, &g);
+	objc_grect(tree, obj, &g);
+	wdlg_redraw(d, &g, startob, depth);
+}
+
+
+/****************************************************************
+*
+* close_work
+*
+****************************************************************/
+
+void close_work(void)
+{
+	rsrc_free();
+	v_clsvwk(vdi_handle);
+	appl_exit();
+	Pterm0();
+}
+
+
+/****************************************************************
+*
+* meine rsrc_gaddr
+*
+****************************************************************/
+
+int rsrc_gtree(int index, OBJECT **tree)
+{
+	return(rsrc_gaddr(R_TREE, index, tree));
+}
+
+
+/****************************************************************
+*
+* Dateiname isolieren und Überlauf testen
+*
+* Rückgabe:	-1	Name ungültig
+*			1	Name ohne Pfad
+*			0	Name mit Pfad
+*
+****************************************************************/
+
+int extract_apname(const char *path, char *name)
+{
+	char *nurname;
+	char fname[MAX_NAMELEN + 10];
+	char *f;
+
+
+	nurname = get_name(path);
+	if (strlen(nurname) > MAX_NAMELEN + 9)
+	{
+		overfl:
+		Rform_alert(1, ALRT_FNAME_2LONG, NULL);
+		return -1;
+	}
+
+	strcpy(fname, nurname);
+	f = strchr(fname, '.');
+	if (f)
+		*f = EOS;
+	if (!fname[0] || (strlen(fname) > MAX_NAMELEN - 1))
+		goto overfl;
+
+	if (strpbrk(fname, "[]:\\'"))
+	{
+		Rform_alert(1, ALRT_FNAME_INVAL, NULL);
+		return -1;
+	}
+
+	strcpy(name, fname);
+	return(nurname == path);
+}
+
+
+/****************************************************************
+*
+* Default-Icon ermitteln
+*
+****************************************************************/
+
+int get_deficonnr(long key)
+{
+	register int i;
+	register struct spc_file *spc_file;
+
+	for	(i = 0,spc_file = spcx; i < spcn; i++,spc_file++)
+	{
+		if (spc_file->key == key)
+			return spc_file->iconnr;
+	}
+
+	return 0;
+}

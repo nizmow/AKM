@@ -248,7 +248,7 @@ New/Save As and quoted/ARGV paths. Binary-format regression checks:
 
 `mise run apps -- mgnotice` builds `build/atari/apps/mgnotice/`: `MGNOTICE.APP`,
 the German `mgnotice.rsc` and the rebuilt `EDITOBJC.SLB`. It reuses the shared
-`GEMUT_MT.C` helper and neutral `MagiC/APPS/GEMUT_MT_SDK.H`. Archived/rebuilt
+`GEMUT_MT.C` helper and neutral `shared/gemut/GEMUT_MT_SDK.H`. Archived/rebuilt
 NeoST/MagiC cases create, edit, save and reopen a note with identical screens
 and byte-identical `.NOT` output.
 
@@ -266,7 +266,7 @@ MiNTLib/GEMlib dialog calls and an app-local DOS compatibility layer.
 AES bindings; physical floppy operations are not covered by the NeoST test.
 
 `mise run apps -- cops` builds `build/atari/apps/cops/COPS.APP`, the
-application-mode control-panel host, from the original sources with
+application-mode control-panel host, from [`base/cops`](base/cops) with
 MiNTLib/GEMlib. Its resource data is compiled in; no external RSC is needed.
 `mise run test:cops-neost` compares the panel and the `MAGXCONF.CPX` /
 `TSLICE.CPX` dialogs with the archive on cloned MagiC images. The accessory
@@ -300,14 +300,14 @@ cloned images. `mise run test:magxconf-neost` exercises Cancel/OK/Save and
 accessory boot persistence. This is not the separate MAGXCONF CPX.
 
 `mise run apps -- magxconf-cpx` builds `build/atari/apps/cpx/MAGXCONF.CPX`
-from the original `MagiC/APPS/CPX/MAGXCONF.C`. The external XCONTROL CPX SDK
+from the original `base/cpx/MAGXCONF.C`. The external XCONTROL CPX SDK
 headers are reproduced locally; VASM shims preserve the classic 16-bit callback
 arguments. `mise run test:magxconf-cpx-neost` compares the boot initializer and
 the CPX dialog opened through COPS against the archived module on cloned MagiC
 images. Other CPX managers and Save-button interaction remain untested.
 
 `mise run apps -- tslice-cpx` builds `build/atari/apps/cpx/TSLICE.CPX` from
-`MagiC/APPS/CPX/TSLICE.C`. The scheduler callback is invoked through a dedicated
+`base/cpx/TSLICE.C`. The scheduler callback is invoked through a dedicated
 stack-to-D0 bridge, and slider/mouse callbacks use the classic packed argument
 structures. `mise run test:tslice-cpx-neost` compares the archived and rebuilt
 dialogs opened through COPS on cloned MagiC images; slider dragging and Save
@@ -329,8 +329,8 @@ statuses, and no other config-bit changes. Parallel floppy hardware operation
 remains untested.
 
 Repeatable emulator checks use explicit, subsystem-scoped tasks. Run
-`mise run test:mod-app-neost` (or `python3 scripts/neost-mod-app-smoke.py`).
-Runner options and outputs: `python3 scripts/neost-mod-app-smoke.py --help`.
+`mise run test:mod-app-neost` (or `python3 base/mod-app/tests/neost-mod-app-smoke.py`).
+Runner options and outputs: `python3 base/mod-app/tests/neost-mod-app-smoke.py --help`.
 This tests MOD_APP under NeoST/EmuTOS; the MagiC kernel boot check remains under
 Hatari.
 
@@ -339,11 +339,11 @@ to verify the restored desktop clock and its coexistence with APPLICAT. The
 MagiC half needs `MAGIC_IMAGE`, `TOS206_ROM` and host `mtools`; see
 [testing](docs/porting/TESTING.md).
 
-Run `mise run test:mgnotice-neost` (or `python3 scripts/neost-mgnotice-smoke.py`)
+Run `mise run test:mgnotice-neost` (or `python3 base/mgnotice/tests/neost-mgnotice-smoke.py`)
 to compare the archived and rebuilt MGNOTICE note lifecycle. It uses the same
 MagiC image, TOS 2.06 and `mtools` inputs.
 
-Run `mise run test:mgsearch-neost` (or `python3 scripts/neost-mgsearch-smoke.py`)
+Run `mise run test:mgsearch-neost` (or `python3 base/mgsearch/tests/neost-mgsearch-smoke.py`)
 to compare the archived and rebuilt MGSEARCH dialog and `*.ZZZ` search-result
 screens on identical cloned images.
 
@@ -351,7 +351,7 @@ MGCOPY lives in [`core/mgcopy/`](core/mgcopy), with its NeoST scenario and
 guest probe in `tests/`. Run `mise run test:mgcopy-neost` to check copy,
 move, alias and delete effects against the seeded files on a cloned MagiC image.
 
-Run `mise run test:cops-neost` (or `python3 scripts/neost-cops-smoke.py`)
+Run `mise run test:cops-neost` (or `python3 base/cops/tests/neost-cops-smoke.py`)
 to compare the COPS panel and its `MAGXCONF.CPX`/`TSLICE.CPX` dialogs with the
 archive on cloned MagiC images.
 
@@ -359,12 +359,12 @@ Run `mise run test:keyb-sys-neost` (or `python3 scripts/neost-keyb-sys-smoke.py`
 to compare all six keyboard-table generators with their archives. It uses
 NeoST's bundled EmuTOS and needs no MagiC image.
 
-Run `mise run test:vt52-neost` (or `python3 scripts/neost-vt52-smoke.py`)
+Run `mise run test:vt52-neost` (or `python3 base/vt52/tests/neost-vt52-smoke.py`)
 to compare archived and rebuilt VT52 terminal sessions on cloned MagiC images.
 The scenario launches a delayed TOS child and compares the final terminal
 screen pixel-for-pixel.
 
-Run `mise run test:mgformat-neost` (or `python3 scripts/neost-mgformat-smoke.py`)
+Run `mise run test:mgformat-neost` (or `python3 base/mgformat/tests/neost-mgformat-smoke.py`)
 to compare the archived and rebuilt MGFORMAT format dialog on cloned MagiC
 images. Physical floppy formatting and disk copy are covered by
 [hardware testing](docs/porting/MANUAL_TESTING.md).
