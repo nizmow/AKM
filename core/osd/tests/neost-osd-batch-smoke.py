@@ -28,8 +28,8 @@ from neost_server import NeoSTServer
 
 ROOT = Path(__file__).resolve().parents[3]
 BUILD = ROOT / "build/atari"
-OSD = ROOT / "MagiC/KERNEL/VDI/DRIVERS/OSD"
-RELEASE = ROOT / "MagiC/Releases/MAGIC.A/GEMSYS"
+OSD = ROOT / "core/osd/tests/archive"
+RELEASE = ROOT / "core/osd/tests/release"
 
 
 def s16(value: int) -> int:

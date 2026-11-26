@@ -31,8 +31,8 @@ ROOT = Path(__file__).resolve().parents[3]
 BUILD = ROOT / "build/atari"
 REBUILT = BUILD / "apps/osd/OFF016IP.OSD"
 PROBE = BUILD / "apps/off016ip/OFF016IP.PRG"
-ARCHIVE = ROOT / "MagiC/KERNEL/VDI/DRIVERS/OSD/MIN-ATAR/OFF016IP.OSD"
-RELEASE = ROOT / "MagiC/Releases/MAGIC.A/GEMSYS/OFF016IP.OSD"
+ARCHIVE = ROOT / "core/osd/tests/archive/MIN-ATAR/OFF016IP.OSD"
+RELEASE = ROOT / "core/osd/tests/release/OFF016IP.OSD"
 
 # pel is the raw bitmap colour; index is the VDI pen (color_to_vdi).
 EXPECTED_PIXELS = ["1/2", "1/2", "2/3", "2/3", "4/4", "4/4",

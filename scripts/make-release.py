@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 APPS = Path("apps")
-RELEASE = ROOT / "MagiC/Releases/MAGIC.A"
+RELEASE = ROOT / "release/atari"
 
 REBUILT = {
     Path("MAGIC.RAM"): "MAGIC.RAM",

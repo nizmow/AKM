@@ -19,7 +19,7 @@ from neost_screen import bbox_inside, diff_stats
 
 BUILD = ROOT / "build/atari"
 GUEST = "::/AUTO/ACCS/COPS.ACC"
-ARCHIVE = ROOT / "MagiC/Releases/MAGIC.A/AUTO/ACCS/COPS.ACC"
+ARCHIVE = ROOT / "base/cops/tests/COPS.ACC"
 REBUILT = BUILD / "apps/cops/COPS.APP"
 TSLICE = ROOT / "base/cpx/BIN/TSLICE.CPX"
 

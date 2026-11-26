@@ -27,7 +27,7 @@ from neost_image import MagiCImage
 from neost_screen import diff_stats, read_ppm
 
 BUILD = ROOT / "build/atari"
-ARCHIVE = ROOT / "MagiC/Releases/MAGIC.A/AUTO/MAGXBOOT.TOS"
+ARCHIVE = ROOT / "core/magxboot/tests/MAGXBOOT.TOS"
 ARCHIVED_PRG = COMPONENT / "SRC/MAGXBOOT.PRG"
 REBUILT = BUILD / "apps/magxboot/MAGXBOOT.TOS"
 PROBE = BUILD / "apps/screen/SCREEN.PRG"

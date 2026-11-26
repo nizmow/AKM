@@ -21,7 +21,7 @@ from neost_server import NeoSTServer
 BUILD = ROOT / "build/atari"
 APP_BUILD = BUILD / "apps/mod-app"
 FIXTURES = BUILD / "mod-app-smoke"
-ORIGINAL = ROOT / "MagiC/Releases/MAGIC.A/GEMSYS/GEMDESK/MOD_APP.TTP"
+ORIGINAL = ROOT / "base/mod-app/tests/MOD_APP.TTP"
 GCC_APP = APP_BUILD / "MOD_APP.TTP"
 DRIVER = APP_BUILD / "NEOSTEST.PRG"
 EXPECTED = [0, 3, 0, 3, 4, 0, 3, 0, 0, 0, 1, 1, 0, 3, 0, 0, 3]
