@@ -149,7 +149,7 @@ output, not a complete modern recipe.
 | B / built, MagiC-tested | `MAGXKERN.TTP` | `MagiC/TOOLS/MAGXKERN` | `mise run apps -- magxkern` builds it with fixed 16-bit kernel records. `mise run test:diagnostic-tools-neost` requires byte-identical archived/rebuilt output. |
 | B / built, MagiC-tested | `MEMEXAMN.TTP` | `MagiC/TOOLS/MEMEXAMN` | `mise run apps -- memexamn` builds it with local fixed-width `SYSHDR`/`DOSVARS`/`AESVARS`/`MCB`/`BASPAG` records. The diagnostic test checks the banner, normalized early table, owner tokens and `KROM` terminator; block sizes and addresses differ with the larger rebuild. |
 | B / built, MagiC-tested | `CRASHDMP.TOS` | `MagiC/TOOLS/CRASHDMP` | `mise run apps -- crashdmp` builds it against MiNTLib GEMDOS bindings with 16-bit exception-stack words. The diagnostic test covers the no-record path: both binaries exit 0 without output. Exception decoding remains untested. |
-| H | `EXE2BIN.TTP` | `MagiC/TOOLS/EXE2BIN` | C executable/header conversion tool used by old build scripts. Mutates inputs; validate on copies. |
+| H | `EXE2BIN.TTP` | `MagiC/TOOLS/EXE2BIN` | C executable/header conversion tool used by old build scripts. Mutates inputs; validate on copies. Its `<kaos.h>` include is archive-only; retrieve it from `original-import` if porting. |
 | H | `KRYPT.TTP` | `MagiC/TOOLS/KRYPT` | C XOR/update-file tool; preserve format/checksum behavior. |
 | H | `FAST_SFX.TTP` | `MagiC/TOOLS/FAST_SFX` | C in-place patcher for a particular self-extracting archive layout. Not a general archive tool. |
 | H | `ADDMEM.PRG` | `MagiC/TOOLS/ADDMEM` | Resident assembly memory utility; KAOS/MagiC-version-sensitive. |
@@ -172,7 +172,7 @@ output, not a complete modern recipe.
 |---|---|---|---|
 | B/C / library built, MagiC-tested | `EDITOBJC.SLB`; companion `EDIT.PRG` test | `base/edit-slb` | `mise run apps -- edit-slb` independently builds the real editor library with VASM register-to-stack AES bridges and classic TOS relocation packaging; the archived MGEDIT verified editing, clipboard and options behavior before the rebuilt client was tested. The bundled library is not a retained release binary. The separate `EDIT.PRG` demonstration application remains unported. |
 | B/C / library built, MagiC-tested | `XP_RASTR.SLB` | `MagiC/EXTENSIO/XP_RASTR.SLB` | `mise run apps -- xp-rastr` builds the two-export bitmap-expansion library with version-1 packed call records and register-ABI helper bridges. `mise run test:slb-consumer-neost` retrieves the legacy callbacks and checks exact four-plane conversion against the source-tree archive. Direct-colour modes are untested. |
-| H | `ROMDRVR.PRG` | `MagiC/EXTENSIO/ROMDRVR` | Assembly driver exposing ROM through drive R:. A KAOS copy also exists; compare versions before sharing a recipe. |
+| H | `ROMDRVR.PRG` | `MagiC/EXTENSIO/ROMDRVR` | Assembly driver exposing ROM through drive R:. Its KAOS copy is archive-only in `original-import`; compare versions there before sharing a recipe. |
 | Blocked source build / optional print support | `PDLG.SLB` (DE/FR/EN) | `MagiC/EXTENSIO/PDLG_SLB` | Localized dialog sources and resources survive, but startup, AES dispatch and shared dialog inputs are missing. The shipped German binary loads under MagiC 6.20; dialog behavior is unverified without a GDOS printer driver. Not needed for core Atari boot or desktop use. If included in a distribution, treat the localized release binary as retained, not rebuilt, and check redistribution terms. See [porting notes](PORTING_NOTES.md#pdlgslb). |
 | Blocked dependencies | `SPINMXFS.XFS`, older `SPINMAGC.XFS` / `CD-MXFS.PRG` | `MagiC/EXTENSIO/CD-MXFS` | C/assembly CD-ROM filesystem. PRJ names `spinmxfs.prg`; archived driver names differ. Depends on external/vendor CDFS/DOSIX libraries and missing headers. `CDTOOL.SYS` / `CONFIG.SYS` here are configuration text, not executable drivers. |
 
@@ -200,25 +200,10 @@ prove identical versions or ABI compatibility.
 
 ## 7. Historical KAOS applications and utilities
 
-Optional separate build families, not prerequisites for the current MagiC Atari
-port. Do not turn historical copies into duplicate default targets.
-
-| Outputs / classification | Source root | Notes |
-|---|---|---|
-| `KAOSDESK.PRG` | `KAOS/APPS/KAOSDESK.SRC/KAOSDESK` | Source desktop tree, with startup, helpers and localized resources. Port independently of MAGXDESK. |
-| `ICNEDIT.PRG`, `MKICONS2.PRG` | `KAOS/APPS/KAOSDESK.SRC/ICNEDIT` | Icon editor and icon-building helper; separate outputs. |
-| `ICX2RSC.PRG`, `RSC2ICX.PRG` | `KAOS/APPS/KAOSDESK.SRC/ICNEDIT/CONVERT` | Resource/icon conversion utilities; separate outputs, not editor modules. |
-| Historical source snapshots | `KAOS/APPS/KAOSDESK.SRC` | `ORIGINAL` subtrees contain older desktop/editor projects. Preserve as optional versions, not additional current applications. |
-| Binary distribution | `KAOS/APPS/KAOSDESK.224` | Older desktop, editor, KCMD and bundled utilities. Not a source-build root. |
-| Binary distribution with stale PRJ | `KAOS/APPS/KAOSDESK.235` | A project file exists but matching C sources are absent here. Use the actual source tree, without assuming its version matches this release. |
-| `ADDMEM.PRG`, `BOOTFIX.PRG`, `BOOTPARM.TTP`, `KAOSBOOT.PRG` | `KAOS/UTILS` | Separate assembly memory, boot-parent, CMOS boot-parameter and KAOS loader utilities. Platform/version-sensitive. |
-| `KAOSCONF.ACC`, `KAOSCONF.TOS` | `KAOS/UTILS` | Assembly accessory and C console configuration programs; distinct implementations, not extension-only renames. |
-| `DESK2.PRG`, `HDDELAY.TOS` | `KAOS/UTILS` | C desktop launcher and boot-delay utility. |
-| `KAOSPTCH.TOS` / `.TTP`, `KAOSRELO.TOS` | `KAOS/UTILS` | C ROM patch/relocation tools. Mutate/generate OS images; use scratch copies. Treat TOS/TTP forms as variants pending inspection. |
-| `ROMDRVR.PRG`, `SHELMAN.PRG` | `KAOS/UTILS` | Assembly ROM driver and TOS shell compatibility helper. ROMDRVR also exists under MagiC extensions. |
-| `SETENV.PRG` | `KAOS/UTILS/SETENV` | Assembly AUTO-folder environment initializer. |
-| `KAOSDECO.TOS`, `KAOSENCO.TOS` | `KAOS/UTILS/CODE` | C KAOS image/patch encoding tools, independent of normal applications. |
-| `KAOSLIB.O` dependency | `KAOS/UTILS` | Assembly compatibility library; not an application. Headers/includes in the same folder are not build targets. |
+KAOS was a patched Atari TOS and is not a prerequisite for MagiC. The
+KAOSDesk and icon-editor sources, boot and ROM-patching utilities, manuals,
+and release binaries are preserved in the upstream snapshot. To inspect them,
+use `git ls-tree -r original-import -- KAOS`.
 
 ## 8. Host support, test suites and unmapped release binaries
 

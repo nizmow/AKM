@@ -29,7 +29,7 @@ SOURCE_LIBRARIES = {
 
 def repository_index():
     index = {}
-    for base in (ROOT / "MagiC", ROOT / "KAOS", ROOT / "NON-TOS", ROOT / "core", ROOT / "base"):
+    for base in (ROOT / "MagiC", ROOT / "NON-TOS", ROOT / "core", ROOT / "base"):
         if not base.exists():
             continue
         for path in base.rglob("*"):

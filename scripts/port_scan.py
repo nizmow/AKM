@@ -44,8 +44,6 @@ def status_kind(section, status):
         return "unclassified"
     if "build infrastructure" in lower:
         return "infrastructure"
-    if section.startswith("7."):
-        return "historical"
     if "test only" in lower or section.startswith("8."):
         return "test/host"
     if status.startswith("H") or "/ mac" in lower:
@@ -124,15 +122,13 @@ def scan():
         if source is None:
             continue
         output = next((token for token in tokens
-                       if not token.startswith(("MagiC/", "KAOS/", "NON-TOS/"))), cells[0])
+                       if not token.startswith(("MagiC/", "NON-TOS/"))), cells[0])
         description = cells[-1]
         status = cells[0] if section.startswith(("1.", "4.", "5.")) else section
         if section.startswith("2."):
             status = "system"
         elif section.startswith("6."):
             status = "library"
-        elif section.startswith("7."):
-            status = "historical"
         elif section.startswith("8."):
             status = "host/test"
 

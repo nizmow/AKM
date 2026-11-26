@@ -1,9 +1,0 @@
-ICNEDIT.PRG
-=
-TCSTART.O      ; startup code
-ICNEDIT		(ICNEDIT.H) [-W-stv]	; RAHMENPROGRAMM, REDRAWS
-SDATEI						; DATEIVERWALTUNG
-pcstdlib.lib   ; standard lib
-pctoslib.lib   ; TOS lib
-pcgemlib.lib   ; AES and VDI lib
-
