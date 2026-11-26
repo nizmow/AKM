@@ -862,15 +862,17 @@ binary too, so the printer path is untested.
 ## NeoST: MagiC diagnostic tools
 
 `mise run test:diagnostic-tools-neost` builds `SHOWFREE.TOS`, `MAGXKERN.TTP`,
-`MEMEXAMN.TTP`, `CRASHDMP.TOS` and the shared `DIAG.PRG` runner. It clones the
-MagiC image for archive and rebuild, installs both under the same guest name,
-runs `DIAG.PRG` from `MAGIC\START`, and captures `DIAG.OUT`/`DIAG.STA`.
+`MEMEXAMN.TTP`, `CRASHDMP.TOS` and the shared `DIAG.PRG` runner. For the paired
+cases, it installs archive and rebuild under the same guest name in separate
+MagiC clones. The `DIAG.PRG` cases run from `MAGIC\START` and capture
+`DIAG.OUT`/`DIAG.STA`.
 
 - `MAGXKERN`: status 0 and byte-identical output.
 - `MEMEXAMN`: status 0; the banner, normalized early table, owner tokens and
   `KROM` terminator are present and match where comparable. Block sizes and
   addresses differ because the rebuilt executable is larger.
-- `CRASHDMP`: status 0 with no output on the no-record path.
+- `CRASHDMP`: run only the rebuilt binary; require status 0 and empty output
+  on the no-record path.
 - `SHOWFREE`: both copies appear in `MAGIC\START`, print the monitor and
   `blocks used`, and render pixel-identical screens.
 

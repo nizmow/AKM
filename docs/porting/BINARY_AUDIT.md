@@ -12,9 +12,9 @@ are not removal candidates.
 
 | Decision | Paths | Action |
 |---|---:|---|
-| Archive | 22 | No current consumer found. Remove in a deletion-only follow-up, with a fresh build and release payload check. |
+| Archive | 23 | No live consumer. Exact copies remain in `pre-magic-retirement`; the 22-path deletion and CRASHDMP conversion are on this branch. |
 | Keep | 55 | Active input, or explicitly retained compatibility, corpus, or unfinished-port reference. |
-| Replace → archive | 21 | Still read by a runner. Preserve the relevant assertions or provenance before removing it in a separate test change. |
+| Replace → archive | 20 | Still read by a runner. Preserve the relevant assertions or provenance before removing it in a separate test change. |
 
 ## Consumer boundaries
 
@@ -59,7 +59,7 @@ git show "pre-magic-retirement:$archived_path" > "$destination"
 | `base/cops/tests/COPS.ACC` | Keep | `neost-cops-accessory-smoke.py`: installed accessory and panel/CPX visual baseline. | `MagiC/Releases/MAGIC.A/AUTO/ACCS/COPS.ACC` |
 | `base/cpx/BIN/MAGXCONF.CPX` | Keep | `neost-magxconf-cpx-smoke.py`: boot configuration and dialog baseline. | Same path |
 | `base/cpx/BIN/TSLICE.CPX` | Keep | `neost-tslice-cpx-smoke.py` visual baseline; `neost-cops-accessory-smoke.py` installs this CPX as test input. | Same path |
-| `base/crashdmp/BIN/CRASHDMP.TOS` | Replace → archive | `neost-diagnostic-tools-smoke.py`: no-record case already requires exit 0 and empty output; retain that scope, not a claim about exception decoding. | Same path |
+| `base/crashdmp/BIN/CRASHDMP.TOS` | Archive | Converted to a direct rebuilt-binary check: `neost-diagnostic-tools-smoke.py` runs only the rebuild on the no-record path and requires exit 0 with empty output. | Same path |
 | `base/dis/BIN/DIS1.TTP` | Keep | `neost-dis-smoke.py`: disassembly/workfile bytes still come from legacy executable comparisons; explicit exit statuses alone are insufficient. | Same path |
 | `base/dis/BIN/DIS2.TTP` | Keep | `neost-dis-smoke.py`: disassembly/workfile bytes still come from legacy executable comparisons; explicit exit statuses alone are insufficient. | Same path |
 | `base/dis/TST/T.PRG` | Keep | `neost-dis-smoke.py`: input corpus, not a comparison executable. | Same path |

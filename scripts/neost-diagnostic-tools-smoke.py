@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare the archived and rebuilt MagiC diagnostic tools on cloned images."""
+"""Check rebuilt MagiC diagnostic tools on cloned images."""
 from __future__ import annotations
 
 import argparse
@@ -18,7 +18,6 @@ BUILD = ROOT / "build/atari"
 TOOLS = {
     "MAGXKERN": ("magxkern/BIN/MAGXKERN.TTP", "DIAGTOOL.TTP"),
     "MEMEXAMN": ("memexamn/BIN/MEMEXAMN.TTP", "DIAGTOOL.TTP"),
-    "CRASHDMP": ("crashdmp/BIN/CRASHDMP.TOS", "DIAGTOOL.TOS"),
 }
 def boot_image(label: str, source: Path, output: Path, headless: Path,
                rom: Path, partition_offset: int, *, driver: Path | None,
@@ -90,7 +89,7 @@ def main() -> int:
         headless, _ = acquire_headless(args.neost_headless, args.neost, Path(temporary))
         rom = args.tos.expanduser().resolve()
         source = args.magic_image.expanduser().resolve()
-        for case in ("MAGXKERN", "MEMEXAMN", "CRASHDMP"):
+        for case in ("MAGXKERN", "MEMEXAMN"):
             archive_src, guest = TOOLS[case]
             archive = ROOT / "base" / archive_src
             rebuilt = BUILD / "apps" / case.lower() / (case + Path(archive_src).suffix)
@@ -106,8 +105,6 @@ def main() -> int:
             require(a_status == r_status == b"0\n", f"{case}: child status differs")
             if case == "MAGXKERN":
                 require(a_out and a_out == r_out, "MAGXKERN output differs")
-            elif case == "CRASHDMP":
-                require(a_out == r_out == b"", "CRASHDMP wrote unexpected output")
             else:
                 for data in (a_out, r_out):
                     require(b"Table 0" in data and b"boot" in data and
@@ -118,6 +115,16 @@ def main() -> int:
                         normalize(r_out).splitlines()[:30],
                         "MEMEXAMN header/early table differs")
             print(f"{case}: archive/rebuilt status 0, output checked")
+
+        crashdmp = BUILD / "apps/crashdmp/CRASHDMP.TOS"
+        require(crashdmp.is_file(), f"missing rebuilt {crashdmp}")
+        _, status = boot_image("rebuilt-crashdmp", source, output, headless,
+                               rom, args.partition_offset,
+                               driver=crashdmp, guest="DIAGTOOL.TOS")
+        require(status == b"0\n", f"CRASHDMP: unexpected child status {status!r}")
+        require(read_output(output / "rebuilt-crashdmp") == b"",
+                "CRASHDMP wrote unexpected output")
+        print("CRASHDMP: no-record status 0, no output")
 
         # SHOWFREE loops until a key; compare the booted console and screen.
         for label, binary in (

@@ -1721,8 +1721,10 @@ definitions; `MEMEXAMN` uses local fixed-width `SYSHDR`/`DOSVARS`/`AESVARS`/
 variadic output still use 32-bit `int`. `MEMEXAMN` also needs a writable drive
 path buffer and treats an empty `argv[1]` as the live-system request.
 
-`mise run test:diagnostic-tools-neost` installs each archive/rebuild under the
-same guest name and compares status and output. MAGXKERN matches byte-for-byte;
+`mise run test:diagnostic-tools-neost` checks rebuilt CRASHDMP directly:
+status 0 with no output when no crash record is present. For the other tools,
+it installs archive and rebuild under the same guest name in separate clones.
+MAGXKERN output matches byte-for-byte;
 MEMEXAMN's addresses and block sizes differ with the larger rebuilt image, so
 the test compares the normalized early table plus owner tokens and the `KROM`
 terminator. SHOWFREE loops until a key; the test compares screens and the first

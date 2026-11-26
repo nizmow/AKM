@@ -254,7 +254,7 @@ dir = "{{ config_root }}"
 run = "python3 scripts/neost-keyb-sys-smoke.py"
 
 [tasks."test:diagnostic-tools-neost"]
-description = "Compare archived and rebuilt SHOWFREE, MAGXKERN, MEMEXAMN and CRASHDMP under MagiC"
+description = "Compare SHOWFREE, MAGXKERN and MEMEXAMN with archives; check rebuilt CRASHDMP under MagiC"
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-diagnostic-tools-smoke.py"
 
