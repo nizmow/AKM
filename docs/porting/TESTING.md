@@ -505,7 +505,7 @@ is taken after the driver returns to the desktop. Banners, usage and diagnostics
 remain a documented gap.
 
 - DIS1 on `T.PRG`, `U.PRG`, `T.O`, `-3 T.PRG`, a recognized DRI object
-  (`MagiC/LIB/PCMXSTRT/BIN/PCMXSTRT.O`) and no arguments.
+  (`base/dis/tests/PCMXSTRT.O`) and no arguments.
   `T.O` is a Pure C (`0x4efa`) object, not a DRI object.
 - DIS2 raw input (`-e`) with default, code/address/ASCII, 68030 and MAS/absolute
   output options, a hexadecimal range, signed 16-bit displacement and MOVEM
@@ -836,7 +836,7 @@ not booted.
 `mise run test:hardcopy-neost` builds `HARDCOPY.PRG` and `HCPROBE.PRG`, then
 boots three disposable clones:
 
-- the archived `MagiC/KERNEL/XTENSION/HARDCOPY.PRG`;
+- the archived `base/hardcopy/HARDCOPY.PRG`;
 - the rebuild from `build/atari/apps/hardcopy/HARDCOPY.PRG`;
 - a clone without the extension.
 
@@ -924,7 +924,7 @@ behavior are not exercised. Evidence is written to a fresh
 ## NeoST: WINFRAME.DEM example library
 
 `mise run test:winframe-demo-neost` builds the separate
-`MagiC/KERNEL/WINFRAME.DEM` example project, installs the demo's own
+`base/winframe-demo` example project, installs the demo's own
 16-object `WINFRAME.RSC` (not the Release production resource) beside the
 archived and rebuilt libraries, and boots a clone with
 `#_SLB 0 WINFRAME.SLB` disabled:

@@ -267,9 +267,10 @@ NeoST/MagiC cases create, edit, save and reopen a note with identical screens
 and byte-identical `.NOT` output.
 
 `mise run apps -- mgsearch` builds `build/atari/apps/mgsearch/`: `MGSEARCH.APP`
-and `MGSEARCH.RSC`. The target compiles the consumer-specific `GEMUTILS`/
-`WINDOWS` variant and an app-local copy of `core/magxdesk/SRC/PATTERN.C`
-against public GEMlib; the older `MAGXLIB.LIB` dependency is not linked.
+and `MGSEARCH.RSC`. The target compiles the MGSEARCH-owned `GEMUTILS`/
+`WINDOWS` variant from `base/mgsearch/SRC` and an app-local copy of
+`core/magxdesk/SRC/PATTERN.C` against public GEMlib; the older `MAGXLIB.LIB`
+dependency is not linked.
 
 `mise run apps -- mgcopy` builds `build/atari/apps/mgcopy/`: `MGCOPY.APP` and
 its German `MGCOPY.RSC`. The port uses the shared `GEMUT_MT.C` helper, public
