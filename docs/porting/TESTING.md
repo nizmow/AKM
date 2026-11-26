@@ -373,8 +373,7 @@ separately from the normal run.
 ## NeoST: localized MCMD batch execution
 
 `mise run test:mcmd-neost` builds the DE/EN/FR interpreters and guest drivers,
-then compares each archive with its rebuilt counterpart on separate clones
-of the supplied MagiC image:
+then runs each rebuilt interpreter on a clone of the supplied MagiC image:
 
 ```sh
 MAGIC_IMAGE=/path/to/magic.img TOS206_ROM=/path/to/tos206uk.img \
@@ -395,8 +394,7 @@ a result. `CHILD.RES` and `MCMD.RES` must be freshly written, with
 quoting, output and append redirection, an external child's
 stdin/stdout/environment and raw tail interpretation, copy/rename/delete and
 directory effects, conditionals, GOTO, missing commands, and return to the
-launcher. Guest contents are checked independently and compared byte-for-byte
-between archived and rebuilt runs.
+launcher. Guest contents are checked independently against fixed expectations.
 `PORTING_NOTES.md` records the retained external-quote and trailing-directory
 behaviors. Interactive editing, pipes, long filenames and AUTOEXEC/BOOT startup
 remain untested.

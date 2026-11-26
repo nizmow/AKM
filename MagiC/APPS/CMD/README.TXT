@@ -1,6 +1,9 @@
 Andreas Kromke
 2018-03-05
 
+This directory retains binaries, help, and historical documentation. Active
+MCMD sources are in core/mcmd/SRC. The old CMD source is in original-import.
+
 
 This is the highly compact command line interpreter for TOS, KAOS and MagiC.
 By changing the first lines one can choose with variant to build.

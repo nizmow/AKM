@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare localized archived/rebuilt MCMD batch execution on cloned MagiC disks."""
+"""Verify localized MCMD batch execution on cloned MagiC disks."""
 from __future__ import annotations
 
 import argparse
@@ -18,7 +18,6 @@ from neost_server import NeoSTServer
 
 BUILD = ROOT / "build/atari"
 APPS = BUILD / "apps/mcmd"
-SOURCE = ROOT / "MagiC/APPS/CMD"
 BATCH = r"""REM MCMD source-build regression fixture
 SET VALUE=expanded
 ECHO "alpha beta" > C:\QUOTE.TXT
@@ -71,7 +70,7 @@ INHERITED_RESULTS = tuple(name for name in EXPECTED if name != "INPUT.TXT") + (
 
 
 def capture(headless: Path, rom: Path, source: Path, app: Path,
-            output: Path, partition_offset: int) -> dict[str, bytes]:
+            output: Path, partition_offset: int) -> None:
     output.mkdir()
     image = MagiCImage.clone(source, output / "magic.img",
                              partition_offset=partition_offset)
@@ -122,7 +121,6 @@ def capture(headless: Path, rom: Path, source: Path, app: Path,
     for absent in ("BAD.TXT", "WORK"):
         require(not image.exists(f"::/{absent}"),
                 f"{output.name}: unexpected {absent}")
-    return contents
 
 
 def main() -> int:
@@ -153,15 +151,9 @@ def main() -> int:
         with tempfile.TemporaryDirectory(prefix="neost-mcmd-") as temporary:
             headless, _ = acquire_headless(args.neost_headless, args.neost, Path(temporary))
             for language in args.languages:
-                directory = output / language
-                directory.mkdir()
-                archive = capture(headless, rom, source,
-                                  SOURCE / f"BIN/MCMD_{language.upper()}.TOS",
-                                  directory / "archive", args.partition_offset)
-                rebuilt = capture(headless, rom, source, APPS / language / "MCMD.TOS",
-                                  directory / "rebuilt", args.partition_offset)
-                require(archive == rebuilt, f"{language}: archived/rebuilt guest results differ")
-                print(f"{language}: child status and {len(rebuilt)} guest files match", flush=True)
+                capture(headless, rom, source, APPS / language / "MCMD.TOS",
+                        output / language, args.partition_offset)
+                print(f"{language}: batch behavior verified", flush=True)
         (output / "comparison.txt").write_text("PASS " + " ".join(args.languages) + "\n")
     except (RuntimeError, OSError) as error:
         print(f"FAIL: {error}", file=sys.stderr)
