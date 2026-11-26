@@ -7,8 +7,8 @@ SRC/
 	Most source files are converted to UTF-8.
 
 	WARNING:
-		Use "atari-utf8-conversion" or command line program "recode" to convert
-		to AtariST charset before processing with native Atari toolchain!
+		Use scripts/atari-text/atari_text.py or command line program "recode" to
+		convert to AtariST charset before processing with native Atari toolchain!
 
 	NOTE:
 		Do not get confused by the Hebrew letters, the UTF-8 editor will change

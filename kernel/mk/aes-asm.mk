@@ -21,7 +21,7 @@ AES_ASM_DEFS := -DDEMO=0 -DMMX_YIELD=0 -DCOUNTRY=1
 AES_ASM_SHARED := AESINC.S KERNEL.INC DOS.INC
 # The adapter reads the canonical Atari character table to encode UTF-8 string
 # literals (GERMAN uses ue/oe/ae/ss and the French AES strings use accents).
-AES_ATARI_UTF8 := NON-TOS/atari-utf8-conversion/atari-utf8.c
+AES_ATARI_UTF8 := scripts/atari-text/atari-utf8.c
 AES_NORMALIZE := python3 $(ASM_ADAPTER) --atari-strings
 
 # Module-specific generated includes.

@@ -3,9 +3,9 @@ Strict Python workflow (recommended for new work)
 
 Requires Python 3, with no third-party packages. Run from the repository root:
 
-  python3 NON-TOS/atari-utf8-conversion/atari_text.py decode OLD.C -o OLD.C.utf8
-  python3 NON-TOS/atari-utf8-conversion/atari_text.py encode TEXT.utf8 -o TEXT.ST
-  printf '%s' 'Straße' | python3 NON-TOS/atari-utf8-conversion/atari_text.py c-literal
+  python3 scripts/atari-text/atari_text.py decode OLD.C -o OLD.C.utf8
+  python3 scripts/atari-text/atari_text.py encode TEXT.utf8 -o TEXT.ST
+  printf '%s' 'Straße' | python3 scripts/atari-text/atari_text.py c-literal
 
 The last command prints "Stra\236e", an ASCII C string literal containing the
 correct Atari byte for sharp S. c-literal takes plain text, NOT C source; paste
@@ -38,21 +38,15 @@ raw Atari bytes and feed it to a compiler expecting UTF-8. See
 docs/porting/PORTING_NOTES.md from the repository root.
 
 Regression checks:
-  python3 -m unittest discover -s NON-TOS/atari-utf8-conversion -p 'test_*.py'
+  mise run test:encoding
 These check all-byte round-trips, Atari-specific mappings, literal escaping,
 and failure paths that must leave input and existing output untouched.
 
-Historical utilities
-====================
-The utilities below are retained for existing workflows. In particular, the
-old C encoder reports unsupported characters but can copy their UTF-8 bytes
-through and still return success; prefer the strict Python CLI above.
-
-Andreas Kromke
-2018-04-29
-
-
-Text coding conversion helpers.
+Original C converter (Andreas Kromke, 2018-04-29)
+================================================
+The C source supplies the canonical character table to the Python CLI and
+MAS-to-VASM normalizer. Its standalone encoder can copy unsupported UTF-8
+bytes through and still return success; prefer the strict Python CLI above.
 
 atari-utf8.c
 				Converts all input files between AtariST coding and UTF-8.
@@ -63,7 +57,4 @@ atari-utf8.c
 				Command line switch "-r" converts back from AtariST to UTF-8.
 				Do not write "-vr", but "-v -r".
 
-atari-to-utf8.sh
-utf8-to-atari.sh
-
-				Shell scripts doing more or less the same, using the "recode" command.
+The old recode shell wrappers are available under NON-TOS in original-import.

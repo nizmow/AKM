@@ -11,8 +11,7 @@ import codecs
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "NON-TOS/atari-utf8-conversion"))
+sys.path.insert(0, str(Path(__file__).resolve().with_name("atari-text")))
 import atari_text
 
 TEXT_SUFFIXES = {".c", ".h", ".s", ".asm"}

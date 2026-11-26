@@ -332,7 +332,7 @@ MAGXBOOT_OUTPUTS := $(addprefix $(BUILD_DIR)/magxboot/,MAGXBOOT.TOS MAGXBOOT.PRG
 magxboot: $(MAGXBOOT_OUTPUTS)
 
 $(MAGXBOOT_SRC)/MAGXBOOT.S: $(MAGXBOOT_DIR)/MAGXBOOT.S $(MAS_NORMALIZER) \
-  NON-TOS/atari-utf8-conversion/atari-utf8.c Makefile.apps
+  scripts/atari-text/atari-utf8.c Makefile.apps
 	python3 $(MAS_NORMALIZER) --atari-strings "$<" "$@"
 
 $(MAGXBOOT_SRC)/OSBIND.INC: MagiC/INC_AS/OSBIND.INC $(MAS_NORMALIZER) Makefile.apps

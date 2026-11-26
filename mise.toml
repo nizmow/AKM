@@ -84,7 +84,7 @@ run = "python3 -m unittest test_neost_common test_neost_host test_neost_image te
 [tasks."test:encoding"]
 description = "Verify strict Atari ST text conversion and C literal escapes"
 dir = "{{ config_root }}"
-run = "python3 -m unittest discover -s NON-TOS/atari-utf8-conversion -p 'test_*.py'"
+run = "python3 -m unittest discover -s scripts/atari-text -p 'test_*.py'"
 
 [tasks."test:abi"]
 description = "Compile the application ABI layout checks"

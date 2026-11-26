@@ -185,7 +185,7 @@ def encode_atari(line, mapping):
 
 def atari_mapping():
     # Reuse the repository's canonical conversion table, not a host code page.
-    source = Path(__file__).resolve().parents[1] / "NON-TOS/atari-utf8-conversion/atari-utf8.c"
+    source = Path(__file__).resolve().parent / "atari-text/atari-utf8.c"
     entries = re.findall(r'/\*\s*#define\s+\w+\s+(0x[0-9a-fA-F]+)\s*\*/\s*"([^"]*)"',
                          source.read_text(encoding="utf-8"))
     return {character: int(value, 16) for value, character in entries if len(character) == 1}

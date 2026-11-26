@@ -20,7 +20,7 @@ TICK_RE = re.compile(r"`([^`]+)`")
 ABS_PATH_RE = re.compile(r"(?i)(?<![A-Za-z0-9_])([A-Za-z]:\\[^\s,;)\"']+)")
 
 try:
-    sys.path.insert(0, str(ROOT / "NON-TOS/atari-utf8-conversion"))
+    sys.path.insert(0, str(ROOT / "scripts/atari-text"))
     import atari_text
 except (ImportError, OSError, ValueError):
     atari_text = None
@@ -122,7 +122,7 @@ def scan():
         if source is None:
             continue
         output = next((token for token in tokens
-                       if not token.startswith(("MagiC/", "NON-TOS/"))), cells[0])
+                       if not token.startswith(("MagiC/", "scripts/"))), cells[0])
         description = cells[-1]
         status = cells[0] if section.startswith(("1.", "4.", "5.")) else section
         if section.startswith("2."):
