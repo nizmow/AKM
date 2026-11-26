@@ -16,9 +16,9 @@ from neost_image import MagiCImage
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
 TOOLS = {
-    "MAGXKERN": ("MAGXKERN/BIN/MAGXKERN.TTP", "DIAGTOOL.TTP"),
-    "MEMEXAMN": ("MEMEXAMN/BIN/MEMEXAMN.TTP", "DIAGTOOL.TTP"),
-    "CRASHDMP": ("CRASHDMP/BIN/CRASHDMP.TOS", "DIAGTOOL.TOS"),
+    "MAGXKERN": ("magxkern/BIN/MAGXKERN.TTP", "DIAGTOOL.TTP"),
+    "MEMEXAMN": ("memexamn/BIN/MEMEXAMN.TTP", "DIAGTOOL.TTP"),
+    "CRASHDMP": ("crashdmp/BIN/CRASHDMP.TOS", "DIAGTOOL.TOS"),
 }
 def boot_image(label: str, source: Path, output: Path, headless: Path,
                rom: Path, partition_offset: int, *, driver: Path | None,
@@ -92,7 +92,7 @@ def main() -> int:
         source = args.magic_image.expanduser().resolve()
         for case in ("MAGXKERN", "MEMEXAMN", "CRASHDMP"):
             archive_src, guest = TOOLS[case]
-            archive = ROOT / "MagiC/TOOLS" / archive_src
+            archive = ROOT / "base" / archive_src
             rebuilt = BUILD / "apps" / case.lower() / (case + Path(archive_src).suffix)
             require(rebuilt.is_file(), f"missing rebuilt {rebuilt}")
             a_shot, a_status = boot_image("archive-" + case.lower(), source, output,
@@ -121,7 +121,7 @@ def main() -> int:
 
         # SHOWFREE loops until a key; compare the booted console and screen.
         for label, binary in (
-            ("archive-showfree", ROOT / "MagiC/TOOLS/SHOWFREE/SHOWFREE.TOS"),
+            ("archive-showfree", ROOT / "base/showfree/SHOWFREE.TOS"),
             ("rebuilt-showfree", BUILD / "apps/showfree/SHOWFREE.TOS"),
         ):
             case = output / label
