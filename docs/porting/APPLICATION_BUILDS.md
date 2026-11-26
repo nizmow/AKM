@@ -24,8 +24,8 @@ See [PORTING_NOTES.md](PORTING_NOTES.md) for the workflow and known pitfalls.
   `release/atari` with guest-relative paths.
 - Every `MagiC/...` path below is a **historical** pre-retirement location, not
   a path in the checkout. Browse it through the annotated tag
-  `pre-magic-retirement` (commit `88eb5ee`); the tag is local until published,
-  so the commit hash is the portable fallback:
+  [`pre-magic-retirement`](https://github.com/nizmow/AKM/tree/pre-magic-retirement)
+  (commit `88eb5ee`):
   `git show 88eb5ee:MagiC/...` or `git ls-tree -r 88eb5ee -- MagiC/...`.
   `Source root` names a current build input or, for historical and blocked
   rows, the pre-retirement origin. `ports:scan` resolves a row only to a
