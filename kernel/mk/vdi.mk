@@ -10,7 +10,7 @@ VDI_ASM := $(VDI_BUILD)/asm
 VDI_INCLUDE := $(VDI_BUILD)/include
 VDI_COMPAT := kernel/VDI/compat
 VDI_ASM_ADAPTER ?= $(ASM_ADAPTER)
-VDI_ATARI_UTF8 := NON-TOS/atari-utf8-conversion/atari-utf8.c
+VDI_ATARI_UTF8 := scripts/atari-text/atari-utf8.c
 
 VDI_CPPFLAGS := -I$(VDI_INCLUDE) -I$(VDI_COMPAT) -I$(VDI_SRC)
 VDI_CFLAGS := $(CFLAGS) $(KERNEL_FLAGS) $(VDI_CPPFLAGS)

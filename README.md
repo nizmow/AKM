@@ -14,13 +14,13 @@ computers: 68k code running on real hardware or in an emulator.
 * AtariX for macOS on intel computers
 
 The [`original-import` tag](https://github.com/nizmow/AKM/tree/original-import)
-preserves the upstream snapshot before AKM development, including the KAOS
-sources and binaries removed from the current tree. To browse the archive
+preserves the upstream snapshot before AKM development, including the archived
+KAOS tree, FSORT/UNIQ, and the old `recode` wrappers. To browse those archives
 locally without switching branches:
 
 ```sh
 git fetch origin tag original-import
-git ls-tree -r original-import -- KAOS
+git ls-tree -r original-import -- KAOS NON-TOS
 ```
 
 For AKM's build and porting work, see the [project roadmap](docs/ROADMAP.md)

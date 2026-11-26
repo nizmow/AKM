@@ -23,7 +23,7 @@ BUILD = ROOT / "build/atari"
 DEFAULT_DRIVER = BUILD / "apps/console/RUNARG.PRG"
 STATUS_RE = re.compile(r"^STATUS\s+(-?\d+)\s*$", re.MULTILINE)
 
-sys.path.insert(0, str(ROOT / "NON-TOS/atari-utf8-conversion"))
+sys.path.insert(0, str(ROOT / "scripts/atari-text"))
 import atari_text
 
 

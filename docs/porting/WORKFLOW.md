@@ -9,7 +9,7 @@ Before picking work, read the [work list](TODO.md), the relevant [build catalogu
 - Trace the callee's trap layout for MagiC extensions. `SC_WBACK` takes a word subcommand, unlike generic MiNTLib `Sconfig`'s long argument. A successful return can be a query rather than a state change.
 - Read the library-specific SLB notes before linking. Registered editor AES handlers take `AESPB *` in A0; lifecycle entries use the stack. The SLB TEXT header must come before any startup wrapper. Preserve linked constructors and BSS relocations when supplying custom startup.
 - Keep fixed-width binary keys distinct from strings. A four-byte key needs a separate five-byte buffer when read through a string scanner.
-- Use `NON-TOS/atari-utf8-conversion/atari_text.py` for known Atari ST text. Keep edited source UTF-8 and preserve Atari runtime bytes explicitly. CP850 is not an Atari ST substitute. Never transcode binary RSC files.
+- Use `scripts/atari-text/atari_text.py` for known Atari ST text. Keep edited source UTF-8 and preserve Atari runtime bytes explicitly. CP850 is not an Atari ST substitute. Never transcode binary RSC files.
 
 ## Tooling and verification
 

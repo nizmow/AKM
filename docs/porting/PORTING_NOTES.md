@@ -80,12 +80,12 @@ encoding. CP850 is not an Atari ST substitute; for example, sharp S is `0x9e`
 on Atari ST but `0xe1` in CP850. ASCII strings and UTF-8 comments need no
 execution-charset conversion.
 
-Use `NON-TOS/atari-utf8-conversion/atari_text.py` for strict text conversion:
+Use `scripts/atari-text/atari_text.py` for strict text conversion:
 
 ```sh
-python3 NON-TOS/atari-utf8-conversion/atari_text.py decode OLD.C -o OLD.C.utf8
-python3 NON-TOS/atari-utf8-conversion/atari_text.py encode TEXT.utf8 -o TEXT.ST
-printf '%s' 'Straße' | python3 NON-TOS/atari-utf8-conversion/atari_text.py c-literal
+python3 scripts/atari-text/atari_text.py decode OLD.C -o OLD.C.utf8
+python3 scripts/atari-text/atari_text.py encode TEXT.utf8 -o TEXT.ST
+printf '%s' 'Straße' | python3 scripts/atari-text/atari_text.py c-literal
 ```
 
 The last command produces `"Stra\236e"` for pasting as a C literal, not an
@@ -143,7 +143,7 @@ under `build/atari/neost-cmdline/`.
 `base/showfile/SRC/SHOWFILE.C` as
 `build/atari/apps/showfile/SHOWFILE.TTP`, using MiNTLib's public
 `mint/osbind.h` and the default application ABI. The legacy source was converted
-with `NON-TOS/atari-utf8-conversion/atari-utf8.c -r`, then adapted in place,
+with `scripts/atari-text/atari-utf8.c -r`, then adapted in place,
 preserving its control flow. The port retains the VT52 viewer, paging/navigation
 keys, reverse argument order, Wordplus control-byte substitution and localized
 pager prompt selection (`COUNTRY`, default USA/English).

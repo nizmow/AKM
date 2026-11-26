@@ -15,7 +15,7 @@ BIOSDOS_READ_INC  := $(BIOSDOS_INC_DIR)/read_inf
 
 BIOSDOS_ADAPTER    := $(ASM_ADAPTER)
 BIOSDOS_MK         := kernel/mk/bios-dos.mk
-BIOSDOS_ATARI_TABLE := NON-TOS/atari-utf8-conversion/atari-utf8.c
+BIOSDOS_ATARI_TABLE := scripts/atari-text/atari-utf8.c
 BIOSDOS_TOOLS      := $(BIOSDOS_ADAPTER) $(BIOSDOS_ATARI_TABLE) $(BIOSDOS_MK)
 
 BIOSDOS_VASM       ?= $(if $(VASM),$(VASM),vasmm68k_mot)
