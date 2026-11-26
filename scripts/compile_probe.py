@@ -29,7 +29,7 @@ def include_dirs(source_root):
     root = ROOT / source_root
     directories = [root]
     directories.extend(sorted({path.parent for path in root.rglob("*.h")}))
-    directories.extend([ROOT / "MagiC/INC_C", ROOT / "kernel/INC"])
+    directories.extend([ROOT / "kernel/INC"])
     return [path.relative_to(ROOT) for path in directories if path.is_dir()]
 
 
