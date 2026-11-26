@@ -1355,8 +1355,8 @@ under NeoST/EmuTOS. Child console text is not captured: the NeoST log contains
 only the driver's `STATUS` line, and the post-exit screenshot is the desktop.
 Banners, usage and diagnostics therefore remain outside the automated check.
 Raw `-e`, code/address/ASCII comments, 68030, MAS output, range, signed-word
-and MOVEM edge cases, error cases and a recognized DRI object are covered. The object fixture is
-`KAOS/APPS/KAOSDESK.SRC/ICNEDIT/IMPORT/PCMXSTRT.O`; its archived DIS1
+and MOVEM edge cases, error cases and a recognized DRI object are covered.
+The object fixture is `MagiC/LIB/PCMXSTRT/BIN/PCMXSTRT.O`; its archived DIS1
 workfiles and symbol table feed both DIS2 builds. `TST/T.O` is a Pure C
 (`0x4efa`) object and is not treated as a DRI object. Interactive usage, `-t`
 stdout capture and MagiC-kernel-specific behavior are not. Evidence:

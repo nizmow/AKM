@@ -3,11 +3,12 @@
 **AKM is an independent fork, not the official MagiC release.** For original
 releases, see [Andreas Kromke’s upstream repository](https://gitlab.com/AndreasK/Atari-Mac-MagiC-Sources).
 
-The upstream repository contains sources for Atari and related computers:
-68k code running on real hardware or in an emulator.
+The original upstream snapshot contains sources for Atari and related
+computers: 68k code running on real hardware or in an emulator.
 
 * TOS
-* KAOS (an improved TOS variant with more than 80 bugs fixed)
+* KAOS (an improved TOS variant with more than 80 bugs fixed; archived in the
+  `original-import` tag)
 * MagiX / MagiC for Atari computers
 * MagiCMac for Mac computers
 * MagicMac X for MacOS X on PPC

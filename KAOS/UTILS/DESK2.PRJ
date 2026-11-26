@@ -1,9 +1,0 @@
-DESK2.PRG          ; name of executable pgm is topmost window
-=              ; list of modules follows...
-tcmstart.o      ; startup code
-desk2
-tcstdlib.lib   ; standard lib
-tcextlib.lib   ; extended lib
-tctoslib.lib   ; TOS lib
-tcgem2.lib	; AES/VDI lib
-

@@ -1,990 +1,0 @@
-066010303050000132002006006010000
-11
-2Seite #1
-F0110030001
-9[......................................................]0110
-€                       Misburg,den12.04.91
-9[...................................................]0110
-
-AnleitungzuKAOSDESKV2.24
-===========================
-
-
-  DiewichtigstenEigenschaftenvonKAOSDESKlassensichauchohneStudium
-einesHandbuchsnutzen,da,soweitm”glich,indenmeistenF„llenauf
-bestehendeProgrammier-undDesign-KonventionenundStandardseingegangen
-wurde.AlsStandardstehenhiereinerseitsProgrammewiedasAtari-
-Desktop,andererseitsauchallgemeineGEM-Konventionen,dievonden
-ProgrammiererndiesesStandardprogrammsnichteingehaltenwurden.
-KAOSDESKisteinVersuch,beideszuverbinden.Auerdementh„ltKAOSDESK
-eineReihevonAnleihenbeianderenRechnern,undzwardemMacintosh-
-Finder,derAmiga-WorkbenchunddemGEM-Desktop2.0,diemehroder
-wenigerkonkretindenEntwurfeingeflossensind.
-  KAOSDESKist,daessichfrdieBildschirmausgabenuraufVDIundAES
-verl„t,nichtnurkompatibelmit(fast)beliebigenBildschirmformaten,
-sondernk”nnteohnegroenderungenauchaufeinemPClaufen.
-  Installation:
-
--OrdnerKAOSDESKerstellen(aufFestplattebzw.Bootdisk).
--DateienKAOSDESK.PRG,KAOSDESK.RSC,KDESKL.RSCindenneuenOrdner
-kopieren.
--ggf.denOrdnerKCMDaufIhreFestplattekopieren.
--WennSieeinROM-Modul("Cartridge")besitzen,dasSiebisherin
-IhremAtari-DesktopalsLaufwerk'c'angemeldethaben,k”nnenSie
-diesesauchunterKAOSDESKansprechen.
-DazuistaufIhrerKAOSDESK-DisketteimOrdner\KAOSDESK\ein
-kleinesTreiberprogrammROMDRVR.PRGenthalten.Voraussetzungfr
-seineVerwendungist,daSieKAOS1.4oderh”herbenutzen,viel
-leichtfunktioniertauchTOS1.4.
-ROMDRVRwirdimAUTO-Ordnerinstalliert(vorSHELMAN!)undbeim
-Bootenautomatischgeladen.ROMDRVRmeldeteinLaufwerkR:(wieR€OM)
-an,diesesmssenSieinKAOSDESKalsRAMDisk(!)anmelden.Nun
-k”nnenSieinKAOSDESKmitLaufwerkR:genausowiemitdenanderen
-Laufwerkenumgehen,Schreibzugriffebzw.Umbenennungsversuchewerden
-sauberabgefangen,eswerden0BytesfreierSpeicherplatzangegeben.
-BeinichteingestecktemModulwirdeinfacheineleereRAMDiskange
-zeigt.
-AuchunterKCMDk”nnenSieper"dirr:"sichdasVerzeichnisansehen
-undsogarProgrammevondortstarten(!).Leiderhaltensicheinige
-andereDesktop-Programmefrsointelligent,dasiekeine
-Laufwerknamenjenseitsvon'P'zulassen,hieristnichtszumachen.
-DasAtari-DesktopselbsterlaubtsolcheLaufwerknamen,damanauch
-beiAtarimanchmaletwasnachdenkt.
-BeachtenSie,daSiedasROM-ModulsogarvonderDateiauswahlbox
-ausansprechenk”nnen;weilkeinLaufwerkbuttonfrR:existiert,
-mssenSieallerdingsdasLaufwerkperHandwechseln,indemSieals
-Pfad"R:\*.*"eintragen.
--WennSiewederKAOS1.4(oderh”her)nochGEM2.2benutzen,die
-DateiSHELMAN.PRGindenAUTO-Ordnerkopieren,ggf.diesenOrdner
-erstellen.
--WennSieTOS1.4oderh”herbenutzen,KAOSDESK.PRGalsAutostart-
-€Programmanmelden(imAtari-Desktopunter"Anwendunganmelden"als
-Bootstatus"Auto"w„hlen)und"Arbeitsichern".
-Andernfalls,fallsvorhanden,GEM-Autostarterbenutzen.
--WennSieverschiedeneIconsbenutzenm”chten,meldenSiediesean,
-wieinKapitel3beschriebenwird.
--KAOSDESKstarten(aufderBootdisk).DanochkeineKAOSDESK.INF-
-Dateivorliegt,werdenallgemeineDefaultseingestellt.
--AlleDisk-Icontypenkorrekt„ndern.FrNetzwerke,ROM-Treiberund
-immerimZweifelsfallistdasRAMDisk-Iconzuw„hlen.Keinesfalls
-darfeinFloppyiconverwendetwerden,wokeineFloppyvorliegt!
--DenMenpunktOptionen/Programmeanw„hlenunddiePfadefrden
-Kommandoprozessor(etwaKCMD.PRG),dasDruckprogramm(etwaPRINT.TTP)
-unddenStandardeditoreintragen.
--DenMenpunktOptionen/Arbeitsichernanw„hlen.
-
-
-0)Allgemeines
-----------------
-
-  KAOSDESKisteinalternativesDesktop,dasspezielldieF„higkeitendes
-KAOS1.4.2oderneuererVersionenoptimalausnutzt.Auerdeml„uft
-KAOSDESKauchunterGEM2.2undsogarunterAtari-GEM.FrAtari-GEMwird
-dasProgrammSHELMANben”tigt,dasdienotwendigenneuenFunktionen(die
-inGEM2.xundKAOS1.4enthaltensind)installiert.WennmanSHELMAN
-nichtinstallierthat,meldetsichKAOSDESKmit"FalscherAES-Funktions
-aufruf".
-BeimStartenvonProgrammenbleibtKAOSDESKwahlweiseresident
-(schneller)oderwirdvollst„ndigverlassen(mehrfreierSpeicher).In
-jedemFallwerdenalleFenstergeschlossenundderDesktop-Hintergrund
-abgemeldet.
-DieReihenfolgederProgrammeimAUTO-Ordnersollteetwadiefolgende
-sein:
-
-BEISPIELREIHENFOLGEDERDATEIENIMAUTO-ORDNER:
-
-MFXTRB14(Treiberfrc't-MFII-Tastatur)
-DAT(ProgrammzurUhrzeit-Einstellung)
-BOOT(ProgrammzurAuswahlvonACCsundPRGsinAUTO\)
-INSTAL(frSIGNUM2)
-TEMPLMON
-GEMSTART
-ILLEGAL(Cacheprogramm)
-SHELMAN
-
-  KAOSDESKwurdebisherunterTOS1.0,TOS1.2,KAOS1.2,TOS1.4,KAOS
-1.4,GEM2.2,TOS2.05(STE)undaufdemTTgetestet.Daherdrfteesmit
-anderenBetriebssystemversionen(hoffentlich)keineProblemegeben.
-  WennmannichtGEM2.2verwendet(daistrechtsdasACC-Men),wird
-ganzrechtsinderMenleistedieUhrzeitinStundenundMinutenan
-gezeigt.DieUhrzeitwirdalle10saktualisiert;jedochnur,wennkein
-Dialogl„uftundkeinMenheruntergefallenist.DieseUhrmunormaler
-weisenichtabgeschaltetwerden,weilsiesofortbeimStarteinesPro
-grammsverschwindet;dennochkannmansieimDialog"Einstellungen„n
-dern"abschalten.
-€
-  S„mtlicheAusgabenauerdemScrollenerfolgenberAES(obj_draw),also
-diehierarchischh”chsteStufedesBetriebssystems.DerEffektist,da
-dieAusgabedurchbessereBildschirmtreiberwesentlichmehrbeschleunigt
-wird,alsdiesbeivielenanderenProgrammen(etwademAtari-Desktop)der
-Fallist.EinKonkurrenzproduktgibtTextegarmitLine-Aaus,kanndaher
-durchProgrammewieTurbo-STberhauptnichtbeschleunigtwerdenundist
-auchsonstinderTextausgabelangsameralsKAOSDESK,dieVerwendungvon
-Line-Aistdaherdringendzuvermeiden.
-  DasScrollenerfolgtberdieBlit-OperationdesVDI(vro_cpyfm),
-natrlichnichtberLine-A.Eswurdeimmerm”glichstdieh”chste
-Betriebssystemebenegew„hlt,umvonUpdatesdesBetriebssystemsm”glichst
-gutzuprofitierenbzw.auchmitanderenSystemumgebungen(Grobildschirm
-mitzugeh”rigemVDI-TreiberoderGEM2.2oderneuesVDI)zurechtzukommen.
-
-  Beis„mtlichenOperationen,diedenFensterinhalt„ndern,wirdimmer
-nurdanndasFensterneuaufgebaut,wenndiesnotwendigist,etwa:
--BeiKopier-undL”schaktionen,dieabgebrochenwurden,ohnedaeine
-Dateikopiertodergel”schtwurde,werdendieFensterdesLaufwerks
-nichtneuaufgebaut.
--Wennberhaupt,werdenbeiKopieraktionennurdieFensterdes
-Zielverzeichnisssesneuaufgebaut(vgl.Atari-Desktop1.4).
--Solltezwarkopiertodergel”schtwerden,aberdasMediumwar
-schreibgeschtzt,sodadieAktionabgebrochenwurde,werdendie
-Fensternichtneuaufgebaut.
--Wird"AnzeigenalsText"oder"AnzeigenalsBilder"angew„hlt,sowerden
-dieFensternurdannneuaufgebaut,wennnandenAnzeigemodusge„ndert
-hat.
--Wird"einspaltig"imTextmodusan-oderabgew„hlt,sowerdennur
-diejenigenFensterneuaufgebaut,dienichtschoneinspaltigwarenbzw.
-dieberhauptgrogenugfrmehralseineSpaltesind.
--WirdeinFensternachlinksverkleinert,sowirdnurdanndasFenster
-neugezeichnet,wenndieVerkleinerungeineUmsortierungerzwingt,d.h.
-dieAnzahlderdarzustellendenSpaltensichverkleinert.
--WirdeinFensternachuntenoderrechtsvergr”ert,sosendetKAOSDESK
-auchnurdanneinenRedraw,wenndieFensterobjekteneuplaziertwerden
-mssen,d.h.PlatzfrneueSpaltengeschaffenwurde.KAOSDESKkann
-nichtsdazu,daGEMdenFehlerhat,vergr”erteFensterimmerganzneu
-aufzubauen;aberimmerhinsindVerbesserungendesAESandieserStelle
-sofortsichtbar,sieheKAOS1.4.
--WirddieTextgr”ever„ndert,sowirdnurimFall"AnzeigenalsText"
-einFenster-Neuaufbauveranlat.
--BerhrtmannurdasVergr”erungsfeldundl„tdieMaustastewiederlos,
-ohnedieGr”ezuver„ndern,werdenwederScrollbalkennoch
-Fensterinneresneugezeichnet.
-
-  Beis„mtlichenDOS-FunktionenwerdenFehlercodesabgefragtund
-ausgewertet.Sokannesnievorkommen,damanbei"DatenaufDiskA
-defekt..."mehralseinmalauf"Abbruch"klickenmu,esseidenn,
-KAOSDESKmachtnocheinenweiterenVersuchmiteineranderenStrategie.
-Beis„mtlichenDOS-undBIOS-Aufrufen,beidenenFehlerauftreten,wird
-dieentsprechendeAktionabgebrochenodersinnvollbeendetundderauf
-getreteneFehlermitFehlercodeundKlartextalsAlertangezeigt.Fr
-s„mtlicheauftretendenFehlerwirdeineigenerFehlertextausgegeben.Bei
-€Kopier-oderL”schoperationenwirdzudemnochdieDateiunddasLaufwerk
-angezeigt,aufdemderFehlerpassiertist.Auch"Laufwerkvoll"wirdvon
-KAOSDESKinternalsFehlerbehandeltundentsprechendangezeigt.Aufgrund
-vonDiskettenfehlernleereunddamitungltigeFenstergibtesnicht.Bei
-ungligenPfadenwirdimmeraufdasWurzelverzeichnisgeschaltet,anson
-stendasFenstergeschlossen.
-
-  KAOSDESKistfrdenSchwarzwei-Monitorgeschrieben,enth„ltjedoch
-keineeinzigeKonstantefrTexth”he,Bildschirmkoordinatenusw.,daher
-drfteesaufanderenBildschirmformatenkeineProblemegeben.Aufdem
-Atari-Grobildschirml„uftKAOSDESKjedenfallsproblemlos,ebensoauf
-einemGrobildschirm-Simulator("BIGSCREEN"),deraufdemNormalbild
-schirmeinenvirtuellengroenBildschirmdurchScrollendarstellt.
-ProblemegibteseigentlichnurinderniedrigenAufl”sung,dader
-Bildschirmeinfachvielzukleinwird.Hierhilftaberdiespezielle
-RessourcedateifrdiekleineAufl”sung.KAOSDESK.INFistaufl”sungsunab
-h„ngig,dieObjektesindalsoaufjederAufl”sunggleichangeordnet.
-hnlichesgiltauchfrdieBildschirmaufteilungdesIconeditorsICNEDIT.
-  DieniedrigeAufl”sungwirdauchuntersttzt.WennKAOSDESKbeimStarten
-einehorizontaleAufl”sungvonwenigerals640Punktenfeststellt,wird
-statt"KAOSDESK.RSC"dieDatei"KDESKL.RSC"geladen,dieeineverkrzte
-MenleisteundverkleinerteDialogboxenenth„lt.BisaufdieDialoge"TTP-
-Parametereingeben"und"Programme",diemanmehroderwenigerblind
-fhrenmu,sindallebrigenFunktionenauchproblemlosinniedriger
-Aufl”sungbedienbar.
-  DiemeistenOperationenlassensichberSHIFT-SHIFTanhalten(Turbo-C
-l„tgren).
-
-
-
-1)BesonderheitenbeiFensteroperationen:
--------------------------------------------
-
-  DieFensterlassensichnuranZeichenpositionen(alle8Pixel)legen,
-damitdieAusgabeschnellerist.
-
-  EsgibtnureinenvertikalenScrollbalken.Derhorizontalewirdnicht
-ben”tigt,dadieIconsbzw.Schriftzeilensoangeordnetwerden,dasie
-immersichtbarsind.DasheitzumBeispiel,dabeijedemVer„ndernder
-Fensterbreiteausgerechnetwird,wievieleObjekteineinerZeileange
-zeigtwerdenk”nnen;hatsichdieAnzahlge„ndert,werdenalleObjekteim
-Fensterneuangeordnet(abernurdann!).
-
-  DerhorizontaleScrollbalkengibtdenFllgradderDiskettewieder;der
-weieBalkenrepr„sentiertdiebelegtenBytes,einFenstermitvollst„ndig
-weiemunterenRandzeigteinevolleDiskettean.
-  OperationenamhorizontalenScrollbalken(KlickenoderVerschieben)
-zeigenimmerdenfreienSpeicherfrdasentsprechendeLaufwerkan.Mit
-RcksichtaufdieSpeichermillion„reunterunswerdenTausenderpunktemit
-ausgegeben(diesalsWinkmitdemZaunpfahlfrdieKonservenhersteller
-vonMS-Dosen).DadieFllanzeigenurneuberechnetwird,wenneine
-Dateioperationdiesn”tiggemachthat,solltebeimDiskwechselgrund
-s„tzlichEscbet„tigtwerden,damitKAOSDESKdenfreienSpeicherneu
-berechnenkann.
-€
-  DieInfozeileenth„ltauchInformationenberselektierteDatei(en),so
-dafastimmeraufdenDialog"Infoanzeigen"verzichtetwerdenkannund
-dasentsprechendeIconnurzuselektiertwerdenbraucht.BeiderSelektion
-mehrererDateienwerdendieByteszusammengez„hlt.Sokannmanleicht
-sehen,obDateienbeimKopierennochaufeineDiskettepassenodernicht.
-DieZeichenfrdieAttributebedeuten:
-
-  R     nurlesen(r€eadonly)
-  S     Systemdatei(s€ystem)
-  H     versteckt(h€idden)
-  A     Archiv(a€rchive)
-  E     ausfhrbar(e€xecutable)
-
-  Enth„lteinFenstereinennichtmehrgltigenPfadundwirddas
-Verzeichniseingelesenoderaktualisiert,sowirdautomatischaufdas
-Wurzelverzeichniszurckgeschaltet.Beispiel:einOrdner"AUTO"wurde
-ge”ffnet,dasVerzeichnisistimFensterzusehen;dannwirddieDiskette
-gewechselt,dieneueDisketteenth„ltkeinensolchenOrdner.Versuchtman
-nun,innerhalbdesOrdnersAUTOeinenweiterenOrdnerzu”ffnenoder
-drckteinfachEsc,soschaltetKAOSDESKwiederautomatischaufdie
-h”chsteVerzeichnisebeneum,alsoaufdasWurzelverzeichnis.FallsSie
-keinKAOSinstallierthaben,liefertdasBetriebssystemleiderkeinen
-Fehler"Pfadnichtgefunden"(d.h.derOrdnerexistiertnicht),sondern
-"Dateinichtgefunden"(d.h.derOrdneristleer);daheristdiese
-FunktionimfehlerhaftenOriginal-TOSgest”rt.
-  NachschreibendenZugriffenaufMassenspeicherwerdenimmeralle€Fen
-stereinesLaufwerksneuaufgebaut.
-  DiskettenlesefehlerjeglicherArtbewirken,daeinFensterentwedergar
-nichterstge”ffnetodersofortgeschlossenwird.KAOSDESKgibtkeine
-leerenFensteraus,esseidenn,einVerzeichnisisttats„chlichleer.
-
-  DieFensterlassensichzyklischmitCTRL-Wumschalten(Turbo-Cl„t
-gren),sokannmanauchFensteraktivieren,dievollst„ndigverdeckt
-sind.AbKAOS1.4.2stehtauerdemnochder"Backdrop"-Button(rechts
-oben)zurVerfgung,umeinFenstersehrschnellindenHintergrundzu
-legen.
-
-  AlleFensterdrfenzusammenmaximal600Objekteenthalten;dader
-SpeicherfrdieFensterdynamischfestgelegtwird,k”nnensichdiese
-DateienbeliebigaufdieFensterverteilen.SindineinemFenstermehr
-Objektevorhanden,alsKAOSDESKnochfreihat,werdendieerstenange
-zeigt,unddieInfozeiledesFenstersenth„ltdiešberlaufmeldung.
-
-  BeimndernderMaskeistkeineDiskoperationn”tig,umdasFensterneu
-auszugeben.EswirdimmerdasgesamteVerzeichnisimSpeichergehalten.Da
-beimndernderAnzeigemodi(Sortieren,Maske,Anzeigenusw.)dieDateien
-nichtdeselektiertwerden,kannmanetwafolgendeTricksanwenden:
-
--AlleDateienmitEndung.Hoder.Cselektieren:
-Maske*.*w„hlenundalleIconsdeselektieren
-Maske*.Cw„hlen.
-"alleausw„hlen"
-Maske*.Hw„hlen
-€"alleausw„hlen"
-Maske*.*w„hlen
-
--AlleDateienauerdenenmitEndung.Cselektieren
-Maske*.*w„hlen
-"alleausw„hlen"
-Maske*.Cw„hlen
-alleIconsdeselektieren
-Maske*.*w„hlen
-
-
-2)BesonderheitenbeiIconoperationen
----------------------------------------
-
-  WennkeinKAOSDESK.INFvorliegt(etwazumInstallierenvonKAOSDESK),
-werdenautomatischalleangemeldetenLaufwerkesowieDrucker-undPapier
-korbsymbolangezeigt.DieLaufwerkeA:undB:werdenalsFloppydisk,C:
-bisF:alsHarddiskundweitereLaufwerkealsRamdiskangezeigt.
-  AlleIconserhaltenalsTextdenNamenderDiskette,diesie
-repr„sentieren.WirdetwadasIconfrLaufwerkA:ge”ffnetundheitdie
-DisketteinA:"KAOSDESK",soerhaltenalleDiskiconsfrLaufwerkA:die
-Beschriftung"KAOSDESK".BeiDiskettenohneNamenwirddieDefaultbezeich
-nungangezeigt,etwa"FloppyDisk".
-
-AlleIconsaufdemDesktopundindenFensternlassensichaktivieren:
-1)KlickaufeinIcondeaktiviertalleanderenIcons,aktiviertdanndas
-geklickteIcon.
-2)SHIFT-KlickaufeinIconinvertiertdenStatusdesselektierten
-Icons.
-MitShiftlassensichgleichzeitigObjekteinmehrerenFensternbzw.
-auchgleichzeitigaufdemDesktopaktivieren.Damitkannmananein
-ProgrammDateienalsParameterbergeben,dieinverschiedenenFen
-sternliegen(versuchenSiedaseinmalmitdemhochgelobtenTT-
-Desktop!).Etwa:ImoberenFensterC:\DATEI1,imunterenD:\DATEI2
-unddanneinenSHIFT-DoppelklickaufEDITOR.PRGaufdemDesktop.
-DesgleichenmitdemAufrufendesStandardeditorsmittelsSHIFT-CTRL-
-DoppelklickaufeineTextdatei,wobeiinanderenFensternweitere
-Dateienselektiertseink”nnen.
-BeimKopieren/VerschiebenwerdentrotzdemnurdieObjekteeines€
-Fenstersbzw.derDesktopfl„chebewegt.
-3)GummibandziehenkannmanauchbeigedrckterSHIFT-Taste.Die
-"erfaten"Iconswerdeninvertiert.Eslassensichnacheinanderauch
-mehrereGummib„nderziehen.
-DasGummibandl„tsichauchnachobenodernachlinksziehen.
-BeimGummibandziehenwirdderMauszeigeraufeinezeigendeHand
-umgeschaltet.
-4)BeigedrcktgehaltenerrechterMaustastelassensichauchnicht
-aktivierteFensteransprechen.
-5)NurdasKlickenaufeinefreieStelleineinemFensteroderaufdem
-DesktopdeaktiviertalleIcons.DieAktivierungwirdvon"normalen"
-FensteroperationenwieScrollen,Verschieben,AnzeigenalsBil
-der/Text,nderndesSortiermodusoderderMaskeusw.nicht€ver„n
-dert.
-6)BeigedrckterSHIFT-TastewirdderFall5)ignoriert.Dadurchkann
-€esnichtmehrpassieren,dabeimmhsameneinzelnenAktivierenvon
-ObjektendieArbeitdurcheinKlickenanfalscherStellezunichte
-gemachtwird.
-
-MitIconsk”nnenfolgendeOperationenausgefhrtwerden:
--ein€IconvomFensteraufsDesktopziehen.
-Esk”nnenbiszu20DateienoderOrdneraufdemDesktopliegen.Diese
-IconsunterliegenkeinenEinschr„nkungen.Ordnerk”nnenge”ffnet
-undDateienmit"Infoanzeigen"untersuchtwerden.ImGegensatzzu
-Fenster-Iconsben”tigtKAOSDESKjedocheinenDiskzugriff.Auerdem
-sinddieblichenOperationenwieKopieren,Verschiebenusw.mit
-s„mtlichenDesktop-Iconsm”glich;beimL”schenwirdjedochnurdas
-IconentferntundnichtdieDateigel”scht.
--Icon(s)aufdemDesktopverschieben
--Icon(s)indenPapierkorbschieben.
-HandeltessichumDesktop-Dateien,sowerdennurdieIcons
-entfernt,andernfallsdieDateienbzw.Pfadebzw.Diskettenge
-l”scht.
--Icon(s)indenDruckerschieben.
-DasimDialog"Optionen/Programme"unter"Ausgabe"angemeldeteDruck
-programmwirdmitdenentsprechendenParameterngestartet.
-BeimEintragendesDruckprogrammswirddieAngabevonSchaltern
-hinterdemDateinamen,etwa"C:\PRINT.TTP-S-T5"zugelassen.Diese
-Schalterwerdenautomatischimmer€(mit)bergeben.
--PapierkorbindenDruckerschieben.DasDruckprogrammwirdohne
-zus„tzlicheParametergestartet("it'safeature,notabug!").
--IconsinFenster/Ordner/Laufwerkiconschieben.
-DieDateien/Pfadewerdenkopiertoderverschoben.Frletzteresist
-dieCTRL-Tastegedrcktzuhalten.
-Esistegal,obsichderZielordnerineinemFensteroderaufdem
-Desktopbefindet.
-WillmanmehrereDateienumbenennen,diesichimselbenVerzeichnis
-befinden,kannmansieselektierenundimselbenVerzeichnisver
-schieben(CTRL-Tastegedrckthalten).FrjedeDateierscheintdann
-der"Dateinameexistiertschon"-Dialog,indemmaneinenneuenNamen
-eingebenkann.
--DoppelklickaufIconbeigedrckterCTRL-Taste.
-ProgrammewerdenimmernacheinemTTP-Dialoggestartet.
-DateienwerdenindenimDialog"Optionen/Programme"unter"Editor"
-angemeldetenStandard-Editorgeladen.Dasfunktioniertauchmit
-mehrerenselektiertenDateienmittelsCTRL-SHIFT-Doppelklick.
--DoppelklickaufIconbeigedrckterALT-Taste.
-BeiOrdnernwirdeinneuesFenstermitdemInhaltdesangeklickten
-Ordnersge”ffnet.
--DoppelklickaufTextdatei-IconbeigedrckterALT-undCTRL-Taste.
-DateienwerdenalsTextangezeigt.
--DoppelklickaufIcon.
-Programmewerdengestartet,Ordnerge”ffnet.
-BeiDateienwirdentwederdieangemeldeteStandardapplikationgestar
-tet,oderdieDateienwerdenangezeigt.
--BeimDoppelklickauerdemmitSHIFTwerdenalleinallenFensternund
-aufdemDesktopausgew„hltenDateienalsParameterbergebenoderim
-Dialog"Parameterbergeben"mitangezeigt(beigedrckterCTRL-
-TasteodervomMeneintrag"”ffnen").
-€
-
-3)Icontypen
---------------
-
-  Bei"AnzeigenalsText"werdenalleausfhrbarenProgrammedurcheinen
-voranstehendenPunktgekennzeichnet.
-  ImallgemeinenwerdenProgramme(DateienmitPRG,APP,TOS,TTP)miteinem
-Icondargestellt,daseinemstilisierten,leerenBildschirmmitMenleiste
-entspricht.Batchdateien(BAT,BTP)habenebenfallseinspeziellesSymbol.
-AllebrigenDateienwerdenalsleeresBlattmitrechtsobenabgeknickter
-Eckeangezeigt.
-  Liegenzus„tzlicheIconsvor(dazuwerdendieDateienKAOSDESK.RSCund
-KDESKL.RSCerweitert,wasausSpeicherplatzgrndenentfallenkann),k”nnen
-zus„tzlicheIconsangezeigtwerden;dieZuordnungIcon<->Dateistehtin
-derTextdateiNAMES.TXTundkannleichtmiteinemTexteditorg„ndert
-werden.AnschlieendmssendieRessourcedateiendannmitMKICONS.TOS
-modifiziertwerden,s.u.
-EineeigeneIconsammlungl„tsichwiefolgterstellen:
--Iconswerdenerstelltodereditiert,indemsieindenIconeditorICNEDIT
-geladen,ver„ndertundabgespeichertwerden.Programmiconshabendie
-Extension".ICP",Dateiicons".ICD".
--DieZuordnungzudenDateinamenstehtinderTextdateiNAMES.TXT,die
-sichmiteinemTexteditor„ndernl„t.DasFormatl„tsichsofortaus
-derBeispieldateiersehen.MankannstattnurderDateinamenderIcons
-auchvollst„ndigePfadeangeben.Icons,denenkeineDateienzugewiesen
-werden,werdennicht€indieIcondateieingebunden.
--SchlielichstartetmandasProgrammMKICONS.TOS,dasdieTextdatei
-"compiliert"undalleIconszueinerDateizusammenbindetundindie
-Ressourcedateienintegriert.
--NAMES.TXTmuimselbenOrdnerliegen,indemMKICONS.TOSliegt.Die
-DefaultpfadefrdieIcondateiensowiediePfadederRessourcedateien
-k”nneninNAMES.TXTangegebenwerden(sieheBeispieldatei).
-
-
-4)   DerIconeditorICNEDIT
----------------------------
-
-  ICNEDITkannlediglichzus„tzlicheIconsfrProgrammeundDateitypen
-erstellenoder„ndern.Nichtge„ndertwerdenk”nnenIconsfrPapierkorb,
-Drucker,Laufwerke,BatchdateiensowiedieStandard-Programm-und-
-Druckericons(hierzuk”nntemanjedocheinenRessourceeditorverwenden,
-wenndabeidieIcongr”enichtver„ndertwird).
-  ICNEDITverarbeitetDateiendesTyps.ICP(Programmicon)und.ICD
-(Dateiicon).ICNEDITkannmitmaximaljeeinemProgramm-Iconundeinem
-Datei-IconalsParameteraufgerufenwerden.BeiungltigenDateinamen
-oderbeimehralseinemParameterdesselbenTypswirdeineFehlermeldung
-ausgegeben.
-  JedesIconhatdasFormat32(Breite)mal28(H”he),allerdingsk”nnen
-nichtallePixelbeliebiggesetztodergel”schtwerden,sondernnur
-innerhalbeinerSchablone,dievomIconeditorICNEDITvorgegebenwird;die
-Iconmaskenlassensichnicht„ndern,sondernsindwiedieSchablonefest
-vorgegeben.PunktewerdendabeimitderlinkenMaustastegesetztundmit
-derrechtenMaustastegel”scht.Jedergesetzteundgel”schtePunktwird
-€simultanunteninderOriginalgr”edesIconsangezeigt.Auerdementh„lt
-dieUnterschriftderIconsdieaktuellenDateinamen(ohnePfad).
-  ICNEDITl„uftimPrinzipbeijederbeliebigenAufl”sung.Beiniedriger
-Aufl”sungsindaberdieMensetwaszugro,unddieIconfelderlassen
-sichauchnichtsehrguterkennen.DiessindabernurUnsch”nheiten,sonst
-funktioniertalles.
-
-
-5)Programmestarten
-----------------------
-
-  Sofernnichtunter"Optionen/Programme"andersangemeldet,werdenfol
-gendeTypenvonausfhrbarenProgrammenangenommen:
-
-PRGProgrammunterGEM
-APPProgrammunterGEM,wiePRG
-TOSProgrammunterDOS
-TTPProgrammunterDOS,verlangtimmerParameter
-BATBatchprogramm,wirddemunter"Optionen/Programme"angemeldeten
-Kommandoprozessorbergeben.
-BTPBatchprogramm,dasimmerParameterverlangt.DieParameter
-werdendemKommandoprozessorzusammenmitdemPfadder
-Batchdateibergeben.
-
-  DieUnterscheidungzwischenTOSundTTPistunterKAOSDESKnicht
-besondersentscheidend,damananjedesProgrammParameterbergeben
-kann.WennmanProgramme(PRG,APP,TOS,TTP)perCTRL-Doppelklickstartet
-oderberdenMeneintrag"Datei/”ffnen",kannmanmanuelleine
-Parameterzeileangeben.Startetman(Batch-)ProgrammeperSHIFT-
-Doppelklick,werdenalleselektiertenDateienalsParametermitbergeben.
-  AuerbeimStartenvonStandardprogrammen(sieheDialog"Programme")
-ber^B,^Eoder^Fn(siehedasKapitelberOptionen/Programme)werden
-alleProgrammeinihremeigenenVerzeichnisgestartet(!!).UnterGEM2.2
-isteseinFehlerinDESKTOP.APP,dadiesnichtfunktioniert,dadas
-neueAESgenialerweiseimmerdasVerzeichnisbenutzt,dasbeimAufrufvon
-shel_write()aktuellwar.ImModus"KAOSDESKnichtresident"kanndie
-aktuelleEinstellungvonFensternusw.leidernichtindenAES-Puffer
-kopiertwerden,dadiesermit1024Bytes(GEM2.2,TOS1.0,TOS1.2)bzw.
-4192Bytes(TOS1.4)leiderzukleinfrKAOSDESK.INFist(etwa5.5kB),
-sonderneswirdeineDateinamensKAOSDESK.TMPerzeugt,diedannnach
-AblaufdesProgrammsanstellevonKAOSDESK.INFgeladenwird.UnterAtari-
-GEMistSHELMANfreinenBetriebimModus"KAOSDESKnichtresident"
-notwendig.
-   IstimDialog"Optionen/Einstellungen„ndern""HaltnachTOS-Pro
-gramm"aktiviert,sowartetKAOSDESKnacheinemTOS-Programmaufeinen
-TastendruckoderMaustastenklick.
-  NachdemStartenvonProgrammen,beidemKAOSDESKresidentbleibt,
-werdenalleFenster,diedasProgrammm”glicherweisenochaufdemDesktop
-liegengelassenhat,geschlossenundgel”scht.
-  EbensowirdvorderRckkehrnachKAOSDESKdieMauseingeschaltet.
-Problemekanneshiernurnochmit„lterenBetriebssystemversionenin
-VerbindungmitunsaubergeschriebenenProgrammengeben.
-  SchlielichwirdsowohlbeimStartvonKAOSDESKalsauchnachBeendigung
-einesProgrammsdieFarbpaletteunddieanderensonstvomKontrollfeld
-€vorgenommenenEinstellungenneugesetzt.Dieswirktso,alswennmankurz
-dasKontrollfeld”ffneteundwiederschl”sse.nderungeninden
-Einstellungenbleibenalsonurdannwirksam,wennsievomKontrollfeld
-selbstodereinem„hnlichenProgrammvorgenommenwurden.
-  KAOSDESKunterscheidetbeimProgrammstartzwischen"normalenFehlern"
-undProgramm-Rckgabewerten.LetzterewerdenineinerAlertboxmitder
-oberstenZeile"Programmgabzurck:"angezeigt.
-
-
-6)   Dateienkopieren/verschieben/l”schen
------------------------------------------
-
-  BeiKopiervorg„ngenwirdimmerdergesamteSpeicherverwendet,essei
-denn,einederbeteiligtenSpeichermedienisteineRamdisk(wirdam
-Icontyperkannt).Dannwerdennur50kBverwendet.Sowirdz.B.die
-Flexdiskoptimaluntersttzt.
-  ImDialog"Dateienkopieren/verschieben/l”schen"(erscheintnur,wennim
-Dialog"Einstellungen"dieBest„tigungbeimKopierenangew„hltwurde)kann
-manmitdenButtons"Best„tigung","Backup"und"šberschreiben"angeben,
-obmanexistierendeDateienbeimKopierenmitoderohneWarnungber
-schreibenm”chte;dieentsprechendenButtonsdesDialogs"Einstellungen
-„ndern"werdendabeimitver„ndert.DieKopiermodiwirkensichsowohlauf
-dasKopierenalsauchaufdasVerschiebenausundhabenfolgendeFunktion:
-
-šberschreiben:Allebereitsvorhandenen,gleichnamigenDateienwer
-denohneWarnungberschrieben.
-Backup:Allebereitsvorhandenen,gleichnamigenDateien,die
-ein„lteresDateidatumhaben,werdenohneWarnung
-berschrieben.BeigleichemoderjngeremDatumwer
-densiebersprungenbzw.gel”scht(beimVerschieben).
-DieseFunktionarbeitetnurunterKAOS1.4
-zuverl„ssig,dabei„lterenTOS/KAOS-Versionendas
-DateidatumeinErstell-undkeinnderungsdatumist.
-BeidieserEinstellungerscheintkeineWarnung,da
-dasZiellaufwerkvollist,dajanichtalleDateien
-kopiertwerdenundauerdemaufdemZiellaufwerknoch
-Dateiengel”schtwerden.
-Best„tigen:AllegleichnamigenDateienwerdennurnachWarnung
-berschrieben.
-
-  W„hrenddesKopierens/Verschiebens/L”schenswirdangezeigt,wasKAOSDESK
-geradetut,alsowelcheDatei/Ordnerkopiert/gel”schtwirdusw.Dabeiwird
-nichtwieimDesktopvonTOS1.4derbergeordneteOrdner,sonderndas
-Laufwerkangezeigt.
-  DieVorg„ngek”nnendurchGedrckthaltenbeiderSHIFT-Tasten
-unterbrochenwerden;ggf.mumanjedochdabeietwaswarten,solangeder
-jeweiligeSchreib-/Lesevorgangandauert.
-  WennderButton"FreierSpeicher"imDialog"Einstellungen"aktivist,
-errechnetKAOSDESKbeiKopier-/Verschiebe-/undL”schoperationendenSpei
-cherbedarfderDateienaufdemZiellaufwerk(L”schen:Quellaufwerk);er
-wirdinKilobytesangezeigt.WennmandenKopier-/oderVerschiebevorgang
-startet,undaufdemZiellaufwerkistzuwenigPlatz,erscheinteine
-Warnung(nichtimBackupmodus).FallsSieaberetwaDateienkopieren
-wollen,dieunterdemselbenNamenbereitsvorhandensind,werdendiealten
-€Dateiengel”scht,damitkannalsoaufdemZiellaufwerktrotzderWarnung
-genugSpeicherplatzfreisein.DabeimL”schenvonDateienebenfallsder
-Speicherbedarfangezeigtwird,hatdenSinn,damangleichsehenkann,
-wievielSpeichermehrmannachL”schenderDateienhabenwird.
-
-
-7)Dateienanzeigen
----------------------
-
-  JedeDatei(auchangemeldeteoderProgrammdateien)kannmitgedrckter
-ALT-CTRLTasteundDoppelklickaufdasDateiiconangezeigtwerden.
-  VorjedemAnzeigenwirdderVT52-Emulatorinitialisiert.
-  BeiDateienmitEndung".DOC"werdeneinigeSonderzeichenvonWORDPLUS
-speziellbehandelt,sodadieseDateienrechtgutlesbarsind.
-  H„ltdieAusgabean,sokannmanfr"Weiter"dielinkeMaustasteund
-fr"Abbruch"dierechtedrcken.
-  FolgendeTastenhabeneinespezielleBedeutung.Siefunktionierenauch
-beilaufenderAusgabe:
-
--Shift
-SchaltetinHold-Modus.DieAusgabeh„ltbeigedrckterTastean.
--G(Go)SchaltetindenHold-Modus.
-DieAusgabekannmiteinerUmschalttasteangehaltenwerden.Eine
-beliebigeandereTasteschaltetzurck
--^C,N,Q.
-abbrechen
--Leertaste
-EineSeiteweiter.
--D
-EinehalbeSeiteweiter
--+
-4096Bytesvorbl„ttern
---
-4096Byteszurckbl„ttern,auchbeiAnzeige"--EOF--"
--sonst
-eineZeileweiter.
-
-
-8.1.1)   KAOSDesk:šberKAOSDesk
---------------------------------
-
-  UnterdemEintrag"berKAOSDesk"imlinken(GEM2.x:rechten)Mensind
-InformationenberdieProgrammversionabrufbar. Auerdemwirdauchder
-freieundderGesamtspeicherangezeigt.BeimGesamtspeicherwirdvon
-"phystop"ausgegangen.IstdarberhinausnochSpeicherfrresidente
-Ramdisksvorhanden,gehtdieswederKAOSDESKnochirgendeinanderes
-Anwenderprogrammetwasan.EingestartetesProgrammhatbrigensauchbei
-residentemKAOSDESKwesentlichmehrSpeicherzurVerfgungalsangegeben,
-daderSpeicherfrdieFensternochfreigegebenwird.
-
-
-8.2.1)   Datei:”ffnen
-----------------------
-
-€  Kanngenaudannaktiviertwerden,wenngenaueinIconselektiertist.
-  Kannauchmit^Oausgel”stwerdenundwirktwieCTRL-Doppelklick.
-
-
-8.2.2)   Datei:Infoanzeigen
------------------------------
-
-  Kanngenaudannaktiviertwerden,wenngenaueinIconselektiertist.
-  BeimgleichzeitigenSchreibschtzenundUmbenennenvonDateienbei
-"DateiInfoanzeigen"tretenkeineKomplikationenauf.UnterdemAtari-
-DesktopkanndannetwadiegeradeschreibgeschtzteDateinichtmehr
-umbenanntwerden.JedesdervierAttributel„tsich„ndern,indemman
-denentsprechendenKnpfanklicktunddenDialogmitOKbeendet.DerKnopf
-"Tagesdatumeinsetzen"entsprichteinem"TOUCH",intelligenteCompiler
-k”nnenbeim"TOUCHen"vonQuelltextengezwungenwerden,dieseautomatisch
-neuzubersetzen;Backup-Programmek”nnendazugebrachtwerden,diese
-mitzuretten(->Kapitel6).SchlielichkannmandieFunktionnochdazu
-benutzen,DateienmitdemDatum6.2.86oder0.0.2028usw.einordent
-lichesDatumzuverpassen.
-  Bei"OrdnerInfoanzeigen"l„tsichabTOS1.4einOrdnerumbenennen,
-ansonstenfhrtderVersuchzueinemFehler"Dateinichtgefunden".Will
-manunter„lterenTOS-VersionenOrdnerumbenennen,kannmandiesenauf
-derselbenEbeneverschiebenunddannbei"Ordnerexistiertschon"den
-neuenNameneingeben.
-  Bei"DiskInfoanzeigen"werdenallegreifbarenInformationen(bei
-DiskettenauchInformationendesBootsektors)ausgewertet.Manerh„lt
-einedeutlichsichtbare(inversdargestellte)Meldung,wennderBootsek
-torausfhrbaristundsowom”glicheinenVirusenth„lt.Beianderen
-SpeichermedienwerdenInformationen,dienurbeiDiskettenexistieren,
-nichtetwa"deselected",sondern"hidden".DasDesktopdesTOS1.4(auch
-imTT-TOS)mitdemDialog"Datei/OrdnerInfoanzeigen"dientehierals
-abschreckendesBeispielmodernenamerikanischenDesigns.
-
-
-8.2.3)  Datei:L”schen
------------------------
-
-  Istdannpraktisch,wennderPapierkorb"unsichtbar"untereinemFenster
-liegt.
-  Kanndannaktiviertwerden,wennnurIconsimoberstenFenster
-selektiertsind,l”schtalleselektiertenIconsimoberstenFenster(als
-wennsieindenPapierkorbgeschobenwordenw„ren).
-  Kannauchmit^Lausgel”stwerden.
-
-
-8.2.4)  Datei:neuerOrdner
----------------------------
-
-  Kanndannangew„hltwerden,wenneinFensterge”ffnetistunddieses
-FensterzuKAOSDESKundnichtzueinemAccessorygeh”rt.DerOrdnerwird
-imVerzeichnisdesoberstenFensterserstellt.
-  Kannauchmit^Nausgel”stwerden.
-
-
-€8.2.5)  Datei:schlieeFenster
--------------------------------
-
-  Kanndannangew„hltwerden,wenneinFensterge”ffnetistunddieses
-FensterzuKAOSDESKundnichtzueinemAccessorygeh”rt.Dasoberste
-Fensterwirdsofortgeschlossen.
-  Kannauchmit^Causgel”stwerden.
-
-
-8.2.6)  Datei:alleausw„hlen
------------------------------
-
-  Kanndannangew„hltwerden,wennkeinFensterge”ffnetistoderdas
-obersteFensterzuKAOSDESKundnichtzueinemAccessorygeh”rt.Alle
-ObjektedesoberstenFenstersbzw.desDesktophintergrundswerdenauf
-einenSchlagselektiert,auchdienichtsichtbaren.
-  Kannauchmit^Aausgel”stwerden.
-
-
-8.2.7)  Datei:Formatieren
---------------------------
-
-  DerEintrag"Formatieren"istgenaudannaktiv,wenndaseinzige
-selektierteIconeinLaufwerk(FloppyoderFestplatte)ist.Wennessich
-beidemIconumeineFloppyhandelt,istimDialog"Formatieren"der
-ButtonfrdasFormatierenselektierbar,andernfallskannmandasLauf
-werklediglichinitialisieren,d.h.alleDatenl”schenundggf.denNamen
-„ndern,waswesentlichschnellergeht.BeiFestplatteniconswirdvor
-AufrufderDialogboxeineWarnungausgegeben.Manbeachte,danurder
-Icontypdafrentscheidendist,wieKAOSDESKreagiert;derVersuch,ein
-LaufwerkC:zuformatieren,wirdjedochzuirgendwelchenSchwierigkeiten
-fhren,wennessichnichtumeinDiskettenlaufwerkhandelt.DasAtari-
-Betriebssystem(XBIOS)untersttztnurA:undB:.
-  InderoberenZeilekannmanschonbeimFormatiereneinenDiskettennamen
-eingeben,derdannunterKAOSDESKimIconangezeigtwird.Dahersollte
-man,wennmanesnichtzueilighat,immereinenangeben.
-  FrdasFormatierenwirdinBezugaufSektorversatzusw.genauso
-vorgegangen,wiediesTOS1.4tut.BeiStandardformaten(80Spuren,9
-SektorenproSpur)wirdderBootsektormitXBIOS(Protobt)erzeugt,sonst
-werdenGr”ederFATusw.miteigenenFormelnberechnet.DerBootsektor
-wird,soweitm”glich,IBM-kompatibelgehalten.FrdenProfisindunter
-"Optionen"nochweitereParameter(Interleave,VersatzundClustergr”e)
-zug„nglich,dievorjedemAufrufderFormatierboxjedochwiederaufdie
-Standardwertegesetztwerden.
-  EslassensichzwarfastbeliebigeSektor-undTrackanzahlenangeben,
-jedochsolltemannichtmehrals86Spurenund10Sektorenangeben.Die
-M”glichkeitenwurdenfrsolcheLeutegeschaffen,dieetwaeinHD-
-Diskettenlaufwerkbesitzenund18odermehrSektorenformatierenwollen.
-  BeimFormatierenwirdbeimh”chstenTrackbegonnen.Daherkannmanbei
-versehentlicherBet„tigungschnellmitSHIFT-SHIFTabbrechen.Auerdem
-dauertesggf.nichtsolange,bissicheinFormatierfehleraufdenoberen
-Spurenbemerkbarmacht,etwawennversuchtwird,mehrals80Spurenzu
-formatieren.
-  TrittbeimFormatiereneinFehlerauf,giltdasselbewiebei"Disketten
-€kopieren".AuchhiersolltemannacheinemZwangsabbruchdieDisketteaus
-demLaufwerkentfernen,dasienochnichtvollst„ndiginitialisiertwurde
-unddaherungltigeDatenenth„lt.
-
-
-8.2.8)  Datei:Diskettenkopieren
----------------------------------
-
-  DasKopierenvonDiskettenwirdnichtdurchdasšbereinanderlegenvon
-Disketten-Iconsausgel”st(dasbedeutet"dateiweisekopieren"),sondern
-berdasMen.
-  Eshandeltsichumein"intelligentes"Kopierprogramm,dasautomatisch
-dasFormatderQuelldisketteanalysiertundggf.dieZieldiskette(um-)
-formatiert.Bei"ohneFormatieren"werdenzun„chstdieFormatevonQuell-
-undZieldisketteverglichenunddannerstmitdemKopiervorgangbegonnen
-(dabeiistggf.einDiskwechselerforderlich).Solltedabeifestgestellt
-werden,dadochneuformatiertwerdenmu,sowirdzun„chsteine
-warnendeAlerboxangezeigt.DerBenutzerkanndannentwederdenKopiervor
-gangabbrechenoderdieZieldisketteimFormatderQuelldisketteformatie
-renlassen.DaKAOSDESKmitHilfedesBetriebssystemsformatiert,k”nnen
-hiermitaufnormalenDiskettenlaufwerkenkeine11-Sektor-Formateerzeugt
-werden(esseidenn,manbesitzteinenentsprechendenTreiber).Wenndie
-QuelldisketteeinderartigesFormathat,muhierabgebrochenwerden.
-  Ziel-/Quelldiskk”nnendurchAnklickenjeweilszwischenA:undB:
-ver„ndertwerden.DieAngabe"Tempor„rlaufwerk"erm”glichtdemBesitzer
-eineskleinenST(1MB),abermitFestplatte,einedoppelseitigeDiskette
-mitnureinemWechselzukopieren.Dazuwirdzun„chstdieQuelldiskette
-vollst„ndigeingelesenundineineDateiaufdemTempor„rlaufwerk
-geschrieben.AnschlieendkannmandieZieldisketteeinlegenundineinem
-Rutschbeschreiben.SchlielichwirddieTempor„rdateigel”scht.Ist
-gengendSpeicherda,wirdkeineTempor„rdateiangelegt.
-  BeiDiskettenfehlernerscheinteineAlertboxmitdemFehlercodeim
-KlartextundmitfolgendenEntscheidungsm”glichkeiten:
-
-     Abbruch:  Fehlermeldungweiterreichen,Funktionwirdabgebrochen
-Nochmal:WiederholenderFunktion(etwanachEntfernen
-desSchreibschutzes)
-Weiter:IgnorierendesFehlers(tun,alsoballesinOrdnungw„re)
-
-DerzweiteButton,"Nochmal",istderDefaultbutton.
-  DieAktionkannjederzeitdurchGedrckthaltenderbeidenSHIFT-Tasten
-unterbrochenwerden.
-  WennderKopiervorgangvorBeendigungabgebrochenwurde,sollteman
-unbedingtdieZieldisketteausdemLaufwerkentfernenundnichtversuchen,
-einInhaltsverzeichnisanzuzeigen,dasieundefinierteDatenenth„lt.
-  FrdenProfi:DieInterleave-undVersatzeinstellungenwerdenbeim
-KopierenmitFormatierennichtbeachtet,dasiefrdenerkanntenDisktyp
-wom”glichunbrauchbarsind.EswerdenimmerStandardwerteverwendet
-(Interleave1,Versatz2).
-
-
-8.2.9)   Datei:Ende
---------------------
-
-€  BeimVerlassenvonKAOSDESKzumDesktopkannesinsbesonderebei„lteren
-TOS-Versionenvorkommen,daAESversucht,einProgrammohneNamenzu
-starten.Dasistnormalundl„tsichleidernichtvermeiden.
-  BeimVerlassen"nachDOS"wirdeinshel_write()-mit"doex"=FALSE
-gemacht.DieserAufrufsollangeblichaufdemPCdasGEMbeenden,unter
-GEM2.2funktioniertdasauch.UnterTOS1.0und1.2wirddasAESneu
-initialisiert,unterTOS1.4passiertnurMerkwrdiges,dahiereinzigund
-alleindasDesktopdasRechthat,AESneuzuinitialisieren.
-
-
-8.5.1)   Optionen:Laufwerkanmelden
-------------------------------------
-
-  ImDialog"Laufwerkanmelden"sinddieButtons"ndern"und"Entfernen"
-genaudannw„hlbar,wennbeimAufrufderBoxgenaueinLaufwerk-
-/Papierkorb-oderDruckericonaktiviertwar.DannistauchderButton
-"ndern"beimAufrufbereitsaktiv.DerButton"ndern"schaltetum,ob
-maneinneuesIconerzeugenoderdasaktivierte„ndernm”chte.Im
-letzterenFall„ndertmandasIcondurcheinenkurzenKlickaufeinesder
-Iconsymbole;Symboltypundggf.Laufwerkkennungwerdenge„ndert.Beimneu
-ErstellenvonIconsh„ltmandieMaustastebeimKlickaufeinsder
-IconsymbolegedrcktundverschiebtdanndenUmridesneuenIconsandie
-gewnschteStelle.
-  DieVerantwortungfrdieWahldesIcons(Platte/Diskette/Ramdisk)fr
-dasLaufwerkliegtbeimAnwenderundsollteernstgenommenwerden,da
-sicheinigeFunktionenvonKAOSDESKfrdieunterschiedlichenMedien
-unterscheiden.ImZweifelsfallistdasRAMDisk-Iconzuverwenden,hier
-beiwirddasLaufwerknurmitHilfevonDOS-Funktionenangesprochen.
-InsbesonderesindROM-ModulundjeglicheArtvonNetzwerkenalsRAMDisk
-anzumelden!
-  KAOSDESKerkenntLaufwerkR:alsROM-Modulundzeigt
-"R:\*.*  (Rommodul)"alsFenstertitelan,auchdasLaufwerkhatdenNamen
-"ROMMODUL",derimLaufwerkiconangezeigtwird.
-
-
-8.5.2)   Optionen:Anwendunganmelden
--------------------------------------
-
-  DerEintrag"Anwendunganmelden"istw„hlbar,wenngenauein
-ProgrammiconodereinzueinemProgrammangemeldetesDateiiconselektiert
-ist.DieAuswahl"GEM","TOS","TTP"istzwarvorhanden,jedochsolltein
-solcheinemFalldieDateilieberumbenanntwerden.Programme,diemit
-Cursorgestartetwerdensollen,solltenimmerdieEndung.TOSoder.TTP
-haben,dieanderen.PRGoder.APP.DieAuswahlzwischen.TOSund.TTP(T€OS
-t€akesp€arameters)istdabeiunterKAOSDESKvongeringerBedeutung,daman
-hieranjedes€ProgrammParameterbergebenkann(siehe"Programme
-starten").
-  DasAbmeldenoderUmmeldenvonAnwendungenkannauchbereinebereits
-angemeldeteDateigeschehen.
-  DieAnzahlderDateitypenproProgrammistauf2beschr„nkt,diese
-Einschr„nkungkannnichtumgangenwerden;andereDateienk”nnenaberimmer
-nochaufdieblicheWeisebergebenwerden(alsParameter,s.o.).
-
-
-€8.5.3)  Optionen:Einstellungen
--------------------------------
-
-  DerEintrag"KAOSDESKresident"kannauchohneAnw„hlenderDialogbox
-direktmitSHIFT-InsaktiviertundmitSHIFT-Deldeaktiviertwerden.
-  "KAOSDESK.INFnachladen"l„dtdie.INF-DateivondemLaufwerk,vondem
-ausdieletzte.INF-Dateigeladenwordenwar,alsoi.a.vomKAOSDESK-
-Laufwerk,wennnochkeine.INF-DateiperCTRL-SHIFT-A..P(s.u.)geladen
-wordenist.
-  "Disknameninitialisieren"bedeutet,dasowohlbeimStartalsauchbeim
-NachladenvonKAOSDESKdieNamenallerHard-undRAMDisksermitteltundin
-denentsprechendenLaufwerkiconsangezeigtwerden.Ansonstenwerden
-Disknamennurbeim™ffnenvonFensternermittelt.
-  MitdenButtonsfrdieGer„tetreiberkannmandieAufl”sung„ndern.
-DiesfunktioniertnurunterKAOS1.4,imGegensatzzu"VerlassennachDOS"
-wirdnichtnurdieAufl”sunggewechselt,sondernauchautomatisch
-anschlieendwiederKAOSDESKgestartet(genauer:dasals"AUTO-Status"im
-Original-DesktopangemeldeteProgramm).FrdieGer„tetreibergilti.a.:
-
-     1  aktuelleAufl”sung
-     2  niedrigeAufl”sung
-     3  mittlereAufl”sung
-     4  hohe   Aufl”sung
-
-  Zu"CacheUntersttzung"s.u.
-  ZudenEinstellungenfrdasKopierens.o.
-
-
-8.5.4)  Optionen:Programme
-----------------------------
-
-  ImPfaddesDruckprogramms,derunter"Ausgabe"eingetragenwird,werden
-alleZeichenzugelassen,damitmanauchdirektParameterbzw.Optionen
-angebenkann.DerDateinameselbst(biszumerstenLeerzeichen)wirdin
-Grobuchstabenumgewandelt.
-  DerEintrag"Command"istfrdenKommandoprozessor,derber^Bdirekt
-aufgerufenwerdenkannundderdieAusfhrungder.BAT-und.BTP-Dateien
-bernimmt.
-  Unter"Editor"wirdderStandardeditoreingetragen,deraufgerufenwird,
-wennmanTextdatei(en)mit(SHIFT-)CTRL-Doppelklick”ffnet.
-  DieEintr„ge^F1bis^F12zeigenan,wiemandiebrigenProgramme
-aufrufenkann.DieFunktionstastenF11undF12sindjedochaufderST-
-Tastaturnichtvorhanden,hierk”nnendiebeidenunterenEintr„genicht
-benutztwerden.WennderProgrammnamemit'*'beginnt,k”nnenParameteran
-dasProgrammbergebenwerden(alleselektiertenDateien),auerdemwird
-dasProgrammdannimmerinseinemeigenenPfadgestartet.Beginntder
-Namenichtmit'*',wirddasentsprechendeProgramm(wiederKommandopro
-zessorber^B)indendurchdieaktuellenFenstervorgegebenenStandard
-pfadenaufgerufen.
-
-
-8.5.5)   Optionen:Arbeitsichern
----------------------------------
-
-€  Beim"Arbeitsichern"wirddieINF-DateiaufdasLaufwerkgeschrieben,
-vondemausdieletzteINF-Dateigeladenwordenist,sonstaufdas
-Laufwerk,aufdemKAOSDESKliegt.
-
-
-8.5.6)   Optionen:Blitter
---------------------------
-
-  DerEintrag"Blitter"l„tsichnichtaufeinemSTohneBlitter
-aktivierenoderdeaktivieren.HierwirdderMeneintrag"disabled";ein
-H„kchenvordemEintragbedeutetdannnur,dadieKAOSDESK.INF-Dateiauf
-einemRechnermitBlittererstelltwurdeunddieserdabeieingeschaltet
-war.DamitsichkeinanderesProgrammamBlittervergreift,wirdder
-BlitterstatuswiedieFarbpalettenachjedemProgrammstartneugesetzt.
-
-
-9)   Tastaturkommandos
-----------------------
-
-  MitEscwirdKAOSDESKeinDiskwechselimoberstenFenstermitgeteilt.
-  MitdenGrobuchstabenlassensichLaufwerkeanw„hlen(einmaltippen)
-und”ffnen(2malschnellhintereinandertippen).FrdieGrobuchstaben
-kannman,stattjedesmalSHIFTzudrcken,auchCapsLockaktivieren.
-  MitdenKleinbuchstabenl„tsich,indemmansiezweimalschnell
-hintereinandereingibt,dasLaufwerkdesoberstenFensterswechseln.Dabei
-wirdimmeraufsWurzelverzeichnisgeschaltet.EswerdennurBuchstaben
-akzeptiert,dieinLaufwerkiconsaufdemDesktopvorkommen.Diskwechsel
-werdendabeinichterkannt.
-  MitdenBuchstabentastenundCTRL-SHIFTl„tsicheineneueINF-Datei
-vondembetreffendenLaufwerknachladen.DieIconswerdenNICHTneu
-geladen,dasieandieResourcedateiangebundensind.IstkeineINF-Datei
-aufdemausgew„hltenLaufwerkvorhanden,kannmanentscheiden,obmanden
-VorgangabbrechenoderdieDefaultsladenm”chte.
-  MitderLeertastelassensichalleObjekteaufeinenSchlagdeselektie
-ren.
-  DasobereFensterl„tsichauchmitHilfederCursortastenscrollen
-(aufundab).HomesetztdenScrollbalkenganznachoben,SHIFT-Homenach
-unten.
-  ^WwechseltdasobersteFenster.Ggf.mu^Wsolangebet„tigtwerden,
-bisdasgewnschteFensterobenliegt.
-  MitHilfederUndo-TastewirddasobersteFensteraufsWurzelverzeich
-niszurckgeschaltet.Diskwechselwerdennichterkannt.
-  MitBackspacekannmanimoberstenFenstereineVerzeichnisebene
-zurckgehen.IstdasWurzelverzeichniserreicht,wirddieTasteignoriert.
-  Mit^BwirdderKommandoprozessor,mit^EderStandardeditorinden
-durchdieFenstervorgegebenenPfadenundohneParametergestartet.
-  SHIFT-Insertwirktwie"Einstellungen„ndern,Residentein"undSHIFT-
-Deletewie"Einstellungen„ndern,Residentaus".
-  Tabwirktwie^I(Infoanzeigen).
-
-
-10)Cache-Untersttzung
---------------------------
-
-€  DieblicherweiseaufdemSTeingesetzenCachealgorithmensowohlfrden
-ProzessoralsauchfrMassenspeichergeh”renzudensogenanntendurch
-schreibendenCaches(neudeutsch:write-through-cache).Diesezeichnen
-sichdadurchaus,dasienurLesevorg„ngebeschleunigen,beimSchreiben
-jedochdieDatensowohlindenCachealsauchaufdasZielmedium
-schreiben.WesentlicheffizientersindMethoden,diedasSchreibennicht
-direktausfhren,sondernzun„chstnurimschnellenCacheausfhren.In
-sehrvielenF„llenwerdenDatenmehrmalshintereinandergeschrieben,bei
-Verwendungeines"delayed-write"-Cachemuhierbeinurdieletzte
-SchreibaktionindenZielspeicherausgefhrtwerden,auerdemkanndas
-SystembeiMassenspeicherndiezuschreibendenSektorensortieren,um
-m”glichstwenigKopfbewegungenzuverursachen.
-  DemstehtderNachteilgegenber,dabeimSystemabsturz(trittunter
-TOSsehrh„ufigauf!)dieDatennochimCachestattaufdemZielmedium
-schlummern.FernerexistiertdasgeradeaufdemSTheikleProblemdes
-Diskettenwechsels,dereigentlichniewirklichzuverl„ssigerkanntwerden
-kann;waspassiert,wennDatenaufdiefalscheDiskettegeschrieben
-werden,kannmansichleichtdenken.DaherwirddiesesVerfahrennurbei
-zuverl„ssigerenRechnernetwaunterUNIXeingesetzt.Auerdemwerdendie
-ge„ndertenDateninregelm„igenAbst„ndengesichert.
-  DasVerfahreneines"delayed-write"-Cachelieesichprinzipiellauch
-aufdemSTanwenden.DieIdeedabeiist,vorBeginneinerKopieraktionden
-CachezuaktivierenundihnnachihrerBeendigungwiederabzuschalten,
-wobeidienochnichtgeschriebenenDatenineinemRutschzurckgeschrieben
-werden.DadurchkannmanfastalleVorteileeinessolchenCachesntzen
-unddieRisikenminimieren.
-  KAOSDESKselbstenth„ltkeinCacheprogramm,untersttztjedochein
-eventuellvorhandenes,fallsdiesessichanfolgendeSchnittstelleh„lt:
-
- Istunter"Einstellungen"dieCache-Untersttzungeingeschaltet,wird
-beiDiskoperationenautomatischeinCacheprogrammuntersttzt.Vorjeder
-OperationwirdderCacheein-,anschlieendwiederausgeschaltet.Istkein
-CacheimSystem,fhrtdiesnichtzueinerFehlermeldung.
-  FrdasEinschaltendesCachewirdein"gemdos(201,drv)",frdas
-Ausschaltenein"gemdos(202,drv)"ausgefhrt.Langwort-negativeRckga
-bewerte(auerEINVFNfr"Cachenichtinstalliert"oderEDRIVEfr"Cache
-frdiesesLaufwerknichtinstalliert")werdenausgewertet.
-Cache-UntersttzungwirdbeifolgendenOperationenangewendet:
--RekursivesDurchlaufeneinesDirectory-Baumes(L”schen,Kopieren,Info
-anzeigen)
--L”schenvonDateien(frdenPfaddesFensters,indemdieDateien
-liegen).
--KopierenvonDateien(immerfrdenZielpfad,frdenQuellpfadnurbei
-mehralseinemObjekt).
-UnterUmst„ndenwirdderCacheverschachteltein-undausgeschaltet.Das
-CacheprogrammmualsoverschachtelteAufrufeuntersttzen.
-
-  FallsSiekeinCacheprogrammverwenden,solltenSiedenSchalterfrdas
-Cacheprogrammeeinfachdeaktiviertlassen.
-
-
-11)Einschr„nkungen
----------------------
-
-€AnzahlverschiedenerLaufwerkemax.16
-AnzahlFenster5
-AnzahlIconsaufdemDesktopmax.32
-AnzahlDateieninsgesamtmax.600
-AnzahlanmeldbarerProgrammemax.20
-maximalePfadl„ngefrDesktop-Icons/Programmemax.80Zeichen
-maximalePfadl„ngefrDisk-Operationenmax.128Zeichen
-maximalePfadtiefemax.8Ebenen
-Anzahlzus„tzlicherProgramm-Iconsmax.120
-Anzahlzus„tzlicherDatei-Iconsmax.100
-AnzahlIconszugewiesenerDateinamenunbegrenzt
-
