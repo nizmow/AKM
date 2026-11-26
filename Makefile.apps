@@ -262,7 +262,7 @@ off65kpk-test-driver: $(BUILD_DIR)/osd-probes/OFF65KPK.PRG
 # name the NVDI field at offset 196 `_nvdi_PixMap_ptr`; the current include
 # calls the same field `_nvdi_vdi_setup_ptr`.
 SCREEN_MFA_DIR := core/mfa/SRC
-SCREEN_MFM_DIR := MagiC/KERNEL/VDI/SRC/MAGIC.DRV/MFM
+SCREEN_MFM_DIR := base/mfm/SRC
 SCREEN_MFA_NAMES := MFA2 MFA4 MFA16 MFA256 MFA32K
 SCREEN_MFM_NAMES := MFM2 MFM16 MFM16IP MFM16M MFM256 MFM32K MFM4IP
 SCREEN_NAMES := $(SCREEN_MFA_NAMES) $(SCREEN_MFM_NAMES)
@@ -295,7 +295,7 @@ $(SCREEN_OUTPUTS): $(BUILD_DIR)/screen/%.SYS: $(BUILD_DIR)/screen/src/%.S $(SCRE
 
 SCREEN_PROBE := $(BUILD_DIR)/screen/SCREEN.PRG
 
-$(SCREEN_PROBE): MagiC/KERNEL/VDI/TESTDATA/SCREEN.C Makefile.apps
+$(SCREEN_PROBE): core/mfa/tests/SCREEN.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
