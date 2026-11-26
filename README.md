@@ -466,13 +466,18 @@ This produces `build/atari/filesystem.o`, a relocatable 68000 ELF component link
 - GCC-built `kernel/DOS/VFAT.C` (long-filename record creation and directory reading);
 - assembly `kernel/DOS/VFAT_S.S` (device-call glue and LFN checksum);
 - assembly `DOS/XFS_VDOS.S` (DOS filesystem driver);
-- assembly `ALLG/SRC/STD.S` (kernel memory, string and other runtime routines).
+- assembly `kernel/ALLG/SRC/STD.S` (kernel memory, string and other runtime routines).
 
 `make vfat` still builds only `build/atari/vfat.o`.
 The C flags retain 16-bit integers and register calls:
 `-std=gnu11 -mshort -mfastcall -ffreestanding -fno-builtin -fno-strict-aliasing`.
 Both C and assembly compilation check shared structure offsets.
 C include aliases and MAS-to-VASM inputs are generated under `build/atari`.
+
+The Atari kernel's shared headers and BIOS support live under `kernel/INC`
+and `kernel/BIOS`. The legacy manifests under `MagiC/KERNEL/BUILD` document
+the original layout; use the `original-import` snapshot for that layout.
+
 The syntax adapter handles comments, include names, zero-based `OFFSET` blocks,
 named macro arguments/local labels and expression spelling; instructions remain
 Motorola assembly. Selected complete STD routines get separate ELF sections for

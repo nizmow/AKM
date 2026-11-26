@@ -13,13 +13,13 @@ STD_SECTIONS := fast_clrmem,memcpy,memmove,toupper,strcpy,strcmp,stricmp,strlen,
 .PHONY: asm-objects
 asm-objects: $(ASM_OBJECTS)
 
-$(ASM_DIR)/ERRNO.INC: MagiC/INC_AS/ERRNO.INC
-$(ASM_DIR)/KERNEL.INC: MagiC/KERNEL/INC/KERNEL.INC
+$(ASM_DIR)/ERRNO.INC: kernel/INC/ERRNO.INC
+$(ASM_DIR)/KERNEL.INC: kernel/INC/KERNEL.INC
 $(ASM_DIR)/STRUCTS.INC: kernel/DOS/INC/STRUCTS.INC
-$(ASM_DIR)/DOS.INC: MagiC/KERNEL/INC/DOS.INC
+$(ASM_DIR)/DOS.INC: kernel/INC/DOS.INC
 $(ASM_DIR)/DEBUG.INC: kernel/DOS/INC/DEBUG.INC
 $(ASM_DIR)/VFAT_S.S: kernel/DOS/VFAT_S.S
-$(ASM_DIR)/STD.S: MagiC/KERNEL/ALLG/SRC/STD.S
+$(ASM_DIR)/STD.S: kernel/ALLG/SRC/STD.S
 $(ASM_DIR)/XFS_VDOS.S: kernel/DOS/XFS_VDOS.S
 
 $(ASM_HEADERS) $(ASM_SOURCES): $(ASM_ADAPTER) kernel/mk/assembly.mk

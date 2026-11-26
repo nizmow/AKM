@@ -30,14 +30,14 @@ $(1): $(2) $(BIOSDOS_TOOLS)
 endef
 
 # --- shared include files (identical for every slice) ---------------------
-$(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/ERRNO.INC,MagiC/INC_AS/ERRNO.INC))
-$(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/KERNEL.INC,MagiC/KERNEL/INC/KERNEL.INC))
-$(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/DOS.INC,MagiC/KERNEL/INC/DOS.INC))
+$(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/ERRNO.INC,kernel/INC/ERRNO.INC))
+$(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/KERNEL.INC,kernel/INC/KERNEL.INC))
+$(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/DOS.INC,kernel/INC/DOS.INC))
 $(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/STRUCTS.INC,kernel/DOS/INC/STRUCTS.INC))
-$(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/VTSYS.INC,MagiC/KERNEL/INC/VTSYS.INC))
-$(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/LOWMEM.INC,MagiC/KERNEL/BIOS/COMMON/LOWMEM.INC))
-$(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/BIOS.INC,MagiC/KERNEL/BIOS/COMMON/BIOS.INC))
-$(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/HARDWARE.INC,MagiC/KERNEL/BIOS/COMMON/HARDWARE.INC))
+$(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/VTSYS.INC,kernel/INC/VTSYS.INC))
+$(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/LOWMEM.INC,kernel/BIOS/COMMON/LOWMEM.INC))
+$(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/BIOS.INC,kernel/BIOS/COMMON/BIOS.INC))
+$(eval $(call biosdos_stage,$(BIOSDOS_COMMON)/HARDWARE.INC,kernel/BIOS/COMMON/HARDWARE.INC))
 
 BIOSDOS_COMMON_FILES := $(addprefix $(BIOSDOS_COMMON)/,ERRNO.INC KERNEL.INC DOS.INC \
                          STRUCTS.INC VTSYS.INC LOWMEM.INC BIOS.INC HARDWARE.INC)
@@ -45,11 +45,11 @@ BIOSDOS_COMMON_FILES := $(addprefix $(BIOSDOS_COMMON)/,ERRNO.INC KERNEL.INC DOS.
 # --- magibios slice -------------------------------------------------------
 # BIOS.INC provides FRG/USA/FRA/UK.  DEADKEYS and MACOSX are only referenced
 # by the Atari build and are zero there, matching MAS' undefined-symbol rules.
-$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/DEBUG.INC,MagiC/KERNEL/BIOS/MILAN/INC/DEBUG.INC))
-$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/AUTO.S,MagiC/KERNEL/BIOS/COMMON/AUTO.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/PUNTAES.S,MagiC/KERNEL/BIOS/COMMON/PUNTAES.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/READ_KTB.S,MagiC/KERNEL/BIOS/COMMON/READ_KTB.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/HANDLKEY.S,MagiC/KERNEL/BIOS/COMMON/HANDLKEY.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/DEBUG.INC,kernel/BIOS/ATARI/INC/DEBUG.INC))
+$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/AUTO.S,kernel/BIOS/COMMON/AUTO.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/PUNTAES.S,kernel/BIOS/COMMON/PUNTAES.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/READ_KTB.S,kernel/BIOS/COMMON/READ_KTB.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/HANDLKEY.S,kernel/BIOS/COMMON/HANDLKEY.S))
 $(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/SCSI.S,kernel/BIOS/ATARI/MODULES/SCSI.S))
 $(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/FDC.S,kernel/BIOS/ATARI/MODULES/FDC.S))
 $(eval $(call biosdos_stage,$(BIOSDOS_BIOS_INC)/DRIVE.S,kernel/BIOS/ATARI/MODULES/DRIVE.S))
@@ -70,14 +70,14 @@ $(eval $(call biosdos_stage,$(BIOSDOS_DOS_INC)/DEBUG.INC,kernel/DOS/INC/DEBUG.IN
 BIOSDOS_DOS_FILES := $(BIOSDOS_DOS_INC)/DEBUG.INC
 
 # --- read_inf slice -------------------------------------------------------
-$(eval $(call biosdos_stage,$(BIOSDOS_READ_INC)/DEBUG.INC,MagiC/KERNEL/ALLG/SRC/DEBUG.INC))
+$(eval $(call biosdos_stage,$(BIOSDOS_READ_INC)/DEBUG.INC,kernel/ALLG/SRC/DEBUG.INC))
 BIOSDOS_READ_FILES := $(BIOSDOS_READ_INC)/DEBUG.INC
 
 # --- top-level assembler sources -----------------------------------------
 $(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/magibios.S,kernel/BIOS/ATARI/MAGIBIOS.S))
 $(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/xfs95ini.S,kernel/BIOS/ATARI/XFS95/XFS95INI.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/read_inf.S,MagiC/KERNEL/ALLG/SRC/READ_INF.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/ser_my.S,MagiC/KERNEL/SER_MY.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/read_inf.S,kernel/ALLG/SRC/READ_INF.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/ser_my.S,kernel/SER_MY.S))
 $(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/magidos.S,kernel/DOS/MAGIDOS.S))
 $(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/malloc.S,kernel/DOS/MALLOC.S))
 $(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/dev_bios.S,kernel/DOS/DEV_BIOS.S))
@@ -85,7 +85,7 @@ $(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/dev_pipe.S,kernel/DOS/DEV_PIPE.S)
 $(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/dev_mem.S,kernel/DOS/DEV_MEM.S))
 $(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/dfs_u.S,kernel/DOS/DFS_U.S))
 $(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/dfs_fat.S,kernel/DOS/DFS_FAT.S))
-$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/ende.S,MagiC/KERNEL/ENDE.S))
+$(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/ende.S,kernel/ENDE.S))
 
 BIOSDOS_STAGED := $(BIOSDOS_COMMON_FILES) $(BIOSDOS_BIOS_FILES) $(BIOSDOS_DOS_FILES) \
                   $(BIOSDOS_READ_FILES) \

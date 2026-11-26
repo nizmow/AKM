@@ -45,7 +45,7 @@ VDI_OBJECTS := $(VDI_BUILD)/math.o $(VDI_BUILD)/mxvdiknl.o \
 vdi-objects: $(VDI_OBJECTS)
 
 # Uppercase TOS-era include names are resolved without touching the sources.
-PORTAB_H := MagiC/TOOLS/SHOWFREE/IMPORT/PORTAB.H
+PORTAB_H := kernel/INC/PORTAB.H
 $(VDI_INCLUDE)/portab.h: $(PORTAB_H)
 	mkdir -p $(@D)
 	ln -sf $(abspath $<) $@
