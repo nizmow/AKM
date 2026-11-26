@@ -19,7 +19,7 @@ from neost_common import create_output, run, sha256
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
 COMPARE = ROOT / "scripts/neost-console-compare.py"
-ARCHIVE = ROOT / "MagiC/TOOLS/KEYB_SYS/BIN"
+ARCHIVE = ROOT / "base/keyb-sys/BIN"
 REBUILT = BUILD / "apps/keyb-sys"
 # Nine 128-byte tables are always written; the dead-key trailer is per locale.
 TABLE_BYTES = 9 * 128

@@ -836,7 +836,7 @@ not booted.
 `mise run test:hardcopy-neost` builds `HARDCOPY.PRG` and `HCPROBE.PRG`, then
 boots three disposable clones:
 
-- the archived `MagiC/KERNEL/XTENSION/HARDCOPY.PRG`;
+- the archived `base/hardcopy/HARDCOPY.PRG`;
 - the rebuild from `build/atari/apps/hardcopy/HARDCOPY.PRG`;
 - a clone without the extension.
 
@@ -924,7 +924,7 @@ behavior are not exercised. Evidence is written to a fresh
 ## NeoST: WINFRAME.DEM example library
 
 `mise run test:winframe-demo-neost` builds the separate
-`MagiC/KERNEL/WINFRAME.DEM` example project, installs the demo's own
+`base/winframe-demo` example project, installs the demo's own
 16-object `WINFRAME.RSC` (not the Release production resource) beside the
 archived and rebuilt libraries, and boots a clone with
 `#_SLB 0 WINFRAME.SLB` disabled:

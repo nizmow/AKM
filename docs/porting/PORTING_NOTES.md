@@ -124,7 +124,7 @@ throwaway verification, not yet a reusable automated application test framework.
 
 ### CMDLINE
 
-`make -f Makefile.apps cmdline` builds `MagiC/TOOLS/CMDLINE/SRC/CMDLINE.C` as
+`make -f Makefile.apps cmdline` builds `base/cmdline/SRC/CMDLINE.C` as
 `build/atari/apps/cmdline/CMDLINE.PRG`. The port uses MiNTLib's public
 `mint/basepage.h`, `mint/osbind.h` and GEMlib `gem.h` interfaces, linking `-lgem`;
 it reads command-tail/environment fields through `BASEPAGE` rather than fixed
@@ -135,7 +135,8 @@ ARGV-style launches. For ARGV, the archived environment dump retains `ARGV=`;
 MiNTLib NULs its leading `A` before `main` to consume the reserved marker. The
 other environment bytes matched. This is expected MiNTLib startup behavior, not
 a functional failure. Runtime basepage addresses were excluded; captures are
-under `build/atari/neost-cmdline/`.
+under `build/atari/neost-cmdline/`. No checked-in task or script reproduces
+that comparison; the temporary Pexec driver and captures are evidence only.
 
 ### SHOWFILE
 
@@ -191,7 +192,7 @@ and unusual file/directory forms remain untested.
 ### LIMITMEM
 
 `make -f Makefile.apps limitmem` builds
-`MagiC/APPS/LIMITMEM/SRC/LIMITMEM.C` as
+`base/limitmem/SRC/LIMITMEM.C` as
 `build/atari/apps/limitmem/LIMITMEM.TTP`, using MiNTLib's public headers and
 the default application ABI. The legacy source was converted with the
 repository Atari-to-UTF-8 converter and adapted in place. The executable-header
@@ -215,7 +216,7 @@ replacement was established. Non-English runtime selection remains unverified.
 
 ### MGCLOCK
 
-`mise run apps -- mgclock` builds `MagiC/APPS/MGCLOCK/SRC/MGCLOCK.C` as
+`mise run apps -- mgclock` builds `base/mgclock/SRC/MGCLOCK.C` as
 `build/atari/apps/mgclock/MGCLOCK.PRG`. The port uses MiNTLib's public
 `<gem.h>` AES/VDI bindings and `<mint/osbind.h>` date/time calls, linked with
 `-lgem`; it needs no resource file. The restored source is the original
@@ -308,7 +309,7 @@ timing and data durability remain unmeasured.
 ### FLP_PAR0 / FLP_PAR1
 
 `mise run apps -- flp-par` builds `FLP_PAR0.PRG` and `FLP_PAR1.PRG` from the
-original sources in `MagiC/APPS/FLP_PAR/SRC/`. The Atari-encoded files were
+original sources in `base/flp-par/SRC/`. The Atari-encoded files were
 decoded to canonical UTF-8 and adapted in place: legacy `<tos.h>`/`<magx.h>`
 became MiNTLib's public `<mint/sysbind.h>`, with local `SCB_FLPAR` value
 `0x800L`. Separate `flp-par0`/`flp-par1` targets use `Sconfig(mode, bitset)`,
@@ -322,7 +323,8 @@ probe. Both began with `SCB_FLPAR` unset and recorded
 `00000000 → 00000800 → 00000000`, child statuses `0, 0`, and no changes to other
 configuration bits. Evidence: `build/atari/neost-flp-par-clear-runtime/` and
 `build/atari/neost-flp-par-archive-baseline/`. Physical parallel-floppy transfer
-remains untested.
+remains untested. No checked-in task or script reproduces the Pexec probe; the
+runs above were one-off NeoST sessions.
 
 ### VFATCONF
 
@@ -377,14 +379,18 @@ registered, and the host extracted matching bytes after exit, so the writeback
 session persisted that file. Exact periodic-flush latency remains unmeasured.
 
 `mise run apps -- mgxclock-test-driver` builds `mgxclock/NEOSTEST.PRG`
-under the selected build directory. For the lifecycle scenario, use a
-disposable MagiC disk: replace its normal WBDAEMON startup entry with MGXCLOCK,
+under the selected build directory from `base/mgxclock/TESTDATA/NEOSTEST.C`.
+For the lifecycle scenario, use a disposable MagiC disk: replace its normal
+WBDAEMON startup entry with MGXCLOCK,
 then add the probe as `ZZPROBE.PRG` in the same `#_APP` folder. No other
 writeback daemon may run in this fixture. The probe waits 1.5 seconds, checks
 registration, writes `C:\WBFLUSH.TXT`, sends `AP_TERM`, and requires the clock
-to disappear and the slot to clear before writing PASS/FAIL and observations to
-`C:\MGXTEST.TXT`. The PASS check detects both the generic-long binding error
-and a daemon that ignores `AP_TERM`; a clock screenshot alone does not.
+to disappear and the slot to clear before writing PASS/FAIL and observations
+to `C:\MGXTEST.TXT`. The PASS check detects both the generic-long binding error
+and a daemon that ignores `AP_TERM`; a clock screenshot alone does not. No
+checked-in NeoST scenario runner exists for this sequence: the
+`mise run apps -- mgxclock` build and the `mgxclock-test-driver` probe build
+are the repeatable parts.
 
 ### APPLICAT
 
@@ -608,12 +614,14 @@ resources remain unverified.
 
 `mise run apps -- mgsearch` builds `build/atari/apps/mgsearch/MGSEARCH.APP`
 and copies the default German `MGSEARCH.RSC`. It compiles the consumer-specific
-`GEMUTILS`/`WINDOWS` sources from `MagiC/LIB/MYLIBS/SRC` and an app-local copy
+`GEMUTILS`/`WINDOWS` sources from `base/mgsearch/SRC` and an app-local copy
 of `core/magxdesk/SRC/PATTERN.C`; the pattern helper is `mg_toupper` because MiNTLib's
 libc already exports `toupper`. The old `MAGXLIB.LIB` is not linked: modern
 GEMlib supplies `form_xdo`, `form_xdial`, `objc_sysvar` and `wind_find`.
+MGSEARCH owns those five `GEMUTILS`/`WINDOWS` files; the other helper variants
+remain in the legacy `MagiC/LIB/MYLIBS/SRC` tree.
 
-The public-SDK bridge is `MagiC/LIB/MYLIBS/SRC/GEMUTILS_SDK.H`. It defines the
+The public-SDK bridge is `base/mgsearch/SRC/GEMUTILS_SDK.H`. It defines the
 16-bit `WORD`, the 52-byte MiNT `XATTR` record and the old GEM constants that
 MiNTLib no longer exports by default. `Dxreaddir` comes from `mintbind.h`.
 `GEMUTILS` remains the older variant: its `Rgetstring(WORD)` signature and
@@ -783,6 +791,9 @@ library build without a caller proves no useful contract.
 Do not merge similar `MYLIBS` variants. `GEMUTILS` exposes
 `Rgetstring(WORD)`, while `GEMUT_MT` requires `Rgetstring(WORD, WORD *)`; the
 application-local `WINDOWS.H` copies also differ in callback and message types.
+The active `GEMUTILS`/`WINDOWS` copies are owned by their consumer in
+`base/mgsearch/SRC`; `MagiC/LIB/MYLIBS/SRC` retains the legacy `GEMUT_MT`,
+`GEMUT_M2`, `WDIALOG` and `LL` variants.
 Build only the variant a consumer uses. MGSEARCH is the first current
 `GEMUTILS`/`WINDOWS` consumer; link-test GEMlib's equivalents (`form_xdo`,
 `form_xdial`, `objc_sysvar`, `wind_find`) against its PRJ's `MAGXLIB.LIB`
@@ -1594,7 +1605,8 @@ long-term stability remain untested.
 ### KEYB_SYS keyboard-table generators
 
 `mise run apps -- keyb-sys` builds `KEYB_{CZ,DEI,FRA,SWG,UK,US}.PRG` under
-`build/atari/apps/keyb-sys/`; individual `keyb-cz`…`keyb-us` targets build one.
+`build/atari/apps/keyb-sys/` from `base/keyb-sys/SRC`; individual
+`keyb-cz`…`keyb-us` targets build one.
 `ALL.PRJ` omits the DEI project, so all six projects are listed explicitly.
 
 The six sources are Atari-encoded and stay that way. They are compiled with
@@ -1626,9 +1638,9 @@ them at boot; no MagiC image or live keyboard driver is involved.
 ### HARDCOPY extension
 
 `mise run apps -- hardcopy` assembles `build/atari/apps/hardcopy/HARDCOPY.PRG`
-from `MagiC/KERNEL/XTENSION/HARDCOPY.S` (normalized with `mas_to_vasm.py`) and
+from `base/hardcopy/HARDCOPY.S` (normalized with `mas_to_vasm.py`) and
 the shared `shared/asm/OSBIND.INC`, using VASM `-Ftos -tos-flags=1`. The
-archived `MagiC/KERNEL/XTENSION/HARDCOPY.PRG` and the Release
+archived `base/hardcopy/HARDCOPY.PRG` and the Release
 `MagiC/Releases/MAGIC.A/EXTRAS/HARDCOPY.PRG` are byte-identical references.
 `mise run apps -- hardcopy-test-driver` builds `HCPROBE.PRG`, which reads
 `scr_dump` ($502), launches `C:\GEMSYS\MAGIC\HCP\HARDCOPY.PRG`, and reads the
@@ -1774,7 +1786,7 @@ archived/rebuilt screens pixel-for-pixel. The fixture's booted MAGXCONF dialog
 provides the visible frame; the test does not drag, resize, shade or exercise
 scrollbar paths. Evidence: `build/atari/neost-winframe-20261122-141115/`.
 
-`MagiC/KERNEL/WINFRAME.DEM` is the separate 1.7.98 example project for the
+`base/winframe-demo` is the separate 1.7.98 example project for the
 same manager. It produces the same `WINFRAME.SLB` filename but owns a
 16-object `WINFRAME.RSC` (the Release resource is the production 20-object
 tree and differs byte-for-byte) and declares `wsizeof = 542` for its `WININFO`;
@@ -1782,8 +1794,8 @@ the kernel allocates each window created through `wind_create` from that
 value. Its 18-pixel title makes the
 booted frame visibly different from the production library. Build it with
 `mise run apps -- winframe-demo`, which writes
-`build/atari/apps/winframe-demo/` and reuses the production
-`WINFRAME_ENTRY.S` register-to-stack bridges; the kernel ABI is unchanged.
+`build/atari/apps/winframe-demo/` from `base/winframe-demo` and reuses the
+production `WINFRAME_ENTRY.S` register-to-stack bridges; the kernel ABI is unchanged.
 
 The port replaces `mgx_dos.h`/`mt_aes.h` and `PARMDATA`/`_mt_aes` with public
 `AESPB`/`aes()`, maps `te_junk1`/`te_junk2` to GEMlib's
@@ -1854,16 +1866,18 @@ fixture before claiming functional parity.
 
 ### XP_RASTR.SLB and LOAD_IMG.SLB
 
-`mise run apps -- xp-rastr` builds `XP_RASTR.SLB`; `mise run apps -- load-img`
-builds `LOAD_IMG.SLB`. Both use explicit SLB headers with exported function
-tables: XP_RASTR has two functions and LOAD_IMG has five. The generic packager
-validates the declared export count and each exported pointer relocation.
+`mise run apps -- xp-rastr` builds `XP_RASTR.SLB` from `base/xp-rastr/SRC`;
+`mise run apps -- load-img` builds `LOAD_IMG.SLB`. Both use explicit SLB
+headers with exported function tables: XP_RASTR has two functions and LOAD_IMG
+has five. The generic packager validates the declared export count and each
+exported pointer relocation.
 
 XP_RASTR's assembly helpers (`_vq_scrninfo`, `_vq_color`, `W_mul_L`,
 `L_div_W`) take register arguments. `XPRASTR_BRIDGE.S` provides stack-to-register
 wrappers and preserves D2/A2 around the VDI calls. The C source uses public
 GEMlib `VDIPB` and MiNTLib allocation/VDI types. LOAD_IMG's C source uses
-public GEMlib/MiNTLib types; its local `XATTR` mirrors the MiNT layout because
+public GEMlib/MiNTLib types and builds from `base/load-img/SRC`, including its
+migrated `IMGLOAD.H`; its local `XATTR` mirrors the MiNT layout because
 the SDK does not expose that name.
 
 Keep the public version-1 calling convention, not the compiler's default

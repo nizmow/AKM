@@ -31,14 +31,9 @@ MGNOTICE_SOURCES := $(addprefix $(MGNOTICE_DIR)/,MGNOTICE.C MGNWIND.C \
   OPT_DIAL.C WINDOWS.C)
 MGNOTICE_OBJECTS := $(patsubst $(MGNOTICE_DIR)/%.C,$(MGNOTICE_OBJ_DIR)/%.o,$(MGNOTICE_SOURCES))
 MGSEARCH_DIR := base/mgsearch/SRC
-MGSEARCH_MYLIBS_DIR := MagiC/LIB/MYLIBS/SRC
-MGSEARCH_PATTERN_DIR := $(MGSEARCH_DIR)
-MGSEARCH_INCLUDES := -I"$(MGSEARCH_DIR)" -I"$(MGSEARCH_MYLIBS_DIR)" \
-  -I"$(MGSEARCH_PATTERN_DIR)"
-MGSEARCH_SOURCES := $(addprefix $(MGSEARCH_DIR)/,MGSEARCH.C SEARCH.C SRCH_WIN.C)
-MGSEARCH_OBJECTS := $(patsubst $(MGSEARCH_DIR)/%.C,$(BUILD_DIR)/mgsearch/%.o,$(MGSEARCH_SOURCES)) \
-  $(BUILD_DIR)/mgsearch/GEMUTILS.o $(BUILD_DIR)/mgsearch/WINDOWS.o \
-  $(BUILD_DIR)/mgsearch/PATTERN.o
+MGSEARCH_SOURCES := $(addprefix $(MGSEARCH_DIR)/,MGSEARCH.C SEARCH.C SRCH_WIN.C \
+  GEMUTILS.C WINDOWS.C PATTERN.C)
+MGSEARCH_OBJECTS := $(patsubst $(MGSEARCH_DIR)/%.C,$(BUILD_DIR)/mgsearch/%.o,$(MGSEARCH_SOURCES))
 
 MAGXDESK_DIR := core/magxdesk/SRC
 MAGXDESK_OBJ_DIR := $(BUILD_DIR)/magxdesk/obj
@@ -350,7 +345,7 @@ $(BUILD_DIR)/magxboot/MAGXBOOT.TOS $(BUILD_DIR)/magxboot/MAGXBO32.PRG: \
 $(BUILD_DIR)/magxboot/MAGXBOOT.PRG: $(BUILD_DIR)/magxboot/MAGXBOOT.TOS
 	cp "$<" "$@"
 
-HARDCOPY_DIR := MagiC/KERNEL/XTENSION
+HARDCOPY_DIR := base/hardcopy
 HARDCOPY_SRC := $(BUILD_DIR)/hardcopy/src
 
 .PHONY: hardcopy hardcopy-test-driver
@@ -616,7 +611,7 @@ $(BUILD_DIR)/console/RUNARG.PRG: scripts/testdata/RUNARG.C Makefile.apps
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
-KEYB_DIR := MagiC/TOOLS/KEYB_SYS/SRC
+KEYB_DIR := base/keyb-sys/SRC
 KEYB_NAMES := CZ DEI FRA SWG UK US
 KEYB_OUTPUTS := $(addprefix $(BUILD_DIR)/keyb-sys/KEYB_,$(addsuffix .PRG,$(KEYB_NAMES)))
 
@@ -633,9 +628,9 @@ $(KEYB_OUTPUTS): $(BUILD_DIR)/keyb-sys/%.PRG: $(KEYB_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -finput-charset=ISO-8859-1 \
 	  -fexec-charset=ISO-8859-1 -MMD -MP \
-	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+	  -MF "$@.d" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
--include $(KEYB_OUTPUTS:.PRG=.d)
+-include $(addsuffix .d,$(KEYB_OUTPUTS))
 
 $(MGCOPY_OBJ_DIR)/%.o: $(MGCOPY_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
@@ -706,23 +701,8 @@ $(BUILD_DIR)/mgcopy/NEOSTART.PRG: $(MGCOPY_ROOT)/tests/NEOSTART.C Makefile.apps
 
 $(BUILD_DIR)/mgsearch/%.o: $(MGSEARCH_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) $(MGSEARCH_INCLUDES) \
-	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
-
-$(BUILD_DIR)/mgsearch/GEMUTILS.o: $(MGSEARCH_MYLIBS_DIR)/GEMUTILS.C Makefile.apps
-	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGSEARCH_MYLIBS_DIR)" \
-	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
-
-$(BUILD_DIR)/mgsearch/WINDOWS.o: $(MGSEARCH_MYLIBS_DIR)/WINDOWS.C Makefile.apps
-	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGSEARCH_MYLIBS_DIR)" \
-	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
-
-$(BUILD_DIR)/mgsearch/PATTERN.o: $(MGSEARCH_PATTERN_DIR)/PATTERN.C Makefile.apps
-	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGSEARCH_PATTERN_DIR)" \
-	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGSEARCH_DIR)" \
+	  -MMD -MP -MF "$@.dep" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/mgsearch/MGSEARCH.APP: $(MGSEARCH_OBJECTS) Makefile.apps
 	$(CC) $(APP_FLAGS) $(MGSEARCH_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
@@ -778,10 +758,10 @@ $(BUILD_DIR)/mod-app/MOD_APP.TTP: base/mod-app/MOD_APP.C Makefile.apps
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(TOS_ARGS_DIR)" -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
-$(BUILD_DIR)/cmdline/CMDLINE.PRG: MagiC/TOOLS/CMDLINE/SRC/CMDLINE.C Makefile.apps
+$(BUILD_DIR)/cmdline/CMDLINE.PRG: base/cmdline/SRC/CMDLINE.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
-	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+	  -MF "$@.d" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/mac2st/MAC2ST.TTP: base/mac2st/SRC/MAC2ST.C Makefile.apps
 	mkdir -p "$(@D)"
@@ -831,28 +811,28 @@ $(BUILD_DIR)/showfile/SHOWFILE.TTP: base/showfile/SRC/SHOWFILE.C Makefile.apps
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
 
-$(BUILD_DIR)/limitmem/NEOSTEST.PRG: MagiC/APPS/LIMITMEM/TESTDATA/LIMITMEMTEST.C Makefile.apps
+$(BUILD_DIR)/limitmem/NEOSTEST.PRG: base/limitmem/TESTDATA/LIMITMEMTEST.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
-$(BUILD_DIR)/limitmem/LIMITMEM.TTP: MagiC/APPS/LIMITMEM/SRC/LIMITMEM.C Makefile.apps
+$(BUILD_DIR)/limitmem/LIMITMEM.TTP: base/limitmem/SRC/LIMITMEM.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
-$(BUILD_DIR)/mgclock/MGCLOCK.PRG: MagiC/APPS/MGCLOCK/SRC/MGCLOCK.C Makefile.apps
+$(BUILD_DIR)/mgclock/MGCLOCK.PRG: base/mgclock/SRC/MGCLOCK.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
-$(BUILD_DIR)/mgxclock/MGXCLOCK.PRG: MagiC/APPS/MGXCLOCK/SRC/MGXCLOCK.C Makefile.apps
+$(BUILD_DIR)/mgxclock/MGXCLOCK.PRG: base/mgxclock/SRC/MGXCLOCK.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
-$(BUILD_DIR)/mgxclock/NEOSTEST.PRG: MagiC/APPS/MGXCLOCK/TESTDATA/NEOSTEST.C Makefile.apps
+$(BUILD_DIR)/mgxclock/NEOSTEST.PRG: base/mgxclock/TESTDATA/NEOSTEST.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.PRG=.d)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
 $(BUILD_DIR)/vfatconf/VFATCONF.PRG: base/vfatconf/SRC/VFATCONF.C base/vfatconf/SRC/VFATCONF_GEM.C base/vfatconf/SRC/VFATCONF_GEM.H Makefile.apps
@@ -875,15 +855,15 @@ $(BUILD_DIR)/wbdaemon/WBDAEMON.PRG: base/wbdaemon/SRC/WBDAEMON.C Makefile.apps
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
-$(BUILD_DIR)/flp-par/FLP_PAR0.PRG: MagiC/APPS/FLP_PAR/SRC/FLP_PAR0.C Makefile.apps
+$(BUILD_DIR)/flp-par/FLP_PAR0.PRG: base/flp-par/SRC/FLP_PAR0.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
-	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+	  -MF "$@.d" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
-$(BUILD_DIR)/flp-par/FLP_PAR1.PRG: MagiC/APPS/FLP_PAR/SRC/FLP_PAR1.C Makefile.apps
+$(BUILD_DIR)/flp-par/FLP_PAR1.PRG: base/flp-par/SRC/FLP_PAR1.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
-	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+	  -MF "$@.d" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
 CPX_DIR := base/cpx
 CPX_OBJECTS := $(BUILD_DIR)/cpx/MAGXCONF.o $(BUILD_DIR)/cpx/CPX_ENTRY.o
@@ -926,19 +906,19 @@ $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG: base/wbdaemon/tests/NEOSTEST.C Makefile.apps
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 -include $(BUILD_DIR)/mod-app/MOD_APP.TTP.d
--include $(BUILD_DIR)/cmdline/CMDLINE.d
+-include $(BUILD_DIR)/cmdline/CMDLINE.PRG.d
 -include $(BUILD_DIR)/showfile/SHOWFILE.TTP.d
--include $(BUILD_DIR)/limitmem/LIMITMEM.d
--include $(BUILD_DIR)/limitmem/NEOSTEST.d
--include $(BUILD_DIR)/mgclock/MGCLOCK.d
--include $(BUILD_DIR)/mgxclock/MGXCLOCK.d
--include $(BUILD_DIR)/mgxclock/NEOSTEST.d
+-include $(BUILD_DIR)/limitmem/LIMITMEM.TTP.d
+-include $(BUILD_DIR)/limitmem/NEOSTEST.PRG.d
+-include $(BUILD_DIR)/mgclock/MGCLOCK.PRG.d
+-include $(BUILD_DIR)/mgxclock/MGXCLOCK.PRG.d
+-include $(BUILD_DIR)/mgxclock/NEOSTEST.PRG.d
 -include $(BUILD_DIR)/vfatconf/VFATCONF.PRG.d
 -include $(BUILD_DIR)/shutdown/SHUTDOWN.PRG.d
 -include $(BUILD_DIR)/wbdaemon/WBDAEMON.PRG.d
 -include $(BUILD_DIR)/wbdaemon/NEOSTEST.PRG.d
--include $(BUILD_DIR)/flp-par/FLP_PAR0.d
--include $(BUILD_DIR)/flp-par/FLP_PAR1.d
+-include $(BUILD_DIR)/flp-par/FLP_PAR0.PRG.d
+-include $(BUILD_DIR)/flp-par/FLP_PAR1.PRG.d
 -include $(BUILD_DIR)/cpx/MAGXCONF.o.d
 -include $(BUILD_DIR)/cpx/TSLICE.o.d
 # The .PRG.d names bypass stale pre-relocation dependencies on VDI/TESTDATA.
@@ -976,14 +956,14 @@ $(BUILD_DIR)/winframe/WINFRAME.RSC: $(WINFRAME_DIR)/WINFRAME.RSC
 -include $(BUILD_DIR)/winframe/WIN_SLB.o.d
 -include $(BUILD_DIR)/winframe/WIN_OBJS.o.d
 
-WINFRAME_DEMO_DIR := MagiC/KERNEL/WINFRAME.DEM
+WINFRAME_DEMO_DIR := base/winframe-demo
 WINFRAME_DEMO_OBJECTS := $(addprefix $(BUILD_DIR)/winframe-demo/,WIN_SLB.o WIN_OBJS.o) \
   $(BUILD_DIR)/winframe-demo/WINFRAME_ENTRY.o
 
 $(BUILD_DIR)/winframe-demo/%.o: $(WINFRAME_DEMO_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(WINFRAME_DIR)" \
-	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.dep" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/winframe-demo/WINFRAME_ENTRY.o: $(WINFRAME_DIR)/WINFRAME_ENTRY.S Makefile.apps
 	mkdir -p "$(@D)"
@@ -1001,10 +981,10 @@ $(BUILD_DIR)/winframe-demo/WINFRAME.RSC: $(WINFRAME_DEMO_DIR)/WINFRAME.RSC
 	mkdir -p "$(@D)"
 	cp "$<" "$@"
 
--include $(BUILD_DIR)/winframe-demo/WIN_SLB.o.d
--include $(BUILD_DIR)/winframe-demo/WIN_OBJS.o.d
+-include $(BUILD_DIR)/winframe-demo/WIN_SLB.o.dep
+-include $(BUILD_DIR)/winframe-demo/WIN_OBJS.o.dep
 
-XPRASTR_DIR := MagiC/EXTENSIO/XP_RASTR.SLB/SRC
+XPRASTR_DIR := base/xp-rastr/SRC
 XPRASTR_OBJECTS := $(BUILD_DIR)/xp-rastr/XP_RASTR.o \
   $(BUILD_DIR)/xp-rastr/FARBICON.o $(BUILD_DIR)/xp-rastr/XPRASTR_BRIDGE.o \
   $(BUILD_DIR)/xp-rastr/XP_RASTR_ENTRY.o
@@ -1012,7 +992,7 @@ XPRASTR_OBJECTS := $(BUILD_DIR)/xp-rastr/XP_RASTR.o \
 $(BUILD_DIR)/xp-rastr/XP_RASTR.o: $(XPRASTR_DIR)/XP_RASTR.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(XPRASTR_DIR)" \
-	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.dep" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/xp-rastr/FARBICON.s: $(XPRASTR_DIR)/FARBICON.S $(MAS_NORMALIZER) Makefile.apps
 	mkdir -p "$(@D)"
@@ -1037,7 +1017,7 @@ $(BUILD_DIR)/xp-rastr/XP_RASTR.elf: $(XPRASTR_OBJECTS) \
 $(BUILD_DIR)/xp-rastr/XP_RASTR.SLB: $(BUILD_DIR)/xp-rastr/XP_RASTR.elf scripts/elf_to_slb.py
 	python3 scripts/elf_to_slb.py --name XP_RASTR.SLB --version 1 --exports 2 "$<" "$@"
 
--include $(BUILD_DIR)/xp-rastr/XP_RASTR.o.d
+-include $(BUILD_DIR)/xp-rastr/XP_RASTR.o.dep
 
 $(BUILD_DIR)/slbtest/LEGACY_CALLS.o: scripts/testdata/LEGACY_CALLS.S Makefile.apps
 	mkdir -p "$(@D)"
@@ -1058,13 +1038,13 @@ LOADIMG_OBJECTS := $(BUILD_DIR)/load-img/LOAD_IMG.o \
 
 $(BUILD_DIR)/load-img/LOAD_IMG.o: $(LOADIMG_DIR)/LOAD_IMG.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(LOADIMG_DIR)" -I"MagiC/INC_C" \
-	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(LOADIMG_DIR)" \
+	  -MMD -MP -MF "$@.dep" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/load-img/IMGLOAD.o: $(LOADIMG_DIR)/IMGLOAD.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(LOADIMG_DIR)" -I"MagiC/INC_C" \
-	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(LOADIMG_DIR)" \
+	  -MMD -MP -MF "$@.dep" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/load-img/LOAD_IMG_RASTER.o: $(LOADIMG_DIR)/LOAD_IMG_RASTER.S Makefile.apps
 	mkdir -p "$(@D)"
@@ -1082,8 +1062,8 @@ $(BUILD_DIR)/load-img/LOAD_IMG.elf: $(LOADIMG_OBJECTS) \
 $(BUILD_DIR)/load-img/LOAD_IMG.SLB: $(BUILD_DIR)/load-img/LOAD_IMG.elf scripts/elf_to_slb.py
 	python3 scripts/elf_to_slb.py --name LOAD_IMG.SLB --version 1 --exports 5 "$<" "$@"
 
--include $(BUILD_DIR)/load-img/LOAD_IMG.o.d
--include $(BUILD_DIR)/load-img/IMGLOAD.o.d
+-include $(BUILD_DIR)/load-img/LOAD_IMG.o.dep
+-include $(BUILD_DIR)/load-img/IMGLOAD.o.dep
 -include $(addsuffix .d,$(APPLICAT_OBJECTS))
 -include $(addsuffix .d,$(MGVIEW_OBJECTS))
 EDIT_SLB_DIR := base/edit-slb/SRC
@@ -1148,7 +1128,7 @@ $(BUILD_DIR)/mgedit/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 	cp "$<" "$@"
 
 -include $(addsuffix .d,$(MGEDIT_OBJECTS))
--include $(addsuffix .d,$(MGSEARCH_OBJECTS))
+-include $(addsuffix .dep,$(MGSEARCH_OBJECTS))
 -include $(addsuffix .d,$(MAGXDESK_OBJECTS))
 -include $(BUILD_DIR)/mgsearch/NEOSTART.PRG.d
 -include $(addsuffix .d,$(MGCOPY_OBJECTS))

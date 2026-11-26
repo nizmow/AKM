@@ -16,8 +16,8 @@ from neost_screen import diff_stats
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
-ARCHIVE = ROOT / "MagiC/KERNEL/WINFRAME.DEM/WINFRAME.SLB"
-ARCHIVE_RSC = ROOT / "MagiC/KERNEL/WINFRAME.DEM/WINFRAME.RSC"
+ARCHIVE = ROOT / "base/winframe-demo/WINFRAME.SLB"
+ARCHIVE_RSC = ROOT / "base/winframe-demo/WINFRAME.RSC"
 REBUILT = BUILD / "apps/winframe-demo/WINFRAME.SLB"
 REBUILT_RSC = BUILD / "apps/winframe-demo/WINFRAME.RSC"
 GUEST_SLB = "::/GEMSYS/MAGIC/XTENSION/WINFRAME.SLB"
