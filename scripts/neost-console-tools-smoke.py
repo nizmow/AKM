@@ -24,13 +24,13 @@ BUILD = ROOT / "build/atari"
 COMPARE = ROOT / "scripts/neost-console-compare.py"
 
 TOOLS = {
-    "mac2st": (ROOT / "MagiC/TOOLS/MAC2ST/BIN/MAC2ST.TTP",
+    "mac2st": (ROOT / "base/mac2st/BIN/MAC2ST.TTP",
                BUILD / "apps/mac2st/MAC2ST.TTP"),
-    "dump": (ROOT / "MagiC/TOOLS/DUMP/BIN/DUMP.TTP",
+    "dump": (ROOT / "base/dump/BIN/DUMP.TTP",
              BUILD / "apps/dump/DUMP.TTP"),
-    "fc": (ROOT / "MagiC/TOOLS/FC/BIN/FC.TTP",
+    "fc": (ROOT / "base/fc/BIN/FC.TTP",
            BUILD / "apps/fc/FC.TTP"),
-    "split": (ROOT / "MagiC/TOOLS/SPLIT/BIN/SPLIT.TTP",
+    "split": (ROOT / "base/split/BIN/SPLIT.TTP",
               BUILD / "apps/split/SPLIT.TTP"),
 }
 

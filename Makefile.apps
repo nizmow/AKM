@@ -783,19 +783,19 @@ $(BUILD_DIR)/cmdline/CMDLINE.PRG: MagiC/TOOLS/CMDLINE/SRC/CMDLINE.C Makefile.app
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
-$(BUILD_DIR)/mac2st/MAC2ST.TTP: MagiC/TOOLS/MAC2ST/SRC/MAC2ST.C Makefile.apps
+$(BUILD_DIR)/mac2st/MAC2ST.TTP: base/mac2st/SRC/MAC2ST.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
-$(BUILD_DIR)/dump/DUMP.TTP: MagiC/TOOLS/DUMP/SRC/DUMP.C Makefile.apps
+$(BUILD_DIR)/dump/DUMP.TTP: base/dump/SRC/DUMP.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
-$(BUILD_DIR)/fc/FC.TTP: MagiC/TOOLS/FC/SRC/FC.C Makefile.apps
+$(BUILD_DIR)/fc/FC.TTP: base/fc/SRC/FC.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
 DIS_DIR := MagiC/TOOLS/DIS/SRC
@@ -820,9 +820,9 @@ $(BUILD_DIR)/dis2/%.o: $(DIS_DIR)/DIS2/%.C Makefile.apps
 $(BUILD_DIR)/dis2/DIS2.TTP: $(DIS2_OBJECTS) Makefile.apps
 	$(CC) $(APP_FLAGS) $(DIS2_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS)
 
-$(BUILD_DIR)/split/SPLIT.TTP: MagiC/TOOLS/SPLIT/SRC/SPLIT.C Makefile.apps
+$(BUILD_DIR)/split/SPLIT.TTP: base/split/SRC/SPLIT.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$(@:.TTP=.d)" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
 $(BUILD_DIR)/showfile/SHOWFILE.TTP: base/showfile/SRC/SHOWFILE.C Makefile.apps
@@ -1161,9 +1161,9 @@ $(BUILD_DIR)/mgedit/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 # Bypass stale .o.d files that name the probe's old source path.
 -include $(BUILD_DIR)/abi-check/ABI_CHECK.o.dep
 -include $(BUILD_DIR)/console/RUNARG.d
--include $(BUILD_DIR)/mac2st/MAC2ST.d
--include $(BUILD_DIR)/dump/DUMP.d
--include $(BUILD_DIR)/fc/FC.d
--include $(BUILD_DIR)/split/SPLIT.d
+-include $(BUILD_DIR)/mac2st/MAC2ST.TTP.d
+-include $(BUILD_DIR)/dump/DUMP.TTP.d
+-include $(BUILD_DIR)/fc/FC.TTP.d
+-include $(BUILD_DIR)/split/SPLIT.TTP.d
 -include $(addsuffix .d,$(DIS1_OBJECTS))
 -include $(addsuffix .d,$(DIS2_OBJECTS))
