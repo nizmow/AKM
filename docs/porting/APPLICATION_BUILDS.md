@@ -188,7 +188,7 @@ toolchain objects in a GCC application.
 | `MT_DOS.LIB` | `MagiC/LIB/MT_DOS` | Additional MagiC DOS wrappers. No current consumer. |
 | `MAGXLIB.LIB` | `MagiC/LIB/MAGIXLIB` | Older assembly AES/GEM extensions missing from the original compiler libraries. MGSEARCH's rebuilt target does not link it; modern GEMlib supplies `form_xdo`, `form_xdial` and `objc_sysvar`, and `wind_find` is available. |
 | `GEMUTILS`, `GEMUT_MT`, `GEMUT_M2`, `WINDOWS`, `WDIALOG`, `LL` objects | `MagiC/LIB/MYLIBS` | Distinct reusable helper implementations, not one monolithic application or interchangeable variants. MGSEARCH is the first current consumer of `GEMUTILS`/`WINDOWS`; its older `Rgetstring(WORD)` and `WINDOW` layout differ from the `GEMUT_MT`/APPLICAT variants. Compile only the variant a consumer uses; do not unify signatures. |
-| `PCMXSTRT.O` | `MagiC/LIB/PCMXSTRT` | Pure C-specific startup with ARGV/quoting behavior. The required behavior is already covered by `MagiC/APPS/TOS_ARGS.H`; do not link the archived startup object. |
+| `PCMXSTRT.O` | `MagiC/LIB/PCMXSTRT` | Pure C-specific startup with ARGV/quoting behavior. The required behavior is already covered by `shared/tos-args/TOS_ARGS.H`; do not link the archived startup object. |
 | `MAC_API.O` | `MagiC/LIB/MAC_API` | Host-Mac call glue; needs host cookie/API initialization. Used by the archived MGEDIT7 and relevant to the native-menu/navigation demos. No current Atari consumer. |
 
 Also account for the application-local `EMUDBG.LIB`, VT52's `DRAGDROP.LIB`,

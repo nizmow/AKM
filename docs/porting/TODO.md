@@ -95,7 +95,7 @@ framework or shared-library rewrite is required before these are attempted.
 ## Build conventions to confirm as consumers appear
 
 - [x] Share the established raw-TOS-tail quote/ARGV adapter among MOD_APP,
-  APPLICAT, MGVIEW and MGEDIT in `MagiC/APPS/TOS_ARGS.H`.
+  APPLICAT, MGVIEW and MGEDIT in `shared/tos-args/TOS_ARGS.H`.
 - [ ] Preserve quoted paths, escaped apostrophes, empty arguments, long ARGV
   arguments and literal file-type patterns where the application supports them.
   A link against a modern CRT does not automatically preserve old startup behavior.

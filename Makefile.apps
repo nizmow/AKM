@@ -11,6 +11,7 @@ APP_FLAGS := -std=gnu11 -m68000
 
 SLB_LD := shared/slb/edit_slb.ld
 GEMUT_DIR := shared/gemut
+TOS_ARGS_DIR := shared/tos-args
 GEMUT_OBJECT := $(BUILD_DIR)/base/gemut/GEMUT_MT.o
 APPLICAT_DIR := base/applicat/SRC
 APPLICAT_OBJ_DIR := $(BUILD_DIR)/base/applicat
@@ -19,7 +20,7 @@ APPLICAT_SOURCES := $(addprefix $(APPLICAT_DIR)/,APPLICAT.C ICONSEL.C ICA_DIAL.C
   WINDOWS.C)
 APPLICAT_OBJECTS := $(patsubst $(APPLICAT_DIR)/%.C,$(APPLICAT_OBJ_DIR)/%.o,$(APPLICAT_SOURCES)) \
   $(GEMUT_OBJECT)
-APPLICAT_INCLUDES := -I"$(APPLICAT_DIR)" -I"$(GEMUT_DIR)" -I"MagiC/APPS"
+APPLICAT_INCLUDES := -I"$(APPLICAT_DIR)" -I"$(GEMUT_DIR)" -I"$(TOS_ARGS_DIR)"
 MGVIEW_DIR := base/mgview/SRC
 MGVIEW_SOURCES := $(addprefix $(MGVIEW_DIR)/,MGVIEW.C WINDOWS.C MGWIND.C MEMCHAR2.C)
 MGVIEW_OBJECTS := $(patsubst $(MGVIEW_DIR)/%.C,$(BUILD_DIR)/mgview/%.o,$(MGVIEW_SOURCES))
@@ -48,7 +49,7 @@ MAGXDESK_OBJECTS := $(patsubst $(MAGXDESK_DIR)/%.C,$(MAGXDESK_OBJ_DIR)/%.o,$(MAG
 MGCOPY_ROOT := core/mgcopy
 MGCOPY_DIR := $(MGCOPY_ROOT)/SRC
 MGCOPY_GEMUT_DIR := $(GEMUT_DIR)
-MGCOPY_INCLUDES := -I"$(MGCOPY_DIR)" -I"MagiC/APPS" -I"$(MGCOPY_GEMUT_DIR)"
+MGCOPY_INCLUDES := -I"$(MGCOPY_DIR)" -I"$(MGCOPY_GEMUT_DIR)"
 MGCOPY_SOURCES := $(addprefix $(MGCOPY_DIR)/,MGCOPY.C CPFILES.C BEG_DIAL.C DAT_DIAL.C)
 MGCOPY_OBJ_DIR := $(BUILD_DIR)/base/mgcopy/obj
 MGCOPY_OBJECTS := $(patsubst $(MGCOPY_DIR)/%.C,$(MGCOPY_OBJ_DIR)/%.o,$(MGCOPY_SOURCES)) \
@@ -400,9 +401,9 @@ $(BUILD_DIR)/mcmd/NEOSTART.PRG: $(MCMD_ROOT)/tests/NEOSTART.C Makefile.apps
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
 
-$(BUILD_DIR)/mcmd/CHILD.TTP: $(MCMD_ROOT)/tests/CHILD.C MagiC/APPS/TOS_ARGS.H Makefile.apps
+$(BUILD_DIR)/mcmd/CHILD.TTP: $(MCMD_ROOT)/tests/CHILD.C $(TOS_ARGS_DIR)/TOS_ARGS.H Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"MagiC/APPS" -MMD -MP \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(TOS_ARGS_DIR)" -MMD -MP \
 	  -MF "$(@:.TTP=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
 MAGXCONF_DIR := MagiC/APPS/MAGXCONF/SRC
@@ -511,7 +512,7 @@ mod-app-test-driver: $(BUILD_DIR)/mod-app/NEOSTEST.PRG
 
 $(COPS_OBJECT_DIR)/%.o: $(COPS_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(COPS_DIR)" -I"MagiC/APPS" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(COPS_DIR)" -I"$(TOS_ARGS_DIR)" \
 	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(COPS_ASM_NORMALIZED): $(COPS_DIR)/CLEARCPU.S $(MAS_NORMALIZER) Makefile.apps
@@ -545,7 +546,7 @@ $(BUILD_DIR)/applicat/APPLICAT.APP: $(APPLICAT_OBJECTS) Makefile.apps
 
 $(BUILD_DIR)/mgview/%.o: $(MGVIEW_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGVIEW_DIR)" -I"MagiC/APPS" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGVIEW_DIR)" -I"$(TOS_ARGS_DIR)" \
 	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/mgview/MGVIEW.APP: $(MGVIEW_OBJECTS) Makefile.apps
@@ -568,10 +569,10 @@ $(BUILD_DIR)/magxdesk/MAGXDESL.RSC: $(MAGXDESK_DIR)/MAGXDESL.RSC
 	cp "$<" "$@"
 abi-check: $(BUILD_DIR)/abi-check/ABI_CHECK.o
 
-$(BUILD_DIR)/abi-check/ABI_CHECK.o: MagiC/APPS/ABI_CHECK.C Makefile.apps
+$(BUILD_DIR)/abi-check/ABI_CHECK.o: scripts/testdata/ABI_CHECK.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGVIEW_DIR)" \
-	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.dep" -x c -c "$<" -o "$@"
 
 .PHONY: showfree crashdmp memexamn magxkern
 showfree: $(BUILD_DIR)/showfree/SHOWFREE.TOS
@@ -774,7 +775,7 @@ $(BUILD_DIR)/mod-app/NEOSTEST.PRG: base/mod-app/tests/NEOSTEST.C Makefile.apps
 
 $(BUILD_DIR)/mod-app/MOD_APP.TTP: base/mod-app/MOD_APP.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"MagiC/APPS" -MMD -MP -MF "$@.d" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(TOS_ARGS_DIR)" -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
 $(BUILD_DIR)/cmdline/CMDLINE.PRG: MagiC/TOOLS/CMDLINE/SRC/CMDLINE.C Makefile.apps
@@ -1131,7 +1132,7 @@ mgedit: $(BUILD_DIR)/mgedit/MGEDIT.APP $(BUILD_DIR)/mgedit/mgedit.rsc \
 
 $(MGEDIT_OBJ_DIR)/%.o: $(MGEDIT_DIR)/%.C Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGEDIT_DIR)" -I"MagiC/APPS" \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(MGEDIT_DIR)" -I"$(TOS_ARGS_DIR)" \
 	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/mgedit/MGEDIT.APP: $(MGEDIT_OBJECTS) Makefile.apps
@@ -1157,7 +1158,8 @@ $(BUILD_DIR)/mgedit/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 -include $(addsuffix .d,$(MGNOTICE_OBJECTS))
 -include $(addsuffix .d,$(GEMUT_OBJECT))
 -include $(MGNOTICE_NEOSTART_D)
--include $(BUILD_DIR)/abi-check/ABI_CHECK.o.d
+# Bypass stale .o.d files that name the probe's old source path.
+-include $(BUILD_DIR)/abi-check/ABI_CHECK.o.dep
 -include $(BUILD_DIR)/console/RUNARG.d
 -include $(BUILD_DIR)/mac2st/MAC2ST.d
 -include $(BUILD_DIR)/dump/DUMP.d

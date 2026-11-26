@@ -105,7 +105,7 @@ Verify literal bytes in the compiled output separately when changing encoding.
 split a double-quoted path in a raw TOS command tail when the tail began with an
 ordinary option. Original PCMXSTRT handled it. See the
 [upstream parser](https://github.com/freemint/mintlib/blob/master/mintlib/crtinit.c).
-MOD_APP and APPLICAT share `MagiC/APPS/TOS_ARGS.H`, preserving single/double
+MOD_APP and APPLICAT share `shared/tos-args/TOS_ARGS.H`, preserving single/double
 quotes and doubled apostrophes in raw tails while retaining MiNTLib's parsed
 ARGV vector for extended arguments. Storage belongs to each caller and lives
 through its `main`; no replacement CRT or heap allocation is needed. The
@@ -446,7 +446,7 @@ and the existing `calc_ic` possibly-uninitialized warning remain.
 The original PRJ identifies three C modules, a register-ABI assembly delimiter
 scanner and GEM utilities. The GCC build uses those C modules, public GEMlib,
 local workstation/top-window operations and a bounded C `memchr2` instead of
-linking Pure C objects. Raw-tail quoting reuses `MagiC/APPS/TOS_ARGS.H` while
+linking Pure C objects. Raw-tail quoting reuses `shared/tos-args/TOS_ARGS.H` while
 retaining true ARGV startup. Edited source is UTF-8; displayed file bytes remain
 Atari bytes, not host Unicode text.
 
@@ -1186,7 +1186,7 @@ disk errors and other machine/video configurations are outside this scenario.
 The DE/EN/FR standalone checks passed under NeoST 0.6.5/MagiC 6.20/TOS 2.06:
 each rebuilt program returned status 0, and all 16 captured guest files per
 language matched fixed expectations. Evidence:
-`build/atari/neost-mcmd-20261126-122547/`.
+`build/atari/neost-mcmd-20261126-152226/`.
 
 ## MAGXCONF program/accessory
 
