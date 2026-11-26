@@ -34,17 +34,20 @@ remain in the annotated tag `pre-magic-retirement` (commit `88eb5ee`, full
 `88eb5ee0cf5e8a4b8b11c62e688f0f7cc31beef1`): unported
 applications and tools, legacy libraries and includes, kernel build manifests,
 the pre-retirement `MagiC/Releases/MAGIC.A` installation tree and its release
-ZIPs. The tag is local until it is published; until then, use the commit hash
-as the portable identifier:
+ZIPs. The [published tag](https://github.com/nizmow/AKM/tree/pre-magic-retirement)
+also preserves the removed Pure C build objects, libraries and debug database
+at their original `base/`, `core/` and `kernel/` paths. The current builds
+regenerate their own objects; the DIS regression still ships its object fixtures.
 
 ```sh
-# Commit fallback and local-tag use:
+# Browse the historical tree by commit:
 git show 88eb5ee:MagiC/KERNEL/BUILD/ATARI/M.INP
 git ls-tree -r 88eb5ee -- MagiC/KERNEL/VDI/DRIVERS/OSD
 
-# Once the annotated tag is fetched:
+# Fetch the tag to browse or extract archived files:
 git fetch origin tag pre-magic-retirement
 git ls-tree -r pre-magic-retirement -- MagiC/APPS
+git show pre-magic-retirement:base/cops/SRC/COPS.PDB > COPS.PDB
 ```
 
 For AKM's build and porting work, see the [project roadmap](docs/ROADMAP.md)
