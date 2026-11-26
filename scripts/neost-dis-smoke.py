@@ -24,12 +24,12 @@ from neost_common import create_output, run
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
 COMPARE = ROOT / "scripts/neost-console-compare.py"
-DIS1_ARCHIVED = ROOT / "MagiC/TOOLS/DIS/BIN/DIS1.TTP"
+DIS1_ARCHIVED = ROOT / "base/dis/BIN/DIS1.TTP"
 DIS1_REBUILT = BUILD / "apps/dis1/DIS1.TTP"
-DIS2_ARCHIVED = ROOT / "MagiC/TOOLS/DIS/BIN/DIS2.TTP"
+DIS2_ARCHIVED = ROOT / "base/dis/BIN/DIS2.TTP"
 DIS2_REBUILT = BUILD / "apps/dis2/DIS2.TTP"
-TST = ROOT / "MagiC/TOOLS/DIS/TST"
-DRI_OBJECT = ROOT / "MagiC/LIB/PCMXSTRT/BIN/PCMXSTRT.O"
+TST = ROOT / "base/dis/TST"
+DRI_OBJECT = ROOT / "base/dis/tests/PCMXSTRT.O"
 
 
 @dataclass(frozen=True)

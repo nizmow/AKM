@@ -505,7 +505,7 @@ is taken after the driver returns to the desktop. Banners, usage and diagnostics
 remain a documented gap.
 
 - DIS1 on `T.PRG`, `U.PRG`, `T.O`, `-3 T.PRG`, a recognized DRI object
-  (`MagiC/LIB/PCMXSTRT/BIN/PCMXSTRT.O`) and no arguments.
+  (`base/dis/tests/PCMXSTRT.O`) and no arguments.
   `T.O` is a Pure C (`0x4efa`) object, not a DRI object.
 - DIS2 raw input (`-e`) with default, code/address/ASCII, 68030 and MAS/absolute
   output options, a hexadecimal range, signed 16-bit displacement and MOVEM

@@ -798,7 +798,7 @@ $(BUILD_DIR)/fc/FC.TTP: base/fc/SRC/FC.C Makefile.apps
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP -MF "$@.d" \
 	  -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
-DIS_DIR := MagiC/TOOLS/DIS/SRC
+DIS_DIR := base/dis/SRC
 DIS1_SOURCES := $(addprefix $(DIS_DIR)/DIS1/,DIS1.C DEC.C SHELSORT.C)
 DIS1_OBJECTS := $(patsubst $(DIS_DIR)/DIS1/%.C,$(BUILD_DIR)/dis1/%.o,$(DIS1_SOURCES))
 DIS2_SOURCES := $(addprefix $(DIS_DIR)/DIS2/,DIS2.C DIS.C DISASS.C)
@@ -807,7 +807,7 @@ DIS2_OBJECTS := $(patsubst $(DIS_DIR)/DIS2/%.C,$(BUILD_DIR)/dis2/%.o,$(DIS2_SOUR
 $(BUILD_DIR)/dis1/%.o: $(DIS_DIR)/DIS1/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(DIS_DIR)" \
-	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.dep" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/dis1/DIS1.TTP: $(DIS1_OBJECTS) Makefile.apps
 	$(CC) $(APP_FLAGS) $(DIS1_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS)
@@ -815,7 +815,7 @@ $(BUILD_DIR)/dis1/DIS1.TTP: $(DIS1_OBJECTS) Makefile.apps
 $(BUILD_DIR)/dis2/%.o: $(DIS_DIR)/DIS2/%.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(DIS_DIR)" \
-	  -MMD -MP -MF "$@.d" -x c -c "$<" -o "$@"
+	  -MMD -MP -MF "$@.dep" -x c -c "$<" -o "$@"
 
 $(BUILD_DIR)/dis2/DIS2.TTP: $(DIS2_OBJECTS) Makefile.apps
 	$(CC) $(APP_FLAGS) $(DIS2_OBJECTS) $(LDFLAGS) -o "$@" $(LDLIBS)
@@ -1165,5 +1165,5 @@ $(BUILD_DIR)/mgedit/EDITOBJC.SLB: $(BUILD_DIR)/edit-slb/EDITOBJC.SLB
 -include $(BUILD_DIR)/dump/DUMP.TTP.d
 -include $(BUILD_DIR)/fc/FC.TTP.d
 -include $(BUILD_DIR)/split/SPLIT.TTP.d
--include $(addsuffix .d,$(DIS1_OBJECTS))
--include $(addsuffix .d,$(DIS2_OBJECTS))
+-include $(addsuffix .dep,$(DIS1_OBJECTS))
+-include $(addsuffix .dep,$(DIS2_OBJECTS))

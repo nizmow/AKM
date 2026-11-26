@@ -1313,7 +1313,7 @@ retained unchanged. Evidence:
 ## DIS1/DIS2
 
 `mise run apps -- dis` builds `build/atari/apps/dis1/DIS1.TTP` and
-`build/atari/apps/dis2/DIS2.TTP` from `MagiC/TOOLS/DIS/SRC`. The Atari ST
+`build/atari/apps/dis2/DIS2.TTP` from `base/dis/SRC`. The Atari ST
 sources were decoded to canonical UTF-8; runtime banner bytes were replaced
 with explicit octal escapes (`\277` for `™`, `\275` for `©`, `\236` for `ß`).
 Comments may remain UTF-8; execution strings must not.
@@ -1355,7 +1355,7 @@ only the driver's `STATUS` line, and the post-exit screenshot is the desktop.
 Banners, usage and diagnostics therefore remain outside the automated check.
 Raw `-e`, code/address/ASCII comments, 68030, MAS output, range, signed-word
 and MOVEM edge cases, error cases and a recognized DRI object are covered.
-The object fixture is `MagiC/LIB/PCMXSTRT/BIN/PCMXSTRT.O`; its archived DIS1
+The object fixture is `base/dis/tests/PCMXSTRT.O`; its archived DIS1
 workfiles and symbol table feed both DIS2 builds. `TST/T.O` is a Pure C
 (`0x4efa`) object and is not treated as a DRI object. Interactive usage, `-t`
 stdout capture and MagiC-kernel-specific behavior are not. Evidence:
