@@ -1197,7 +1197,7 @@ program and accessory files are identical copies: the original startup code
 detects the mode from the basepage parent pointer. Do not invent a separate
 compile-time accessory ABI or confuse these outputs with `MAGXCONF.CPX`.
 
-The source includes the existing `MagiC/INC_AS/{OSBIND,AESBIND,MAGIX}.INC`.
+The source includes the existing `shared/asm/{OSBIND,AESBIND,MAGIX}.INC`.
 The shared MAS normalizer and VASM's native TOS writer replace the old tool
 chain. Canonical `MAGXCONF.S` is UTF-8; `--atari-strings` restores Atari bytes
 inside assembly literals, and `-noesc` retains literal backslashes. COUNTRY
@@ -1248,7 +1248,7 @@ All DE/EN/FR program and accessory lifecycle comparisons passed under NeoST
 states, unchanged masks after Cancel, isolated bit changes after OK/Save,
 four-byte-only executable modifications, and saved-mask restoration after each
 accessory reboot. Full captures retain the caption-revision differences.
-Evidence: `build/atari/neost-magxconf-20261121-110743/`.
+Evidence: `build/atari/neost-magxconf-20261126-153748/`.
 
 ## MAGXCONF.CPX
 
@@ -1627,7 +1627,7 @@ them at boot; no MagiC image or live keyboard driver is involved.
 
 `mise run apps -- hardcopy` assembles `build/atari/apps/hardcopy/HARDCOPY.PRG`
 from `MagiC/KERNEL/XTENSION/HARDCOPY.S` (normalized with `mas_to_vasm.py`) and
-the shared `MagiC/INC_AS/OSBIND.INC`, using VASM `-Ftos -tos-flags=1`. The
+the shared `shared/asm/OSBIND.INC`, using VASM `-Ftos -tos-flags=1`. The
 archived `MagiC/KERNEL/XTENSION/HARDCOPY.PRG` and the Release
 `MagiC/Releases/MAGIC.A/EXTRAS/HARDCOPY.PRG` are byte-identical references.
 `mise run apps -- hardcopy-test-driver` builds `HCPROBE.PRG`, which reads
@@ -1661,7 +1661,7 @@ unverified.
 `mise run apps -- magxboot` assembles `MAGXBOOT.TOS`, `MAGXBOOT.PRG` and the
 `OUTSIDE` variant `MAGXBO32.PRG` under `build/atari/apps/magxboot/` from
 `core/magxboot/SRC/MAGXBOOT.S`, normalized with `mas_to_vasm.py --atari-strings`, and the shared
-`MagiC/INC_AS/OSBIND.INC`. `OUTSIDE`, `RESIDENT` and `MODIFY` come from the
+`shared/asm/OSBIND.INC`. `OUTSIDE`, `RESIDENT` and `MODIFY` come from the
 source; the recipe passes `OUTSIDE` only for the `MAGXBO32` variant, whose
 32-KB page alignment and virtual-memory title lines are guarded by an `IFND`
 default so an unparameterized assembly still works. The shipped

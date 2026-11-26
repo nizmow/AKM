@@ -9,15 +9,17 @@ import struct
 import sys
 import tempfile
 
+SOURCE = Path(__file__).resolve().parents[1]
+ROOT = SOURCE.parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+
 from neost_common import acquire_headless, create_output, require, run
 from neost_host import NeoSTHost
 from neost_image import MagiCImage
 from neost_screen import diff_stats
 
-ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
 APPS = BUILD / "apps/magxconf"
-SOURCE = ROOT / "MagiC/APPS/MAGXCONF"
 ARCHIVES = {"de": SOURCE / "BIN/GER/MAGXCONF.ACC",
             "en": SOURCE / "BIN/US/MAGXCONF.ACC",
             "fr": SOURCE / "BIN/FRA/MAGXCONF.PRG"}

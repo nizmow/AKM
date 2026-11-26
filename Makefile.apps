@@ -336,7 +336,7 @@ $(MAGXBOOT_SRC)/MAGXBOOT.S: $(MAGXBOOT_DIR)/MAGXBOOT.S $(MAS_NORMALIZER) \
   scripts/atari-text/atari-utf8.c Makefile.apps
 	python3 $(MAS_NORMALIZER) --atari-strings "$<" "$@"
 
-$(MAGXBOOT_SRC)/OSBIND.INC: MagiC/INC_AS/OSBIND.INC $(MAS_NORMALIZER) Makefile.apps
+$(MAGXBOOT_SRC)/OSBIND.INC: shared/asm/OSBIND.INC $(MAS_NORMALIZER) Makefile.apps
 	python3 $(MAS_NORMALIZER) "$<" "$@"
 
 $(BUILD_DIR)/magxboot/MAGXBO32.PRG: MAGXBOOT_OUTSIDE := 1
@@ -361,7 +361,7 @@ $(HARDCOPY_SRC)/HARDCOPY.S: $(HARDCOPY_DIR)/HARDCOPY.S $(MAS_NORMALIZER) Makefil
 	mkdir -p "$(@D)"
 	python3 $(MAS_NORMALIZER) "$<" "$@"
 
-$(HARDCOPY_SRC)/OSBIND.INC: MagiC/INC_AS/OSBIND.INC $(MAS_NORMALIZER) Makefile.apps
+$(HARDCOPY_SRC)/OSBIND.INC: shared/asm/OSBIND.INC $(MAS_NORMALIZER) Makefile.apps
 	mkdir -p "$(@D)"
 	python3 $(MAS_NORMALIZER) "$<" "$@"
 
@@ -406,7 +406,7 @@ $(BUILD_DIR)/mcmd/CHILD.TTP: $(MCMD_ROOT)/tests/CHILD.C $(TOS_ARGS_DIR)/TOS_ARGS
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(TOS_ARGS_DIR)" -MMD -MP \
 	  -MF "$(@:.TTP=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
-MAGXCONF_DIR := MagiC/APPS/MAGXCONF/SRC
+MAGXCONF_DIR := base/magxconf/SRC
 MAGXCONF_LANG ?= de
 MAGXCONF_INCLUDES := OSBIND.INC AESBIND.INC MAGIX.INC
 MAGXCONF_NORMALIZED := $(addprefix $(BUILD_DIR)/magxconf/src/,$(MAGXCONF_INCLUDES)) \
@@ -419,7 +419,7 @@ magxconf-languages: $(foreach lang,de en fr,$(BUILD_DIR)/magxconf/$(lang)/MAGXCO
   $(BUILD_DIR)/magxconf/$(lang)/MAGXCONF.ACC)
 magxconf-test-driver: $(BUILD_DIR)/magxconf/NEOSTART.PRG
 
-$(BUILD_DIR)/magxconf/src/%.INC: MagiC/INC_AS/%.INC $(MAS_NORMALIZER) Makefile.apps
+$(BUILD_DIR)/magxconf/src/%.INC: shared/asm/%.INC $(MAS_NORMALIZER) Makefile.apps
 	python3 $(MAS_NORMALIZER) --atari-strings "$<" "$@"
 
 $(BUILD_DIR)/magxconf/src/MAGXCONF.S: $(MAGXCONF_DIR)/MAGXCONF.S $(MAS_NORMALIZER) Makefile.apps
@@ -436,7 +436,7 @@ $(BUILD_DIR)/magxconf/%/MAGXCONF.PRG: $(MAGXCONF_NORMALIZED) Makefile.apps
 $(BUILD_DIR)/magxconf/%/MAGXCONF.ACC: $(BUILD_DIR)/magxconf/%/MAGXCONF.PRG
 	cp "$<" "$@"
 
-$(BUILD_DIR)/magxconf/NEOSTART.PRG: MagiC/APPS/MAGXCONF/TESTDATA/NEOSTART.C Makefile.apps
+$(BUILD_DIR)/magxconf/NEOSTART.PRG: base/magxconf/tests/NEOSTART.C Makefile.apps
 	mkdir -p "$(@D)"
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem

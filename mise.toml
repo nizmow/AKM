@@ -166,7 +166,7 @@ run = "python3 core/mcmd/tests/neost-mcmd-smoke.py"
 [tasks."test:magxconf-neost"]
 description = "Compare localized MAGXCONF PRG/ACC dialog and saved configuration under MagiC"
 dir = "{{ config_root }}"
-run = "python3 scripts/neost-magxconf-smoke.py"
+run = "python3 base/magxconf/tests/neost-magxconf-smoke.py"
 
 [tasks."test:tslice-cpx-neost"]
 description = "Compare archived and rebuilt TSLICE.CPX dialog under MagiC"
