@@ -22,6 +22,10 @@ locally without switching branches:
 git fetch origin tag original-import
 git ls-tree -r original-import -- KAOS NON-TOS
 ```
+The tag also preserves MAGXDESK v4, MGNOTICE v1, the Mac-integrated MGEDIT7,
+and the old CMD source. For example, list the archived MAGXDESK v4 files with
+`git ls-tree -r original-import -- MagiC/APPS/MAGICDESK/MAGXDESK.4`.
+
 
 For AKM's build and porting work, see the [project roadmap](docs/ROADMAP.md)
 and the [Atari porting guide](docs/porting/README.md).

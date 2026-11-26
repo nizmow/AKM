@@ -16,5 +16,6 @@ Instead of being monolithical, it uses various auxiliary programs:
 - MCMD for command lines
 - VT52 for text based programs
 
-There is version 4 and version 5 of this application, version 5 is the lastest one which is also used for MagiC 6 and in all emulators.
+Version 5 is used by MagiC 6; its active source is in core/magxdesk.
+Version 4 is preserved in the original-import tag.
 The application is localised in German, French and English

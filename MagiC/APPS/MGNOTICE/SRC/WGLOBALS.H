@@ -1,1 +1,0 @@
-#define NWINDOWS 64
