@@ -122,7 +122,8 @@ def scan():
         if source is None:
             continue
         output = next((token for token in tokens
-                       if not token.startswith(("MagiC/", "scripts/"))), cells[0])
+                       if not token.startswith(("scripts/", "base/", "core/",
+                                                 "kernel/", "release/", "shared/"))), cells[0])
         description = cells[-1]
         status = cells[0] if section.startswith(("1.", "4.", "5.")) else section
         if section.startswith("2."):

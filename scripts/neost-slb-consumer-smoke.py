@@ -26,11 +26,11 @@ from neost_host import NeoSTHost
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
-ARCHIVE = ROOT / "MagiC/Releases/MAGIC.A/GEMSYS/MAGIC/XTENSION"
+ARCHIVE = ROOT / "scripts/testdata/release"
 ARCHIVE_XP = ROOT / "base/xp-rastr/BIN/XP_RASTR.SLB"
 ARCHIVE_LOAD = ARCHIVE / "LOAD_IMG.SLB"
 SOURCE_LOAD = ROOT / "base/load-img/BIN/LOAD_IMG.SLB"
-PAT6 = ROOT / "MagiC/Releases/MAGIC.A/GEMSYS/GEMDESK/PAT/16/PAT6.IMG"
+PAT6 = ROOT / "release/atari/GEMSYS/GEMDESK/PAT/16/PAT6.IMG"
 XP = BUILD / "apps/xp-rastr/XP_RASTR.SLB"
 LOAD = BUILD / "apps/load-img/LOAD_IMG.SLB"
 PROBE = BUILD / "apps/slbtest/SLBTEST.PRG"

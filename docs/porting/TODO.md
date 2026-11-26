@@ -21,7 +21,7 @@ here or interpret an unchecked item as a missing stub to manufacture.
    `test:release-minimal-neost` verifies a clean install and MAGXDESK startup
    against a missing-desktop control.
 4. **Use manifest gaps for the next core port.** PDLG, CHGRES and other
-   retained files remain binary-only; choose the next source target from
+   binary-only components remain unbuilt; choose the next source target from
    installed components whose rebuild is needed, not from unbuilt catalogue
    count. Keep optional demos, Mac/TT/Falcon variants and legacy mutators out of
    the default profile.
@@ -196,22 +196,22 @@ framework or shared-library rewrite is required before these are attempted.
   booted frames match pixel-for-pixel.
 - [x] **XP_RASTR.SLB / LOAD_IMG.SLB** — independent builds with version-1
   packed C export records. Four-plane conversion and XIMG rendering match the
-  source-tree archives. The shipped Release XIMG colours differ; see porting notes.
+  source-tree archives. The retained Release reference XIMG colours differ; see porting notes.
 - [x] **OFF002.OSD** — VASM build matches the archived V4.10 MIN-ATAR binary
   byte-for-byte; NVDI selects it for a 1-plane offscreen bitmap and draws into
-  the caller-owned MFDB. Release V4.11 remains a different, unported version.
+  the caller-owned MFDB. The retained Release reference V4.11 remains a different, unported version.
 - [x] **OFF004IP.OSD** — VASM build matches the archived V4.10 MIN-ATAR binary
   byte-for-byte with `-no-opt`; archive and rebuild draw into a 2-plane
   interleaved MFDB with identical pixel readbacks and bitmap bytes, asserted
-  independently. Release V4.11 remains a different, unported version.
+  independently. The retained Release reference V4.11 remains a different, unported version.
 - [x] **OFF016IP.OSD** — VASM build matches the archived V4.10 MIN-ATAR binary
   byte-for-byte with `-no-opt`; archive and rebuild render a 4-plane interleaved
   MFDB with identical pixel readbacks and bitmap bytes, and a driver-less clone
-  rejects the open. The shipped Release is a different build and remains
+  rejects the open. The retained Release reference is a different build and remains
   unported.
 - [x] **OFF256IP.OSD** — VASM build matches the archived V4.10 MIN-ATAR binary
   byte-for-byte with `-no-opt` after folding the zero-displacement colour-map
-  load; the Release copy is the same binary. Archive and rebuild render an
+  load; the retained Release reference is the same binary. Archive and rebuild render an
   8-plane interleaved MFDB with identical pixel readbacks and 4096-byte bitmap
   bytes, asserted independently, and a driver-less clone rejects the open.
 - [x] **OSD phase 2** — `OFF016PK`, `OFF256PK`, `OFF32KFL`, `OFF32KPK`,

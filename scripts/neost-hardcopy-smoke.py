@@ -26,7 +26,7 @@ from neost_screen import diff_stats, read_ppm
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
 ARCHIVE = ROOT / "base/hardcopy/HARDCOPY.PRG"
-RELEASE = ROOT / "MagiC/Releases/MAGIC.A/EXTRAS/HARDCOPY.PRG"
+RELEASE = ROOT / "scripts/testdata/release/HARDCOPY.PRG"
 REBUILT = BUILD / "apps/hardcopy/HARDCOPY.PRG"
 PROBE = BUILD / "apps/hardcopy/HCPROBE.PRG"
 LOADER_GUEST = "::/GEMSYS/MAGIC/HCP/HARDCOPY.PRG"
