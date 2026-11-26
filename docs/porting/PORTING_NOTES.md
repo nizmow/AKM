@@ -1167,12 +1167,11 @@ localized runtime encoding. Generated includes are flattened into the isolated
 build directory; the canonical assembly sources are not rewritten.
 
 `mise run test:mcmd-neost` uses a delayed Pexec driver, a batch fixture and a
-source-built child program on separate MagiC image clones for each language
-and executable. It asserts quoting/expansion, input/output and append
-redirection, copy/rename/delete/mkdir/rmdir effects, conditional/GOTO execution,
-child environment/stdin/stdout, an errorlevel branch, and shell return status.
-It also compares all captured result files byte-for-byte against the archive.
-The original image is never modified.
+source-built child program on a separate MagiC image clone for each rebuilt
+language. It asserts quoting/expansion, input/output and append redirection,
+copy/rename/delete/mkdir/rmdir effects, conditional/GOTO execution, child
+environment/stdin/stdout, an errorlevel branch, and shell return status against
+fixed expectations. The original image is never modified.
 
 Preserve these observed legacy behaviors rather than quietly modernizing them
 as part of the assembler port: grouping quotes are removed before forming an
@@ -1184,10 +1183,10 @@ when its branch is not taken.
 Interactive line editing, pipes, long filenames, startup AUTOEXEC/BOOT files,
 disk errors and other machine/video configurations are outside this scenario.
 
-The DE/EN/FR comparisons passed under NeoST 0.6.5/MagiC 6.20/TOS 2.06:
-both programs returned status 0, and all 16 captured guest files per language
-matched (48 byte-identical pairs). Evidence:
-`build/atari/neost-mcmd-20261121-103027/`.
+The DE/EN/FR standalone checks passed under NeoST 0.6.5/MagiC 6.20/TOS 2.06:
+each rebuilt program returned status 0, and all 16 captured guest files per
+language matched fixed expectations. Evidence:
+`build/atari/neost-mcmd-20261126-122547/`.
 
 ## MAGXCONF program/accessory
 

@@ -159,7 +159,7 @@ dir = "{{ config_root }}"
 run = "python3 core/magxdesk/tests/neost-magxdesk-smoke.py"
 
 [tasks."test:mcmd-neost"]
-description = "Compare localized MCMD command execution under NeoST/MagiC"
+description = "Verify localized MCMD command execution under NeoST/MagiC"
 dir = "{{ config_root }}"
 run = "python3 core/mcmd/tests/neost-mcmd-smoke.py"
 

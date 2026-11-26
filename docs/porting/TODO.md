@@ -168,7 +168,7 @@ framework or shared-library rewrite is required before these are attempted.
   ABI. `mise run test:vt52-neost` launches a delayed TOS child and compares the
   archived/rebuilt terminal screens pixel-for-pixel. Interactive input remains untested.
 - [x] **MAGXDESK version 5** — source-built `magxdesk` target; `mise run test:magxdesk-neost` reaches the desktop on cloned MagiC images and compares the desktop content pixel-for-pixel. Corrected the 18-byte APPLICAT record layout and retained relocated icon-cache pointers by removing an unsafe post-relocation `realloc`. Version 4 is out of scope.
-- [x] **MCMD** — independent VASM `mcmd`/`mcmd-languages` targets produce DE/EN/FR `MCMD.TOS` outputs. `test:mcmd-neost` verifies batch execution on cloned MagiC images: child statuses and 16 captured guest files per language match the archives. Retained legacy quoting/directory behavior and remaining paths are documented in porting notes.
+- [x] **MCMD** — independent VASM `mcmd`/`mcmd-languages` targets produce DE/EN/FR `MCMD.TOS` outputs. `test:mcmd-neost` verifies batch execution on cloned MagiC images: child statuses and 16 captured guest files per language against fixed expectations. Retained legacy quoting/directory behavior and remaining paths are documented in porting notes.
 - [x] **DIS1/DIS2** — independent `dis1`/`dis2` targets build the two-pass
   disassembler from the Atari ST sources converted to UTF-8. GEMDOS headers and
   symbol records use fixed-width fields, and machine words are `int16_t` under

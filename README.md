@@ -302,8 +302,8 @@ the desktop content matches pixel-for-pixel. Version 4 remains separate.
 as `build/atari/apps/mcmd/de/MCMD.TOS`. Select `MCMD_LANG=en` or `MCMD_LANG=fr`,
 or build all three with `mise run apps -- mcmd-languages`. VASM emits the TOS
 executable directly from normalized assembly; no archived MAS/ALN tools or
-objects are used. `mise run test:mcmd-neost` compares batch execution and guest
-file effects against the localized archives on cloned MagiC images.
+objects are used. `mise run test:mcmd-neost` verifies batch execution and guest
+file effects for each language on cloned MagiC images.
 
 `mise run apps -- magxconf` builds German `MAGXCONF.PRG` and `MAGXCONF.ACC`
 in `build/atari/apps/magxconf/de/`. Select `MAGXCONF_LANG=en` or `fr`, or use
