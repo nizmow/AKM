@@ -36,25 +36,25 @@ GEMDOS drive configuration is needed for those scenarios.
 
 `mise run test:console-tools-neost` builds `MAC2ST.TTP`, `DUMP.TTP`, `FC.TTP`,
 `SPLIT.TTP` and the generic Pexec driver, then runs
-`scripts/neost-console-tools-smoke.py`. Every case gives the archived and rebuilt
-binary the same disposable `C:` fixture and checks the case's declared child
-status and generated guest outputs, plus console output. Fixture inputs are not
-counted as outputs. Missing-file cases declare the tools' intentional
+`scripts/neost-console-tools-smoke.py`. Each case runs only the rebuilt tool
+in a disposable `C:` tree and checks its declared child status, normalized
+console output, and exact set and contents of generated files. Fixture inputs
+are not counted as outputs. Missing-file cases declare the tools' intentional
 `Pterm(ENOENT)` status 65503; a negative Pexec loader status fails the case.
 
 Cases cover:
 
-- MAC2ST CR-to-CRLF console filtering.
+- MAC2ST CR expansion, including the original LF retained in CRLF input.
 - DUMP default and `-c` C-source output.
-- FC equal, differing, WORD (`-w`) and LONG (`-l`) comparisons.
+- FC equal files and unequal-length rejection with default, WORD (`-w`) and
+  LONG (`-l`) options. These cases do not exercise word/long mismatch formatting.
 - SPLIT at an explicit hexadecimal boundary with two named output files.
 - Missing-file status and console behavior for all four tools.
 
 The runner uses NeoST's bundled EmuTOS by default and does not require `mtools`.
-It uses a fresh artifact directory, isolated guest trees, and the generic
-`scripts/neost-console-compare.py` case runner. It does not exercise interactive
-FC input, directory/case-insensitive variants, MagiC-kernel behavior or
-long-term stability.
+It uses a fresh artifact directory and the shared `scripts/neost_console.py`
+Pexec harness. It does not exercise interactive FC input, directory or
+case-insensitive variants, MagiC-kernel behavior, or long-term stability.
 
 ## NeoST: MGCLOCK desktop clock and MagiC coexistence
 

@@ -12,9 +12,9 @@ are not removal candidates.
 
 | Decision | Paths | Action |
 |---|---:|---|
-| Archive | 23 | No live consumer. Exact copies remain in `pre-magic-retirement`; the 22-path deletion and CRASHDMP conversion are on this branch. |
+| Archive | 27 | No live consumer. Exact copies remain in `pre-magic-retirement`. |
 | Keep | 55 | Active input, or explicitly retained compatibility, corpus, or unfinished-port reference. |
-| Replace → archive | 20 | Still read by a runner. Preserve the relevant assertions or provenance before removing it in a separate test change. |
+| Replace → archive | 16 | Still read by a runner. Preserve the relevant assertions or provenance before removing it in a separate test change. |
 
 ## Consumer boundaries
 
@@ -66,10 +66,10 @@ git show "pre-magic-retirement:$archived_path" > "$destination"
 | `base/dis/TST/U.PRG` | Keep | `neost-dis-smoke.py`: input corpus, not a comparison executable. | Same path |
 | `base/dis/TST/X.PRG` | Keep | Manual DIS corpus: documented `dis2 -t x.prg` example, not a case in the current runner. | Same path |
 | `base/dis/tests/PCMXSTRT.O` | Keep | `neost-dis-smoke.py`: input corpus, not a comparison executable. | Same path |
-| `base/dump/BIN/DUMP.TTP` | Replace → archive | `neost-console-tools-smoke.py`: fixed inputs and statuses already exist. Derive output from the command contract (CRLF filtering, dump modes, compare offsets/values, split bytes); do not drop console or file-content checks. | Same path |
+| `base/dump/BIN/DUMP.TTP` | Archive | Standalone console regression checks explicit default and C-source output, child status and missing-file behavior. | Same path |
 | `base/edit-slb/tests/EDITOBJC.SLB` | Keep | `neost-mgnotice-smoke.py`: legacy editor dependency for the archived MGNOTICE run, not a standalone editor oracle. | `base/edit-slb/BIN/EDITOBJC.SLB` |
 | `base/edit-slb/TST_APP/EDIT/EDIT.PRG` | Keep | Reference executable for the separate, still-unported EDIT demonstration. No active build or runner consumes it. | Same path |
-| `base/fc/BIN/FC.TTP` | Replace → archive | `neost-console-tools-smoke.py`: fixed inputs and statuses already exist. Derive output from the command contract (CRLF filtering, dump modes, compare offsets/values, split bytes); do not drop console or file-content checks. | Same path |
+| `base/fc/BIN/FC.TTP` | Archive | Standalone console regression checks equal-file and unequal-length output, child status and missing-file behavior. | Same path |
 | `base/flp-par/BIN/FLP_PAR0.PRG` | Archive | Modern target produces its own executable; no checked-in binary consumer found. Past manual port comparisons are not active tests. | Same path |
 | `base/flp-par/BIN/FLP_PAR1.PRG` | Archive | Modern target produces its own executable; no checked-in binary consumer found. Past manual port comparisons are not active tests. | Same path |
 | `base/hardcopy/tests/HARDCOPY.PRG` | Keep | `neost-hardcopy-smoke.py`: hook checks are explicit, but screen equality and release identity still use this reference. | `base/hardcopy/HARDCOPY.PRG` |
@@ -81,7 +81,7 @@ git show "pre-magic-retirement:$archived_path" > "$destination"
 | `base/keyb-sys/tests/KEYB_US.PRG` | Keep | `neost-keyb-sys-smoke.py`: name/status/size checks are explicit; key and dead-key contents still use archive equality. | `base/keyb-sys/BIN/KEYB_US.PRG` |
 | `base/limitmem/BIN/LIMITMEM.TTP` | Replace → archive | `neost-limitmem-smoke.py`: fixed statuses and MAGX marker change/no-change cases. Finish standalone expectations for all touched files and meaningful console output. | Same path |
 | `base/load-img/tests/LOAD_IMG.SLB` | Keep | `neost-slb-consumer-smoke.py`: default `--baseline source` uses this library; default and release paths still compare observed IMG colours. | `base/load-img/BIN/LOAD_IMG.SLB` |
-| `base/mac2st/BIN/MAC2ST.TTP` | Replace → archive | `neost-console-tools-smoke.py`: fixed inputs and statuses already exist. Derive output from the command contract (CRLF filtering, dump modes, compare offsets/values, split bytes); do not drop console or file-content checks. | Same path |
+| `base/mac2st/BIN/MAC2ST.TTP` | Archive | Standalone console regression checks CR expansion, child status and missing-file behavior. | Same path |
 | `base/magxconf/tests/FRA/MAGXCONF.PRG` | Keep | `neost-magxconf-smoke.py`: localized comparison frames alongside explicit save/cancel/reboot checks. | `base/magxconf/BIN/FRA/MAGXCONF.PRG` |
 | `base/magxconf/tests/GER/MAGXCONF.ACC` | Keep | `neost-magxconf-smoke.py`: localized comparison frames alongside explicit save/cancel/reboot checks. | `base/magxconf/BIN/GER/MAGXCONF.ACC` |
 | `base/magxconf/tests/US/MAGXCONF.ACC` | Keep | `neost-magxconf-smoke.py`: localized comparison frames alongside explicit save/cancel/reboot checks. | `base/magxconf/BIN/US/MAGXCONF.ACC` |
@@ -107,7 +107,7 @@ git show "pre-magic-retirement:$archived_path" > "$destination"
 | `base/showfile/BIN/SHOWFILE.TTP` | Archive | Modern target produces its own executable; no checked-in binary consumer found. Past manual port comparisons are not active tests. | Same path |
 | `base/showfree/tests/SHOWFREE.TOS` | Keep | `neost-diagnostic-tools-smoke.py`: monitor assertions are independent, final screen equality is not. | `base/showfree/SHOWFREE.TOS` |
 | `base/shutdown/BIN/SHUTDOWN.PRG` | Archive | Modern target produces its own executable; no checked-in binary consumer found. Past manual port comparisons are not active tests. | Same path |
-| `base/split/BIN/SPLIT.TTP` | Replace → archive | `neost-console-tools-smoke.py`: fixed inputs and statuses already exist. Derive output from the command contract (CRLF filtering, dump modes, compare offsets/values, split bytes); do not drop console or file-content checks. | Same path |
+| `base/split/BIN/SPLIT.TTP` | Archive | Standalone console regression checks split file names and bytes, child status and missing-file behavior. | Same path |
 | `base/vfatconf/BIN/VFATCONF.PRG` | Archive | Modern target produces its own executable; no checked-in binary consumer found. Past manual port comparisons are not active tests. | Same path |
 | `base/vt52/tests/VT52.PRG` | Keep | `neost-vt52-smoke.py`: archive supplies terminal display comparison. | `base/vt52/BIN/VT52.PRG` |
 | `base/vt52/SRC/VT52/VT52.PRG` | Archive | Legacy copy; no live caller found. The current runner uses the separate reference path. | Same path |

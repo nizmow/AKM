@@ -153,8 +153,8 @@ framework or shared-library rewrite is required before these are attempted.
   Archived/rebuilt dialog and `*.ZZZ` result screens match on a cloned MagiC
   image, including a nested fixture directory.
 - [x] **MAC2ST, DUMP, FC, SPLIT** — add independent console targets using
-  MiNTLib public GEMDOS calls; `mise run test:console-tools-neost` compares
-  archived/rebuilt status, console output and guest files through NeoST.
+  MiNTLib public GEMDOS calls; `mise run test:console-tools-neost` checks the
+  rebuilt tools against explicit statuses, console output and file contents.
 - [x] **MGCOPY** — add `mgcopy` producing the application and German resource;
   compare archived/rebuilt copy, move, alias and delete effects, nested-tree
   copy/move and a D:→C: cross-drive move on cloned MagiC images. Confirm dialog,
