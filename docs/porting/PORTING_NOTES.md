@@ -182,12 +182,10 @@ diagnostics to descriptor 2 with a console fallback; FC and SPLIT retain the
 legacy `HDL_CON` (-1) handle so their observed missing-file output stays
 compatible.
 
-`mise run test:console-tools-neost` builds the tools and driver and compares
-archived/rebuilt status, console output and guest files under NeoST/EmuTOS.
-Cases cover MAC2ST filtering, DUMP default/`-c`, FC equal/differing/`-w`/`-l`,
-and SPLIT's named outputs. Evidence from the initial run is under
-`build/atari/neost-console-tools-final/`. Interactive FC input, MagiC-kernel behavior
-and unusual file/directory forms remain untested.
+`mise run test:console-tools-neost` checks the rebuilt tools under NeoST/EmuTOS
+against explicit child statuses, console text and SPLIT output bytes. The
+original port comparison is historical; the test no longer runs the archived
+binaries. See [TESTING.md](TESTING.md#neost-console-tools) for coverage limits.
 
 ### LIMITMEM
 

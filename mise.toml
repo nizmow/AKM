@@ -124,7 +124,7 @@ dir = "{{ config_root }}"
 run = "python3 base/vt52/tests/neost-vt52-smoke.py"
 
 [tasks."test:console-tools-neost"]
-description = "Compare archived and rebuilt MAC2ST, DUMP, FC and SPLIT under NeoST"
+description = "Check rebuilt MAC2ST, DUMP, FC and SPLIT against explicit expectations under NeoST"
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-console-tools-smoke.py"
 

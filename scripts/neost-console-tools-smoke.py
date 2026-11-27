@@ -1,38 +1,23 @@
 #!/usr/bin/env python3
-"""Compare archived and rebuilt MagiC console tools under NeoST.
-
-Each case runs both binaries through the generic Pexec driver, with identical
-fixtures, and compares console output and guest file hashes. Every case declares
-the child status and generated guest files it expects; fixture inputs are not
-counted as outputs. Missing argument files are intentional errors, so the tools
-exit through ``Pterm`` with ``ENOENT`` (0x0000ffdf = 65503) rather than failing
-to load.
-"""
+"""Check rebuilt console tools through Pexec against explicit guest results."""
 
 from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+from hashlib import sha256
 from pathlib import Path
 import sys
 import tempfile
 
-from neost_common import create_output, run
+from neost_common import acquire_headless, create_output, resolve_rom, run
+from neost_console import DEFAULT_DRIVER, copy_fixture, invoke, prepare
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
-COMPARE = ROOT / "scripts/neost-console-compare.py"
 
-TOOLS = {
-    "mac2st": (ROOT / "base/mac2st/BIN/MAC2ST.TTP",
-               BUILD / "apps/mac2st/MAC2ST.TTP"),
-    "dump": (ROOT / "base/dump/BIN/DUMP.TTP",
-             BUILD / "apps/dump/DUMP.TTP"),
-    "fc": (ROOT / "base/fc/BIN/FC.TTP",
-           BUILD / "apps/fc/FC.TTP"),
-    "split": (ROOT / "base/split/BIN/SPLIT.TTP",
-              BUILD / "apps/split/SPLIT.TTP"),
-}
+TOOLS = {name: BUILD / f"apps/{name}/{name.upper()}.TTP"
+         for name in ("mac2st", "dump", "fc", "split")}
 
 
 @dataclass(frozen=True)
@@ -41,29 +26,46 @@ class Case:
     tool: str
     tail: str
     status: int
-    outputs: tuple[str, ...]
+    console: str
     fixtures: tuple[str, ...]
+    outputs: tuple[tuple[str, bytes], ...] = ()
 
 
+# The harness normalizes console line endings and decodes Atari bytes as Latin-1.
+# MAC2ST expands CR even in CRLF input, leaving the original LF in place.
+FC_DIFFERENT_LENGTHS = ("Datei1:  DIFF-A.TXT\n"
+                        "                Datei2: DIFF-B.TXT\n\n"
+                        "Dateil\x84nge unterschiedlich\n")
 CASES = (
-    Case("mac2st", "mac2st", "MAC2ST.TXT", 0, (), ("MAC2ST.TXT",)),
-    Case("dump", "dump", "DUMP.TXT", 0, (), ("DUMP.TXT",)),
-    Case("dump-c", "dump", "-c DUMP.TXT", 0, (), ("DUMP.TXT",)),
-    Case("fc-equal", "fc", "EQUAL-A.TXT EQUAL-B.TXT", 0, (),
+    Case("mac2st", "mac2st", "MAC2ST.TXT", 0,
+         "Alpha line 1\n\nBeta line 2\n\nGamma line 3\n\n", ("MAC2ST.TXT",)),
+    Case("dump", "dump", "DUMP.TXT", 0,
+         " Datei: DUMP.TXT\n\n"
+         "000000  4865 6c6c 6f2c 2044 554d 5021 0a30 3132  Hello, DUMP!.012\n"
+         "000010  3334 3536 3738 3961 6263 6465 660a       3456789abcdef.\n",
+         ("DUMP.TXT",)),
+    Case("dump-c", "dump", "-c DUMP.TXT", 0,
+         "int  dump[] = {\n"
+         "0x4865,0x6c6c,0x6f2c,0x2044,0x554d,0x5021,0x0a30,0x3132,\n"
+         "0x3334,0x3536,0x3738,0x3961,0x6263,0x6465,0x660a\n};\n",
+         ("DUMP.TXT",)),
+    Case("fc-equal", "fc", "EQUAL-A.TXT EQUAL-B.TXT", 0,
+         "Datei1:  EQUAL-A.TXT\n                Datei2: EQUAL-B.TXT\n\n",
          ("EQUAL-A.TXT", "EQUAL-B.TXT")),
-    Case("fc-diff", "fc", "DIFF-A.TXT DIFF-B.TXT", 0, (),
-         ("DIFF-A.TXT", "DIFF-B.TXT")),
-    Case("fc-word", "fc", "-w DIFF-A.TXT DIFF-B.TXT", 0, (),
-         ("DIFF-A.TXT", "DIFF-B.TXT")),
-    Case("fc-long", "fc", "-l DIFF-A.TXT DIFF-B.TXT", 0, (),
-         ("DIFF-A.TXT", "DIFF-B.TXT")),
-    Case("split", "split", "-10 SPLIT.TXT OUT1.TXT OUT2.TXT", 0,
-         ("OUT1.TXT", "OUT2.TXT"), ("SPLIT.TXT",)),
-    # Missing argument files are intentional Pterm(-33) exits.
-    Case("mac2st-missing", "mac2st", "MISSING.TXT", 65503, (), ()),
-    Case("dump-missing", "dump", "MISSING.TXT", 65503, (), ()),
-    Case("fc-missing", "fc", "MISSING-A.TXT MISSING-B.TXT", 65503, (), ()),
-    Case("split-missing", "split", "MISSING.TXT OUT1.TXT OUT2.TXT", 65503, (), ()),
+    Case("fc-diff", "fc", "DIFF-A.TXT DIFF-B.TXT", 0,
+         FC_DIFFERENT_LENGTHS, ("DIFF-A.TXT", "DIFF-B.TXT")),
+    Case("fc-word", "fc", "-w DIFF-A.TXT DIFF-B.TXT", 0,
+         FC_DIFFERENT_LENGTHS, ("DIFF-A.TXT", "DIFF-B.TXT")),
+    Case("fc-long", "fc", "-l DIFF-A.TXT DIFF-B.TXT", 0,
+         FC_DIFFERENT_LENGTHS, ("DIFF-A.TXT", "DIFF-B.TXT")),
+    Case("split", "split", "-10 SPLIT.TXT OUT1.TXT OUT2.TXT", 0, "",
+         ("SPLIT.TXT",), (("OUT1.TXT", b"0123456789abcdef"),
+                          ("OUT2.TXT", b"ghijklmnopqrstuvwxyz\n"))),
+    # Missing argument files exit through Pterm(-33), with no console output.
+    Case("mac2st-missing", "mac2st", "MISSING.TXT", 65503, "", ()),
+    Case("dump-missing", "dump", "MISSING.TXT", 65503, "", ()),
+    Case("fc-missing", "fc", "MISSING-A.TXT MISSING-B.TXT", 65503, "", ()),
+    Case("split-missing", "split", "MISSING.TXT OUT1.TXT OUT2.TXT", 65503, "", ()),
 )
 
 
@@ -115,46 +117,41 @@ def main() -> int:
             print(build.stdout, file=sys.stderr)
             return build.returncode
 
-    missing = [str(path) for pair in TOOLS.values() for path in pair
+    missing = [str(path) for path in (*TOOLS.values(), DEFAULT_DRIVER)
                if not path.is_file()]
-    driver = BUILD / "apps/console/RUNARG.PRG"
-    if not driver.is_file():
-        missing.append(str(driver))
     if missing:
         print("missing build output: " + ", ".join(missing), file=sys.stderr)
         return 1
 
-    with tempfile.TemporaryDirectory(prefix="neost-console-tools-") as temporary:
-        fixtures = Path(temporary) / "fixtures"
-        make_fixtures(fixtures)
-        for case in CASES:
-            archived, rebuilt = TOOLS[case.tool]
-            command = [sys.executable, str(COMPARE),
-                       "--archived", str(archived),
-                       "--rebuilt", str(rebuilt),
-                       "--tail", case.tail,
-                       "--expect-status", str(case.status),
-                       "--compare", "all",
-                       "--frames", str(args.frames),
-                       "--timeout", str(args.timeout),
-                       "--output", str(output / case.name)]
-            for expected in case.outputs:
-                command.extend(["--expect-file", expected])
-            command.extend(["--neost", str(args.neost)])
-            if args.neost_headless:
-                command.extend(["--neost-headless", str(args.neost_headless)])
-            if args.rom:
-                command.extend(["--rom", str(args.rom)])
-            for fixture in case.fixtures:
-                command.extend(["--fixture", str(fixtures / fixture)])
-            result = run(command, cwd=ROOT, timeout=args.timeout + 120)
-            print(f"### {case.name}\n{result.stdout}", end="")
-            if result.returncode:
-                print(f"FAIL: {case.name}; evidence: {output / case.name}",
-                      file=sys.stderr)
-                return result.returncode
+    try:
+        with tempfile.TemporaryDirectory(prefix="neost-console-tools-") as temporary:
+            fixtures = Path(temporary) / "fixtures"
+            make_fixtures(fixtures)
+            headless, app_root = acquire_headless(args.neost_headless, args.neost,
+                                                  Path(temporary))
+            rom = resolve_rom(args.rom, app_root)
+            for case in CASES:
+                case_output = output / case.name
+                guest = case_output / "guest-rebuilt" / "C"
+                prepare(guest, TOOLS[case.tool], case.tail, DEFAULT_DRIVER)
+                inputs = set()
+                for fixture in case.fixtures:
+                    inputs.update(copy_fixture(fixtures / fixture, guest))
+                expected_files = {name: sha256(data).hexdigest()
+                                  for name, data in case.outputs}
+                status, console, files = invoke(
+                    headless, rom, guest, case_output, "rebuilt", args.frames,
+                    args.timeout, case.status, set(expected_files), inputs)
+                if console != case.console + f"STATUS {status}\n":
+                    raise RuntimeError(f"{case.name}: unexpected console output {console!r}")
+                if files != expected_files:
+                    raise RuntimeError(f"{case.name}: unexpected output bytes in {guest}")
+                print(f"{case.name}: PASS", flush=True)
+    except (OSError, RuntimeError) as error:
+        print(f"FAIL: {error}; evidence: {output}", file=sys.stderr)
+        return 1
 
-    print(f"All console-tool comparisons passed. Evidence: {output}")
+    print(f"All console-tool cases passed. Evidence: {output}")
     return 0
 
 

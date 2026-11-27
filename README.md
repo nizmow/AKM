@@ -182,7 +182,7 @@ probes. `mise run test:abi` compiles the ABI layout checks;
 `scripts/atari_source.py check|convert` for Atari text. Build the small console
 tools with `mise run apps -- mac2st`, `-- dump`, `-- fc` or `-- split`. Run
 `mise run test:console-tools-neost`; it builds the tools and console driver,
-then compares archived/rebuilt status, output and file effects through
+then checks rebuilt child status, console output and file effects through
 `scripts/neost-console-tools-smoke.py`.
 
 Build the six keyboard-table generators with `mise run apps -- keyb-sys` into
