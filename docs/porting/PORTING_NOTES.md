@@ -916,6 +916,12 @@ short file leaves the built-in UK tables active. UK regional defaults are
 `/`. `DEADKEYS` is not compiled in, so the kernel maps shifted and AltGr bytes
 directly and does not compose dead-key accents.
 
+`make-release.py` builds with the profile's region and keyboard pinned and,
+including under `--skip-build`, requires the kernel's `.kernel-locale` stamp to
+match the requested language/region/keyboard and the embedded UK block to be
+present exactly for English. This rejects a reused build tree whose objects were
+produced with an explicit override such as `KERNEL_KEYBOARD=de`.
+
 This is an English-resource distribution, not a complete new translation.
 Legacy help, retained CPXs, association/icon labels and some compiled-in
 utility diagnostics remain German. English kernel dialog shortcut tables

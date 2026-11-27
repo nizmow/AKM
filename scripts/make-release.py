@@ -151,6 +151,15 @@ def build(build_dir: Path, rebuilt: dict[Path, str], *, language: str) -> None:
 
 def collect(build_dir: Path, rebuilt: dict[Path, str], *,
             minimal: bool, language: str) -> dict[str, tuple[bytes, str]]:
+    region, keyboard, _ = LOCALE[language]
+    stamp = build_dir / ".kernel-locale"
+    if not stamp.is_file():
+        raise SystemExit(f"missing locale stamp {stamp}; rebuild the kernel")
+    expected_stamp = f"lang={language} region={region} keyboard={keyboard}"
+    actual_stamp = stamp.read_text(encoding="utf-8").strip()
+    if actual_stamp != expected_stamp:
+        raise SystemExit(
+            f"kernel locale stamp {actual_stamp!r} does not match {expected_stamp!r}")
     entries: dict[str, tuple[bytes, str]] = {}
     for relative, guest in rebuilt.items():
         resource = ENGLISH_RESOURCES.get(guest) if language == "en" else None

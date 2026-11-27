@@ -72,11 +72,11 @@ int main(void)
     /* A negative-argument query must report the active tables, not reset them. */
     queried = 1;
     if (Keytbl((void *)-1L, (void *)-1L, (void *)-1L) != tables)
-        queried = -1;
-    for (index = 0; queried > 0 && index < TABLES; index++)
+        queried = 0;
+    for (index = 0; index < TABLES; index++)
         if (tables[index] != (index < REPLACED ? replacement[index]
                                               : saved[index]))
-            queried = index + 1;
+            queried = 0;
     Bioskeys();
     reset = memcmp(saved, tables, sizeof(saved)) == 0;
     if (dump("E:\\RESETKEYS.BIN", tables))

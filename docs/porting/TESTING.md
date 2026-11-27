@@ -654,11 +654,14 @@ checks the kernel contract itself on cloned MagiC images:
   `_IDT`/AES language identity and the unchanged German profile.
 
 The probe is installed in `GEMSYS/MAGIC/START` and uses only public interfaces
-plus BIOS console input. German byte identity with the pre-change kernel was
-verified when the locale split landed by comparing whole `MAGIC.RAM` images;
-CI checks the German region and absence of the UK block, not that historic
-equality. Dead-key composition is not part of this kernel build and is not
-asserted.
+plus BIOS console input. The fixture must autostart that directory and must not
+have MagiC time slicing enabled: a slice taken between the readiness report and
+the first `Bconin(2)` can move a key into the AES queue, leaving the probe one
+key short. This is an input-delivery precondition, not a kernel property.
+German byte identity with the pre-change kernel was verified when the locale
+split landed by comparing whole `MAGIC.RAM` images; CI checks the German region
+and absence of the UK block, not that historic equality. Dead-key composition
+is not part of this kernel build and is not asserted.
 
 To check the English minimal profile directly:
 
@@ -668,7 +671,7 @@ python3 scripts/neost-release-smoke.py --language en --profile minimal
 
 These checks use monochrome Mega STE/4 MiB/TOS 2.06 clones. English is not a
 claim of complete translation or physical Mega STE verification; inherited
-German text and USA date/time defaults are listed in
+German text and the UK regional defaults are listed in
 [Porting notes](PORTING_NOTES.md#english-mega-ste-profile).
 Host command diagnostics preserve non-UTF-8 legacy source bytes as `\xNN`
 escapes rather than losing a build's exit status to a decoding error.

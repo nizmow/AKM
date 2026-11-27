@@ -67,10 +67,12 @@ def build(*, skip: bool) -> Path:
                 raise SystemExit(f"missing build output: {path}")
         return probe
     container = str(ROOT / "scripts/atari-container")
-    for language, target in (("en", kernel), ("de", german)):
+    for language, target, region, keyboard in (
+            ("en", kernel, "uk", "uk"), ("de", german, "de", "de")):
         relative = target.relative_to(ROOT)
         result = run([container, "run", "make", "-j4",
                       f"BUILD_DIR={relative.parent}", f"KERNEL_LANG={language}",
+                      f"KERNEL_REGION={region}", f"KERNEL_KEYBOARD={keyboard}",
                       str(relative)], cwd=ROOT, timeout=1200)
         if result.returncode:
             raise SystemExit(result.stdout or "kernel build failed")
@@ -124,8 +126,11 @@ def run_case(headless: Path, rom: Path, source: Path, probe: Path,
         for _ in range(16):
             server.run_frames(500)
             report_file = results / "KEYS.TXT"
-            if report_file.is_file() and report_file.read_bytes().endswith(b"DONE\n"):
+            if report_file.is_file() and \
+                    report_file.read_bytes().replace(b"\r\n", b"\n").endswith(b"DONE\n"):
                 break
+        else:
+            raise RuntimeError(f"{folder.name}: key report never completed")
     return {name: (results / name).read_bytes() for name in
             ("BOOTKEYS.BIN", "RESETKEYS.BIN", "LOCALE.TXT", "KEYS.TXT")
             if (results / name).is_file()}

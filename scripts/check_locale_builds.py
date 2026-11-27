@@ -26,22 +26,55 @@ def parse_c(text: str) -> tuple[dict[str, bytes], list[str]]:
         match.group(1): bytes(int(value, 16) for value in
                               re.findall(r"0x([0-9a-fA-F]{2})", match.group(2)))
         for match in re.finditer(
-            r"static const char tab_(\w+)\[128\] = \{(.*?)\};", text, re.S)
+            r"^static const char tab_(\w+)\[128\] = \{(.*?)^\};", text, re.S | re.M)
     }
-    order_block = re.search(r"tab_order\[9\] = \{(.*?)\};", text, re.S)
+    order_block = re.search(r"^static const char \*const tab_order\[9\] = \{(.*?)^\};",
+                            text, re.S | re.M)
     if order_block is None:
         raise ValueError("C header has no tab_order")
-    order = re.findall(r"tab_(\w+),", order_block.group(1))
+    order = []
+    for entry in order_block.group(1).split(","):
+        if not entry.strip():
+            continue
+        match = re.fullmatch(r"\s*tab_(\w+)\s*", entry)
+        if match is None:
+            raise ValueError(f"unexpected tab_order entry {entry!r}")
+        order.append(match.group(1))
     return bodies, order
 
 
 def parse_asm(text: str) -> tuple[dict[str, bytes], list[str]]:
-    bodies = {
-        match.group(1): bytes(int(value, 16) for value in
-                              re.findall(r"\$([0-9a-fA-F]{2})", match.group(2)))
-        for match in re.finditer(r"tab_(\w+):\n((?: dc\.b[^\n]*\n)+)", text)
-    }
-    order = re.findall(r"dc\.l tab_(\w+)", text)
+    lines = [line for line in text.splitlines()
+             if not line.lstrip().startswith(("*", ";"))]
+    bodies: dict[str, bytes] = {}
+    order: list[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        label = re.fullmatch(r"tab_(\w+):", line)
+        if label is None:
+            index += 1
+            continue
+        values: list[int] = []
+        index += 1
+        while index < len(lines) and lines[index].startswith(" dc.b "):
+            values += [int(value, 16)
+                       for value in re.findall(r"\$([0-9a-fA-F]{2})", lines[index])]
+            index += 1
+        bodies[label.group(1)] = bytes(values)
+    for number, line in enumerate(lines):
+        if line != "default_keytblx:":
+            continue
+        for candidate in lines[number + 1:]:
+            if not candidate.strip():
+                continue
+            slot = re.fullmatch(r" dc\.l tab_(\w+)", candidate)
+            if slot is None:
+                raise ValueError(f"unexpected default pointer {candidate!r}")
+            order.append(slot.group(1))
+            if len(order) == SLOTS:
+                break
+        break
     return bodies, order
 
 

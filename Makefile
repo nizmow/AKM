@@ -57,8 +57,8 @@ INCLUDE_DIR := $(BUILD_DIR)/include
 # historic $(BUILD_DIR)/kernel paths; every other combination gets a
 # -lang-region-keyboard sibling.  Country-independent objects (VFAT, STD,
 # XFS_VDOS, VDI) stay shared.
-KERNEL_LOCALE := $(KERNEL_LANG)-$(KERNEL_REGION)-$(KERNEL_KEYBOARD)
-KERNEL_LOCALE_SLUG := $(if $(filter de-de-de,$(KERNEL_LOCALE)),,-$(KERNEL_LOCALE))
+override KERNEL_LOCALE := $(KERNEL_LANG)-$(KERNEL_REGION)-$(KERNEL_KEYBOARD)
+override KERNEL_LOCALE_SLUG := $(if $(filter de-de-de,$(KERNEL_LOCALE)),,-$(KERNEL_LOCALE))
 KERNEL_OBJ_ROOT := $(BUILD_DIR)/kernel$(KERNEL_LOCALE_SLUG)
 
 # The final MAGIC.RAM has one name per BUILD_DIR.  If several locale selections
