@@ -1,0 +1,243 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Built by scripts/atari-container and scripts/neost-container respectively.
+  ATARI_TOOLCHAIN_IMAGE: localhost/magic-atari-toolchain:latest
+  ATARI_NEOST_IMAGE: localhost/magic-atari-neost:0.6.5
+
+jobs:
+  build-test-package:
+    name: Build, test and package with public EmuTOS
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Report host tooling
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          uname -srm
+          podman --version
+          python3 --version
+          git --version
+          git rev-parse HEAD
+
+      - name: Prepare bounded output directories
+        timeout-minutes: 5
+        run: |
+          set -euo pipefail
+          rm -rf build/ci
+          mkdir -p build/ci/logs build/ci/emutost build/ci/release \
+            build/ci/repeat build/ci/build
+
+      - name: Build base Atari toolchain image
+        timeout-minutes: 60
+        run: |
+          set -euo pipefail
+          scripts/atari-container build 2>&1 | tee build/ci/logs/image-toolchain.log
+
+      - name: Build NeoST runtime image
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          scripts/neost-container build 2>&1 | tee build/ci/logs/image-neost.log
+
+      - name: Record build provenance
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          info=build/ci/release/BUILD-INFO.txt
+          {
+            printf '# AKM CI build information\n\n'
+            printf 'commit: %s\n' "$(git rev-parse HEAD)"
+            printf 'ref: %s\n' "${GITHUB_REF}"
+            printf 'workflow-run: %s/%s/actions/runs/%s\n' \
+              "${GITHUB_SERVER_URL}" "${GITHUB_REPOSITORY}" "${GITHUB_RUN_ID}"
+            printf 'runner: %s\n\n' "$(uname -srm)"
+
+            printf '## Container runtime\n'
+            podman --version
+
+            printf '\n## Container images\n'
+            for image in "${ATARI_TOOLCHAIN_IMAGE}" "${ATARI_NEOST_IMAGE}"; do
+              printf '%s\n' "$image"
+              podman image inspect --format '  id: {{.Id}}' "$image"
+              podman image inspect --format '  created: {{.Created}}' "$image"
+            done
+
+            printf '\n## Containerfile and pin inputs\n'
+            sha256sum Containerfile.atari Containerfile.neost mise.toml
+
+            printf '\n## Compiler, assembler and NeoST\n'
+            scripts/neost-container run bash -euo pipefail -c '
+              command -v m68k-atari-mintelf-gcc
+              m68k-atari-mintelf-gcc --version
+              m68k-atari-mintelf-as --version
+              vasmm68k_mot -Fbin -o /dev/null /dev/null
+              python3 --version
+              command -v neost-headless
+              neost-headless --version
+              ls /opt/neost/usr/roms
+            '
+
+            printf '\n## Installed Debian packages\n'
+            scripts/neost-container run bash -euo pipefail -c "dpkg-query -W -f '\${Package}\t\${Version}\n' | LC_ALL=C sort"
+          } > "$info"
+          cat "$info"
+
+      - name: Run NeoST host helper tests
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          scripts/neost-container run bash -c 'cd scripts && exec python3 -m unittest test_neost_common test_neost_host test_neost_image test_neost_screen' \
+            2>&1 | tee build/ci/logs/neost-helpers.log
+
+      - name: Run NeoST server protocol tests
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          scripts/neost-container run python3 scripts/test_neost_server.py \
+            2>&1 | tee build/ci/logs/neost-server.log
+
+      - name: Run Atari encoding tests
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          scripts/neost-container run python3 -m unittest discover \
+            -s scripts/atari-text -p 'test_*.py' \
+            2>&1 | tee build/ci/logs/atari-encoding.log
+
+      - name: Lint CPX ABI bridges
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          scripts/neost-container run python3 scripts/cpx_abi_lint.py \
+            2>&1 | tee build/ci/logs/cpx-abi-lint.log
+
+      - name: Check application ABI and build LIMITMEM test binaries
+        timeout-minutes: 20
+        run: |
+          set -euo pipefail
+          scripts/neost-container run make -f Makefile.apps \
+            abi-check limitmem limitmem-test-driver \
+            2>&1 | tee build/ci/logs/apps-abi-check.log
+
+      - name: LIMITMEM scenario on public EmuTOS
+        timeout-minutes: 20
+        run: |
+          set -euo pipefail
+          scripts/neost-container run python3 scripts/neost-limitmem-smoke.py \
+            --output build/ci/emutost/limitmem \
+            2>&1 | tee build/ci/logs/emutost-limitmem.log
+
+      - name: Console tools scenario on public EmuTOS
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          scripts/neost-container run python3 scripts/neost-console-tools-smoke.py \
+            --output build/ci/emutost/console-tools \
+            2>&1 | tee build/ci/logs/emutost-console-tools.log
+
+      - name: MOD_APP scenario on public EmuTOS
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          scripts/neost-container run python3 base/mod-app/tests/neost-mod-app-smoke.py \
+            --output build/ci/emutost/mod-app \
+            2>&1 | tee build/ci/logs/emutost-mod-app.log
+
+      - name: DIS scenario on public EmuTOS
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          scripts/neost-container run python3 scripts/neost-dis-smoke.py \
+            --output build/ci/emutost/dis \
+            2>&1 | tee build/ci/logs/emutost-dis.log
+
+      - name: KEYB_SYS scenario on public EmuTOS
+        timeout-minutes: 45
+        run: |
+          set -euo pipefail
+          scripts/neost-container run python3 scripts/neost-keyb-sys-smoke.py \
+            --output build/ci/emutost/keyb-sys \
+            2>&1 | tee build/ci/logs/emutost-keyb-sys.log
+
+      - name: Build release profiles and verify deterministic packaging
+        timeout-minutes: 60
+        run: |
+          set -euo pipefail
+          {
+            scripts/neost-container run python3 scripts/make-release.py \
+              --language de --profile core --build-dir build/ci/build/core-de \
+              --output build/ci/release/core-de.zip \
+              --manifest build/ci/release/core-de.manifest
+            scripts/neost-container run python3 scripts/make-release.py \
+              --language en --profile core --build-dir build/ci/build/core-en \
+              --output build/ci/release/core-en.zip \
+              --manifest build/ci/release/core-en.manifest
+            scripts/neost-container run python3 scripts/make-release.py \
+              --language de --profile minimal --build-dir build/ci/build/minimal-de \
+              --output build/ci/release/minimal-de.zip \
+              --manifest build/ci/release/minimal-de.manifest
+
+            # Repack from the same build inputs outside the published directory;
+            # identical ZIP bytes prove packaging has no timestamps or ordering drift.
+            scripts/neost-container run python3 scripts/make-release.py \
+              --language de --profile core --build-dir build/ci/build/core-de \
+              --skip-build --output build/ci/repeat/core-de.zip
+            scripts/neost-container run python3 scripts/make-release.py \
+              --language en --profile core --build-dir build/ci/build/core-en \
+              --skip-build --output build/ci/repeat/core-en.zip
+            scripts/neost-container run python3 scripts/make-release.py \
+              --language de --profile minimal --build-dir build/ci/build/minimal-de \
+              --skip-build --output build/ci/repeat/minimal-de.zip
+
+            cmp build/ci/release/core-de.zip build/ci/repeat/core-de.zip
+            cmp build/ci/release/core-en.zip build/ci/repeat/core-en.zip
+            cmp build/ci/release/minimal-de.zip build/ci/repeat/minimal-de.zip
+            sha256sum build/ci/release/*.zip build/ci/release/*.manifest
+          } 2>&1 | tee build/ci/logs/release-packages.log
+
+      - name: Upload release bundles
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-bundles
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            build/ci/release/core-de.zip
+            build/ci/release/core-en.zip
+            build/ci/release/minimal-de.zip
+            build/ci/release/core-de.manifest
+            build/ci/release/core-en.manifest
+            build/ci/release/minimal-de.manifest
+            build/ci/release/BUILD-INFO.txt
+
+      - name: Upload CI evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ci-evidence
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            build/ci/logs
+            build/ci/emutost

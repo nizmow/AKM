@@ -26,6 +26,17 @@ dir = "{{ config_root }}"
 raw = true
 run = "scripts/atari-container shell"
 
+[tasks."neost:build"]
+description = "Build the headless NeoST runtime image on top of the Atari toolchain"
+dir = "{{ config_root }}"
+run = "scripts/neost-container build"
+
+[tasks."neost:run"]
+description = "Run a command in the headless NeoST runtime container"
+dir = "{{ config_root }}"
+raw = true
+run = "scripts/neost-container run"
+
 [tasks.atari]
 description = "Run a command in the Atari toolchain container"
 dir = "{{ config_root }}"

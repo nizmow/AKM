@@ -95,4 +95,9 @@ COPY --from=vasm-build /usr/local/bin/vasmm68k_mot /usr/local/bin/vasmm68k_mot
 COPY --from=vasm-build /usr/local/bin/vobjdump /usr/local/bin/vobjdump
 
 WORKDIR /work
+
+# Baked marker: scripts/atari-container uses this to run commands directly at
+# the repository root instead of starting a nested Podman container.
+ENV ATARI_TOOLCHAIN_CONTAINER=1
+
 CMD ["/bin/bash"]

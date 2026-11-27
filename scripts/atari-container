@@ -3,14 +3,23 @@ set -euo pipefail
 
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 image="${ATARI_TOOLCHAIN_IMAGE:-localhost/magic-atari-toolchain:latest}"
+in_container="${ATARI_TOOLCHAIN_CONTAINER:-0}"
 
 case "${1:-}" in
     build)
         shift
+        if [[ "$in_container" == 1 ]]; then
+            printf '%s: build the image on the host, not inside the toolchain container\n' "$0" >&2
+            exit 2
+        fi
         exec podman build -t "$image" -f "$root/Containerfile.atari" "$@" "$root"
         ;;
     publish)
         shift
+        if [[ "$in_container" == 1 ]]; then
+            printf '%s: publish the image on the host, not inside the toolchain container\n' "$0" >&2
+            exit 2
+        fi
         image="${ATARI_TOOLCHAIN_IMAGE:-registry.gitlab.com/nizmow/atari-mac-magic-sources/atari-toolchain:latest}"
         podman build -t "$image" -f "$root/Containerfile.atari" "$@" "$root"
         exec podman push "$image"
@@ -31,6 +40,14 @@ case "${1:-}" in
         exit 2
         ;;
 esac
+
+# The toolchain image sets this marker.  Nested calls from build and emulator
+# scripts must run in the mounted checkout, not start a Podman container that
+# has no socket or privileges inside CI.
+if [[ "$in_container" == 1 ]]; then
+    cd "$root"
+    exec "$@"
+fi
 
 # Preserve piped input; allocate a terminal only when both ends are terminals.
 terminal=(-i)

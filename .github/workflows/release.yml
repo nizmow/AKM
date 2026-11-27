@@ -1,0 +1,149 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: Full CI
+    uses: ./.github/workflows/ci.yml
+
+  draft-release:
+    name: Draft GitHub release
+    needs: ci
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Check out release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Download CI release bundles
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-bundles
+          path: dist/downloaded
+
+      - name: Prepare release assets and checksums
+        timeout-minutes: 10
+        env:
+          TAG: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          case "$TAG" in
+            v*) ;;
+            *) echo "release tag must start with v, got: $TAG" >&2; exit 1 ;;
+          esac
+          if [ "$(git rev-parse HEAD)" != "$COMMIT" ]; then
+            echo "checked-out commit does not match the workflow commit" >&2
+            exit 1
+          fi
+
+          mkdir -p dist/assets
+          expected=(
+            core-de.zip core-en.zip minimal-de.zip
+            core-de.manifest core-en.manifest minimal-de.manifest
+            BUILD-INFO.txt
+          )
+          for name in "${expected[@]}"; do
+            test -f "dist/downloaded/$name"
+            cp -- "dist/downloaded/$name" "dist/assets/$name"
+          done
+
+          # The source archive must match the tagged commit that CI validated.
+          git archive --format=tar.gz --prefix="akm-${TAG#v}/" \
+            -o dist/assets/akm-source.tar.gz HEAD
+
+          # SHA256SUMS covers every asset except itself.
+          (
+            cd dist/assets
+            find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' \
+              | LC_ALL=C sort -z \
+              | xargs -0 sha256sum > SHA256SUMS
+            sha256sum -c SHA256SUMS
+          )
+
+          count="$(find dist/assets -maxdepth 1 -type f | wc -l)"
+          if [ "$count" -ne 9 ]; then
+            echo "expected 9 release assets (8 files plus SHA256SUMS), found $count" >&2
+            find dist/assets -maxdepth 1 -type f -printf '%f\n' >&2
+            exit 1
+          fi
+          sha256sum dist/assets/*
+
+      - name: Write release notes
+        timeout-minutes: 5
+        env:
+          TAG: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          cat > dist/RELEASE-NOTES.md <<EOF
+          # AKM ${TAG}
+
+          Draft release built from commit \`${COMMIT}\` of ${REPOSITORY} by the
+          tag CI run: ${RUN_URL}
+
+          ## Packages
+
+          - \`core-de.zip\` — German core installation (German kernel and resources).
+          - \`core-en.zip\` — English core installation: UK keyboard layout and ST
+            high-resolution monochrome Mega STE profile. Help text, helper
+            diagnostics and some legacy documentation remain German or untranslated.
+            The English kernel retains USA date/time defaults; keep the installed
+            UK \`KEYTABLS.SYS\` keyboard override.
+          - \`minimal-de.zip\` — boot-only German installation with MAGXDESK and the
+            MCMD fallback, without COPS or optional extensions.
+          - \`*.manifest\` — SHA-256 and rebuild/retain provenance for every packaged member.
+          - \`BUILD-INFO.txt\` — commit, container image IDs, compiler, assembler and
+            NeoST versions, and installed Debian package versions.
+          - \`akm-source.tar.gz\` — tracked Git source at the release commit.
+          - \`SHA256SUMS\` — covers every other asset, not itself.
+
+          ## Verification
+
+          The packages passed public CI in a headless NeoST runtime with the bundled
+          public EmuTOS ROM: LIMITMEM, console tools, MOD_APP, DIS and KEYB_SYS scenarios,
+          ABI and encoding checks, CPX ABI lint, and byte-identical repeat packaging.
+
+          CI does **not** run the private TOS 2.06 plus MagiC/HDDRIVER installation
+          and cold-boot checks. Those require private ROM and disk-image fixtures
+          and must be run separately by maintainers. Nothing here proves behaviour
+          on real hardware, every video mode, or long-term stability.
+
+          The workflow creates a draft for maintainer review before publication.
+          EOF
+
+      - name: Create draft release
+        timeout-minutes: 10
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          assets=(dist/assets/*)
+          gh release create "$TAG" \
+            --repo "$REPOSITORY" \
+            --draft \
+            --verify-tag \
+            --title "AKM $TAG" \
+            --notes-file dist/RELEASE-NOTES.md \
+            "${assets[@]}"

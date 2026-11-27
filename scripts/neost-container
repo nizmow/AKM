@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+image="${ATARI_NEOST_IMAGE:-localhost/magic-atari-neost:0.6.5}"
+toolchain="${ATARI_TOOLCHAIN_IMAGE:-localhost/magic-atari-toolchain:latest}"
+in_container="${ATARI_TOOLCHAIN_CONTAINER:-0}"
+
+usage() {
+    printf 'Usage: %s {build [BUILD_OPTIONS...]|run COMMAND [ARGS...]|shell [BASH_ARGS...]}\n' "$0" >&2
+}
+
+case "${1:-}" in
+    build)
+        shift
+        if [[ "$in_container" == 1 ]]; then
+            printf '%s: build the image on the host, not inside the runtime container\n' "$0" >&2
+            exit 2
+        fi
+        exec podman build -t "$image" \
+            --build-arg "TOOLCHAIN_IMAGE=$toolchain" \
+            -f "$root/Containerfile.neost" "$@" "$root"
+        ;;
+    run)
+        shift
+        if (( $# == 0 )); then
+            usage
+            exit 2
+        fi
+        # Reuse the toolchain wrapper's offline, unprivileged mount handling.
+        ATARI_TOOLCHAIN_IMAGE="$image" \
+            exec "$root/scripts/atari-container" run "$@"
+        ;;
+    shell)
+        shift
+        ATARI_TOOLCHAIN_IMAGE="$image" \
+            exec "$root/scripts/atari-container" run bash "$@"
+        ;;
+    *)
+        usage
+        exit 2
+        ;;
+esac

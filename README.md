@@ -92,6 +92,25 @@ clone it, install the ZIP and check guest effects. See the
 for partition offsets and the [testing guide](docs/porting/TESTING.md) for
 component checks and coverage limits.
 
+## CI and releases
+
+[GitHub Actions](.github/workflows/ci.yml) builds the toolchain and a pinned,
+headless NeoST container, runs the public EmuTOS regressions, and uploads the
+German core/minimal and English core ZIPs with manifests and build provenance.
+To use the same emulator environment locally, after building the toolchain:
+
+```sh
+mise run neost:build
+mise run neost:run -- python3 scripts/neost-console-tools-smoke.py
+```
+
+Version tags matching `v*` run those checks before creating a **draft**
+[GitHub release](.github/workflows/release.yml), including checksums and a
+matching source archive. Full MagiC/TOS cold boots remain a separate private
+fixture check before publication; ROMs and working disk images are not
+included. See the [automation contract](docs/porting/TESTING.md#github-actions-and-release-publication).
+
+
 For development, start with the [porting guide](docs/porting/README.md).
 Project direction is in the [roadmap](docs/ROADMAP.md); remaining work is in
 [GitHub issues](https://github.com/nizmow/AKM/issues).
