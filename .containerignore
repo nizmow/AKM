@@ -1,0 +1,6 @@
+# Neither image copies checkout files: dependencies are fetched and verified
+# in build stages. Keep source, Git history and private fixtures out of context.
+**
+!Containerfile.atari
+!Containerfile.neost
+!.containerignore

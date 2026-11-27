@@ -15,7 +15,8 @@ import subprocess
 
 def run(command: list[str], *, cwd: Path | None = None,
         timeout: int = 240) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(command, cwd=cwd, text=True, stdout=subprocess.PIPE,
+    return subprocess.run(command, cwd=cwd, text=True, encoding="utf-8",
+                          errors="backslashreplace", stdout=subprocess.PIPE,
                           stderr=subprocess.STDOUT, timeout=timeout, check=False)
 
 
@@ -26,7 +27,7 @@ def run_logged(command: list[str], log: Path, *, cwd: Path | None = None,
         result = run(command, cwd=cwd, timeout=timeout)
     except subprocess.TimeoutExpired as error:
         output = error.output or b""
-        text = output.decode("utf-8", errors="replace") if isinstance(output, bytes) else output
+        text = output.decode("utf-8", errors="backslashreplace") if isinstance(output, bytes) else output
         log.write_text(text + f"\nTimed out after {timeout} seconds.\n", encoding="utf-8")
         raise RuntimeError(f"NeoST timed out after {timeout} seconds; see {log}") from error
     log.write_text(result.stdout, encoding="utf-8")

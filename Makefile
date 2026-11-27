@@ -1,9 +1,51 @@
 .DEFAULT_GOAL := all
 
+# Kernel localisation.  de keeps the original German kernel (COUNTRY=1/FRG).
+# en selects the original English kernel strings, AES alerts and file/font
+# selector resources with the original English country code (COUNTRY=0/USA).
+# The kernel has no COUNTRY-selected keyboard table: KEYB.S ships a German
+# (GER) default and boot replaces all nine tables from
+# GEMSYS/MAGIC/XTENSION/KEYTABLS.SYS when present, so a UK layout comes from
+# that file rather than from the kernel build.  COUNTRY=3 (UK) is not a
+# complete kernel build; only the BIOS and COOK.S have UK text branches.
+KERNEL_LANG ?= de
+
+ifeq ($(KERNEL_LANG),de)
+KERNEL_COUNTRY   := 1
+KERNEL_LANG_SLUG :=
+KERNEL_DEFAULT_BUILD_DIR := build/atari
+else ifeq ($(KERNEL_LANG),en)
+KERNEL_COUNTRY   := 0
+KERNEL_LANG_SLUG := -en
+KERNEL_DEFAULT_BUILD_DIR := build/atari/en
+else
+$(error KERNEL_LANG must be de or en, got '$(KERNEL_LANG)')
+endif
+
 CROSS_COMPILE ?= m68k-atari-mintelf-
 CC := $(CROSS_COMPILE)gcc
-BUILD_DIR := build/atari
+BUILD_DIR ?= $(KERNEL_DEFAULT_BUILD_DIR)
 INCLUDE_DIR := $(BUILD_DIR)/include
+# Country-dependent kernel objects live in a per-language tree.  The German
+# tree keeps its historic paths; another language gets a sibling tree, so
+# switching KERNEL_LANG inside one BUILD_DIR cannot reuse the other language's
+# objects.  Country-independent objects (VFAT, STD, XFS_VDOS, VDI) stay shared.
+KERNEL_OBJ_ROOT := $(BUILD_DIR)/kernel$(KERNEL_LANG_SLUG)
+
+# The final MAGIC.RAM has one name per BUILD_DIR.  If both languages are built
+# in the same BUILD_DIR, a switch must relink the final image even though the
+# per-language object trees are still valid.  This stamp's timestamp changes
+# only when the requested language differs from the last build in that tree.
+KERNEL_LANG_STAMP := $(BUILD_DIR)/.kernel-lang
+
+.PHONY: FORCE
+FORCE:
+
+$(KERNEL_LANG_STAMP): FORCE
+	@mkdir -p $(@D)
+	@printf '%s\n' '$(KERNEL_LANG)' > $@.tmp
+	@cmp -s $@.tmp $@ || mv -f $@.tmp $@
+	@rm -f $@.tmp
 
 CFLAGS ?= -O2 -g -Wall -Wextra
 # Preserve the original kernel register ABI and its non-libc string routines.
@@ -72,7 +114,8 @@ KERNEL_OBJECTS := \
 magic: $(BUILD_DIR)/MAGIC.RAM
 kernel-objects: $(KERNEL_OBJECTS)
 
-$(BUILD_DIR)/kernel.elf: $(KERNEL_OBJECTS) kernel/mk/kernel.ld Makefile
+$(BUILD_DIR)/kernel.elf: $(KERNEL_OBJECTS) kernel/mk/kernel.ld Makefile \
+                         $(KERNEL_LANG_STAMP)
 	$(CROSS_COMPILE)ld -m m68kelf --emit-relocs -T kernel/mk/kernel.ld \
 	  -Map=$(BUILD_DIR)/kernel.map -o $@ $(KERNEL_OBJECTS) \
 	  $(shell $(CC) $(KERNEL_FLAGS) -print-libgcc-file-name)

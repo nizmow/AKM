@@ -1,0 +1,68 @@
+# Headless NeoST runtime image layered on the pinned Atari cross-toolchain.
+#
+# Upstream release asset:
+#   https://github.com/habib256/neost/releases/download/0.6.5/NeoST-0.6.5-x86_64.AppImage
+# The SHA-256 is the published release hash and matches the mise.toml pin.
+#
+# Only the headless runner, EmuTOS ROMs and licence/notice files are copied
+# from the extracted AppImage.  No proprietary TOS ROMs, MagiC/HDDRIVER disk
+# images or other local fixtures are fetched or baked in.  The headless
+# binary's only shared-library dependencies are the glibc runtime (libc,
+# libm, libresolv, libpthread), so the GUI libraries, fonts, disks and FUSE
+# runtime are deliberately omitted.
+ARG TOOLCHAIN_IMAGE=localhost/magic-atari-toolchain:latest
+
+FROM docker.io/library/debian:trixie-slim AS neost-fetch
+
+ARG NEOST_URL=https://github.com/habib256/neost/releases/download/0.6.5/NeoST-0.6.5-x86_64.AppImage
+ARG NEOST_SHA256=a37c54c65ef882be8ed8cb1f75f87b548692d53bad13849b6244f0e8a24d3af8
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# --appimage-extract uses the AppImage's embedded squashfs reader and needs no
+# FUSE mount.  The extracted tree is staged for the final image's COPY steps.
+RUN mkdir -p /neost \
+    && cd /neost \
+    && curl -fsSL "$NEOST_URL" -o NeoST.AppImage \
+    && echo "$NEOST_SHA256  NeoST.AppImage" | sha256sum -c - \
+    && chmod +x NeoST.AppImage \
+    && ./NeoST.AppImage --appimage-extract > /dev/null \
+    && rm -f NeoST.AppImage \
+    && test -x squashfs-root/usr/bin/neost-headless \
+    && test -f squashfs-root/usr/roms/etos192us.img \
+    && test -f squashfs-root/usr/licenses/THIRD-PARTY.txt
+
+FROM ${TOOLCHAIN_IMAGE}
+
+# The runners use the full Python standard library (unittest, zipfile, ...)
+# and mtools for disposable MagiC images.  The base image only has
+# python3-minimal.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 mtools \
+    && rm -rf /var/lib/apt/lists/*
+
+# Keep NeoST's upstream install geometry: neost_common.acquire_headless()
+# resolves the ROM directory as <headless>/../../roms.
+COPY --from=neost-fetch /neost/squashfs-root/usr/bin/neost-headless \
+    /opt/neost/usr/bin/neost-headless
+COPY --from=neost-fetch \
+    /neost/squashfs-root/usr/roms/etos192fr.img \
+    /neost/squashfs-root/usr/roms/etos192us.img \
+    /neost/squashfs-root/usr/roms/etos256fr.img \
+    /neost/squashfs-root/usr/roms/etos256us.img \
+    /opt/neost/usr/roms/
+COPY --from=neost-fetch /neost/squashfs-root/usr/licenses/ \
+    /opt/neost/usr/licenses/
+
+# Headless runs need no X server, audio device or FUSE; scenarios pass
+# --gemdos/--acsi/--rom options to this executable.
+ENV PATH="/opt/neost/usr/bin:${PATH}"
+
+RUN test -x /opt/neost/usr/bin/neost-headless \
+    && test -f /opt/neost/usr/roms/etos192us.img \
+    && test "${ATARI_TOOLCHAIN_CONTAINER:-}" = 1 \
+    && neost-headless --version \
+    && python3 -c 'import unittest' \
+    && command -v mcopy > /dev/null

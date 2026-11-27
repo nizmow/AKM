@@ -1,11 +1,12 @@
-# BIOS/DOS kernel modules for the Atari (Falcon-capable, German) MAGIC.RAM.
+# BIOS/DOS kernel modules for the Atari (Falcon-capable) MAGIC.RAM.
 #
 # Included from Makefile. All intermediate files live under
-# build/atari/kernel/bios-dos; original sources are never modified in place.
+# $(KERNEL_OBJ_ROOT)/bios-dos, which is per-language; original sources are
+# never modified in place.
 #
 # Every MAS source uses the shared syntax adapter and canonical Atari strings.
 
-BIOSDOS_DIR       := $(BUILD_DIR)/kernel/bios-dos
+BIOSDOS_DIR       := $(KERNEL_OBJ_ROOT)/bios-dos
 BIOSDOS_ASM_DIR   := $(BIOSDOS_DIR)/asm
 BIOSDOS_INC_DIR   := $(BIOSDOS_DIR)/include
 BIOSDOS_COMMON    := $(BIOSDOS_INC_DIR)/common
@@ -115,14 +116,18 @@ BIOSDOS_BIOS_INCLUDES := -I$(abspath $(BIOSDOS_COMMON)) -I$(abspath $(BIOSDOS_BI
 BIOSDOS_DOS_INCLUDES  := -I$(abspath $(BIOSDOS_COMMON)) -I$(abspath $(BIOSDOS_DOS_INC))
 BIOSDOS_READ_INCLUDES := -I$(abspath $(BIOSDOS_COMMON)) -I$(abspath $(BIOSDOS_READ_INC))
 
-# COUNTRY=1 is the German localisation.  The BIOS gets FRG/USA/FRA/UK from
-# BIOS.INC; MAGIDOS has no such include, MALLOC defines them itself.
+# KERNEL_COUNTRY is 1 (FRG) for KERNEL_LANG=de and 0 (USA) for en, as selected
+# by the top-level Makefile.  The BIOS gets FRG/USA/FRA/UK from BIOS.INC;
+# MAGIDOS has no such include, MALLOC defines them itself.  MAGIBIOS (with
+# COOK.S), MAGIDOS and MALLOC are the only modules with COUNTRY branches; the
+# others are country-independent.  COUNTRY=3 (UK) lacks MAGIDOS/MALLOC text,
+# so it is not a complete kernel build.
 $(BIOSDOS_DIR)/magibios.o: BIOSDOS_ASINCLUDES := $(BIOSDOS_BIOS_INCLUDES)
-$(BIOSDOS_DIR)/magibios.o: BIOSDOS_ASDEFS     := -DCOUNTRY=1 -DDEADKEYS=0 -DMACOSX=0
+$(BIOSDOS_DIR)/magibios.o: BIOSDOS_ASDEFS     := -DCOUNTRY=$(KERNEL_COUNTRY) -DDEADKEYS=0 -DMACOSX=0
 $(BIOSDOS_DIR)/magidos.o:  BIOSDOS_ASINCLUDES := $(BIOSDOS_DOS_INCLUDES)
-$(BIOSDOS_DIR)/magidos.o:  BIOSDOS_ASDEFS     := -DCOUNTRY=1
+$(BIOSDOS_DIR)/magidos.o:  BIOSDOS_ASDEFS     := -DCOUNTRY=$(KERNEL_COUNTRY)
 $(BIOSDOS_DIR)/malloc.o:   BIOSDOS_ASINCLUDES := $(BIOSDOS_DOS_INCLUDES)
-$(BIOSDOS_DIR)/malloc.o:   BIOSDOS_ASDEFS     := -DCOUNTRY=1
+$(BIOSDOS_DIR)/malloc.o:   BIOSDOS_ASDEFS     := -DCOUNTRY=$(KERNEL_COUNTRY)
 $(BIOSDOS_DIR)/dfs_u.o:    BIOSDOS_ASINCLUDES := $(BIOSDOS_DOS_INCLUDES)
 $(BIOSDOS_DIR)/dfs_fat.o:  BIOSDOS_ASINCLUDES := $(BIOSDOS_DOS_INCLUDES)
 $(BIOSDOS_DIR)/dev_bios.o: BIOSDOS_ASINCLUDES := $(BIOSDOS_DOS_INCLUDES)

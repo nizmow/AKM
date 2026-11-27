@@ -593,7 +593,7 @@ pixel-for-pixel except the double-clicked icon's selection highlight and cursor
 pixels. Board editing, Save/alerts, event-CPX callbacks and other CPXs remain
 untested. Evidence goes to `build/atari/neost-cops-accessory-*`.
 
-## Release: German Atari/ST core ZIP
+## Release: German and English Atari/ST ZIPs
 
 `mise run release:core` builds the exact file targets listed in the package
 map, then writes `build/atari/release/core-de.zip` and a sorted SHA-256 manifest.
@@ -627,6 +627,88 @@ must differ from a second boot with `MAGXDESK.APP` removed.
 Either smoke task accepts `-- --build-dir build/atari/<fresh-dir>` to build
 without cached outputs. ZIPs, manifest and screenshots are kept in the run's
 evidence directory.
+
+`mise run release:english` builds the English core ZIP and manifest under
+`build/atari/release/`. `mise run test:release-english-neost` runs the same
+determinism, clean-install, member-hash, desktop-menu and COPS checks with
+`--language en`. The English profile selects existing English application
+resources, English MCMD, a USA-country English kernel and the original UK
+keyboard table. The keyboard table is an active runtime file, including in
+the English minimal profile; that profile permits no optional extension
+files besides `KEYTABLS.SYS`.
+
+To check the English minimal profile directly:
+
+```sh
+python3 scripts/neost-release-smoke.py --language en --profile minimal
+```
+
+These checks use monochrome Mega STE/4 MiB/TOS 2.06 clones. English is not a
+claim of complete translation or physical Mega STE verification; inherited
+German text and USA date/time defaults are listed in
+[Porting notes](PORTING_NOTES.md#english-mega-ste-profile).
+Host command diagnostics preserve non-UTF-8 legacy source bytes as `\xNN`
+escapes rather than losing a build's exit status to a decoding error.
+
+## GitHub Actions and release publication
+
+`.github/workflows/ci.yml` runs on pull requests, pushes to `main`, manual
+dispatch and calls from the release workflow. It uses Linux x86-64 runners,
+builds the Atari toolchain, then builds `Containerfile.neost` on that image.
+NeoST 0.6.5 is extracted from the checksum-pinned AppImage without FUSE; the
+runtime contains the headless executable, bundled EmuTOS, notices, Python and
+`mtools`, not the GUI or private TOS/disk fixtures. Container execution is
+offline and unprivileged. Existing build calls execute directly inside this
+toolchain environment rather than starting nested Podman containers.
+
+The public checks cover host helpers/server protocol, Atari text conversion,
+CPX callback lint, application ABI compilation, and the console-tool, MOD_APP,
+LIMITMEM, DIS and six KEYB_SYS EmuTOS scenarios. The three published package profiles
+are built and packed twice, requiring identical ZIP bytes. Successful runs
+upload `release-bundles`; explicit public test outputs and logs are uploaded
+separately, including on failure. No blanket `build/**` upload is used.
+
+`build/ci/release/BUILD-INFO.txt` records the source revision, container image
+IDs, tool versions and installed package versions. GCC, VASM and NeoST
+downloads are checksum-pinned; Debian repositories/base-image tags are not
+historical snapshots. Recorded provenance is not a promise that rebuilding
+months later retrieves identical dependency packages.
+
+`.github/workflows/release.yml` handles `v*` tags, requires the same CI checks,
+and creates a draft release containing the three ZIPs, manifests, build
+provenance, a Git archive of the tagged source and `SHA256SUMS`. Actions are
+commit-pinned. PR jobs have read-only repository permissions; only the
+post-verification draft-publication job has `contents: write`. No repository
+secret is required for these public checks or drafts.
+
+Before publishing a draft:
+
+1. Inspect its profiles, manifests, source revision and checksums.
+2. Run the clean-install/cold-boot scenarios with legally obtained private
+   fixtures and record the resulting evidence. Public EmuTOS checks do not
+   establish that the MagiC kernel boots or that hardware works.
+3. Review retained third-party inputs, corresponding-source obligations,
+   localization limits and release notes, then publish the draft explicitly.
+
+For a local container cold boot, place fixture copies under ignored
+`build/private/`, never in the image or a tracked directory:
+
+```sh
+scripts/neost-container run python3 scripts/neost-release-smoke.py \
+  --language en --magic-image /work/build/private/magic.img \
+  --tos /work/build/private/tos206.img \
+  --output /work/build/private/english-smoke
+```
+
+The runner clones the disk before booting; choose a fresh output directory
+per run. The repository is mounted at `/work`, so host paths outside it are
+not automatically available. Keep private fixtures/evidence outside the
+public `build/ci` artifact paths. Full MagiC smoke tests are not an automatic
+GitHub-hosted release gate until a legally usable private fixture service or
+trusted runner is configured; a green public workflow must not be described
+as that missing proof.
+
+
 
 ## NeoST: image SLB ABI and rendering
 

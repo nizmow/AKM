@@ -105,6 +105,13 @@ A documented command produces the selected distribution, with a file manifest
 and clear rebuilt/retained status. A clean installation from that archive boots
 and passes the recorded smoke tests.
 
+The current packager has German core/minimal profiles and an English core
+profile for UK-keyboard monochrome Mega STE installations. English selects
+the existing kernel/resource translations; it does not complete phase 3's
+translation-source tooling or remove inherited German text. The testing guide
+records the clean-install and runtime coverage for each profile.
+
+
 ## Phase 3 — Modernize localization and repair translations
 
 Treat localization as a reproducible source-to-resource workflow, not a series
