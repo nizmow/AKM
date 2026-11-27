@@ -265,14 +265,15 @@ Pure C objects/libraries. `BUILD_DIR`, `CFLAGS`, `CPPFLAGS`, `LDFLAGS` and `LDLI
 can be supplied as Make assignments; do not add kernel `-mshort/-mfastcall` flags.
 
 `mise run test:mod-app-neost` runs the rebuilt `MOD_APP.TTP` under
-NeoST/EmuTOS and checks 17 cases against explicit expectations: declared child
+NeoST/EmuTOS and checks 18 cases against explicit expectations: declared child
 statuses plus, after every case, the exact `APPLICAT.INF`, `APPLICAT.BAK` and
 `APPLICAT.DAT` state. Coverage includes application/file-type/special-object
 registration, duplicate and error handling, backup rotation, cache invalidation,
 single-quoted/empty/long paths and English/legacy German section names. The
 archived comparison binary has been retired; the historical Hatari comparison
-also covered double quotes, escaped apostrophes and an extended ARGV path. The
-runner does not reproduce those, and MagiC-kernel behavior remains unverified.
+also covered double quotes, escaped apostrophes, an extended ARGV path and the
+-33 file-not-found result. The new runner does not repeat those, nor the
+historical MagiC-kernel verification.
 See the [porting notes](docs/porting/PORTING_NOTES.md) for the startup
 compatibility finding and the [work list](docs/porting/TODO.md) for next tasks.
 

@@ -109,7 +109,7 @@ MOD_APP and APPLICAT share `shared/tos-args/TOS_ARGS.H`, preserving single/doubl
 quotes and doubled apostrophes in raw tails while retaining MiNTLib's parsed
 ARGV vector for extended arguments. Storage belongs to each caller and lives
 through its `main`; no replacement CRT or heap allocation is needed. The
-17-case MOD_APP runner also passes after extracting the shared parser.
+18-case MOD_APP runner also passes after extracting the shared parser.
 
 `mise run test:mod-app-neost` runs only the rebuilt MOD_APP through NeoST's
 headless EmuTOS Pexec driver. The driver snapshots `APPLICAT.INF`,
@@ -122,13 +122,14 @@ Seeds come from the checked-in `base/mod-app/tests/APPLICAT.IN` and
 (`[<frei>]`/`[<Spezial>]`) variant. The archived comparison binary is retired
 and recoverable from `pre-magic-retirement:base/mod-app/MOD_APP.TTP`.
 
-Coverage includes all registration modes, duplicate/no-write errors,
-bad/missing files, single-quoted, empty and long paths, backup/cache behavior
-and both section spellings. Pexec reports the low 16-bit exit status: 65503
-represents the documented -33 file-not-found result. The historical Hatari
-throwaway comparison additionally covered double quotes, escaped apostrophes
-and an extended ARGV path; the current runner does not reproduce those, and its
-evidence remains under `build/atari/mod-app-smoke/results`.
+Coverage includes all registration modes, duplicate and bad-argument errors, a
+missing application, single-quoted/empty/long paths, both section spellings,
+sorted file-type insertion, backup/cache behavior and cache restoration before
+each error status. Pexec reports the low 16-bit exit status; current cases use
+only 0, 1, 3 and 4. The historical Hatari throwaway comparison additionally
+covered double quotes, escaped apostrophes, an extended ARGV path and the
+65503 (-33) file-not-found result; the current runner does not reproduce those,
+and its evidence remains under `build/atari/mod-app-smoke/results`.
 
 ### CMDLINE
 

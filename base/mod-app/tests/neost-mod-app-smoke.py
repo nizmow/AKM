@@ -62,8 +62,10 @@ CASES = [
     ("app", 0, {"pgm": "quoted.prg", "rsc": "-", "icon": -1,
                 "path": "D:\\APP FILES\\PROGRAMS", "code": 1}),
     ("id", 3, {"pgm": "papillon.prg", "ftyp": "*.x", "rsc": "-", "icon": -1}),
+    ("id", 0, {"pgm": "papillon.prg", "ftyp": "*.a", "rsc": "-", "icon": -1}),
 ]
 EXPECTED = [status for _, status, _ in CASES]
+RESTORE_CACHE_BEFORE = {2, 5, 11}
 
 LABELS = {
     "english": {"free": "<free>", "special": "<Special>"},
@@ -127,14 +129,29 @@ def app_block(args: dict) -> bytes:
             + body.encode("ascii") + CRLF + str(args["code"]).encode("ascii") + CRLF)
 
 
+def type_position(block: bytes, prefix: bytes) -> int:
+    """Position in an application block where do_mode_id inserts a type line."""
+    position = 0
+    for _ in range(4):  # name, resource, path, code lines
+        position = block.index(CRLF, position) + 2
+    while position < len(block):
+        end = block.index(CRLF, position)
+        if cstrncmp(block[position:end], prefix, len(prefix)) > 0:
+            return position
+        position = end + 2
+    return position
+
+
 def expected_after(inf: bytes, kind: str, args: dict, labels: dict) -> bytes:
     if kind == "app":
         index = app_insert_index(inf, section(args["pgm"]))
         return inf[:index] + app_block(args) + inf[index:]
     if kind == "id":
-        line = args["ftyp"].upper().encode("ascii") + b" " + rscinfo(args["rsc"], args["icon"])
-        old = section_block(inf, section(args["pgm"]).decode("ascii")[1:-1])
-        return inf.replace(old, old + line, 1)
+        prefix = args["ftyp"].upper().encode("ascii") + b" "
+        line = prefix + rscinfo(args["rsc"], args["icon"])
+        block = section_block(inf, section(args["pgm"]).decode("ascii")[1:-1])
+        position = type_position(block, prefix)
+        return inf.replace(block, block[:position] + line + block[position:], 1)
     if kind == "is":
         line = (f'{args["key"]} {args["name"]} '.encode("ascii")
                 + rscinfo(args["rsc"], args["icon"]))
@@ -153,6 +170,8 @@ def validate(label: str, seed_inf: bytes, seed_dat: bytes,
         current = snapshots[number]
         if got != status:
             raise RuntimeError(f"{label} case {number:02d}: status {got} != {status}")
+        if number in RESTORE_CACHE_BEFORE:
+            dat = seed_dat
         if status == 0:
             previous = inf
             inf = expected_after(inf, kind, args, LABELS[label])
@@ -198,7 +217,7 @@ def invoke(headless: Path, rom: Path, root: Path, output: Path,
     cases = [(int(number), int(status) & 0xFFFF)
              for number, status in CASE_LINE.findall(text)]
     expected_cases = list(enumerate(EXPECTED, start=1))
-    if cases != expected_cases or "DONE 17" not in text:
+    if cases != expected_cases or f"DONE {len(CASES)}" not in text:
         raise RuntimeError(f"{label}: missing/mismatched guest results {cases}; see {console}")
 
     snapshots = {}

@@ -102,8 +102,8 @@ git show "pre-magic-retirement:$archived_path" > "$destination"
 | `base/mgview/BIN/MGVIEW.APP` | Archive | Modern target produces its own executable; no checked-in binary consumer found. Past manual port comparisons are not active tests. | Same path |
 | `base/mgview/BIN/VIEW.PRG` | Archive | Historical binary distinct from the modern MGVIEW target; no live caller found. | Same path |
 | `base/mgxclock/BIN/MGXCLOCK.PRG` | Archive | Modern target produces its own executable; no checked-in binary consumer found. Past manual port comparisons are not active tests. | Same path |
-| `base/mod-app/MOD_APP.TTP` | Archive | Legacy copy; no live caller found. The current runner uses the separate reference path. | Same path |
-| `base/mod-app/tests/MOD_APP.TTP` | Retire | `neost-mod-app-smoke.py` now runs only the rebuild and checks 17 explicit statuses plus per-case INF/BAK/DAT contents, backup rotation, cache invalidation and unchanged error outputs. Recoverable from `pre-magic-retirement:base/mod-app/MOD_APP.TTP`. | `base/mod-app/MOD_APP.TTP` |
+| `base/mod-app/MOD_APP.TTP` | Archive | Legacy copy; no live caller found. The updated runner executes only the rebuild; the separate test copy is retired below. | Same path |
+| `base/mod-app/tests/MOD_APP.TTP` | Retire | `neost-mod-app-smoke.py` now runs only the rebuild and checks 18 explicit statuses plus per-case INF/BAK/DAT contents, backup rotation, cache invalidation and unchanged error outputs. Recoverable from `pre-magic-retirement:base/mod-app/MOD_APP.TTP`. | `base/mod-app/MOD_APP.TTP` |
 | `base/showfile/BIN/SHOWFILE.TTP` | Archive | Modern target produces its own executable; no checked-in binary consumer found. Past manual port comparisons are not active tests. | Same path |
 | `base/showfree/tests/SHOWFREE.TOS` | Keep | `neost-diagnostic-tools-smoke.py`: monitor assertions are independent, final screen equality is not. | `base/showfree/SHOWFREE.TOS` |
 | `base/shutdown/BIN/SHUTDOWN.PRG` | Archive | Modern target produces its own executable; no checked-in binary consumer found. Past manual port comparisons are not active tests. | Same path |

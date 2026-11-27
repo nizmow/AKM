@@ -121,8 +121,9 @@ framework or shared-library rewrite is required before these are attempted.
 - [x] Keep fixture preparation, Pexec child-status capture and per-step
   INF/BAK/DAT expectations in the runner, separate from MOD_APP itself.
 - [x] Cover application, file-type and special-object registration, duplicate
-  and missing-app errors, quoted/empty/long paths, English and legacy German
-  sections, backup rotation and cache invalidation.
+  and missing-app errors, single-quoted/empty/long paths, English and legacy
+  German sections, sorted type insertion, backup rotation and cache invalidation.
+  Double quotes, escaped apostrophes and extended ARGV remain historical-only.
 - [x] Keep crash probes, installers, header patchers and formatters out of the
   default smoke set.
 - [ ] Give crash probes, installers and formatters disposable fixtures and
