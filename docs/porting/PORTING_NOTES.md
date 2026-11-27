@@ -109,18 +109,26 @@ MOD_APP and APPLICAT share `shared/tos-args/TOS_ARGS.H`, preserving single/doubl
 quotes and doubled apostrophes in raw tails while retaining MiNTLib's parsed
 ARGV vector for extended arguments. Storage belongs to each caller and lives
 through its `main`; no replacement CRT or heap allocation is needed. The
-17-case MOD_APP comparison passed again after extracting the shared parser.
+17-case MOD_APP runner also passes after extracting the shared parser.
 
-A disposable Atari launcher invoked both original and rebuilt MOD_APP through
-Pexec under the GCC kernel: 17 cases each, matching exit statuses and 48
-byte-identical INF/BAK/DAT snapshot pairs. Coverage included all registration
-modes, duplicate/no-write errors, bad/missing files, English and legacy German
-sections, backup/cache behavior, both quote styles, escaped apostrophes, empty
-arguments and a long ARGV path. Pexec reports the low 16-bit exit status:
-65503 in the test log represents the documented -33 file-not-found result.
-Evidence is under `build/atari/mod-app-smoke/results`; the test image and desktop
-screenshot are under `build/atari/hatari-test/mod-app`. The launcher was
-throwaway verification, not yet a reusable automated application test framework.
+`mise run test:mod-app-neost` runs only the rebuilt MOD_APP through NeoST's
+headless EmuTOS Pexec driver. The driver snapshots `APPLICAT.INF`,
+`APPLICAT.BAK` and `APPLICAT.DAT` after every case, so the host requires each
+declared status and the exact file state for that step: inserted text and its
+sorted position, backup rotation, `AnKr`→`BnKr` cache invalidation, and
+unchanged files for duplicate, bad-argument and missing-application results.
+Seeds come from the checked-in `base/mod-app/tests/APPLICAT.IN` and
+`APPLICAT.DAT`; the runner exercises one English and one legacy German
+(`[<frei>]`/`[<Spezial>]`) variant. The archived comparison binary is retired
+and recoverable from `pre-magic-retirement:base/mod-app/MOD_APP.TTP`.
+
+Coverage includes all registration modes, duplicate/no-write errors,
+bad/missing files, single-quoted, empty and long paths, backup/cache behavior
+and both section spellings. Pexec reports the low 16-bit exit status: 65503
+represents the documented -33 file-not-found result. The historical Hatari
+throwaway comparison additionally covered double quotes, escaped apostrophes
+and an extended ARGV path; the current runner does not reproduce those, and its
+evidence remains under `build/atari/mod-app-smoke/results`.
 
 ### CMDLINE
 

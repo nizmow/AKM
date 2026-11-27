@@ -113,14 +113,16 @@ framework or shared-library rewrite is required before these are attempted.
 ## Repeatable runtime verification
 
 - [x] Add an explicitly invoked MOD_APP smoke runner. `base/mod-app/tests/neost-mod-app-smoke.py`
-  runs the archived and GCC binaries through NeoST's headless TOS autostart.
+  runs only the rebuilt binary through NeoST's headless TOS autostart and checks
+  each case against the documented status and file contract.
 - [x] Fix the NeoST profile at ST/4 MiB with bundled EmuTOS 1.04 by default;
-  each binary gets a separate disposable GEMDOS C: tree. Capture logs, results
-  and screenshots without touching the Hatari boot images or running GUI.
-- [x] Keep fixture preparation, Pexec child-status capture and INF/BAK/DAT
-  comparison in the runner, separate from MOD_APP itself.
+  each section seed gets a separate disposable GEMDOS C: tree. Capture logs,
+  results and screenshots without touching the Hatari boot images or running GUI.
+- [x] Keep fixture preparation, Pexec child-status capture and per-step
+  INF/BAK/DAT expectations in the runner, separate from MOD_APP itself.
 - [x] Cover application, file-type and special-object registration, duplicate
-  and missing-app errors, quoted/empty/long paths, and output-file parity.
+  and missing-app errors, quoted/empty/long paths, English and legacy German
+  sections, backup rotation and cache invalidation.
 - [x] Keep crash probes, installers, header patchers and formatters out of the
   default smoke set.
 - [ ] Give crash probes, installers and formatters disposable fixtures and

@@ -264,11 +264,15 @@ MiNTLib's default stack ABI and 32-bit integers. It does not use the archived
 Pure C objects/libraries. `BUILD_DIR`, `CFLAGS`, `CPPFLAGS`, `LDFLAGS` and `LDLIBS`
 can be supplied as Make assignments; do not add kernel `-mshort/-mfastcall` flags.
 
-MOD_APP passed 17 cases per executable against the archived original under the
-GCC-built kernel in Hatari. Return codes matched, as did 48 pairs of captured
-INF/BAK/DAT files: application/file-type/special-object registration, duplicate
-and error handling, backups/cache invalidation, quoted/empty arguments and long
-ARGV paths. Tests used disposable D: files; the real installation was untouched.
+`mise run test:mod-app-neost` runs the rebuilt `MOD_APP.TTP` under
+NeoST/EmuTOS and checks 17 cases against explicit expectations: declared child
+statuses plus, after every case, the exact `APPLICAT.INF`, `APPLICAT.BAK` and
+`APPLICAT.DAT` state. Coverage includes application/file-type/special-object
+registration, duplicate and error handling, backup rotation, cache invalidation,
+single-quoted/empty/long paths and English/legacy German section names. The
+archived comparison binary has been retired; the historical Hatari comparison
+also covered double quotes, escaped apostrophes and an extended ARGV path. The
+runner does not reproduce those, and MagiC-kernel behavior remains unverified.
 See the [porting notes](docs/porting/PORTING_NOTES.md) for the startup
 compatibility finding and the [work list](docs/porting/TODO.md) for next tasks.
 

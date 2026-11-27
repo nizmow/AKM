@@ -14,8 +14,7 @@ are not removal candidates.
 |---|---:|---|
 | Archive | 28 | No live consumer. Exact copies remain in `pre-magic-retirement`. |
 | Keep | 55 | Active input, or explicitly retained compatibility, corpus, or unfinished-port reference. |
-| Retire | 14 | Reference binaries removed; captured metadata or independent expectations replace live use, and exact files remain recoverable from `pre-magic-retirement`. |
-| Replace → archive | 1 | Still read by a runner. Preserve the relevant assertions or provenance before removing it in a separate test change. |
+| Retire | 15 | Reference binaries removed; captured metadata or independent expectations replace live use, and exact files remain recoverable from `pre-magic-retirement`. |
 
 ## Consumer boundaries
 
@@ -104,7 +103,7 @@ git show "pre-magic-retirement:$archived_path" > "$destination"
 | `base/mgview/BIN/VIEW.PRG` | Archive | Historical binary distinct from the modern MGVIEW target; no live caller found. | Same path |
 | `base/mgxclock/BIN/MGXCLOCK.PRG` | Archive | Modern target produces its own executable; no checked-in binary consumer found. Past manual port comparisons are not active tests. | Same path |
 | `base/mod-app/MOD_APP.TTP` | Archive | Legacy copy; no live caller found. The current runner uses the separate reference path. | Same path |
-| `base/mod-app/tests/MOD_APP.TTP` | Replace → archive | `neost-mod-app-smoke.py`: 17 fixed statuses. Define expected APPLICAT.INF/BAK/DAT contents and absence cases before dropping the archive snapshot comparison. | `base/mod-app/MOD_APP.TTP` |
+| `base/mod-app/tests/MOD_APP.TTP` | Retire | `neost-mod-app-smoke.py` now runs only the rebuild and checks 17 explicit statuses plus per-case INF/BAK/DAT contents, backup rotation, cache invalidation and unchanged error outputs. Recoverable from `pre-magic-retirement:base/mod-app/MOD_APP.TTP`. | `base/mod-app/MOD_APP.TTP` |
 | `base/showfile/BIN/SHOWFILE.TTP` | Archive | Modern target produces its own executable; no checked-in binary consumer found. Past manual port comparisons are not active tests. | Same path |
 | `base/showfree/tests/SHOWFREE.TOS` | Keep | `neost-diagnostic-tools-smoke.py`: monitor assertions are independent, final screen equality is not. | `base/showfree/SHOWFREE.TOS` |
 | `base/shutdown/BIN/SHUTDOWN.PRG` | Archive | Modern target produces its own executable; no checked-in binary consumer found. Past manual port comparisons are not active tests. | Same path |

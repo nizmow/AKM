@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
-"""Run original and GCC MOD_APP binaries through NeoST's headless TOS boot."""
+"""Run the rebuilt MOD_APP and check explicit per-case file effects.
+
+Each case runs through the guest Pexec driver, which snapshots APPLICAT.INF,
+APPLICAT.BAK and APPLICAT.DAT immediately after the child exits. The host then
+requires the declared child status and the exact INF/BAK/DAT contents for that
+step: insertion text and position, backup rotation, cache invalidation, and
+unchanged files for validation/duplicate/missing-application errors.
+"""
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -15,30 +23,162 @@ COMPONENT = Path(__file__).resolve().parents[1]
 ROOT = COMPONENT.parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from neost_common import acquire_headless, create_output, resolve_rom, run, sha256
+from neost_common import acquire_headless, create_output, resolve_rom, run
 from neost_server import NeoSTServer
 
 BUILD = ROOT / "build/atari"
 APP_BUILD = BUILD / "apps/mod-app"
-FIXTURES = BUILD / "mod-app-smoke"
-ORIGINAL = ROOT / "base/mod-app/tests/MOD_APP.TTP"
 GCC_APP = APP_BUILD / "MOD_APP.TTP"
 DRIVER = APP_BUILD / "NEOSTEST.PRG"
-EXPECTED = [0, 3, 0, 3, 4, 0, 3, 0, 0, 0, 1, 1, 0, 3, 0, 0, 3]
+SEED_INF = COMPONENT / "tests/APPLICAT.IN"
+SEED_DAT = COMPONENT / "tests/APPLICAT.DAT"
+
+CRLF = b"\r\n"
 CASE_LINE = re.compile(r"^CASE\s+(\d{2})\s+(-?\d+)\s*$", re.MULTILINE)
+LONG_PATH = "C:\\" + "A" * 80
+
+# (kind, expected child status, arguments); statuses are MOD_APP's documented
+# return values: 0 written, 1 bad argument, 3 duplicate, 4 application missing.
+CASES = [
+    ("app", 0, {"pgm": "papillon.prg", "rsc": "-", "icon": -1, "path": "-", "code": 1}),
+    ("app", 3, {"pgm": "papillon.prg", "rsc": "-", "icon": -1, "path": "-", "code": 1}),
+    ("id", 0, {"pgm": "papillon.prg", "ftyp": "*.x", "rsc": "-", "icon": -1}),
+    ("id", 3, {"pgm": "papillon.prg", "ftyp": "*.x", "rsc": "-", "icon": -1}),
+    ("id", 4, {"pgm": "missing.prg", "ftyp": "*.z", "rsc": "-", "icon": -1}),
+    ("is", 0, {"key": "ABCD", "name": "sample", "rsc": "-", "icon": 12}),
+    ("is", 3, {"key": "ABCD", "name": "sample", "rsc": "-", "icon": 12}),
+    ("app", 0, {"pgm": "space.prg", "rsc": "-", "icon": -1,
+                "path": "C:\\MY APPS", "code": 1}),
+    ("app", 0, {"pgm": "empty.prg", "rsc": "-", "icon": -1, "path": "", "code": 1}),
+    ("app", 0, {"pgm": "longpath.prg", "rsc": "-", "icon": -1,
+                "path": LONG_PATH, "code": 1}),
+    ("app", 1, {"pgm": "tool.prg", "rsc": "RESOURCE-NAME-TOO-LONG", "icon": 0,
+                "path": "-", "code": 1}),
+    ("id", 1, {"pgm": "papillon.prg", "ftyp": "123456789012345678901234567890123",
+               "rsc": "-", "icon": -1}),
+    ("app", 0, {"pgm": "code.prg", "rsc": "-", "icon": 0, "path": "-", "code": 7}),
+    ("app", 3, {"pgm": "code.prg", "rsc": "-", "icon": -1, "path": "-", "code": 1}),
+    ("id", 0, {"pgm": "papillon.prg", "ftyp": "*.y", "rsc": "-", "icon": -1}),
+    ("app", 0, {"pgm": "quoted.prg", "rsc": "-", "icon": -1,
+                "path": "D:\\APP FILES\\PROGRAMS", "code": 1}),
+    ("id", 3, {"pgm": "papillon.prg", "ftyp": "*.x", "rsc": "-", "icon": -1}),
+]
+EXPECTED = [status for _, status, _ in CASES]
+
+LABELS = {
+    "english": {"free": "<free>", "special": "<Special>"},
+    "german": {"free": "<frei>", "special": "<Spezial>"},
+}
 
 
-def prepare_case(root: Path, executable: Path) -> None:
+def section(pgm: str) -> bytes:
+    """name_to_section: '[' + up to eight characters before '.' + ']'."""
+    name = ""
+    for char in pgm:
+        if char == "." or len(name) == 8:
+            break
+        name += char.upper()
+    return f"[{name}]".encode("ascii")
+
+
+def cstrncmp(left: bytes, right: bytes, length: int) -> int:
+    for index in range(length):
+        a = left[index] if index < len(left) else 0
+        b = right[index] if index < len(right) else 0
+        if a != b:
+            return -1 if a < b else 1
+        if a == 0:
+            return 0
+    return 0
+
+
+def app_insert_index(inf: bytes, name: bytes) -> int:
+    """Replay do_mode_ia's section scan: first section sorting after `name`."""
+    at = 0
+    while True:
+        at = inf.find(CRLF + b"[", at)
+        if at < 0:
+            raise AssertionError(f"no section after {name!r}")
+        if inf[at + 3:at + 4] == b"<":
+            order = 1
+        else:
+            order = cstrncmp(inf[at + 2:], name, len(name))
+        if order == 0:
+            raise AssertionError(f"unexpected duplicate {name!r}")
+        if order > 0:
+            return at + 2
+        at += 3
+
+
+def section_block(inf: bytes, name: str) -> bytes:
+    start = inf.index(b"[" + name.encode("ascii") + b"]")
+    end = inf.index(CRLF + b"[", start + 1) + 2
+    return inf[start:end]
+
+
+def rscinfo(rsc: str, icon: int) -> bytes:
+    return f'{rsc} {icon} "-"\r\n'.encode("ascii")
+
+
+def app_block(args: dict) -> bytes:
+    path = args["path"]
+    body = "" if path == "-" else (f"'{path}'" if " " in path else path)
+    return (section(args["pgm"]) + CRLF + rscinfo(args["rsc"], args["icon"])
+            + body.encode("ascii") + CRLF + str(args["code"]).encode("ascii") + CRLF)
+
+
+def expected_after(inf: bytes, kind: str, args: dict, labels: dict) -> bytes:
+    if kind == "app":
+        index = app_insert_index(inf, section(args["pgm"]))
+        return inf[:index] + app_block(args) + inf[index:]
+    if kind == "id":
+        line = args["ftyp"].upper().encode("ascii") + b" " + rscinfo(args["rsc"], args["icon"])
+        old = section_block(inf, section(args["pgm"]).decode("ascii")[1:-1])
+        return inf.replace(old, old + line, 1)
+    if kind == "is":
+        line = (f'{args["key"]} {args["name"]} '.encode("ascii")
+                + rscinfo(args["rsc"], args["icon"]))
+        start = inf.index(CRLF + b"[" + labels["special"].encode("ascii") + b"]")
+        end = inf.index(CRLF + b"[", start + 1) + 2
+        return inf[:end] + line + inf[end:]
+    raise AssertionError(f"unknown case kind {kind!r}")
+
+
+def validate(label: str, seed_inf: bytes, seed_dat: bytes,
+             snapshots: dict, statuses: list[int]) -> None:
+    inf, bak, dat = seed_inf, None, seed_dat
+    if snapshots[0] != (seed_inf, None, seed_dat):
+        raise RuntimeError(f"{label}: initial snapshot differs from the seed fixture")
+    for number, ((kind, status, args), got) in enumerate(zip(CASES, statuses), 1):
+        current = snapshots[number]
+        if got != status:
+            raise RuntimeError(f"{label} case {number:02d}: status {got} != {status}")
+        if status == 0:
+            previous = inf
+            inf = expected_after(inf, kind, args, LABELS[label])
+            dat = b"BnKr" + dat[4:] if dat.startswith(b"AnKr") else dat
+            if current != (inf, previous, dat):
+                raise RuntimeError(
+                    f"{label} case {number:02d}: INF/BAK/DAT differ from expectation")
+            bak = previous
+        elif current != (inf, bak, dat):
+            raise RuntimeError(
+                f"{label} case {number:02d}: error case changed INF/BAK/DAT")
+
+
+def prepare(root: Path, inf: bytes, dat: bytes) -> None:
     gemdos = root / "C"
     desk = gemdos / "GEMSYS/GEMDESK"
     desk.mkdir(parents=True)
-    shutil.copy2(FIXTURES / "ENGLISH.INF", desk / "APPLICAT.INF")
-    shutil.copy2(FIXTURES / "BASE.DAT", desk / "APPLICAT.DAT")
-    shutil.copy2(executable, gemdos / "MOD_APP.TTP")
+    (desk / "APPLICAT.INF").write_bytes(inf)
+    (desk / "APPLICAT.DAT").write_bytes(dat)
+    shutil.copy2(GCC_APP, gemdos / "MOD_APP.TTP")
     shutil.copy2(DRIVER, gemdos / "NEOSTEST.PRG")
+    (gemdos / "RESULTS").mkdir()
 
 
-def invoke(headless: Path, rom: Path, root: Path, output: Path, label: str, frames: int) -> tuple[list[int], dict[str, str]]:
+def invoke(headless: Path, rom: Path, root: Path, output: Path,
+           label: str, frames: int) -> tuple[list[int], dict]:
     gemdos = root / "C"
     console = output / f"{label}.console.log"
     screenshot = output / f"{label}.ppm"
@@ -60,11 +200,15 @@ def invoke(headless: Path, rom: Path, root: Path, output: Path, label: str, fram
     expected_cases = list(enumerate(EXPECTED, start=1))
     if cases != expected_cases or "DONE 17" not in text:
         raise RuntimeError(f"{label}: missing/mismatched guest results {cases}; see {console}")
-    artifacts = {}
-    for name in ("APPLICAT.INF", "APPLICAT.BAK", "APPLICAT.DAT"):
-        path = gemdos / "GEMSYS/GEMDESK" / name
-        artifacts[name] = sha256(path) if path.is_file() else "MISSING"
-    return [status for _, status in cases], artifacts
+
+    snapshots = {}
+    for number in range(len(CASES) + 1):
+        entry = []
+        for suffix in ("INF", "BAK", "DAT"):
+            path = gemdos / "RESULTS" / f"{number:02d}.{suffix}"
+            entry.append(path.read_bytes() if path.is_file() else None)
+        snapshots[number] = tuple(entry)
+    return [status for _, status in cases], snapshots
 
 
 def main() -> int:
@@ -82,10 +226,8 @@ def main() -> int:
 
     if args.frames < 1:
         parser.error("--frames must be positive")
-    if not ORIGINAL.is_file():
-        parser.error(f"archived original MOD_APP missing: {ORIGINAL}")
-    if not (FIXTURES / "ENGLISH.INF").is_file() or not (FIXTURES / "BASE.DAT").is_file():
-        parser.error(f"MOD_APP fixtures missing under {FIXTURES}")
+    if not SEED_INF.is_file() or not SEED_DAT.is_file():
+        parser.error(f"MOD_APP seed fixtures missing: {SEED_INF}, {SEED_DAT}")
 
     build = run([str(ROOT / "scripts/atari-container"), "run", "make", "-f",
                  "Makefile.apps", "mod-app", "mod-app-test-driver"], cwd=ROOT, timeout=600)
@@ -100,6 +242,16 @@ def main() -> int:
         output = create_output(args.output, parent=BUILD, prefix="neost-mod-app-smoke")
     except OSError as error:
         parser.error(str(error))
+
+    seed_dat = SEED_DAT.read_bytes()
+    if seed_dat[:4] != b"AnKr":
+        seed_dat = b"AnKr" + seed_dat[4:]
+    seed_inf = SEED_INF.read_bytes()
+    german_inf = seed_inf
+    english_inf = (seed_inf.replace(b"[<frei>]", b"[<free>]")
+                   .replace(b"[<Spezial>]", b"[<Special>]"))
+    seeds = {"english": english_inf, "german": german_inf}
+
     try:
         with tempfile.TemporaryDirectory(prefix="neost-mod-app-") as temporary:
             headless, app_root = acquire_headless(args.neost_headless, args.neost,
@@ -107,27 +259,31 @@ def main() -> int:
             rom = resolve_rom(args.rom, app_root)
             outcomes = {}
             snapshots = {}
-            for label, binary in (("original", ORIGINAL), ("gcc", GCC_APP)):
+            for label, seed in seeds.items():
                 guest = output / f"guest-{label}"
-                prepare_case(guest, binary)
-                statuses, artifacts = invoke(headless, rom, guest, output, label, args.frames)
+                prepare(guest, seed, seed_dat)
+                statuses, steps = invoke(headless, rom, guest, output, label, args.frames)
+                validate(label, seed, seed_dat, steps, statuses)
                 outcomes[label] = statuses
-                snapshots[label] = artifacts
+                snapshots[label] = {
+                    f"{number:02d}.{suffix}":
+                        "MISSING" if entry is None
+                        else hashlib.sha256(entry).hexdigest()
+                    for number, step in steps.items()
+                    for suffix, entry in zip(("INF", "BAK", "DAT"), step)
+                }
                 (output / f"{label}.results.txt").write_text(
                     "".join(f"{i:02d} {status}\n" for i, status in enumerate(statuses, 1)),
                     encoding="ascii")
 
             report = {"emulator": str(headless), "rom": str(rom), "frames": args.frames,
-                      "cases": len(EXPECTED), "expected_statuses": EXPECTED,
+                      "cases": len(CASES), "expected_statuses": EXPECTED,
                       "outcomes": outcomes, "snapshots_sha256": snapshots}
             (output / "report.json").write_text(json.dumps(report, indent=2) + "\n",
                                                 encoding="utf-8")
-            if outcomes["original"] != outcomes["gcc"]:
-                raise RuntimeError("original/GCC exit statuses differ; see report.json")
-            if snapshots["original"] != snapshots["gcc"]:
-                raise RuntimeError("original/GCC APPLICAT files differ; see report.json")
-            print(f"NeoST MOD_APP smoke passed: {len(EXPECTED)} cases per binary; "
-                  f"INF/BAK/DAT snapshots match. Results: {output}")
+            print(f"NeoST MOD_APP smoke passed: {len(CASES)} cases against English and "
+                  f"German section seeds; INF/BAK/DAT match explicit expectations. "
+                  f"Results: {output}")
     except (OSError, RuntimeError) as error:
         print(f"NeoST MOD_APP smoke failed: {error}\nArtifacts: {output}", file=sys.stderr)
         return 1
