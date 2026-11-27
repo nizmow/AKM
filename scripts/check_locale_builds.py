@@ -22,14 +22,18 @@ TABLE_BYTES = 128
 
 
 def parse_c(text: str) -> tuple[dict[str, bytes], list[str]]:
+    clean = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+    clean = re.sub(r"//[^\n]*", "", clean)
     bodies = {
         match.group(1): bytes(int(value, 16) for value in
                               re.findall(r"0x([0-9a-fA-F]{2})", match.group(2)))
         for match in re.finditer(
-            r"^static const char tab_(\w+)\[128\] = \{(.*?)^\};", text, re.S | re.M)
+            r"^\s*static const char tab_(\w+)\[128\] = \{(.*?)^\s*\};", clean,
+            re.S | re.M)
     }
-    order_block = re.search(r"^static const char \*const tab_order\[9\] = \{(.*?)^\};",
-                            text, re.S | re.M)
+    order_block = re.search(
+        r"^\s*static const char \*const tab_order\[9\] = \{(.*?)^\s*\};",
+        clean, re.S | re.M)
     if order_block is None:
         raise ValueError("C header has no tab_order")
     order = []
@@ -65,15 +69,25 @@ def parse_asm(text: str) -> tuple[dict[str, bytes], list[str]]:
     for number, line in enumerate(lines):
         if line != "default_keytblx:":
             continue
-        for candidate in lines[number + 1:]:
+        index = number + 1
+        while len(order) < SLOTS and index < len(lines):
+            candidate = lines[index]
+            index += 1
             if not candidate.strip():
                 continue
             slot = re.fullmatch(r" dc\.l tab_(\w+)", candidate)
             if slot is None:
                 raise ValueError(f"unexpected default pointer {candidate!r}")
             order.append(slot.group(1))
-            if len(order) == SLOTS:
+        # Everything up to the first table label must be exactly the slots.
+        while index < len(lines):
+            candidate = lines[index]
+            index += 1
+            if not candidate.strip():
+                continue
+            if re.fullmatch(r"tab_\w+:", candidate):
                 break
+            raise ValueError(f"extra data after default pointers: {candidate!r}")
         break
     return bodies, order
 

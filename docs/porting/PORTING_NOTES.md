@@ -917,10 +917,11 @@ short file leaves the built-in UK tables active. UK regional defaults are
 directly and does not compose dead-key accents.
 
 `make-release.py` builds with the profile's region and keyboard pinned and,
-including under `--skip-build`, requires the kernel's `.kernel-locale` stamp to
-match the requested language/region/keyboard and the embedded UK block to be
-present exactly for English. This rejects a reused build tree whose objects were
-produced with an explicit override such as `KERNEL_KEYBOARD=de`.
+including under `--skip-build`, requires `.kernel-locale.meta` to record the
+requested language/region/keyboard and the SHA-256 of the packaged `MAGIC.RAM`,
+and the embedded UK block to be present exactly for English. This rejects a
+reused tree whose objects came from an override such as `KERNEL_KEYBOARD=de`,
+or whose kernel bytes no longer match the metadata after an interrupted relink.
 
 This is an English-resource distribution, not a complete new translation.
 Legacy help, retained CPXs, association/icon labels and some compiled-in

@@ -152,14 +152,16 @@ def build(build_dir: Path, rebuilt: dict[Path, str], *, language: str) -> None:
 def collect(build_dir: Path, rebuilt: dict[Path, str], *,
             minimal: bool, language: str) -> dict[str, tuple[bytes, str]]:
     region, keyboard, _ = LOCALE[language]
-    stamp = build_dir / ".kernel-locale"
-    if not stamp.is_file():
-        raise SystemExit(f"missing locale stamp {stamp}; rebuild the kernel")
-    expected_stamp = f"lang={language} region={region} keyboard={keyboard}"
-    actual_stamp = stamp.read_text(encoding="utf-8").strip()
-    if actual_stamp != expected_stamp:
-        raise SystemExit(
-            f"kernel locale stamp {actual_stamp!r} does not match {expected_stamp!r}")
+    meta_path = ROOT / build_dir / ".kernel-locale.meta"
+    if not meta_path.is_file():
+        raise SystemExit(f"missing locale metadata {meta_path}; rebuild the kernel")
+    meta = dict(line.split("=", 1) for line in
+                meta_path.read_text(encoding="utf-8").splitlines() if "=" in line)
+    expected = {"lang": language, "region": region, "keyboard": keyboard}
+    actual = {name: meta.get(name) for name in expected}
+    if actual != expected:
+        raise SystemExit(f"kernel locale metadata {actual} does not match {expected}")
+    digest = meta.get("sha256", "")
     entries: dict[str, tuple[bytes, str]] = {}
     for relative, guest in rebuilt.items():
         resource = ENGLISH_RESOURCES.get(guest) if language == "en" else None
@@ -170,6 +172,8 @@ def collect(build_dir: Path, rebuilt: dict[Path, str], *,
         if not data:
             raise SystemExit(f"rebuilt input empty: {local}")
         if guest == "MAGIC.RAM":
+            if hashlib.sha256(data).hexdigest() != digest:
+                raise SystemExit("kernel bytes do not match the locale metadata digest")
             country = struct.unpack_from(">H", data, 28 + 28)[0] >> 1
             expected = {"de": 1, "en": 3}[language]
             if country != expected:

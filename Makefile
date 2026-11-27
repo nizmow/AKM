@@ -59,7 +59,7 @@ INCLUDE_DIR := $(BUILD_DIR)/include
 # XFS_VDOS, VDI) stay shared.
 override KERNEL_LOCALE := $(KERNEL_LANG)-$(KERNEL_REGION)-$(KERNEL_KEYBOARD)
 override KERNEL_LOCALE_SLUG := $(if $(filter de-de-de,$(KERNEL_LOCALE)),,-$(KERNEL_LOCALE))
-KERNEL_OBJ_ROOT := $(BUILD_DIR)/kernel$(KERNEL_LOCALE_SLUG)
+override KERNEL_OBJ_ROOT := $(BUILD_DIR)/kernel$(KERNEL_LOCALE_SLUG)
 
 # The final MAGIC.RAM has one name per BUILD_DIR.  If several locale selections
 # are built in the same BUILD_DIR, a switch must relink the final image even
@@ -152,6 +152,8 @@ $(BUILD_DIR)/kernel.elf: $(KERNEL_OBJECTS) kernel/mk/kernel.ld Makefile \
 
 $(BUILD_DIR)/MAGIC.RAM: $(BUILD_DIR)/kernel.elf kernel/tools/elf_to_magic.py
 	python3 kernel/tools/elf_to_magic.py $< $@
+	@{ printf 'lang=%s\nregion=%s\nkeyboard=%s\n' '$(KERNEL_LANG)' '$(KERNEL_REGION)' '$(KERNEL_KEYBOARD)'; \
+	   printf 'sha256=%s\n' "$$(sha256sum $@ | cut -d' ' -f1)"; } > $(BUILD_DIR)/.kernel-locale.meta
 
 $(KERNEL_OBJECTS): Makefile
 $(AES_ASM_OBJECTS) $(AES_C_DIR)/wdintrfc.o: kernel/mk/assembly.mk
