@@ -1,1 +1,0 @@
-mod_app -Dia jinnee.prg MAGICICN.RSC 86 - 1

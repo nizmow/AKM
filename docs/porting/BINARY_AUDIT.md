@@ -6,9 +6,9 @@ Baseline: `4ee69b5` (main after PR #11). Scope: tracked paths under `base/`,
 `60 1a` header outside those suffixes. This yields 96 suffix matches and two
 header matches: `WBDAEMON.BAK` and the `PCMXSTRT.O` DIS input. The latter is a
 DRI object fixture, not a runnable program. The suffix matches include two
-empty APPLICAT placeholders. The other DIS object inputs, `T.O` and `X.O`, and
-non-executable fixtures such as `APPLICAT.BAK` are outside this inventory and
-are not removal candidates.
+empty APPLICAT placeholders. The other DIS object inputs, `T.O` and `X.O`,
+are retained corpus outside this inventory. Non-executable manual-test outputs
+such as MOD_APP's retired `APPLICAT.BAK` are also outside this binary audit.
 
 | Decision | Paths | Action |
 |---|---:|---|
