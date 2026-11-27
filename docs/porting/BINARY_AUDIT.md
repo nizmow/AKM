@@ -12,9 +12,9 @@ are not removal candidates.
 
 | Decision | Paths | Action |
 |---|---:|---|
-| Archive | 27 | No live consumer. Exact copies remain in `pre-magic-retirement`. |
+| Archive | 28 | No live consumer. Exact copies remain in `pre-magic-retirement`. |
 | Keep | 55 | Active input, or explicitly retained compatibility, corpus, or unfinished-port reference. |
-| Replace → archive | 16 | Still read by a runner. Preserve the relevant assertions or provenance before removing it in a separate test change. |
+| Replace → archive | 15 | Still read by a runner. Preserve the relevant assertions or provenance before removing it in a separate test change. |
 
 ## Consumer boundaries
 
@@ -79,7 +79,7 @@ git show "pre-magic-retirement:$archived_path" > "$destination"
 | `base/keyb-sys/tests/KEYB_SWG.PRG` | Keep | `neost-keyb-sys-smoke.py`: name/status/size checks are explicit; key and dead-key contents still use archive equality. | `base/keyb-sys/BIN/KEYB_SWG.PRG` |
 | `base/keyb-sys/tests/KEYB_UK.PRG` | Keep | `neost-keyb-sys-smoke.py`: name/status/size checks are explicit; key and dead-key contents still use archive equality. | `base/keyb-sys/BIN/KEYB_UK.PRG` |
 | `base/keyb-sys/tests/KEYB_US.PRG` | Keep | `neost-keyb-sys-smoke.py`: name/status/size checks are explicit; key and dead-key contents still use archive equality. | `base/keyb-sys/BIN/KEYB_US.PRG` |
-| `base/limitmem/BIN/LIMITMEM.TTP` | Replace → archive | `neost-limitmem-smoke.py`: fixed statuses and MAGX marker change/no-change cases. Finish standalone expectations for all touched files and meaningful console output. | Same path |
+| `base/limitmem/BIN/LIMITMEM.TTP` | Archive | Standalone regression checks exact console text, eight child statuses, the appended MAGX marker, and untouched fixture bytes. | Same path |
 | `base/load-img/tests/LOAD_IMG.SLB` | Keep | `neost-slb-consumer-smoke.py`: default `--baseline source` uses this library; default and release paths still compare observed IMG colours. | `base/load-img/BIN/LOAD_IMG.SLB` |
 | `base/mac2st/BIN/MAC2ST.TTP` | Archive | Standalone console regression checks CR expansion, child status and missing-file behavior. | Same path |
 | `base/magxconf/tests/FRA/MAGXCONF.PRG` | Keep | `neost-magxconf-smoke.py`: localized comparison frames alongside explicit save/cancel/reboot checks. | `base/magxconf/BIN/FRA/MAGXCONF.PRG` |

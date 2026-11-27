@@ -197,17 +197,17 @@ repository Atari-to-UTF-8 converter and adapted in place. The executable-header
 record is defined locally with fixed-width fields; GEMDOS errors are returned
 with their negative TOS values rather than positive `errno` values.
 
-`python3 scripts/neost-limitmem-smoke.py --output <new-directory>` compares the
-archived and GCC executables under NeoST/EmuTOS using disposable PRG fixtures.
-The test checks byte-identical console output, Pexec statuses, marker creation,
-unchanged already-limited files, malformed headers/relocations, missing files
-and invalid arguments. Both binaries match; setting the 64 KiB marker changes
-the fixture as expected. Original release inputs are not modified.
+`python3 scripts/neost-limitmem-smoke.py --output <new-directory>` checks the
+rebuilt executable under NeoST/EmuTOS using disposable PRG fixtures. It
+requires the exact console transcript and child statuses for all eight Pexec
+cases, the 64 KiB `MAGX` marker appended to `SET.PRG`, and unchanged bytes for
+the already-limited, removal, malformed-header and malformed-relocation
+fixtures. The original reference binary remains in `pre-magic-retirement`.
 
 EmuTOS returns -64 (`ERANGE`) from the legacy `Fshrink` surrogate
 (`Fwrite(handle, 0, (void *)-1)`). Setting still writes the marker before that
-error; removal returns the same status and leaves the marker in place in both
-binaries. Successful removal therefore remains unverified under MagiC.
+error; removal returns the same status and leaves the marker in place.
+Successful removal therefore remains unverified under MagiC.
 The legacy `nat_str` also read MagiC's system header for runtime country
 selection; this port currently uses its English fallback because no public SDK
 replacement was established. Non-English runtime selection remains unverified.
