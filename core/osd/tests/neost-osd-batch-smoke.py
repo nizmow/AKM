@@ -22,6 +22,7 @@ import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
 
+from osd_release_metadata import release_metadata
 from neost_common import acquire_headless, create_output, require, run
 from neost_image import MagiCImage
 from neost_server import NeoSTServer
@@ -107,7 +108,8 @@ PROFILES = {
         "osd": "OFF016PK", "version": "0410", "colors": 16, "planes": 4,
         "format": 2, "org": 1,
         "exact": OSD / "OFF016PK.OSD",
-        "release": RELEASE / "OFF016PK.OSD",
+        "archive": OSD / "OFF016PK.OSD",
+        "release": release_metadata("OFF016PK"),
         "text": "OFF16PK", "expected_pixels": [
             "1/2", "1/2", "2/3", "2/3", "4/4", "4/4", "8/9", "8/9",
             "15/1", "15/1", "0/0"],
@@ -117,7 +119,8 @@ PROFILES = {
         "osd": "OFF256PK", "version": "0411", "colors": 256, "planes": 8,
         "format": 2, "org": 1,
         "exact": None,
-        "release": RELEASE / "OFF256PK.OSD",
+        "archive": None,
+        "release": release_metadata("OFF256PK"),
         "text": "OFF256PK", "expected_pixels": [
             "1/2", "1/2", "2/3", "2/3", "4/4", "4/4", "8/9", "8/9",
             "16/16", "16/16", "32/32", "32/32", "64/64", "64/64",
@@ -128,7 +131,7 @@ PROFILES = {
         "osd": "OFF32KFL", "version": "0411", "colors": 32768, "planes": 16,
         "format": 2, "org": 2,
         "exact": RELEASE / "OFF32KFL.OSD",
-        "archive": OSD / "MIN-ATAR/OFF32KFL.OSD",
+        "archive": None,
         "release": RELEASE / "OFF32KFL.OSD",
         "text": "OFF32KF", "expected_pixels": pixels(V32FL),
         "bitmap": lambda: bitmap_32k(V32FL),
@@ -137,7 +140,8 @@ PROFILES = {
         "osd": "OFF32KPK", "version": "0411", "colors": 32768, "planes": 16,
         "format": 2, "org": 129,
         "exact": None,
-        "release": RELEASE / "OFF32KPK.OSD",
+        "archive": None,
+        "release": release_metadata("OFF32KPK"),
         "text": "OFF32KP", "expected_pixels": pixels(V32PK),
         "bitmap": lambda: bitmap_32k(V32PK),
     },
@@ -145,8 +149,8 @@ PROFILES = {
         "osd": "OFF65KPK", "version": "0411", "colors": 65536, "planes": 16,
         "format": 2, "org": 129,
         "exact": None,
-        "archive": OSD / "OFF65KPK.OSD",
-        "release": RELEASE / "OFF65KPK.OSD",
+        "archive": None,
+        "release": release_metadata("OFF65KPK"),
         "text": "OFF65KP", "expected_pixels": pixels(V65PK),
         "bitmap": lambda: bitmap_32k(V65PK),
     },
@@ -154,7 +158,8 @@ PROFILES = {
         "osd": "OFF16MOV", "version": "0413", "colors": 16777216,
         "planes": 32, "format": 2, "org": 129,
         "exact": None,
-        "release": RELEASE / "OFF16MOV.OSD",
+        "archive": None,
+        "release": release_metadata("OFF16MOV"),
         "text": "OFF16MV", "expected_pixels": long_pixels(V16MOV_RAW),
         "bitmap": bitmap_16mov,
     },
@@ -189,14 +194,33 @@ def structure_report(profile: dict, built: dict, output: Path) -> None:
     lines = [f"rebuilt: {built['length']} bytes tlen=0x{built['tlen']:x} "
              f"dlen=0x{built['dlen']:x} version={built['version']} "
              f"organisation={built['organisation']}"]
-    archive = profile.get("archive", OSD / (profile["osd"] + ".OSD"))
-    for label, path in (("source archive", archive), ("release", profile["release"])):
-        if not path.is_file():
-            lines.append(f"{label}: missing ({path})")
-            continue
-        ref = parse_tos(path)
-        lines.append(f"{label}: {ref['length']} bytes version={ref['version']} "
-                     f"organisation={ref['organisation']} equal={ref['sha256'] == built['sha256']}")
+    archive = profile["archive"]
+    if archive is None:
+        lines.append("source archive: not used; runtime uses the independent expectation")
+    elif not archive.is_file():
+        lines.append(f"source archive: missing ({archive})")
+    else:
+        ref = parse_tos(archive)
+        lines.append(f"source archive: {ref['length']} bytes "
+                     f"version={ref['version']} organisation={ref['organisation']} "
+                     f"equal={ref['sha256'] == built['sha256']}")
+    release = profile["release"]
+    if isinstance(release, dict):
+        entries = ", ".join(
+            f"{name}=0x{value:x}" for name, value in release["entries"].items())
+        lines.append(
+            f"release reference: {release['length']} bytes "
+            f"tlen=0x{release['tlen']:x} dlen=0x{release['dlen']:x} "
+            f"version={release['version']} organisation={release['organisation']} "
+            f"equal={release['sha256'] == built['sha256']} "
+            f"entries=({entries}); {release['path']}")
+    elif not release.is_file():
+        lines.append(f"release: missing ({release})")
+    else:
+        ref = parse_tos(release)
+        lines.append(f"release: {ref['length']} bytes version={ref['version']} "
+                     f"organisation={ref['organisation']} "
+                     f"equal={ref['sha256'] == built['sha256']}")
     if profile["exact"] is not None:
         exact = parse_tos(profile["exact"])
         require(built["sha256"] == exact["sha256"],
@@ -325,10 +349,12 @@ def main() -> int:
             headless, _ = acquire_headless(args.neost_headless, args.neost, Path(temporary))
             rom = args.tos.expanduser().resolve()
             source = args.magic_image.expanduser().resolve()
-            archive = profile.get("archive", OSD / (osd + ".OSD"))
-            archived_text, archived_bin = run_case(
-                profile, headless, rom, source, archive, "archive", output,
-                args.partition_offset)
+            archive = profile["archive"]
+            archived_text = archived_bin = None
+            if archive is not None:
+                archived_text, archived_bin = run_case(
+                    profile, headless, rom, source, archive, "archive", output,
+                    args.partition_offset)
             rebuilt_text, rebuilt_bin = run_case(
                 profile, headless, rom, source, rebuilt, "rebuilt", output,
                 args.partition_offset)
@@ -336,19 +362,21 @@ def main() -> int:
                 profile, headless, rom, source, None, "missing", output,
                 args.partition_offset)
 
-        check_result(profile, archived_text)
         check_result(profile, rebuilt_text)
-        require(archived_text == rebuilt_text,
-                f"probe text differs: archive={archived_text!r} rebuilt={rebuilt_text!r}")
-        require(archived_bin is not None and archived_bin == rebuilt_bin,
-                "bitmap dump differs between archive and rebuild")
+        if archived_text is not None:
+            check_result(profile, archived_text)
+            require(archived_text == rebuilt_text,
+                    f"probe text differs: archive={archived_text!r} rebuilt={rebuilt_text!r}")
+            require(archived_bin is not None and archived_bin == rebuilt_bin,
+                    "bitmap dump differs between archive and rebuild")
         require(rebuilt_bin == expected,
                 "bitmap does not match the independent expected layout")
         require(missing_text == "bitmap open rejected",
                 f"missing driver was not rejected: {missing_text!r}")
         require(missing_bin is None, "missing driver still produced a bitmap dump")
         print(f"{osd}/NVDI probe: {rebuilt_text}")
-        print(f"bitmap: {len(rebuilt_bin)} bytes, archive/rebuilt identical, matches expectation")
+        archive_match = "archive/rebuilt identical, " if archived_bin is not None else ""
+        print(f"bitmap: {len(rebuilt_bin)} bytes, {archive_match}matches expectation")
         print("missing-driver control: open rejected, no bitmap written")
         print(f"Evidence: {output}")
     except (OSError, RuntimeError, subprocess.SubprocessError) as error:

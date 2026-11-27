@@ -198,26 +198,25 @@ framework or shared-library rewrite is required before these are attempted.
   packed C export records. Four-plane conversion and XIMG rendering match the
   source-tree archives. The retained Release reference XIMG colours differ; see porting notes.
 - [x] **OFF002.OSD** — VASM build matches the archived V4.10 MIN-ATAR binary
-  byte-for-byte; NVDI selects it for a 1-plane offscreen bitmap and draws into
-  the caller-owned MFDB. The retained Release reference V4.11 remains a different, unported version.
+  byte-for-byte; NVDI draws into a 1-plane offscreen bitmap and the probe checks
+  its hash. Release V4.11 layout/provenance is reported from captured metadata.
 - [x] **OFF004IP.OSD** — VASM build matches the archived V4.10 MIN-ATAR binary
   byte-for-byte with `-no-opt`; archive and rebuild draw into a 2-plane
-  interleaved MFDB with identical pixel readbacks and bitmap bytes, asserted
-  independently. The retained Release reference V4.11 remains a different, unported version.
+  interleaved MFDB with identical readbacks and independently expected bitmap.
+  Release V4.11 layout/provenance is reported from captured metadata.
 - [x] **OFF016IP.OSD** — VASM build matches the archived V4.10 MIN-ATAR binary
   byte-for-byte with `-no-opt`; archive and rebuild render a 4-plane interleaved
-  MFDB with identical pixel readbacks and bitmap bytes, and a driver-less clone
-  rejects the open. The retained Release reference is a different build and remains
-  unported.
+  MFDB with identical readbacks and bitmap, and a driver-less clone rejects open.
+  Release V4.10 layout/provenance is reported from captured metadata.
 - [x] **OFF256IP.OSD** — VASM build matches the archived V4.10 MIN-ATAR binary
   byte-for-byte with `-no-opt` after folding the zero-displacement colour-map
-  load; the retained Release reference is the same binary. Archive and rebuild render an
-  8-plane interleaved MFDB with identical pixel readbacks and 4096-byte bitmap
-  bytes, asserted independently, and a driver-less clone rejects the open.
+  load; captured metadata records the historical Release as byte-identical to
+  MIN-ATAR. The runtime probe checks bitmap readbacks and missing-driver rejection.
 - [x] **OSD phase 2** — `OFF016PK`, `OFF256PK`, `OFF32KFL`, `OFF32KPK`,
   `OFF65KPK` and `OFF16MOV` build from the legacy sources. OFF016PK matches the
-  V4.10 archive and OFF32KFL the V4.11 Release byte-for-byte; the other four
-  have no byte-identical reference and are verified structurally and at runtime.
+  V4.10 archive and OFF32KFL the V4.11 Release exact fixture. Only OFF016PK
+  retains an archived runtime comparison; other rebuilt probes use independent
+  pixels/bitmaps and missing-driver controls, with Release metadata in reports.
   `mise run test:osd-<driver>-neost` checks each requested layout, readbacks
   and full bitmap, plus a missing-driver control. OFF16MOV asserts its 16 KB
   bitmap and the word-swapped TrueColor readbacks; OFF65KPK asserts its 5/6/5

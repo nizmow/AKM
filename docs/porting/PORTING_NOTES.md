@@ -1456,10 +1456,10 @@ them with `scripts/mas_to_vasm.py`, including the
 -tos-flags=7`. `-nosym` prevents VASM from adding a symbol table where the
 archived TOS executable has `slen=0`; `-tos-flags=7` preserves the header flag
 word. The resulting V4.10 `OFF002.OSD` is byte-identical to the archived
-MIN-ATAR file, including its TOS header, driver entry offsets and relocation
-stream. The retained Release reference (`core/osd/tests/release/OFF002.OSD`) is
-V4.11 and has different code/data sizes
-and entry offsets; do not treat this source as a byte-identical V4.11 rebuild.
+MIN-ATAR file, including its TOS header, driver entry offsets and relocation stream.
+The V4.11 Release layout and provenance are recorded from metadata captured
+from `pre-magic-retirement:MagiC/Releases/MAGIC.A/GEMSYS/OFF002.OSD`; do not
+treat this source as a byte-identical V4.11 rebuild.
 
 `v_opnbm()` is a VDI 100 call with `contrl[5]=1`, 20 intin words and the MFDB
 pointer in `contrl[7/8]`. A caller-owned 64x64 one-plane MFDB with
@@ -1473,11 +1473,10 @@ bitmap hash; see `core/osd/tests/OFF002.C`.
 `core/osd/SRC/OFF004IP.S` through the same MAS-to-VASM
 normalization and include set as OFF002. It is byte-identical to the archived
 V4.10 `core/osd/tests/archive/MIN-ATAR/OFF004IP.OSD`. VASM's default
-optimization rewrites `movem.l (sp)+,a0/a2` as two `movea.l` instructions; the
-archive keeps the MOVEM encoding, so this target passes `-no-opt`. The retained
-Release reference (`core/osd/tests/release/OFF004IP.OSD`) is V4.11 with
-different text/data sizes and entry offsets; it is
-not a byte reference.
+optimization rewrites `movem.l (sp)+,a0/a2` as two `movea.l` instructions.
+The archive keeps the MOVEM encoding, so this target passes `-no-opt`. Captured
+V4.11 Release layout/provenance metadata is reported; the old binary is not a
+live fixture or byte reference.
 
 `mise run test:osd-off004ip-neost` builds the driver and a probe
 (`core/osd/tests/OFF004IP.C`), then runs the archived and rebuilt
@@ -1501,9 +1500,9 @@ untested.
 `mise run apps -- off016ip` builds `build/atari/apps/osd/OFF016IP.OSD` from
 `core/osd/SRC/OFF016IP.S`. It is byte-identical to the
 archived V4.10 `core/osd/tests/archive/MIN-ATAR/OFF016IP.OSD`; like
-OFF004IP it needs `-no-opt` so VASM keeps the archive's `movem` restores. The
-retained Release reference reports header version 4.10 as well but has different
-text/data sizes and entry offsets, so it is a structural comparison only.
+OFF004IP it needs `-no-opt` so VASM keeps the archive's `movem` restores.
+Captured Release V4.10 provenance/layout metadata is reported; the historical
+reference had the same version but different text/data sizes and entry offsets.
 
 `mise run test:osd-off016ip-neost` builds the driver and
 `core/osd/tests/OFF016IP.C`. The probe requests the 16-colour,
@@ -1528,8 +1527,8 @@ stability remain untested.
 `mise run apps -- off256ip` builds `build/atari/apps/osd/OFF256IP.OSD` from
 `core/osd/SRC/OFF256IP.S` with the same includes and
 `-no-opt` as OFF016IP. It is byte-identical to both the archived V4.10
-`core/osd/tests/archive/MIN-ATAR/OFF256IP.OSD` and the retained Release
-reference `core/osd/tests/release/OFF256IP.OSD` (same SHA-256, 22,558 bytes, text length 0x5798). The source uses
+`core/osd/tests/archive/MIN-ATAR/OFF256IP.OSD`; captured historical Release
+metadata records the same SHA-256, 22,558 bytes and text length 0x5798. The source uses
 `movea.l (a2),a0` where the original spelling was
 `movea.l _color_map_ptr(a2),a0`; `_color_map_ptr` is `EQU 0`, and the archived
 assembler folded the zero displacement while VASM `-no-opt` does not. Without
@@ -1578,23 +1577,24 @@ write-mode aliases and `r_planes`. Its normalized copy therefore maps
 builds with default optimization; the driver's relocation table uses label
 differences, so instruction-size changes cannot desynchronize it.
 
-Reference parity is per driver: OFF016PK is byte-identical to its V4.10
-source-tree archive; OFF32KFL is byte-identical to the shipped V4.11 Release.
-OFF256PK (source V4.11; archive V3.02, Release V4.12), OFF32KPK (V4.11; archive
-0410, Release 0413), OFF65KPK (V4.11; archive 0410, Release 0413) and OFF16MOV
-(V4.13; both references differ, notably the source keeps the
-`scrninfo`/palette tables in TEXT while the references place them in DATA)
-have no byte-identical reference, so their structure and runtime behavior are
-verified instead.
+Reference parity is per driver: OFF016PK remains byte-identical to its V4.10
+source-tree archive; OFF32KFL remains byte-identical to the shipped V4.11
+Release. The historical source archives for OFF256PK (V3.02), OFF32KPK (0410),
+OFF65KPK (0410) and OFF16MOV (V4.13) are not byte-identical to the rebuilds.
+Those four source-archive binaries are retired from the checkout but recoverable
+from `pre-magic-retirement`; Release variants remain represented by captured
+structure/version metadata. The rebuilds have independent runtime expectations.
 
 `mise run test:osd-<driver>-neost` runs the shared
 `core/osd/tests/neost-osd-batch-smoke.py --driver <driver>` scenario. Each probe
 requests its exact tuple through VDI 100/1, draws four-pixel bars crossing the
 x=15/16 boundary, samples both sides, dumps the bitmap and checks an untouched
-pixel. Indexed drivers use NVDI's colour map; direct-colour probes set pens
-through VDI opcode 14. Archive and rebuild run in separate clones; a clone with
-the driver deleted must report the open as rejected and write no bitmap. The
-16MOV scenario asserts the full 16 KB bitmap and readbacks equal to the stored
+pixel. Indexed drivers use NVDI's colour map; direct-colour probes set pens through VDI opcode 14.
+Only OFF016PK runs archived and rebuilt drivers in separate clones. The other
+five run the rebuild and a missing-driver control; each rebuilt result is
+checked against independent pixel and bitmap expectations. OFF32KFL's retained
+Release binary is an exact byte-parity fixture, not a runtime comparison.
+OFF16MOV asserts the full 16 KB bitmap and readbacks equal to the stored
 longword with VDI's 16-bit word swap. OFF65KPK expects the byte-swapped 5/6/5
 values (`0x00F8`, `0xE007`, `0x1F00`, `0x00FC`, `0x1F80`) and its full
 8192-byte bitmap.
