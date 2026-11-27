@@ -19,7 +19,7 @@ from neost_screen import diff_stats
 
 BUILD = ROOT / "build/atari"
 APPS = BUILD / "apps"
-ARCHIVE = COMPONENT / "BIN/TSLICE.CPX"
+ARCHIVE = COMPONENT / "tests/TSLICE.CPX"
 REBUILT = APPS / "cpx/TSLICE.CPX"
 GUEST_CPX = "::/AUTO/ACCS/CPX/TSLICE.CPX"
 GUEST_CPZ = "::/AUTO/ACCS/CPX/TSLICE.CPZ"

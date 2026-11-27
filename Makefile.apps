@@ -461,7 +461,7 @@ mgformat-hardware-kit: mgformat
 	rm -rf "$(BUILD_DIR)/mgformat-hardware"
 	mkdir -p "$(BUILD_DIR)/mgformat-hardware/ARCHIVE" \
 	  "$(BUILD_DIR)/mgformat-hardware/REBUILT"
-	cp "$(MGFORMAT_DIR)/../BIN/MGFORMAT.PRG" \
+	cp "$(MGFORMAT_DIR)/../tests/MGFORMAT.PRG" \
 	  "$(BUILD_DIR)/mgformat-hardware/ARCHIVE/MGFORMAT.PRG"
 	cp "$(MGFORMAT_DIR)/MGFORMAT.RSC" \
 	  "$(BUILD_DIR)/mgformat-hardware/ARCHIVE/MGFORMAT.RSC"

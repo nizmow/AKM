@@ -20,9 +20,9 @@ from neost_screen import diff_stats
 
 BUILD = ROOT / "build/atari"
 APPS = BUILD / "apps/magxconf"
-ARCHIVES = {"de": SOURCE / "BIN/GER/MAGXCONF.ACC",
-            "en": SOURCE / "BIN/US/MAGXCONF.ACC",
-            "fr": SOURCE / "BIN/FRA/MAGXCONF.PRG"}
+ARCHIVES = {"de": SOURCE / "tests/GER/MAGXCONF.ACC",
+            "en": SOURCE / "tests/US/MAGXCONF.ACC",
+            "fr": SOURCE / "tests/FRA/MAGXCONF.PRG"}
 # Captions (including padding) differ between archive and source revisions.
 # Compare switch state margins, button borders and numeric version/date fields;
 # full captures retain the text differences instead of normalizing them away.

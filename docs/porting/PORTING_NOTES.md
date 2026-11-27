@@ -1643,7 +1643,7 @@ them at boot; no MagiC image or live keyboard driver is involved.
 `mise run apps -- hardcopy` assembles `build/atari/apps/hardcopy/HARDCOPY.PRG`
 from `base/hardcopy/HARDCOPY.S` (normalized with `mas_to_vasm.py`) and
 the shared `shared/asm/OSBIND.INC`, using VASM `-Ftos -tos-flags=1`. The
-archived `base/hardcopy/HARDCOPY.PRG` and the retained Release reference
+archived `base/hardcopy/tests/HARDCOPY.PRG` and the retained Release reference
 `scripts/testdata/release/HARDCOPY.PRG` are byte-identical; the pre-retirement
 `MagiC/Releases/MAGIC.A/EXTRAS/HARDCOPY.PRG` is the historical Release origin.
 `mise run apps -- hardcopy-test-driver` builds `HCPROBE.PRG`, which reads
@@ -1682,7 +1682,7 @@ source; the recipe passes `OUTSIDE` only for the `MAGXBO32` variant, whose
 32-KB page alignment and virtual-memory title lines are guarded by an `IFND`
 default so an unparameterized assembly still works. The archived
 `core/magxboot/tests/MAGXBOOT.TOS` and
-`core/magxboot/SRC/MAGXBOOT.PRG` are byte-identical references; the former is
+`core/magxboot/tests/MAGXBOOT.PRG` are byte-identical references; the former is
 also the pre-retirement Release `AUTO/MAGXBOOT.TOS`.
 The rebuilt `MAGXBOOT.PRG` is produced as a copy of the rebuilt TOS; that pair
 differs from the references only by the encodings noted below, so do not compare
@@ -1721,8 +1721,10 @@ definitions; `MEMEXAMN` uses local fixed-width `SYSHDR`/`DOSVARS`/`AESVARS`/
 variadic output still use 32-bit `int`. `MEMEXAMN` also needs a writable drive
 path buffer and treats an empty `argv[1]` as the live-system request.
 
-`mise run test:diagnostic-tools-neost` installs each archive/rebuild under the
-same guest name and compares status and output. MAGXKERN matches byte-for-byte;
+`mise run test:diagnostic-tools-neost` checks rebuilt CRASHDMP directly:
+status 0 with no output when no crash record is present. For the other tools,
+it installs archive and rebuild under the same guest name in separate clones.
+MAGXKERN output matches byte-for-byte;
 MEMEXAMN's addresses and block sizes differ with the larger rebuilt image, so
 the test compares the normalized early table plus owner tokens and the `KROM`
 terminator. SHOWFREE loops until a key; the test compares screens and the first
@@ -1904,7 +1906,7 @@ preserves D2, which that callback may clobber. A packed C parameter alone
 would not protect the register.
 
 Do not use the retained Release reference `scripts/testdata/release/LOAD_IMG.SLB`
-as a source-level oracle. The source-tree archive under `base/load-img/BIN`
+as a source-level oracle. The source-tree reference `base/load-img/tests/LOAD_IMG.SLB`
 decodes in export 0, with
 a per-plane byte stride. The Release reference initializes a private image
 handle in export 0, reports an all-plane stride there, and decodes in

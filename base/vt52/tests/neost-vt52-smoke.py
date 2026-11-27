@@ -34,7 +34,7 @@ from neost_image import MagiCImage
 from neost_screen import diff_stats
 
 BUILD = ROOT / "build/atari"
-ARCHIVE_APP = COMPONENT / "BIN/VT52.PRG"
+ARCHIVE_APP = COMPONENT / "tests/VT52.PRG"
 ARCHIVE_RSC = COMPONENT / "SRC/VT52/RESOURCE/DEUTSCH/VT52.RSC"
 REBUILT_APP = BUILD / "apps/vt52/VT52.PRG"
 REBUILT_RSC = BUILD / "apps/vt52/VT52.RSC"

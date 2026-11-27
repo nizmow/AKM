@@ -26,7 +26,7 @@ from neost_screen import diff_stats
 from neost_server import NeoSTServer
 
 BUILD = ROOT / "build/atari"
-ARCHIVE_APP = COMPONENT / "BIN/MGSEARCH.APP"
+ARCHIVE_APP = COMPONENT / "tests/MGSEARCH.APP"
 RESOURCE = COMPONENT / "SRC/MGSEARCH.RSC"
 REBUILT_DIR = BUILD / "apps/mgsearch"
 REBUILT_APP = REBUILT_DIR / "MGSEARCH.APP"

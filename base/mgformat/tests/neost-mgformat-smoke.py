@@ -34,7 +34,7 @@ from neost_image import MagiCImage
 from neost_screen import diff_stats
 
 BUILD = ROOT / "build/atari"
-ARCHIVE_APP = COMPONENT / "BIN/MGFORMAT.PRG"
+ARCHIVE_APP = COMPONENT / "tests/MGFORMAT.PRG"
 ARCHIVE_RSC = COMPONENT / "SRC/MGFORMAT.RSC"
 REBUILT_APP = BUILD / "apps/mgformat/MGFORMAT.PRG"
 REBUILT_RSC = BUILD / "apps/mgformat/MGFORMAT.RSC"

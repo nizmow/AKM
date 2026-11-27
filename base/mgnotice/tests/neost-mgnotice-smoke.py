@@ -36,9 +36,9 @@ from neost_screen import diff_stats
 from neost_server import NeoSTServer
 
 BUILD = ROOT / "build/atari"
-ARCHIVE_APP = COMPONENT / "BIN/MGNOTICE.APP"
+ARCHIVE_APP = COMPONENT / "tests/MGNOTICE.APP"
 ARCHIVE_RSC = COMPONENT / "SRC/MGNOTICE.RSC"
-ARCHIVE_SLB = COMPONENT.parent / "edit-slb/BIN/EDITOBJC.SLB"
+ARCHIVE_SLB = COMPONENT.parent / "edit-slb/tests/EDITOBJC.SLB"
 REBUILT_DIR = BUILD / "apps/mgnotice"
 REBUILT_APP = REBUILT_DIR / "MGNOTICE.APP"
 REBUILT_RSC = REBUILT_DIR / "mgnotice.rsc"

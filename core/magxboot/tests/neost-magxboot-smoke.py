@@ -28,7 +28,7 @@ from neost_screen import diff_stats, read_ppm
 
 BUILD = ROOT / "build/atari"
 ARCHIVE = ROOT / "core/magxboot/tests/MAGXBOOT.TOS"
-ARCHIVED_PRG = COMPONENT / "SRC/MAGXBOOT.PRG"
+ARCHIVED_PRG = COMPONENT / "tests/MAGXBOOT.PRG"
 REBUILT = BUILD / "apps/magxboot/MAGXBOOT.TOS"
 PROBE = BUILD / "apps/screen/SCREEN.PRG"
 LOADER_GUEST = "::/AUTO/MAGXBOOT.TOS"
@@ -145,7 +145,7 @@ def main() -> int:
             "normal PRG output is not the rebuilt TOS")
     check_rebuild(REBUILT, ARCHIVE)
     check_rebuild(BUILD / "apps/magxboot/MAGXBO32.PRG",
-                  COMPONENT / "SRC/MAGXBO32.PRG")
+                  COMPONENT / "tests/MAGXBO32.PRG")
 
     try:
         output = create_output(args.output, parent=BUILD, prefix="neost-magxboot")

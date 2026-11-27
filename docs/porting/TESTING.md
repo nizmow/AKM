@@ -843,7 +843,7 @@ not booted.
 `mise run test:hardcopy-neost` builds `HARDCOPY.PRG` and `HCPROBE.PRG`, then
 boots three disposable clones:
 
-- the archived `base/hardcopy/HARDCOPY.PRG` and the retained Release reference
+- the archived `base/hardcopy/tests/HARDCOPY.PRG` and the retained Release reference
   `scripts/testdata/release/HARDCOPY.PRG` (the runner asserts they are identical);
 - the rebuild from `build/atari/apps/hardcopy/HARDCOPY.PRG`;
 - a clone without the extension.
@@ -862,15 +862,17 @@ binary too, so the printer path is untested.
 ## NeoST: MagiC diagnostic tools
 
 `mise run test:diagnostic-tools-neost` builds `SHOWFREE.TOS`, `MAGXKERN.TTP`,
-`MEMEXAMN.TTP`, `CRASHDMP.TOS` and the shared `DIAG.PRG` runner. It clones the
-MagiC image for archive and rebuild, installs both under the same guest name,
-runs `DIAG.PRG` from `MAGIC\START`, and captures `DIAG.OUT`/`DIAG.STA`.
+`MEMEXAMN.TTP`, `CRASHDMP.TOS` and the shared `DIAG.PRG` runner. For the paired
+cases, it installs archive and rebuild under the same guest name in separate
+MagiC clones. The `DIAG.PRG` cases run from `MAGIC\START` and capture
+`DIAG.OUT`/`DIAG.STA`.
 
 - `MAGXKERN`: status 0 and byte-identical output.
 - `MEMEXAMN`: status 0; the banner, normalized early table, owner tokens and
   `KROM` terminator are present and match where comparable. Block sizes and
   addresses differ because the rebuilt executable is larger.
-- `CRASHDMP`: status 0 with no output on the no-record path.
+- `CRASHDMP`: run only the rebuilt binary; require status 0 and empty output
+  on the no-record path.
 - `SHOWFREE`: both copies appear in `MAGIC\START`, print the monitor and
   `blocks used`, and render pixel-identical screens.
 
