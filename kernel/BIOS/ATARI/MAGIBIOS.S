@@ -4104,7 +4104,12 @@ set_cpu_typ:
 * DATA
 *
 
-     IF   COUNTRY=FRG
+; The system header's COUNTRY is the machine region (syshdr, above), but the
+; console/boot error texts below follow the interface language, so an English
+; UI with a UK or US machine still says the same English text.  LANGUAGE is
+; the AES language number passed by the build (1 FRG, 0 USA); FRA stays
+; available for a French language build.
+     IF   LANGUAGE=FRG
 os_corr_s:
  DC.B     $1b,'K',$d,$a
  DC.B     $1b,'K',$d,$a
@@ -4118,7 +4123,7 @@ fatal_errs:
  DC.B     '*** SYSTEM ANGEHALTEN ***',$1b,'K',$d,$a
  DC.B     $1b,'K',0
      ENDIF
-     IF   COUNTRY=USA
+     IF   LANGUAGE=USA
 os_corr_s:
  DC.B     $1b,'K',$d,$a
  DC.B     $1b,'K',$d,$a
@@ -4132,21 +4137,7 @@ fatal_errs:
  DC.B     '*** SYSTEM HALTED ***',$1b,'K',$d,$a
  DC.B     $1b,'K',0
      ENDIF
-     IF   COUNTRY=UK
-os_corr_s:
- DC.B     $1b,'K',$d,$a
- DC.B     $1b,'K',$d,$a
- DC.B     '*** SYSTEM DESTROYED ***',$1b,'K',$d,$a
- DC.B     $1b,'K',0
-fatal_bios_errs:
- DC.B     '*** FATAL ERROR WHILE BOOTING:',0
-fatal_errs:
- DC.B     $1b,'K',$d,$a
- DC.B     $1b,'K',$d,$a
- DC.B     '*** SYSTEM HALTED ***',$1b,'K',$d,$a
- DC.B     $1b,'K',0
-     ENDIF
-    IF  COUNTRY=FRA
+    IF  LANGUAGE=FRA
 os_corr_s:
  DC.B   $1b,'K',$d,$a
  DC.B   $1b,'K',$d,$a

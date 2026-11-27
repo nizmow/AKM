@@ -274,6 +274,12 @@ description = "Compare all six KEYB_SYS generators with their archives under Neo
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-keyb-sys-smoke.py"
 
+[tasks."test:locale-neost"]
+description = "Verify English UK kernel language, region, fallback keymap and override handling on MagiC"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-locale-smoke.py"
+
+
 [tasks."test:diagnostic-tools-neost"]
 description = "Compare SHOWFREE, MAGXKERN and MEMEXAMN with archives; check rebuilt CRASHDMP under MagiC"
 dir = "{{ config_root }}"

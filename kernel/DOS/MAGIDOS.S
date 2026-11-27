@@ -11480,7 +11480,9 @@ errstrs:
  DC.W    err_68s-errstrs,err_69s-errstrs,err_70s-errstrs
  DC.W    err_80s-errstrs
 
-     IF   COUNTRY=FRG
+; GEMDOS error text follows the interface language (LANGUAGE), not the
+; machine region selected by COUNTRY.
+     IF   LANGUAGE=FRG
 
 out_of_int_mem:
  DC.B     '*** KEIN INTERNER SPEICHER MEHR:',$1b,'K',$d,$a
@@ -11535,7 +11537,7 @@ diskerr_s1: DC.B  ' auf Laufwerk ',0
 diskerr_s2: DC.B  ':',$d,$a,'[A]bbruch, [W]iederholen, [I]gnorieren ? ',0
 
      ENDC
-     IF   COUNTRY=USA
+     IF   LANGUAGE=USA
 
 out_of_int_mem:
  DC.B     '*** OUT OF INTERNAL MEMORY:',$1b,'K',$d,$a
@@ -11590,7 +11592,7 @@ diskerr_s1: DC.B  ' at drive ',0
 diskerr_s2: DC.B  ':',$d,$a,'[A]bort, [R]etry, [I]gnore ? ',0
 
      ENDC
-    IF  COUNTRY=FRA
+    IF  LANGUAGE=FRA
 
 out_of_int_mem:
  DC.B   '*** PLUS DE MÉMOIRE INTERNE:',$1b,'K',$d,$a

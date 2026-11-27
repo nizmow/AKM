@@ -147,7 +147,7 @@ def collect(build_dir: Path, rebuilt: dict[Path, str], *,
             raise SystemExit(f"rebuilt input empty: {local}")
         if guest == "MAGIC.RAM":
             country = struct.unpack_from(">H", data, 28 + 28)[0] >> 1
-            expected = {"de": 1, "en": 0}[language]
+            expected = {"de": 1, "en": 3}[language]
             if country != expected:
                 raise SystemExit(f"kernel country {country} does not match {language} ({expected})")
         entries[guest] = (data, f"{'resource' if resource else 'rebuilt'} {local.relative_to(ROOT)}")

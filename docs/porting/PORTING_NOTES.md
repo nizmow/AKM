@@ -894,21 +894,27 @@ payload separate; `test:release-minimal-neost` checks boot without it.
 
 `mise run release:english` selects `--language en` in `make-release.py` and
 produces `build/atari/release/core-en.zip` plus its manifest. The default English
-build tree is `build/atari/en`; `KERNEL_LANG=en` selects the complete original
-USA-country kernel (`COUNTRY=0`), including English AES alerts and file/font
-selector resources. Country-dependent objects are isolated by language; a
-language stamp forces relinking when one explicit `BUILD_DIR` is reused.
-German remains the default and retains its existing output paths.
+build tree is `build/atari/en`; `KERNEL_LANG=en` selects English BIOS/GEMDOS/AES
+messages and resources without implying a USA machine. Locale settings are
+independent: `KERNEL_LANG=de|en` is the interface language, `KERNEL_REGION=de|uk|us`
+is the BIOS header country and `_IDT` default, and `KERNEL_KEYBOARD=de|uk` is the
+built-in key table. They default to `de/de/de` for German and `en/uk/uk` for
+English. Object trees are isolated by the full combination and a locale stamp
+forces relinking when one explicit `BUILD_DIR` switches configuration. German
+remains the default and keeps its historic object paths and loaded bytes.
 
 The packager selects the existing English application RSC files without
 transcoding them and selects the English MCMD binary. The original English
 MGNOTICE/MOD_APP documentation and UK `KEYTABLS.SYS` are retained under
 `release/atari/LANG/EN`, recovered byte-for-byte from `pre-magic-retirement`.
-The keyboard table is installed at its active guest path in both English
-profiles, not left in a localization folder. Without it the kernel falls
-back to German QWERTZ: kernel country selection does not select a keyboard.
-The USA-country kernel retains USA date/time defaults (12-hour, MDY, `/`);
-the UK keyboard does not change those defaults.
+The English kernel already carries the UK nine-table fallback compiled from
+`base/keyb-sys/keymaps.json`, the same data as `KEYB_UK.C`. The retained
+`KEYTABLS.SYS` is still installed at its active guest path and still replaces
+the fallback when it is a complete nine-table file; a missing, unreadable or
+short file leaves the built-in UK tables active. UK regional defaults are
+24-hour DMY with `-` (`_IDT` `$112d`); the USA profile keeps 12-hour MDY with
+`/`. `DEADKEYS` is not compiled in, so the kernel maps shifted and AltGr bytes
+directly and does not compose dead-key accents.
 
 This is an English-resource distribution, not a complete new translation.
 Legacy help, retained CPXs, association/icon labels and some compiled-in
@@ -1656,20 +1662,18 @@ long-term stability remain untested.
 `keyb-cz`…`keyb-us` targets build one.
 `ALL.PRJ` omits the DEI project, so all six projects are listed explicitly.
 
-The six sources are Atari-encoded and stay that way. They are compiled with
-`-finput-charset=ISO-8859-1 -fexec-charset=ISO-8859-1`, which keeps the raw
-high-byte character literals in the tables at one byte each; transcoding to
-UTF-8 without rewriting those literals would change the generated tables.
+The table bytes are no longer character literals in the C sources. They live
+in `base/keyb-sys/keymaps.json` as integers, together with the nine-entry
+`write_order` (the duplicate AltGr entries included) and each locale's dead-key
+trailer. `base/keyb-sys/tools/gen_keymaps.py` emits a header per generator and
+an assembler include for the kernel; the C sources are UTF-8 and carry no table
+data, so host locale and compiler charset handling cannot alter the bytes.
 `#include <tos.h>` is replaced by `<mint/osbind.h>` (Pure C header, not in the
-supplied MiNTLib). Because the files are not valid UTF-8, that one-line include
-replacement was applied as a byte-preserving edit rather than through the
-UTF-8-only editor.
+supplied MiNTLib).
 
-Three sources contained `'0x'` where a single character was intended. GCC
-evaluates it as the multi-character constant `0x3078`; conversion to a `char`
-element keeps the low byte `0x78` (`'x'`). The archived tables store `'x'` at
-those positions, confirming the generated value. The literals are now the
-explicit `'x'`, which preserves the tables without relying on that conversion.
+The historical `'0x'` multi-character constants and their one-byte values were
+resolved when the tables were extracted: the JSON stores the archived bytes,
+so the generated output no longer depends on that conversion.
 
 Each generator writes nine 128-byte tables plus a dead-key trailer (CZ 116
 bytes, the rest 42) to `KEYTABLS.SYS`. `mise run test:keyb-sys-neost` runs each
@@ -1679,8 +1683,14 @@ the recorded run), a byte-identical `KEYTABLS.SYS`, the expected file length,
 and six distinct layouts. Evidence:
 `build/atari/neost-keyb-sys-20261123-223130/`.
 
-Limits: this proves the generated tables, not that MagiC's `READ_KTB` loads
-them at boot; no MagiC image or live keyboard driver is involved.
+The English kernel's embedded UK fallback is generated from the same JSON by
+`emit-asm` and selected with `KERNEL_KEYBOARD=uk`; German keeps its historical
+in-source table. `scripts/neost-locale-smoke.py` boots cloned MagiC images and
+checks the fallback with `KEYTABLS.SYS` absent, a distinct full override, a
+short override that must leave the fallback active, `Keytbl`/`Bioskeys`
+semantics, `_IDT`/AES language and the unchanged German profile. Dead-key
+composition remains uncompiled (`DEADKEYS=0`), so shifted and AltGr bytes are
+mapped directly.
 
 ### HARDCOPY extension
 

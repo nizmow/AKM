@@ -632,10 +632,21 @@ evidence directory.
 `build/atari/release/`. `mise run test:release-english-neost` runs the same
 determinism, clean-install, member-hash, desktop-menu and COPS checks with
 `--language en`. The English profile selects existing English application
-resources, English MCMD, a USA-country English kernel and the original UK
-keyboard table. The keyboard table is an active runtime file, including in
-the English minimal profile; that profile permits no optional extension
-files besides `KEYTABLS.SYS`.
+resources, English MCMD, and an English-language UK-region kernel with a
+built-in UK key table. The retained `KEYTABLS.SYS` is still installed as a
+complete nine-table override, including in the English minimal profile; that
+profile permits no other optional extension file. Kernel language, region and
+keyboard are selected independently; see
+[Porting notes](PORTING_NOTES.md#english-mega-ste-profile).
+
+`mise run test:locale-neost` (or `python3 scripts/neost-locale-smoke.py`)
+checks the kernel contract itself on cloned MagiC images: UK fallback with the
+override absent, a distinct full override, a short override that must leave the
+fallback active, `Keytbl`/`Bioskeys` behaviour, `_IDT`/AES language identity,
+and the unchanged German profile. The probe is installed in
+`GEMSYS/MAGIC/START` and uses only public interfaces plus BIOS console input;
+expected table bytes come from `base/keyb-sys/keymaps.json`. Dead-key
+composition is not part of this kernel build and is not asserted.
 
 To check the English minimal profile directly:
 

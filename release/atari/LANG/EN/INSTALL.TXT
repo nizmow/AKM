@@ -10,10 +10,12 @@ not established by an emulator boot check.
 2. Extract the ZIP and copy its contents to the root of C:, preserving AUTO/
    and GEMSYS/. Existing system files will be overwritten. Do not overlay a
    running MagiC installation: shut it down and copy from TOS or another host.
-3. This package already selects English resources and ST high. Do not run
-   historical LANG/*.BAT or LOCALISE.SH scripts. The package includes the
-   original UK KEYTABLS.SYS; keep it installed because the kernel's fallback
-   keyboard is German QWERTZ, independently of the desktop language.
+3. This package already selects English resources, UK regional defaults and an
+   embedded UK keyboard fallback at ST high. Do not run historical LANG/*.BAT
+   or LOCALISE.SH scripts. The package still includes the original UK
+   KEYTABLS.SYS; the kernel loads it when present, but a missing or short file
+   leaves the built-in UK tables active. Replace it only with a complete
+   nine-table override.
 4. Boot TOS, then run C:\AUTO\MAGXBOOT.TOS manually. MAGXDESK should open
    with English menus. Keep your previous boot setup available for recovery.
 5. After manual startup works, you may rename MAGXBOOT.TOS to MAGXBOOT.PRG
