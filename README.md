@@ -275,7 +275,7 @@ also covered double quotes, escaped apostrophes, an extended ARGV path and the
 -33 file-not-found result. The new runner does not repeat those, nor the
 historical MagiC-kernel verification.
 See the [porting notes](docs/porting/PORTING_NOTES.md) for the startup
-compatibility finding and the [work list](docs/porting/TODO.md) for next tasks.
+compatibility finding and [GitHub issues](https://github.com/nizmow/AKM/issues) for remaining work.
 
 `mise run apps -- applicat` builds the association editor bundle in
 `build/atari/apps/applicat/`: `APPLICAT.APP`, `applicat.rsc` (German) and

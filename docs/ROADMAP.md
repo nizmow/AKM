@@ -19,12 +19,13 @@ reconstruct missing source or silently replace unavailable dependencies.
 - User smoke testing reports successful file operations, nested copies and
   four-process multitasking/switching. This is useful evidence, not exhaustive
   correctness, stability or performance coverage.
-- Most applications used in those tests are still the existing release binaries;
-  rebuilding the kernel did not rebuild the distribution.
-
-- MOD_APP is now an independently built GCC/MiNTLib application, with 17 Hatari
-  comparison cases matching the original executable. The [porting work list](porting/TODO.md)
-  tracks the concrete phase-1 work informed by that port.
+- The source-backed German Atari/ST core and minimal installation ZIPs now have
+  repeatable builds and NeoST install/boot checks. Retained distribution inputs
+  are distinct from rebuilt products; component-specific verification limits
+  remain in the build catalogue and testing notes.
+- [GitHub issues](https://github.com/nizmow/AKM/issues) track remaining work,
+  prerequisites and completion criteria. Completed-port status belongs in the
+  catalogue, not a parallel checklist.
 
 Supporting documents:
 

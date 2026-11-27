@@ -142,9 +142,9 @@ SLB bindings, resource packaging and localization are recurring dependencies.
 Keep one owner for shared build/library changes; independent agents can own
 separate applications after the shared prerequisites are defined.
 
-A useful first batch is `MOD_APP`, `SHOWFILE`, `LIMITMEM` and `MGCLOCK`, followed
-by `SHUTDOWN`/`WBDAEMON` and a desktop helper. This is a proposed sequence, not
-an assertion that those ports are already straightforward or complete.
+Choose new work from [GitHub issues](https://github.com/nizmow/AKM/issues) and
+the selected installation's manifest gaps. A historical component or an
+untested runtime path is not automatically a required new port.
 
 ## 4. Command-line tools, diagnostics and examples
 
