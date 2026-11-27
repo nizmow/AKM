@@ -46,7 +46,7 @@ int main(void)
     unsigned char **tables, *saved[TABLES], replacement[REPLACED][TABLE_BYTES];
     unsigned short keys[7];
     short language = 0, one = 0, two = 0, three = 0;
-    int index, replaced, reset, i;
+    int index, replaced, reset, queried, i;
     FILE *file;
     if (appl_init() < 0)
         return 1;
@@ -69,6 +69,14 @@ int main(void)
         if (index < REPLACED ? tables[index] != replacement[index]
                              : tables[index] != saved[index])
             replaced = 0;
+    /* A negative-argument query must report the active tables, not reset them. */
+    queried = 1;
+    if (Keytbl((void *)-1L, (void *)-1L, (void *)-1L) != tables)
+        queried = -1;
+    for (index = 0; queried > 0 && index < TABLES; index++)
+        if (tables[index] != (index < REPLACED ? replacement[index]
+                                              : saved[index]))
+            queried = index + 1;
     Bioskeys();
     reset = memcmp(saved, tables, sizeof(saved)) == 0;
     if (dump("E:\\RESETKEYS.BIN", tables))
@@ -78,8 +86,9 @@ int main(void)
     if (!file)
         return 6;
     fprintf(file, "language=%d\nidt_present=%d\nidt=%lu\nakp_present=%d\n"
-                  "akp=%lu\nkeytbl=%d\nbioskeys=%d\nready=1\n",
-            language, have_idt, idt, have_akp, akp, replaced, reset);
+                  "akp=%lu\nkeytbl=%d\nkeytbl_query=%d\nbioskeys=%d\nready=1\n",
+            language, have_idt, idt, have_akp, akp, replaced,
+            queried == 1, reset);
     if (fclose(file))
         return 7;
 

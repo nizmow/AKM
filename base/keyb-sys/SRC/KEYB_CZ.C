@@ -19,48 +19,28 @@ int main( void )
 {
 	long ret;
 	int hdl;
+	int index;
 
 	ret = Fcreate("KEYTABLS.SYS", 0);
 	hdl = (int) ret;
 	if	(ret < 0)
 		return(hdl);
 
-	ret = Fwrite(hdl, 128L, tab_unshift);
-	if	(ret != 128L)
+	for (index = 0; index < 9; index++)
 		{
-		 wr_err:
-		Fclose(hdl);
-		Fdelete("KEYTABLS.SYS");
-		return(-1);
+		ret = Fwrite(hdl, 128L, tab_order[index]);
+		if	(ret != 128L)
+			goto wr_err;
 		}
-	ret = Fwrite(hdl, 128L, tab_shift);
-	if	(ret != 128L)
-		goto wr_err;
-	ret = Fwrite(hdl, 128L, tab_caps);
-	if	(ret != 128L)
-		goto wr_err;
-	ret = Fwrite(hdl, 128L, tab_altgr);
-	if	(ret != 128L)
-		goto wr_err;
-	ret = Fwrite(hdl, 128L, tab_shaltgr);
-	if	(ret != 128L)
-		goto wr_err;
-	ret = Fwrite(hdl, 128L, tab_altgr);
-	if	(ret != 128L)
-		goto wr_err;
-	ret = Fwrite(hdl, 128L, tab_alt);
-	if	(ret != 128L)
-		goto wr_err;
-	ret = Fwrite(hdl, 128L, tab_shalt);
-	if	(ret != 128L)
-		goto wr_err;
-	ret = Fwrite(hdl, 128L, tab_alt);
-	if	(ret != 128L)
-		goto wr_err;
 	ret = Fwrite(hdl, sizeof(tab_dead), tab_dead);
 	if	(ret != sizeof(tab_dead))
 		goto wr_err;
 
 	Fclose(hdl);
 	return(0);
+
+wr_err:
+	Fclose(hdl);
+	Fdelete("KEYTABLS.SYS");
+	return(-1);
 }

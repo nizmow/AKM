@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import re
 import sys
 import struct
@@ -13,6 +14,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 APPS = Path("apps")
+KEYMAPS = ROOT / "base/keyb-sys/keymaps.json"
+LOCALE = {"de": ("de", "de", 1), "en": ("uk", "uk", 3)}
+UK_BLOCK: bytes | None = None
 RELEASE = ROOT / "release/atari"
 
 REBUILT = {
@@ -123,9 +127,20 @@ def sanitized_inf(path: Path) -> bytes:
     return data
 
 
+def uk_block() -> bytes:
+    global UK_BLOCK
+    if UK_BLOCK is None:
+        data = json.loads(KEYMAPS.read_text(encoding="utf-8"))
+        UK_BLOCK = b"".join(bytes(data["layouts"]["UK"]["tables"][name])
+                            for name in data["table_names"])
+    return UK_BLOCK
+
+
 def build(build_dir: Path, rebuilt: dict[Path, str], *, language: str) -> None:
     make = [str(ROOT / "scripts/atari-container"), "run", "make", "-j4"]
+    region, keyboard, _ = LOCALE[language]
     subprocess.run([*make, f"BUILD_DIR={build_dir}", f"KERNEL_LANG={language}",
+                    f"KERNEL_REGION={region}", f"KERNEL_KEYBOARD={keyboard}",
                     str(build_dir / "MAGIC.RAM")], cwd=ROOT, check=True)
     subprocess.run([*make, "-f", "Makefile.apps", f"BUILD_DIR={build_dir / APPS}",
                     *(str(build_dir / path) for path, guest in rebuilt.items()
@@ -150,6 +165,12 @@ def collect(build_dir: Path, rebuilt: dict[Path, str], *,
             expected = {"de": 1, "en": 3}[language]
             if country != expected:
                 raise SystemExit(f"kernel country {country} does not match {language} ({expected})")
+            # A prebuilt kernel may have been produced with an explicit keyboard
+            # override; the published profile promises the language's default.
+            fallback = uk_block() in data
+            if fallback != (language == "en"):
+                raise SystemExit(
+                    f"kernel {language} {'' if fallback else 'lacks'} the UK fallback")
         entries[guest] = (data, f"{'resource' if resource else 'rebuilt'} {local.relative_to(ROOT)}")
     if minimal:
         entries["MAGX.INF"] = ((ROOT / "core/MAGX.INF").read_bytes(), "repository core/MAGX.INF")

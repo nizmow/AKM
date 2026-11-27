@@ -1683,14 +1683,20 @@ the recorded run), a byte-identical `KEYTABLS.SYS`, the expected file length,
 and six distinct layouts. Evidence:
 `build/atari/neost-keyb-sys-20261123-223130/`.
 
-The English kernel's embedded UK fallback is generated from the same JSON by
-`emit-asm` and selected with `KERNEL_KEYBOARD=uk`; German keeps its historical
-in-source table. `scripts/neost-locale-smoke.py` boots cloned MagiC images and
-checks the fallback with `KEYTABLS.SYS` absent, a distinct full override, a
-short override that must leave the fallback active, `Keytbl`/`Bioskeys`
-semantics, `_IDT`/AES language and the unchanged German profile. Dead-key
-composition remains uncompiled (`DEADKEYS=0`), so shifted and AltGr bytes are
-mapped directly.
+Both emitters and all six C writers take their nine-slot order from
+`write_order`; `gen_keymaps.py` rejects any other sequence or table-name set, so
+the embedded pointers and `KEYTABLS.SYS` cannot drift apart. The English
+kernel's UK fallback is generated from the same JSON by `emit-asm` and selected
+with `KERNEL_KEYBOARD=uk`; German keeps its historical in-source table.
+`scripts/neost-locale-smoke.py` boots cloned MagiC images and checks the
+fallback with `KEYTABLS.SYS` absent, a complete override with nine distinct
+slots, the same payload truncated to 1151 bytes (must leave the fallback
+active), a negative-argument `Keytbl` query under active replacements,
+`Bioskeys`, pinned UK/German console bytes, `_IDT`/AES language and the German
+profile. German whole-image equality with the pre-change kernel was verified
+when the locale split landed; CI checks the region and UK-block absence rather
+than historic byte equality. Dead-key composition remains uncompiled
+(`DEADKEYS=0`), so shifted and AltGr bytes are mapped directly.
 
 ### HARDCOPY extension
 

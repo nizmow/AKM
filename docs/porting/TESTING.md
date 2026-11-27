@@ -640,13 +640,25 @@ keyboard are selected independently; see
 [Porting notes](PORTING_NOTES.md#english-mega-ste-profile).
 
 `mise run test:locale-neost` (or `python3 scripts/neost-locale-smoke.py`)
-checks the kernel contract itself on cloned MagiC images: UK fallback with the
-override absent, a distinct full override, a short override that must leave the
-fallback active, `Keytbl`/`Bioskeys` behaviour, `_IDT`/AES language identity,
-and the unchanged German profile. The probe is installed in
-`GEMSYS/MAGIC/START` and uses only public interfaces plus BIOS console input;
-expected table bytes come from `base/keyb-sys/keymaps.json`. Dead-key
-composition is not part of this kernel build and is not asserted.
+checks the kernel contract itself on cloned MagiC images:
+
+- UK fallback with `KEYTABLS.SYS` absent, compared with the canonical nine
+  slots from `base/keyb-sys/keymaps.json`.
+- A complete 1152-byte override whose nine tables are all distinct, so a loader
+  that applies only some slots fails.
+- The same override truncated to 1151 bytes; it must leave the fallback fully
+  active, so a partial overwrite cannot pass either.
+- `Keytbl` replacement, a negative-argument query while the replacements are
+  active, and `Bioskeys` restoring the effective default.
+- Pinned console bytes for UK and German (shift+3 differs: 0x9C vs 0xDD),
+  `_IDT`/AES language identity and the unchanged German profile.
+
+The probe is installed in `GEMSYS/MAGIC/START` and uses only public interfaces
+plus BIOS console input. German byte identity with the pre-change kernel was
+verified when the locale split landed by comparing whole `MAGIC.RAM` images;
+CI checks the German region and absence of the UK block, not that historic
+equality. Dead-key composition is not part of this kernel build and is not
+asserted.
 
 To check the English minimal profile directly:
 

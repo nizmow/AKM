@@ -29,9 +29,11 @@ PROBE_GUEST = "::/GEMSYS/MAGIC/START/LOCALE.PRG"
 KEYTABLS_GUEST = "::/GEMSYS/MAGIC/XTENSION/KEYTABLS.SYS"
 TABLE_BYTES = 128
 TABLES = 9
-# Scancodes: A, shift and caps lock, then digits 3 and 4.  Shift+3 is the
-# representative non-ASCII difference: German 0xDD, English UK 0x9C.
+# Scancodes: A, shift and caps lock, then digits 3 and 4.  The expected
+# console bytes are pinned per layout, independent of keymaps.json:
+# shift+3 is the representative difference (UK 0x9C, German 0xDD).
 SCAN_KEYS = (0x1E, 0x04, 0x05)
+UK_KEYS = (0x61, 0x41, 0x41, 0x33, 0x9C, 0x34, 0x24)
 GERMAN_KEYS = (0x61, 0x41, 0x41, 0x33, 0xDD, 0x34, 0x24)
 
 
@@ -121,7 +123,8 @@ def run_case(headless: Path, rom: Path, source: Path, probe: Path,
         server.screenshot(folder / "final.ppm")
         for _ in range(16):
             server.run_frames(500)
-            if (results / "KEYS.TXT").is_file():
+            report_file = results / "KEYS.TXT"
+            if report_file.is_file() and report_file.read_bytes().endswith(b"DONE\n"):
                 break
     return {name: (results / name).read_bytes() for name in
             ("BOOTKEYS.BIN", "RESETKEYS.BIN", "LOCALE.TXT", "KEYS.TXT")
@@ -145,8 +148,10 @@ def check(label: str, folder: Path, files: dict[str, bytes], *,
     boot = files["BOOTKEYS.BIN"]
     reset = files["RESETKEYS.BIN"]
     fields = report(files["LOCALE.TXT"])
-    actual_keys = tuple(int(line, 16) for line in
-                        files["KEYS.TXT"].decode("ascii").split() if line != "DONE")
+    key_lines = files["KEYS.TXT"].decode("ascii").split()
+    actual_keys = tuple(int(line, 16) for line in key_lines[:-1])
+    if key_lines[-1:] != ["DONE"] or len(actual_keys) != 7:
+        raise SystemExit(f"{label}: incomplete key report {key_lines!r}")
     expected_size = TABLES * TABLE_BYTES
     if len(boot) != expected_size:
         raise SystemExit(f"{label}: boot tables are {len(boot)} bytes")
@@ -158,7 +163,8 @@ def check(label: str, folder: Path, files: dict[str, bytes], *,
     if actual_keys != keys:
         raise SystemExit(f"{label}: translated keys {actual_keys!r} != {keys!r}")
     expected = {"language": str(language), "idt_present": "1", "idt": str(idt),
-                "akp_present": "0", "keytbl": "1", "bioskeys": "1", "ready": "1"}
+                "akp_present": "0", "keytbl": "1", "keytbl_query": "1",
+                "bioskeys": "1", "ready": "1"}
     for name, value in expected.items():
         if fields.get(name) != value:
             raise SystemExit(f"{label}: {name}={fields.get(name)!r}, expected {value!r}")
@@ -176,21 +182,24 @@ def main() -> int:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--skip-build", action="store_true")
     args = parser.parse_args()
-    if not args.magic_image or not args.tos or not args.magic_image.is_file():
-        parser.error("supply --magic-image/--tos or MAGIC_IMAGE/TOS206_ROM")
     source, rom = (path.expanduser().resolve() for path in
                    (args.magic_image, args.tos))
+    if not source.is_file() or not rom.is_file():
+        parser.error("supply an existing --magic-image and --tos "
+                     "(or MAGIC_IMAGE/TOS206_ROM)")
     probe = build(skip=args.skip_build)
     kernel = LOCALE_BUILD / "MAGIC.RAM"
     data = keymaps()
     uk = layout_tables(data, "UK")
-    override = b"".join(bytes([0x41 + index]) * TABLE_BYTES for index in range(3))
-    override += uk[3 * TABLE_BYTES:]
+    # Nine distinct slots, exactly the file length READ_KTB accepts; the short
+    # case is the same payload truncated just below that length, so a loader
+    # that applies a partial read cannot masquerade as the fallback.
+    override = b"".join(bytes([0x41 + index]) * TABLE_BYTES
+                        for index in range(TABLES))
     cases = (
-        ("uk-fallback", kernel, None, uk, expected_keys(uk), 0x112D, 0),
-        ("uk-override", kernel, override + b"\x55" * 42,
-         override, expected_keys(override), 0x112D, 0),
-        ("uk-short", kernel, uk[:100], uk, expected_keys(uk), 0x112D, 0),
+        ("uk-fallback", kernel, None, uk, UK_KEYS, 0x112D, 0),
+        ("uk-override", kernel, override, override, expected_keys(override), 0x112D, 0),
+        ("uk-short", kernel, override[:-1], uk, UK_KEYS, 0x112D, 0),
         ("de-fallback", GERMAN_KERNEL, None, None, GERMAN_KEYS, 0x112E, 1),
     )
     output = create_output(args.output, parent=BUILD, prefix="neost-locale")
@@ -212,14 +221,16 @@ def main() -> int:
                 if files.get("RESETKEYS.BIN") != boot:
                     raise SystemExit(f"{label}: Bioskeys did not restore the default")
                 fields = report(files.get("LOCALE.TXT", b""))
-                actual = tuple(int(line, 16) for line in
-                               files.get("KEYS.TXT", b"").decode("ascii").split()
-                               if line != "DONE")
+                key_lines = files.get("KEYS.TXT", b"").decode("ascii").split()
+                actual = tuple(int(line, 16) for line in key_lines[:-1])
+                if key_lines[-1:] != ["DONE"] or len(actual) != 7:
+                    raise SystemExit(f"{label}: incomplete key report {key_lines!r}")
                 if actual != keys:
                     raise SystemExit(f"{label}: translated keys {actual!r} != {keys!r}")
                 for name, value in (("language", "1"), ("idt_present", "1"),
                                     ("idt", str(idt)), ("akp_present", "0"),
-                                    ("keytbl", "1"), ("bioskeys", "1")):
+                                    ("keytbl", "1"), ("keytbl_query", "1"),
+                                    ("bioskeys", "1")):
                     if fields.get(name) != value:
                         raise SystemExit(f"{label}: {name}={fields.get(name)!r}")
             else:

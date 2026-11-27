@@ -17,6 +17,11 @@ import pathlib
 import sys
 
 DATA = pathlib.Path(__file__).resolve().parent.parent / "keymaps.json"
+# The nine write slots and the seven distinct tables are a fixed format
+# contract shared with the historical KEYTABLS.SYS files and BIOS keytblx.
+WRITE_ORDER = ["unshift", "shift", "caps", "altgr", "shaltgr",
+               "altgr", "alt", "shalt", "alt"]
+TABLE_NAMES = ["unshift", "shift", "caps", "altgr", "shaltgr", "alt", "shalt"]
 
 
 def fail(message):
@@ -36,15 +41,11 @@ def load(path):
     tables = data.get("table_names")
     if not isinstance(tables, list) or not tables:
         fail(f"{path}: table_names missing")
-    for table in tables:
-        if table == "dead":
-            fail(f"{path}: 'dead' must not be listed in table_names")
+    if len(tables) != len(set(tables)) or sorted(tables) != sorted(TABLE_NAMES):
+        fail(f"{path}: table_names must be the seven fixed table names")
     write_order = data.get("write_order")
-    if not isinstance(write_order, list) or len(write_order) != 9:
-        fail(f"{path}: write_order must contain nine table names")
-    for table in write_order:
-        if table not in tables:
-            fail(f"{path}: write_order references unknown table {table!r}")
+    if write_order != WRITE_ORDER:
+        fail(f"{path}: write_order must be exactly {WRITE_ORDER}")
     layouts = data.get("layouts")
     if not isinstance(layouts, dict) or not layouts:
         fail(f"{path}: layouts missing")
@@ -99,6 +100,10 @@ def emit_c(data, name):
     lines.append(f"/* {layout.get('description', name)}: dead-key trailer */")
     lines.append(f"static const char tab_dead[{len(dead)}] = {{")
     lines += byte_lines(dead, lambda v: f"0x{v:02x}")
+    lines += ["};", ""]
+    lines.append("static const char *const tab_order[9] = {")
+    for table in data["write_order"]:
+        lines.append(f"    tab_{table},")
     lines += ["};", "",
               f"#endif /* {guard} */", ""]
     return "\n".join(lines)

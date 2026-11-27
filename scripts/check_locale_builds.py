@@ -2,6 +2,8 @@
 """Public locale build checks: kernel regions and UK fallback emitter agreement.
 
 Only repository inputs are used; no MagiC image or proprietary ROM is needed.
+Both the nine write slots and the seven distinct table bodies are compared, so
+a swapped pointer slot cannot pass while the table bytes stay unchanged.
 """
 from __future__ import annotations
 
@@ -15,16 +17,32 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 GEN = ROOT / "base/keyb-sys/tools/gen_keymaps.py"
 REGIONS = {"locale-de": 1, "locale-en": 3}
+SLOTS = 9
+TABLE_BYTES = 128
 
 
-def bytes_from_asm(text: str) -> bytes:
-    values = [int(value, 16) for value in re.findall(r"\$([0-9a-fA-F]{2})", text)]
-    return bytes(values)
+def parse_c(text: str) -> tuple[dict[str, bytes], list[str]]:
+    bodies = {
+        match.group(1): bytes(int(value, 16) for value in
+                              re.findall(r"0x([0-9a-fA-F]{2})", match.group(2)))
+        for match in re.finditer(
+            r"static const char tab_(\w+)\[128\] = \{(.*?)\};", text, re.S)
+    }
+    order_block = re.search(r"tab_order\[9\] = \{(.*?)\};", text, re.S)
+    if order_block is None:
+        raise ValueError("C header has no tab_order")
+    order = re.findall(r"tab_(\w+),", order_block.group(1))
+    return bodies, order
 
 
-def bytes_from_c(text: str) -> bytes:
-    values = [int(value, 16) for value in re.findall(r"0x([0-9a-fA-F]{2})", text)]
-    return bytes(values)
+def parse_asm(text: str) -> tuple[dict[str, bytes], list[str]]:
+    bodies = {
+        match.group(1): bytes(int(value, 16) for value in
+                              re.findall(r"\$([0-9a-fA-F]{2})", match.group(2)))
+        for match in re.finditer(r"tab_(\w+):\n((?: dc\.b[^\n]*\n)+)", text)
+    }
+    order = re.findall(r"dc\.l tab_(\w+)", text)
+    return bodies, order
 
 
 def main() -> int:
@@ -50,25 +68,38 @@ def main() -> int:
         if result.returncode:
             return result.returncode
         outputs.append(target)
-    c_bytes = bytes_from_c(outputs[0].read_text(encoding="utf-8"))
-    asm_bytes = bytes_from_asm(outputs[1].read_text(encoding="utf-8"))
-    if len(asm_bytes) != 7 * 128 or not c_bytes:
-        print("UK fallback emitters produced unexpected byte counts", file=sys.stderr)
+    c_bodies, c_order = parse_c(outputs[0].read_text(encoding="utf-8"))
+    asm_bodies, asm_order = parse_asm(outputs[1].read_text(encoding="utf-8"))
+    if len(c_order) != SLOTS or len(asm_order) != SLOTS:
+        print("UK fallback does not define nine write slots", file=sys.stderr)
         return 1
-    # emit-c appends the dead-key trailer; the assembler file stops after the
-    # seven tables that the nine kernel pointers reference.
-    if c_bytes[:len(asm_bytes)] != asm_bytes:
-        print("UK fallback C and assembler emitters disagree", file=sys.stderr)
+    if c_order != asm_order:
+        print(f"UK fallback slot order differs: C {c_order} vs asm {asm_order}",
+              file=sys.stderr)
+        return 1
+    names = set(c_order)
+    if set(asm_bodies) != names or set(c_bodies) != names:
+        print("UK fallback table names differ between emitters", file=sys.stderr)
+        return 1
+    for name in names:
+        if len(c_bodies[name]) != TABLE_BYTES or c_bodies[name] != asm_bodies[name]:
+            print(f"UK fallback table {name} differs between emitters", file=sys.stderr)
+            return 1
+    # The include emits the distinct tables once, in definition order; the nine
+    # pointers index into that contiguous block.
+    block = b"".join(c_bodies[name] for name in c_bodies)
+    if len(block) != 7 * TABLE_BYTES:
+        print("UK fallback emitted an unexpected table count", file=sys.stderr)
         return 1
     english = (build / "locale-en" / "MAGIC.RAM").read_bytes()
     german = (build / "locale-de" / "MAGIC.RAM").read_bytes()
-    if asm_bytes not in english:
+    if block not in english:
         print("English kernel does not carry the canonical UK fallback", file=sys.stderr)
         return 1
-    if asm_bytes in german:
+    if block in german:
         print("German kernel unexpectedly carries the UK fallback", file=sys.stderr)
         return 1
-    print("kernel regions, UK fallback emitters and embedded tables verified")
+    print("kernel regions, UK slot order, table bodies and embedded fallback verified")
     return 0
 
 
