@@ -1,7 +1,8 @@
-# German Atari AES (MagiC) assembly modules and the XMEN_MGR C module.
+# German and English MagiC AES assembly modules and the XMEN_MGR C module.
 #
 # The MAS sources are normalized by the shared adapter into a per-module
-# include tree below $(AES_ASM_DIR); the original files are never modified.
+# include tree below $(AES_ASM_DIR) inside the per-language $(KERNEL_OBJ_ROOT);
+# the original files are never modified.
 # Each module gets its own directory because AESINC.S, DEBUG.INC and the
 # include set differ per module (AESMAIN also pulls VTSYS.INC and DEBUG.INC,
 # AESOBJ pulls FARBICON.S).
@@ -11,13 +12,13 @@
 # and must not be linked at the same time (duplicate fsel_exinput).
 #
 # Build configuration comes from the original Atari build:
-#   COUNTRY=1  German (FRG); USA/FRA/UK/SPA/ITA are the other MAS choices
+#   COUNTRY    from KERNEL_COUNTRY: 1 German (FRG), 0 English (USA)
 #   DEMO=0     full AES (not the 6-application demo build)
 #   MMX_YIELD=0 MacX multitasking helper not linked in this build
 AES_ASM_MODULES := AESMAIN AESEVT AESFRM AESOBJ AESWIN AESMEN AESGRAF AESRSC
 
-AES_ASM_DIR := $(BUILD_DIR)/kernel/aes-asm
-AES_ASM_DEFS := -DDEMO=0 -DMMX_YIELD=0 -DCOUNTRY=1
+AES_ASM_DIR := $(KERNEL_OBJ_ROOT)/aes-asm
+AES_ASM_DEFS := -DDEMO=0 -DMMX_YIELD=0 -DCOUNTRY=$(KERNEL_COUNTRY)
 AES_ASM_SHARED := AESINC.S KERNEL.INC DOS.INC
 # The adapter reads the canonical Atari character table to encode UTF-8 string
 # literals (GERMAN uses ue/oe/ae/ss and the French AES strings use accents).

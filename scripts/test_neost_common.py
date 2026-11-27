@@ -48,6 +48,16 @@ class NeoSTCommonTests(unittest.TestCase):
             self.assertIn(str(log), str(raised.exception))
             self.assertEqual(log.read_text(), "out\nerr\n")
 
+    def test_legacy_diagnostic_bytes_preserve_failure_status(self):
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / "build.log"
+            command = [sys.executable, "-c",
+                       "import os; os.write(1, b'warning\\x84\\n'); "
+                       "os.write(2, b'error\\n'); raise SystemExit(7)"]
+            with self.assertRaisesRegex(RuntimeError, "exited 7"):
+                run_logged(command, log)
+            self.assertEqual(log.read_text(), "warning\\x84\nerror\n")
+
     def test_timeout_still_leaves_a_diagnostic_log(self):
         with tempfile.TemporaryDirectory() as directory:
             log = Path(directory) / "host.log"

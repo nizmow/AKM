@@ -1,0 +1,29 @@
+AKM English Atari/ST installation
+
+Target: Mega STE, 68000, ST high monochrome (640x400), UK keyboard.
+Use a spare boot volume or a backed-up disk. Physical hardware behavior is
+not established by an emulator boot check.
+
+1. Start with a bootable Atari hard disk accessible as C:. Keep your working
+   hard-disk driver. This ZIP is a root filesystem, not a bootable disk image;
+   it does not partition a disk, install a disk driver or provide a TOS ROM.
+2. Extract the ZIP and copy its contents to the root of C:, preserving AUTO/
+   and GEMSYS/. Existing system files will be overwritten. Do not overlay a
+   running MagiC installation: shut it down and copy from TOS or another host.
+3. This package already selects English resources and ST high. Do not run
+   historical LANG/*.BAT or LOCALISE.SH scripts. The package includes the
+   original UK KEYTABLS.SYS; keep it installed because the kernel's fallback
+   keyboard is German QWERTZ, independently of the desktop language.
+4. Boot TOS, then run C:\AUTO\MAGXBOOT.TOS manually. MAGXDESK should open
+   with English menus. Keep your previous boot setup available for recovery.
+5. After manual startup works, you may rename MAGXBOOT.TOS to MAGXBOOT.PRG
+   to start MagiC automatically from the AUTO folder.
+
+The minimal package contains only the kernel, loader, desktop, MCMD and
+monochrome drivers. Use the core package for applications and COPS.
+
+Scope of localization: existing English kernel messages, AES dialogs,
+MAGXDESK and application resource files are selected. Some original helper
+program diagnostics, icon descriptions and legacy help files remain German.
+No claim of complete translation or physical floppy/printing verification
+is made. See the repository's testing guide for precise coverage limits.

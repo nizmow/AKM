@@ -593,7 +593,7 @@ pixel-for-pixel except the double-clicked icon's selection highlight and cursor
 pixels. Board editing, Save/alerts, event-CPX callbacks and other CPXs remain
 untested. Evidence goes to `build/atari/neost-cops-accessory-*`.
 
-## Release: German Atari/ST core ZIP
+## Release: German and English Atari/ST ZIPs
 
 `mise run release:core` builds the exact file targets listed in the package
 map, then writes `build/atari/release/core-de.zip` and a sorted SHA-256 manifest.
@@ -627,6 +627,29 @@ must differ from a second boot with `MAGXDESK.APP` removed.
 Either smoke task accepts `-- --build-dir build/atari/<fresh-dir>` to build
 without cached outputs. ZIPs, manifest and screenshots are kept in the run's
 evidence directory.
+
+`mise run release:english` builds the English core ZIP and manifest under
+`build/atari/release/`. `mise run test:release-english-neost` runs the same
+determinism, clean-install, member-hash, desktop-menu and COPS checks with
+`--language en`. The English profile selects existing English application
+resources, English MCMD, a USA-country English kernel and the original UK
+keyboard table. The keyboard table is an active runtime file, including in
+the English minimal profile; that profile permits no optional extension
+files besides `KEYTABLS.SYS`.
+
+To check the English minimal profile directly:
+
+```sh
+python3 scripts/neost-release-smoke.py --language en --profile minimal
+```
+
+These checks use monochrome Mega STE/4 MiB/TOS 2.06 clones. English is not a
+claim of complete translation or physical Mega STE verification; inherited
+German text and USA date/time defaults are listed in
+[Porting notes](PORTING_NOTES.md#english-mega-ste-profile).
+Host command diagnostics preserve non-UTF-8 legacy source bytes as `\xNN`
+escapes rather than losing a build's exit status to a decoding error.
+
 
 ## NeoST: image SLB ABI and rendering
 

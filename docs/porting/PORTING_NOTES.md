@@ -1,6 +1,6 @@
 # GCC/VASM porting notes
 
-These notes cover the modern **German Atari/68000 kernel**, applications and
+These notes cover the modern German and English Atari/68000 kernels, applications and
 supporting components. Start with `README.md`, `Makefile` (kernel),
 `Makefile.apps` (applications) and [GitHub issues](https://github.com/nizmow/AKM/issues)
 (remaining work).
@@ -889,6 +889,36 @@ The `release:minimal` profile selects only boot requirements plus the MCMD
 fallback from the same build map. Its `core/MAGX.INF` selects ST high/mono and
 does not reference optional programs or SLBs. Keep the broader `release:core`
 payload separate; `test:release-minimal-neost` checks boot without it.
+
+### English Mega STE profile
+
+`mise run release:english` selects `--language en` in `make-release.py` and
+produces `build/atari/release/core-en.zip` plus its manifest. The default English
+build tree is `build/atari/en`; `KERNEL_LANG=en` selects the complete original
+USA-country kernel (`COUNTRY=0`), including English AES alerts and file/font
+selector resources. Country-dependent objects are isolated by language; a
+language stamp forces relinking when one explicit `BUILD_DIR` is reused.
+German remains the default and retains its existing output paths.
+
+The packager selects the existing English application RSC files without
+transcoding them and selects the English MCMD binary. The original English
+MGNOTICE/MOD_APP documentation and UK `KEYTABLS.SYS` are retained under
+`release/atari/LANG/EN`, recovered byte-for-byte from `pre-magic-retirement`.
+The keyboard table is installed at its active guest path in both English
+profiles, not left in a localization folder. Without it the kernel falls
+back to German QWERTZ: kernel country selection does not select a keyboard.
+The USA-country kernel retains USA date/time defaults (12-hour, MDY, `/`);
+the UK keyboard does not change those defaults.
+
+This is an English-resource distribution, not a complete new translation.
+Legacy help, retained CPXs, association/icon labels and some compiled-in
+utility diagnostics remain German. English kernel dialog shortcut tables
+also retain some German aliases. The selected hardware profile is 68000
+Mega STE, ST high monochrome, UK keyboard and boot volume `C:`.
+`release/atari/LANG/EN/INSTALL.TXT` is installed as the English package's
+root instructions. Emulator boot does not establish physical-hardware,
+floppy, printer or long-term-stability coverage.
+
 
 ## Kernel workflow
 

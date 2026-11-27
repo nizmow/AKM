@@ -29,7 +29,11 @@
 /* #include <magx.h> */
 #undef form_xdo
 #undef APPL
+#if       COUNTRY==USA
+#include "US/FSELX.H"
+#else
 #include "GER/FSELX.H"
+#endif
 #include "../WDIALOG/SHELSORT.H"
 
 #if       COUNTRY==FRG

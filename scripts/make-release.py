@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Build and package a deterministic German Atari/ST installation ZIP."""
+"""Build and package a deterministic Atari/ST installation ZIP."""
 from __future__ import annotations
 
 import argparse
 import hashlib
 import re
 import sys
+import struct
 import subprocess
 import zipfile
 from pathlib import Path
@@ -66,6 +67,21 @@ REBUILT = {
     APPS / "osd/OFF65KPK.OSD": "GEMSYS/OFF65KPK.OSD",
 }
 
+# Existing English resources share their application's object IDs. Keep the
+# original RSC bytes; localization is selection, not binary transcoding.
+ENGLISH_RESOURCES = {
+    "GEMSYS/GEMDESK/APPLICAT.RSC": Path("base/applicat/SRC/EN/APPLICAT.RSC"),
+    "GEMSYS/GEMDESK/MAGXDESK.RSC": Path("core/magxdesk/SRC/EN/MAGXDESK.RSC"),
+    "GEMSYS/GEMDESK/MAGXDESL.RSC": Path("core/magxdesk/SRC/EN/MAGXDESL.RSC"),
+    "GEMSYS/GEMDESK/MGCOPY.RSC": Path("core/mgcopy/SRC/US/MGCOPY.RSC"),
+    "GEMSYS/GEMDESK/MGEDIT.RSC": Path("base/mgedit/SRC/US/MGEDIT.RSC"),
+    "GEMSYS/GEMDESK/MGFORMAT.RSC": Path("base/mgformat/SRC/EN/MGFORMAT.RSC"),
+    "GEMSYS/GEMDESK/MGNOTICE.RSC": Path("base/mgnotice/SRC/US/MGNOTICE.RSC"),
+    "GEMSYS/GEMDESK/MGSEARCH.RSC": Path("base/mgsearch/SRC/USA/MGSEARCH.RSC"),
+    "GEMSYS/GEMDESK/VFATCONF.RSC": Path("base/vfatconf/SRC/UK/VFATCONF.RSC"),
+    "GEMSYS/GEMDESK/VT52.RSC": Path("base/vt52/SRC/VT52/RESOURCE/ENGLISCH/VT52.RSC"),
+}
+
 MINIMAL_FILES = {
     "MAGIC.RAM", "AUTO/MAGXBOOT.TOS", "GEMSYS/GEMDESK/MCMD.TOS",
     "GEMSYS/GEMDESK/MAGXDESK.APP", "GEMSYS/GEMDESK/MAGXDESK.RSC",
@@ -107,35 +123,56 @@ def sanitized_inf(path: Path) -> bytes:
     return data
 
 
-def build(build_dir: Path, rebuilt: dict[Path, str]) -> None:
+def build(build_dir: Path, rebuilt: dict[Path, str], *, language: str) -> None:
     make = [str(ROOT / "scripts/atari-container"), "run", "make", "-j4"]
-    subprocess.run([*make, f"BUILD_DIR={build_dir}",
+    subprocess.run([*make, f"BUILD_DIR={build_dir}", f"KERNEL_LANG={language}",
                     str(build_dir / "MAGIC.RAM")], cwd=ROOT, check=True)
     subprocess.run([*make, "-f", "Makefile.apps", f"BUILD_DIR={build_dir / APPS}",
-                    *(str(build_dir / path) for path in rebuilt if path.parts[0] == "apps")],
+                    *(str(build_dir / path) for path, guest in rebuilt.items()
+                      if path.parts[0] == "apps"
+                      and not (language == "en" and guest in ENGLISH_RESOURCES))],
                    cwd=ROOT, check=True)
 
 
 def collect(build_dir: Path, rebuilt: dict[Path, str], *,
-            minimal: bool) -> dict[str, tuple[bytes, str]]:
+            minimal: bool, language: str) -> dict[str, tuple[bytes, str]]:
     entries: dict[str, tuple[bytes, str]] = {}
     for relative, guest in rebuilt.items():
-        local = ROOT / build_dir / relative
+        resource = ENGLISH_RESOURCES.get(guest) if language == "en" else None
+        local = ROOT / (resource if resource is not None else build_dir / relative)
         if not local.is_file():
             raise SystemExit(f"rebuilt input missing: {local}")
         data = local.read_bytes()
         if not data:
             raise SystemExit(f"rebuilt input empty: {local}")
-        entries[guest] = (data, f"rebuilt {local.relative_to(ROOT)}")
+        if guest == "MAGIC.RAM":
+            country = struct.unpack_from(">H", data, 28 + 28)[0] >> 1
+            expected = {"de": 1, "en": 0}[language]
+            if country != expected:
+                raise SystemExit(f"kernel country {country} does not match {language} ({expected})")
+        entries[guest] = (data, f"{'resource' if resource else 'rebuilt'} {local.relative_to(ROOT)}")
     if minimal:
         entries["MAGX.INF"] = ((ROOT / "core/MAGX.INF").read_bytes(), "repository core/MAGX.INF")
     else:
         for local in expand(RETAINED):
             guest = local.relative_to(RELEASE).as_posix()
+            if language == "en" and guest.startswith("LANG/"):
+                continue
             if guest in entries:
                 continue
             data = sanitized_inf(local) if guest == "MAGX.INF" else local.read_bytes()
             entries[guest] = (data, f"retained MAGIC.A/{guest}")
+        if language == "en":
+            for guest in ("GEMSYS/GEMDESK/MGNOTICE.TXT",
+                          "GEMSYS/GEMDESK/MOD_APP.TXT"):
+                local = RELEASE / "LANG/EN" / guest
+                entries[guest] = (local.read_bytes(), f"retained {local.relative_to(ROOT)}")
+    if language == "en":
+        local = RELEASE / "LANG/EN/GEMSYS/MAGIC/XTENSION/KEYTABLS.SYS"
+        entries["GEMSYS/MAGIC/XTENSION/KEYTABLS.SYS"] = (
+            local.read_bytes(), f"retained {local.relative_to(ROOT)}")
+        local = RELEASE / "LANG/EN/INSTALL.TXT"
+        entries["INSTALL.TXT"] = (local.read_bytes(), f"repository {local.relative_to(ROOT)}")
     entries["LICENSE"] = ((ROOT / "LICENSE").read_bytes(), "repository GPLv3 text")
     return entries
 
@@ -154,25 +191,30 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--manifest", type=Path)
+    parser.add_argument("--language", choices=("de", "en"), default="de")
     parser.add_argument("--profile", choices=("core", "minimal"), default="core")
-    parser.add_argument("--build-dir", type=Path, default=Path("build/atari"),
-                        help="build directory inside the repository")
+    parser.add_argument("--build-dir", type=Path,
+                        help="build directory inside the repository (default: build/atari, or build/atari/en for English)")
     parser.add_argument("--skip-build", action="store_true",
                         help="pack already-built inputs without invoking Make")
     args = parser.parse_args()
     try:
-        build_dir = (ROOT / args.build_dir).resolve().relative_to(ROOT)
+        directory = args.build_dir or Path("build/atari/en" if args.language == "en" else "build/atari")
+        build_dir = (ROOT / directory).resolve().relative_to(ROOT)
     except ValueError:
         parser.error("--build-dir must be inside the repository")
     minimal = args.profile == "minimal"
-    rebuilt = {path: guest for path, guest in REBUILT.items()
-               if not minimal or guest in MINIMAL_FILES}
+    rebuilt = {
+        (APPS / f"mcmd/{args.language}/MCMD.TOS" if path == APPS / "mcmd/de/MCMD.TOS" else path): guest
+        for path, guest in REBUILT.items()
+        if not minimal or guest in MINIMAL_FILES
+    }
     if not args.skip_build:
         try:
-            build(build_dir, rebuilt)
+            build(build_dir, rebuilt, language=args.language)
         except subprocess.CalledProcessError as error:
             return error.returncode
-    entries = collect(build_dir, rebuilt, minimal=minimal)
+    entries = collect(build_dir, rebuilt, minimal=minimal, language=args.language)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     write_zip(entries, args.output)
     if args.manifest:

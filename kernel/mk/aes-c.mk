@@ -1,7 +1,7 @@
 # AES/SRC C modules compiled with the MagiC kernel ABI.
 # Original sources stay in place; wrappers add the attributes and local
 # standard-library bindings that Pure C supplied from its GEMLIB.
-AES_C_DIR := $(BUILD_DIR)/kernel/aes-c
+AES_C_DIR := $(KERNEL_OBJ_ROOT)/aes-c
 AES_C_WRAP_DIR := kernel/AES/compat
 AES_C_INCLUDE := $(abspath $(AES_C_WRAP_DIR)/include)
 AES_C_ASM_DIR := $(AES_C_DIR)/asm
@@ -14,7 +14,10 @@ AES_C_OBJECTS := $(addprefix $(AES_C_DIR)/, \
 AES_C_HEADERS := $(addprefix $(AES_C_INCLUDE)/, \
     portab.h country.h tos.h tosdefs.h mgx_dos.h vdi.h aes.h string.h)
 
-AES_C_CFLAGS := $(CPPFLAGS) -I$(AES_C_INCLUDE) -DCOUNTRY=1 $(CFLAGS) $(KERNEL_FLAGS)
+# KERNEL_COUNTRY selects the original 1 (FRG) or 0 (USA) branch through
+# KERNEL_LANG.  FSEL.C and FNT_MENU.C pick their English resource blobs from
+# US/ when COUNTRY==USA; FRA remains reachable only by overriding COUNTRY.
+AES_C_CFLAGS := $(CPPFLAGS) -I$(AES_C_INCLUDE) -DCOUNTRY=$(KERNEL_COUNTRY) $(CFLAGS) $(KERNEL_FLAGS)
 # WDIALOG sources are AtariST/CP437 text.  They contain no non-ASCII string
 # literals, so reading bytes as ISO-8859-1 is lossless for their code.
 AES_C_LEGACY_CFLAGS := $(AES_C_CFLAGS) \

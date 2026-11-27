@@ -59,6 +59,16 @@ description = "Build, install and boot the German core ZIP on a clean MagiC imag
 dir = "{{ config_root }}"
 run = "python3 scripts/neost-release-smoke.py"
 
+[tasks."release:english"]
+description = "Build and package the English UK/mono Mega STE distribution ZIP"
+dir = "{{ config_root }}"
+run = "python3 scripts/make-release.py --language en --output build/atari/release/core-en.zip --manifest build/atari/release/core-en.manifest"
+
+[tasks."test:release-english-neost"]
+description = "Build, install and boot the English core ZIP on a clean MagiC image"
+dir = "{{ config_root }}"
+run = "python3 scripts/neost-release-smoke.py --language en"
+
 [tasks."release:minimal"]
 description = "Build and package the boot-only German Atari/ST ZIP"
 dir = "{{ config_root }}"

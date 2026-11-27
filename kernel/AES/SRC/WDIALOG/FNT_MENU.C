@@ -129,7 +129,11 @@ extern WORD	is_magic;
 /* Lokale Includes																								*/
 /*----------------------------------------------------------------------------------------*/ 
 #include	"OBJ_TOOL.H"
+#if COUNTRY==USA
+#include "US/FONTSLCT.H"
+#else
 #include "GER/FONTSLCT.H"
+#endif
 #include	"WDIALOG.H"
 #include	"LISTBOX.H"
 #include	"FNTS.H"
@@ -137,7 +141,7 @@ extern WORD	is_magic;
 #if		COUNTRY==FRG
 #include	"GER/FNTS_RSC.H"													/* Die Resource-Datei */
 #elif	COUNTRY==USA
-#include "us\FNTS_RSC.H"
+#include "US/FNTS_RSC.H"
 #elif	COUNTRY==FRA
 #include "fra\FNTS_RSC.H"
 #endif
