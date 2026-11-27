@@ -843,7 +843,7 @@ not booted.
 `mise run test:hardcopy-neost` builds `HARDCOPY.PRG` and `HCPROBE.PRG`, then
 boots three disposable clones:
 
-- the archived `base/hardcopy/HARDCOPY.PRG` and the retained Release reference
+- the archived `base/hardcopy/tests/HARDCOPY.PRG` and the retained Release reference
   `scripts/testdata/release/HARDCOPY.PRG` (the runner asserts they are identical);
 - the rebuild from `build/atari/apps/hardcopy/HARDCOPY.PRG`;
 - a clone without the extension.

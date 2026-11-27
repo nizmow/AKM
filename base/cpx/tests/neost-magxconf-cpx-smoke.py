@@ -20,7 +20,7 @@ from neost_screen import diff_stats
 
 BUILD = ROOT / "build/atari"
 APPS = BUILD / "apps"
-ARCHIVE = COMPONENT / "BIN/MAGXCONF.CPX"
+ARCHIVE = COMPONENT / "tests/MAGXCONF.CPX"
 REBUILT = APPS / "cpx/MAGXCONF.CPX"
 PROBE = APPS / "magxconf/NEOSTART.PRG"
 GUEST_CPX = "::/AUTO/ACCS/CPX/MAGXCONF.CPX"

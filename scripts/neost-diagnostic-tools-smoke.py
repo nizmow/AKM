@@ -16,8 +16,8 @@ from neost_image import MagiCImage
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
 TOOLS = {
-    "MAGXKERN": ("magxkern/BIN/MAGXKERN.TTP", "DIAGTOOL.TTP"),
-    "MEMEXAMN": ("memexamn/BIN/MEMEXAMN.TTP", "DIAGTOOL.TTP"),
+    "MAGXKERN": ("magxkern/tests/MAGXKERN.TTP", "DIAGTOOL.TTP"),
+    "MEMEXAMN": ("memexamn/tests/MEMEXAMN.TTP", "DIAGTOOL.TTP"),
 }
 def boot_image(label: str, source: Path, output: Path, headless: Path,
                rom: Path, partition_offset: int, *, driver: Path | None,
@@ -128,7 +128,7 @@ def main() -> int:
 
         # SHOWFREE loops until a key; compare the booted console and screen.
         for label, binary in (
-            ("archive-showfree", ROOT / "base/showfree/SHOWFREE.TOS"),
+            ("archive-showfree", ROOT / "base/showfree/tests/SHOWFREE.TOS"),
             ("rebuilt-showfree", BUILD / "apps/showfree/SHOWFREE.TOS"),
         ):
             case = output / label
