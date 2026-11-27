@@ -229,8 +229,9 @@ framework or shared-library rewrite is required before these are attempted.
   resource and normalize `CLEARCPU.S` through the MAS converter.
   `test:cops-neost` disables the accessory, opens `MAGXCONF.CPX` and
   `TSLICE.CPX` through the panel, and matches the panel and both dialogs
-  pixel-for-pixel against the archive. Accessory mode, board editing,
-  Save/alerts and event-CPX callbacks remain untested.
+  pixel-for-pixel against the archive. Accessory lifecycle coverage is listed
+  in the active queue above; board editing, Save/alerts and event-CPX callbacks
+  remain untested.
 - [x] **KEYB_SYS** — add `keyb-sys` plus individual `keyb-cz`…`keyb-us`
   targets for all six keyboard-table generators. Keep the Atari-encoded
   sources and compile with explicit Latin-1 charsets; map `<tos.h>` to

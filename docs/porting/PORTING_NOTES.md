@@ -122,6 +122,12 @@ Seeds come from the checked-in `base/mod-app/tests/APPLICAT.IN` and
 (`[<frei>]`/`[<Spezial>]`) variant. The archived comparison binary is retired
 and recoverable from `pre-magic-retirement:base/mod-app/MOD_APP.TTP`.
 
+The old manual `.BAT` commands and saved `APPLICAT.INF`/`APPLICAT.BAK`
+outputs are archived under `pre-magic-retirement:base/mod-app/tests/`;
+they are not regression inputs. Keep `APPLICAT.IN` and `APPLICAT.DAT` as
+the runner's source seeds; all mutable INF/BAK/DAT outputs belong in its
+disposable guest trees.
+
 Coverage includes all registration modes, duplicate and bad-argument errors, a
 missing application, single-quoted/empty/long paths, both section spellings,
 sorted file-type insertion, backup/cache behavior and cache restoration before
