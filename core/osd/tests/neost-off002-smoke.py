@@ -22,6 +22,7 @@ import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
 
+from osd_release_metadata import RELEASES, release_path, relocation_length
 from neost_common import acquire_headless, create_output, require
 from neost_image import MagiCImage
 from neost_server import NeoSTServer
@@ -31,7 +32,7 @@ BUILD = ROOT / "build/atari"
 REBUILT = BUILD / "apps/osd/OFF002.OSD"
 PROBE = BUILD / "apps/off002/OFF002.PRG"
 MIN_ARCHIVE = ROOT / "core/osd/tests/archive/MIN-ATAR/OFF002.OSD"
-RELEASE = ROOT / "core/osd/tests/release/OFF002.OSD"
+RELEASE = RELEASES["OFF002"]
 
 
 def parse_tos(path: Path) -> dict:
@@ -70,13 +71,16 @@ def structure_report(built: dict, archive: dict, release: dict, output: Path) ->
              f"MIN-ATAR: {archive['length']} bytes tlen={archive['tlen']:#x} "
              f"dlen={archive['dlen']:#x} version={archive['version']} "
              f"reloc={archive['reloc_len']} bytes",
-             f"Release:  {release['length']} bytes tlen={release['tlen']:#x} "
-             f"dlen={release['dlen']:#x} version={release['version']} "
-             f"reloc={release['reloc_len']} bytes",
+             f"Release reference: {release['length']} bytes "
+             f"tlen={release['tlen']:#x} dlen={release['dlen']:#x} "
+             f"version={release['version']} reloc={relocation_length(release)} "
+             f"bytes; {release_path('OFF002')}",
              "entry offsets (rebuilt): " + ", ".join(
                  f"{name}={value:#x}" for name, value in built["entries"].items()),
-             "release entry offsets: " + ", ".join(
-                 f"{name}={value:#x}" for name, value in release["entries"].items()),
+             "entry offsets (Release reference): " + ", ".join(
+                 f"{name}={value:#x}" for name, value in zip(
+                     ("init", "reset", "wk_init", "wk_reset", "opnwkinfo",
+                      "extndinfo", "scrninfo", "resinfo"), release["entries"])),
              "The Release V4.11 has a different text/data size and entry layout; "
              "the V4.10 source here cannot be a byte-identical replacement for it."]
     output.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -138,7 +142,7 @@ def main() -> int:
     try:
         built = parse_tos(REBUILT)
         archive = parse_tos(MIN_ARCHIVE)
-        release = parse_tos(RELEASE)
+        release = RELEASE
         structure_report(built, archive, release, output / "structure.txt")
 
         with tempfile.TemporaryDirectory(prefix="neost-off002-") as temporary:

@@ -23,6 +23,7 @@ import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
 
+from osd_release_metadata import release_metadata
 from neost_common import acquire_headless, create_output, require, run
 from neost_image import MagiCImage
 from neost_server import NeoSTServer
@@ -32,7 +33,7 @@ BUILD = ROOT / "build/atari"
 REBUILT = BUILD / "apps/osd/OFF016IP.OSD"
 PROBE = BUILD / "apps/off016ip/OFF016IP.PRG"
 ARCHIVE = ROOT / "core/osd/tests/archive/MIN-ATAR/OFF016IP.OSD"
-RELEASE = ROOT / "core/osd/tests/release/OFF016IP.OSD"
+RELEASE = release_metadata("OFF016IP")
 
 # pel is the raw bitmap colour; index is the VDI pen (color_to_vdi).
 EXPECTED_PIXELS = ["1/2", "1/2", "2/3", "2/3", "4/4", "4/4",
@@ -78,8 +79,9 @@ def structure_report(built: dict, archive: dict, release: dict, output: Path) ->
              f"colours/planes/format/organisation={built['organisation']}",
              f"MIN-ATAR: {archive['length']} bytes version={archive['version']} "
              f"reloc={archive['reloc_len']} bytes",
-             f"Release:  {release['length']} bytes tlen=0x{release['tlen']:x} "
-             f"dlen=0x{release['dlen']:x} version={release['version']}",
+             f"Release reference: {release['length']} bytes tlen=0x{release['tlen']:x} "
+             f"dlen=0x{release['dlen']:x} version={release['version']} "
+             f"reloc={release['reloc_len']} bytes; {release['path']}",
              "entry offsets (rebuilt): "
              + ", ".join(f"{k}=0x{v:x}" for k, v in built["entries"].items()),
              "entry offsets (release): "
@@ -195,7 +197,7 @@ def main() -> int:
     try:
         built = parse_tos(REBUILT)
         archive = parse_tos(ARCHIVE)
-        release = parse_tos(RELEASE)
+        release = RELEASE
         structure_report(built, archive, release, output / "structure.txt")
 
         expected = expected_bitmap()

@@ -672,10 +672,9 @@ pointers and the classic TOS relocation stream.
 
 `mise run test:osd-off002-neost` builds `OFF002.OSD` and a small VDI probe.
 The build uses VASM's TOS output with `-nosym` and `-tos-flags=7`; it must be
-byte-identical to `core/osd/tests/archive/MIN-ATAR/OFF002.OSD`. The
-retained Release reference `core/osd/tests/release/OFF002.OSD` is V4.11 and
-differs in text/data size and entry offsets; the runner records that comparison
-but does not claim equivalence.
+byte-identical to `core/osd/tests/archive/MIN-ATAR/OFF002.OSD`.
+Captured V4.11 Release layout/provenance metadata is reported from the
+pre-retirement tag; the comparison binary is no longer a live fixture.
 
 The MagiC scenario installs the rebuilt driver and probe in a disposable image,
 boots `MAGXBOOT.TOS`, then asks VDI for `v_opnbm()` with a caller-owned 64x64,
@@ -693,10 +692,10 @@ Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
 
 `mise run test:osd-off004ip-neost` builds `OFF004IP.OSD` and a VDI probe. The
 build must be byte-identical to
-`core/osd/tests/archive/MIN-ATAR/OFF004IP.OSD`; VASM runs with `-no-opt`
-so the archived `movem` encoding is preserved. The retained Release reference
-(`core/osd/tests/release/OFF004IP.OSD`) V4.11 is recorded as a structural
-difference, not a byte reference.
+`core/osd/tests/archive/MIN-ATAR/OFF004IP.OSD`; VASM runs with `-no-opt` so
+the archived `movem` encoding is preserved. Historical Release V4.11
+structure/provenance is reported from captured metadata; it is not a byte
+reference or runtime fixture.
 
 The scenario installs archive and rebuild as `C:\GEMSYS\OFF004IP.OSD` in
 separate clones of the same MagiC image, boots `MAGXBOOT.TOS`, and opens a
@@ -720,10 +719,9 @@ scenario.
 `mise run test:osd-off016ip-neost` builds `OFF016IP.OSD` and a VDI probe. The
 build must be byte-identical to
 `core/osd/tests/archive/MIN-ATAR/OFF016IP.OSD`; VASM runs with `-no-opt`
-to preserve the archived `movem` encoding. The retained Release reference
-`core/osd/tests/release/OFF016IP.OSD` reports the same header version but
-differs in text/data size and entry offsets, so it is recorded structurally,
-not as a byte reference.
+to preserve the archived `movem` encoding. Captured Release V4.10
+provenance/layout metadata is reported; that historical reference had
+different text/data sizes and entry offsets despite its version.
 
 The scenario installs archive and rebuild as `C:\GEMSYS\OFF016IP.OSD` in
 separate clones, requests a 16-colour, 4-plane, non-packed interleaved 64x64
@@ -745,11 +743,10 @@ scenario.
 
 `mise run test:osd-off256ip-neost` builds `OFF256IP.OSD` and a VDI probe. The
 build must be byte-identical to
-`core/osd/tests/archive/MIN-ATAR/OFF256IP.OSD`; the retained Release reference
-`core/osd/tests/release/OFF256IP.OSD` is the same V4.10 binary. VASM runs with
-`-no-opt`, so the source uses the
-folded `movea.l (a2),a0` spelling for the zero-displacement colour-map load
-that the archived assembler shortened.
+`core/osd/tests/archive/MIN-ATAR/OFF256IP.OSD`; captured Release metadata records
+the same V4.10 binary, SHA-256, 22,558 bytes and text length 0x5798; VASM runs
+with `-no-opt`, so the source uses the folded `movea.l (a2),a0` spelling for
+the zero-displacement colour-map load that the archived assembler shortened.
 
 The scenario installs archive and rebuild as `C:\GEMSYS\OFF256IP.OSD` in
 separate clones, requests a 256-colour, 8-plane, non-packed interleaved 64x64
@@ -782,17 +779,18 @@ mise run test:osd-off65kpk-neost   # 65536 colours, packed 16-bit words
 mise run test:osd-off16mov-neost   # TrueColor, 32-bit pixels
 ```
 
-`core/osd/tests/neost-osd-batch-smoke.py` builds the driver and probe, checks the
-header organisation, and records archive/Release comparisons. OFF016PK must
-match its source-tree archive and OFF32KFL the Release; the remaining four have
-no byte-identical reference and are compared structurally.
+`core/osd/tests/neost-osd-batch-smoke.py` builds the driver and probe, validates
+the rebuilt header/organisation, and reports captured Release metadata.
+OFF016PK retains its source-archive byte/runtime comparison; OFF32KFL retains
+the Release binary only as an exact byte-parity fixture. The other four drivers
+have no byte-identical reference.
 
-Each case installs archive and rebuild as `C:\GEMSYS\<driver>.OSD` in separate
-MagiC clones, requests the driver's exact VDI 100/1 tuple, draws bars crossing
-x=15/16, and compares readbacks plus the full bitmap against an independent
-layout. A clone with the driver deleted must report the open as rejected and
-produce no bitmap. OFF16MOV asserts its 16 KB bitmap and the readbacks equal
-to the stored longwords with VDI's 16-bit word swap.
+Only OFF016PK runs archive and rebuild in separate MagiC clones. The other five
+run the rebuilt driver and a missing-driver control. Each rebuilt case requests
+its exact VDI 100/1 tuple, draws bars crossing x=15/16, and compares readbacks
+and the full bitmap with an independent expected layout. A driver-less clone
+must reject the open and produce no bitmap. OFF16MOV checks its 16 KB bitmap
+and readbacks against the stored longwords with VDI's 16-bit word swap.
 
 Required: a MagiC image with `C:\AUTO\MAGXBOOT.TOS`, TOS 2.06, and host
 `mtools`. Evidence goes to `build/atari/neost-<driver>-*`. Animation, other OSD
