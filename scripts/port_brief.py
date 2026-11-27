@@ -94,7 +94,7 @@ def markdown(items):
             "- [ ] Add the independent Makefile target and bundle files.",
             "- [ ] Build in a fresh output directory.",
             "- [ ] Add the focused NeoST scenario and compare meaningful outputs.",
-            "- [ ] Update the catalogue, porting notes and work list in `docs/porting/`.",
+            "- [ ] Update the catalogue and porting notes in `docs/porting/`, and the relevant GitHub issue.",
             "",
         ])
     return "\n".join(lines)

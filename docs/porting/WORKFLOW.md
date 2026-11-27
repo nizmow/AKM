@@ -1,6 +1,6 @@
 # Porting workflow and pitfalls
 
-Before picking work, read the [work list](TODO.md), the relevant [build catalogue](APPLICATION_BUILDS.md) row, and the [verification limits](TESTING.md). Before changing an application, follow the [application porting workflow](PORTING_NOTES.md#application-porting-workflow), its boundary checklist, and the [encoding guidance](PORTING_NOTES.md#source-encoding-versus-runtime-bytes). Map shared ABI contracts and capture an archive baseline before broad edits. Prove a representative boundary before splitting the remaining work. The integration owner checks a stable source snapshot; a representative compile does not prove the whole port.
+Before picking work, read the [open GitHub issues](https://github.com/nizmow/AKM/issues), the relevant [build catalogue](APPLICATION_BUILDS.md) row, and the [verification limits](TESTING.md). Before changing an application, follow the [application porting workflow](PORTING_NOTES.md#application-porting-workflow), its boundary checklist, and the [encoding guidance](PORTING_NOTES.md#source-encoding-versus-runtime-bytes). Map shared ABI contracts and capture an archive baseline before broad edits. Prove a representative boundary before splitting remaining work. The integration owner checks a stable source snapshot; a representative compile does not prove the whole port.
 
 ## ABI and data boundaries
 

@@ -1,8 +1,9 @@
 # GCC/VASM porting notes
 
-These notes cover the modern **German Atari/68000 kernel** and the first
-standalone GCC application port. Start with `README.md`, `Makefile`
-(kernel), `Makefile.apps` (applications) and `TODO.md` (next tasks).
+These notes cover the modern **German Atari/68000 kernel**, applications and
+supporting components. Start with `README.md`, `Makefile` (kernel),
+`Makefile.apps` (applications) and [GitHub issues](https://github.com/nizmow/AKM/issues)
+(remaining work).
 Prefer small, reviewable source changes. Keep kernel compatibility work in
 `kernel/`; do not use those private headers or ABI flags as an
 application SDK.
