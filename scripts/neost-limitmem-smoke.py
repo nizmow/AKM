@@ -1,26 +1,35 @@
 #!/usr/bin/env python3
-"""Compare archived and GCC LIMITMEM on disposable PRG copies under NeoST."""
+"""Check rebuilt LIMITMEM on disposable PRG copies under NeoST/EmuTOS."""
 
 from __future__ import annotations
 
 import argparse
-import hashlib
 from pathlib import Path
-import re
 import shutil
 import struct
 import tempfile
 
-from neost_common import acquire_headless, create_output, resolve_rom, sha256
+from neost_common import acquire_headless, create_output, resolve_rom
 from neost_server import NeoSTServer
 
 ROOT = Path(__file__).resolve().parent.parent
 BUILD = ROOT / "build/atari"
-ORIGINAL = ROOT / "base/limitmem/BIN/LIMITMEM.TTP"
-GCC_APP = BUILD / "apps/limitmem/LIMITMEM.TTP"
+REBUILT = BUILD / "apps/limitmem/LIMITMEM.TTP"
 DRIVER = BUILD / "apps/limitmem/NEOSTEST.PRG"
-CASE_LINE = re.compile(r"^CASE\s+(\d+)\s+(-?\d+)\s*$", re.MULTILINE)
-CASES = ("SET.PRG", "SAME.PRG", "REMOVE.PRG", "BADHDR.PRG", "BADREL.PRG")
+BANNER = b"MagiC- Memory Limitation, \xbd 1990-95 Andreas Kromke\r\n\n"
+HEAP = b"\r\nActual heap size: "
+SYNTAX = b"Syntax: LIMITMEM fname [kbytes_dec|-]\r\n"
+# Ordered as in LIMITMEMTEST.C. Pexec prints the child's unsigned 16-bit status.
+EXPECTED_CASES = (
+    (65472, HEAP + b"unlimited\r\n"),  # Marker written before Fshrink returns -ERANGE.
+    (0, HEAP + b"64 kBytes\r\n Memory limitation already installed\r\n"),
+    (65472, HEAP + b"32 kBytes\r\n"),  # Failed shrink leaves the old marker intact.
+    (65470, b""),  # Invalid header.
+    (65470, b""),  # Invalid relocation.
+    (65503, b""),  # Missing file.
+    (1, SYNTAX),   # Zero limit.
+    (1, SYNTAX),   # Nonnumeric limit.
+)
 
 
 def make_prg(*, branch: int = 0x601A, relocation: int = 1, limit: int | None = None) -> bytes:
@@ -44,27 +53,27 @@ def fixtures(gemdos: Path) -> dict[str, bytes]:
     return initial
 
 
-def invoke(headless: Path, rom: Path, gemdos: Path, out: Path, label: str) -> tuple[list[int], dict[str, str], str]:
+def invoke(headless: Path, rom: Path, gemdos: Path, out: Path) -> None:
     shutil.copy2(DRIVER, gemdos / "NEOSTEST.PRG")
-    console = out / f"{label}.console.log"
-    screenshot = out / f"{label}.ppm"
+    console = out / "rebuilt.console.log"
+    screenshot = out / "rebuilt.ppm"
     options = ["--machine", "st", "--mem", "4m", "--no-disk",
                "--gemdos", str(gemdos), "--auto", r"C:\NEOSTEST.PRG",
                "--console-log", str(console)]
-    server_dir = out / f"{label}-server"
+    server_dir = out / "rebuilt-server"
     server_dir.mkdir()
     with NeoSTServer(headless, rom, server_dir, options=options,
                      timeout=240) as server:
         server.run_frames(1800)
         server.screenshot(screenshot)
-    if not console.is_file():
-        raise RuntimeError(f"NeoST did not create {console}")
-    text = console.read_text(encoding="latin-1")
-    cases = [(int(number), int(status) & 0xFFFF) for number, status in CASE_LINE.findall(text)]
-    if [case for case, _ in cases] != list(range(1, 9)) or "DONE 8" not in text:
-        raise RuntimeError(f"{label}: missing guest cases {cases}; see {console}")
-    hashes = {name: sha256(gemdos / name) for name in CASES if (gemdos / name).is_file()}
-    return [status for _, status in cases], hashes, text
+    actual = console.read_bytes()
+    expected = b"BEGIN\r\n" + b"".join(
+        BANNER + text + f"CASE {number:02d} {status}\r\n".encode("ascii")
+        for number, (status, text) in enumerate(EXPECTED_CASES, 1)
+    ) + b"DONE 8\r\n"
+    if actual != expected:
+        (out / "expected.console.log").write_bytes(expected)
+        raise RuntimeError(f"unexpected LIMITMEM console or child status; see {console}")
 
 
 def main() -> int:
@@ -74,8 +83,8 @@ def main() -> int:
     parser.add_argument("--rom", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    if not ORIGINAL.is_file() or not GCC_APP.is_file() or not DRIVER.is_file():
-        parser.error("archived LIMITMEM, GCC LIMITMEM, and test driver must exist")
+    if not REBUILT.is_file() or not DRIVER.is_file():
+        parser.error("build limitmem and limitmem-test-driver first")
     try:
         output = create_output(args.output, parent=BUILD, prefix="neost-limitmem")
     except OSError as error:
@@ -84,42 +93,21 @@ def main() -> int:
         with tempfile.TemporaryDirectory(prefix="neost-limitmem-") as temporary:
             headless, app_root = acquire_headless(args.neost_headless, args.neost, Path(temporary))
             rom = resolve_rom(args.rom, app_root)
-            results = {}
-            for label, executable in (("archived", ORIGINAL), ("gcc", GCC_APP)):
-                guest = output / f"guest-{label}" / "C"
-                guest.mkdir(parents=True)
-                before = fixtures(guest)
-                shutil.copy2(executable, guest / "LIMITMEM.TTP")
-                statuses, hashes, text = invoke(headless, rom, guest, output, label)
-                results[label] = (statuses, hashes, before, text)
-            a_status, a_hashes, a_before, a_text = results["archived"]
-            g_status, g_hashes, g_before, g_text = results["gcc"]
-            if a_status != g_status or a_hashes != g_hashes:
-                raise RuntimeError("archived/GCC status or edited fixture bytes differ")
-            if a_text != g_text:
-                raise RuntimeError("archived/GCC console text differs")
-            # EmuTOS reports -ERANGE from the legacy Fshrink extension after
-            # the header bytes are changed; both binaries must match this.
-            expected_statuses = [65472, 0, 65472, 65470, 65470, 65503, 1, 1]
-            if a_status != expected_statuses:
-                raise RuntimeError(f"unexpected LIMITMEM child statuses: {a_status}")
-            expected_set = a_before["SET.PRG"] + b"MAGX" + struct.pack(">I", 64 * 1024)
-            if (output / "guest-gcc/C/SET.PRG").read_bytes() != expected_set:
-                raise RuntimeError("LIMITMEM did not append the expected MAGX/64KiB marker")
-            # Under EmuTOS the legacy Fshrink trap surrogate reports -ERANGE
-            # and leaves the existing marker intact, matching the archive.
-            if (output / "guest-archived/C/REMOVE.PRG").read_bytes() != a_before["REMOVE.PRG"]:
-                raise RuntimeError("archived LIMITMEM unexpectedly changed REMOVE.PRG under EmuTOS")
-            if (output / "guest-gcc/C/REMOVE.PRG").read_bytes() != a_before["REMOVE.PRG"]:
-                raise RuntimeError("GCC LIMITMEM differs from archived REMOVE.PRG behavior under EmuTOS")
-            if a_hashes["SAME.PRG"] != hashlib.sha256(a_before["SAME.PRG"]).hexdigest():
-                raise RuntimeError("already-installed marker was not left unchanged")
-            (output / "comparison.txt").write_text(
-                "archived statuses: " + repr(a_status) + "\n"
-                "GCC statuses:      " + repr(g_status) + "\n"
-                "fixture hashes:    " + repr(g_hashes) + "\n",
-                encoding="utf-8")
-            print(f"LIMITMEM comparison passed: statuses {a_status}; disposable PRG copies only")
+            guest = output / "guest-rebuilt" / "C"
+            guest.mkdir(parents=True)
+            expected = fixtures(guest)
+            shutil.copy2(REBUILT, guest / "LIMITMEM.TTP")
+            invoke(headless, rom, guest, output)
+
+            expected["SET.PRG"] += b"MAGX" + struct.pack(">I", 64 * 1024)
+            expected_names = set(expected) | {"LIMITMEM.TTP", "NEOSTEST.PRG"}
+            actual_names = {p.relative_to(guest).as_posix() for p in guest.rglob("*")}
+            if actual_names != expected_names:
+                raise RuntimeError(f"unexpected guest paths: {sorted(actual_names ^ expected_names)}")
+            for name, data in expected.items():
+                if (guest / name).read_bytes() != data:
+                    raise RuntimeError(f"{name}: unexpected file contents")
+            print(f"LIMITMEM: {len(EXPECTED_CASES)} cases passed; console, statuses and file bytes match")
             print(f"Evidence: {output}")
     except (OSError, RuntimeError) as error:
         print(f"NeoST LIMITMEM smoke failed: {error}\nArtifacts: {output}",
