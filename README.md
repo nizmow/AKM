@@ -41,6 +41,10 @@ extensions.
 The English core is `build/atari/release/core-en.zip` with `core-en.manifest`.
 Its kernel is built separately under `build/atari/en/`; existing English
 application resources are selected without changing the German build.
+Kernel locale is selected independently: `KERNEL_LANG=de|en` (interface text),
+`KERNEL_REGION=de|uk|us` (header country and `_IDT` defaults) and
+`KERNEL_KEYBOARD=de|uk` (built-in key tables). Defaults are `de/de/de` and
+`en/uk/uk`.
 Original helper diagnostics and legacy help are not all translated.
 
 Make owns the build; mise is a convenience layer. Without mise:
@@ -84,7 +88,12 @@ export TOS206_ROM=/path/to/tos206.img
 mise run test:release-neost
 mise run test:release-minimal-neost
 mise run test:release-english-neost
+mise run test:locale-neost
 ```
+
+`test:locale-neost` checks the English UK kernel contract and the unchanged
+German profile on cloned images: built-in UK fallback, full and short
+`KEYTABLS.SYS` overrides, `Keytbl`/`Bioskeys`, AES language and `_IDT`.
 
 Install host `mtools` first. The runners require an existing bootable image,
 clone it, install the ZIP and check guest effects. See the

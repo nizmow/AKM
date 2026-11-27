@@ -14,10 +14,11 @@ AES_C_OBJECTS := $(addprefix $(AES_C_DIR)/, \
 AES_C_HEADERS := $(addprefix $(AES_C_INCLUDE)/, \
     portab.h country.h tos.h tosdefs.h mgx_dos.h vdi.h aes.h string.h)
 
-# KERNEL_COUNTRY selects the original 1 (FRG) or 0 (USA) branch through
-# KERNEL_LANG.  FSEL.C and FNT_MENU.C pick their English resource blobs from
-# US/ when COUNTRY==USA; FRA remains reachable only by overriding COUNTRY.
-AES_C_CFLAGS := $(CPPFLAGS) -I$(AES_C_INCLUDE) -DCOUNTRY=$(KERNEL_COUNTRY) $(CFLAGS) $(KERNEL_FLAGS)
+# COUNTRY is the AES interface language, selected by KERNEL_LANGUAGE (1 FRG,
+# 0 USA), not by the regional KERNEL_COUNTRY.  FSEL.C and FNT_MENU.C pick their
+# English resource blobs from US/ when COUNTRY==USA.  That US/ branch remains
+# the English resource source for every English region, including UK.
+AES_C_CFLAGS := $(CPPFLAGS) -I$(AES_C_INCLUDE) -DCOUNTRY=$(KERNEL_LANGUAGE) $(CFLAGS) $(KERNEL_FLAGS)
 # WDIALOG sources are AtariST/CP437 text.  They contain no non-ASCII string
 # literals, so reading bytes as ISO-8859-1 is lossless for their code.
 AES_C_LEGACY_CFLAGS := $(AES_C_CFLAGS) \

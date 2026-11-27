@@ -180,6 +180,20 @@ jobs:
             --output build/ci/emutost/keyb-sys \
             2>&1 | tee build/ci/logs/emutost-keyb-sys.log
 
+      - name: Build kernel locale profiles, UK fallback and locale probe
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          {
+            scripts/neost-container run make -j4 BUILD_DIR=build/ci/build/locale-de \
+              KERNEL_LANG=de build/ci/build/locale-de/MAGIC.RAM
+            scripts/neost-container run make -j4 BUILD_DIR=build/ci/build/locale-en \
+              KERNEL_LANG=en build/ci/build/locale-en/MAGIC.RAM
+            scripts/neost-container run make -f Makefile.apps \
+              BUILD_DIR=build/ci/build/locale-apps locale-probe
+            python3 scripts/check_locale_builds.py build/ci/build
+          } 2>&1 | tee build/ci/logs/locale-builds.log
+
       - name: Build release profiles and verify deterministic packaging
         timeout-minutes: 60
         run: |

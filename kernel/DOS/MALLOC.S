@@ -2119,7 +2119,9 @@ tmu_loop:
 tmu_ende:
  rts
 
-     IF   COUNTRY=FRG
+; Memory-management text follows the interface language (LANGUAGE), not the
+; machine region selected by COUNTRY.
+     IF   LANGUAGE=FRG
 
 mem_fatal_errs:
  DC.B     '*** FATALER FEHLER IN DER SPEICHERVERWALTUNG:',0
@@ -2138,7 +2140,7 @@ do_term_s:
  DC.B     $d,$a,$1b,'K',$a,'Programm wird terminiert',$d,$a,$1b,'K',$1b,'e',0
 
      ENDC
-     IF   COUNTRY=USA
+     IF   LANGUAGE=USA
 
 mem_fatal_errs:
  DC.B     '*** FATAL ERROR IN MEMORY MANAGEMENT:',0
@@ -2157,7 +2159,7 @@ do_term_s:
  DC.B     $d,$a,$1b,'K',$a,'Program will be terminated',$d,$a,$1b,'K',$1b,'e',0
 
      ENDC
-    IF  COUNTRY=FRA
+    IF  LANGUAGE=FRA
 
 mem_fatal_errs:
  DC.B   '*** ERREUR FATALE DANS LA GESTION DE MEMOIR:',0

@@ -632,10 +632,36 @@ evidence directory.
 `build/atari/release/`. `mise run test:release-english-neost` runs the same
 determinism, clean-install, member-hash, desktop-menu and COPS checks with
 `--language en`. The English profile selects existing English application
-resources, English MCMD, a USA-country English kernel and the original UK
-keyboard table. The keyboard table is an active runtime file, including in
-the English minimal profile; that profile permits no optional extension
-files besides `KEYTABLS.SYS`.
+resources, English MCMD, and an English-language UK-region kernel with a
+built-in UK key table. The retained `KEYTABLS.SYS` is still installed as a
+complete nine-table override, including in the English minimal profile; that
+profile permits no other optional extension file. Kernel language, region and
+keyboard are selected independently; see
+[Porting notes](PORTING_NOTES.md#english-mega-ste-profile).
+
+`mise run test:locale-neost` (or `python3 scripts/neost-locale-smoke.py`)
+checks the kernel contract itself on cloned MagiC images:
+
+- UK fallback with `KEYTABLS.SYS` absent, compared with the canonical nine
+  slots from `base/keyb-sys/keymaps.json`.
+- A complete 1152-byte override whose nine tables are all distinct, so a loader
+  that applies only some slots fails.
+- The same override truncated to 1151 bytes; it must leave the fallback fully
+  active, so a partial overwrite cannot pass either.
+- `Keytbl` replacement, a negative-argument query while the replacements are
+  active, and `Bioskeys` restoring the effective default.
+- Pinned console bytes for UK and German (shift+3 differs: 0x9C vs 0xDD),
+  `_IDT`/AES language identity and the unchanged German profile.
+
+The probe is installed in `GEMSYS/MAGIC/START` and uses only public interfaces
+plus BIOS console input. The fixture must autostart that directory and must not
+have MagiC time slicing enabled: a slice taken between the readiness report and
+the first `Bconin(2)` can move a key into the AES queue, leaving the probe one
+key short. This is an input-delivery precondition, not a kernel property.
+German byte identity with the pre-change kernel was verified when the locale
+split landed by comparing whole `MAGIC.RAM` images; CI checks the German region
+and absence of the UK block, not that historic equality. Dead-key composition
+is not part of this kernel build and is not asserted.
 
 To check the English minimal profile directly:
 
@@ -645,7 +671,7 @@ python3 scripts/neost-release-smoke.py --language en --profile minimal
 
 These checks use monochrome Mega STE/4 MiB/TOS 2.06 clones. English is not a
 claim of complete translation or physical Mega STE verification; inherited
-German text and USA date/time defaults are listed in
+German text and the UK regional defaults are listed in
 [Porting notes](PORTING_NOTES.md#english-mega-ste-profile).
 Host command diagnostics preserve non-UTF-8 legacy source bytes as `\xNN`
 escapes rather than losing a build's exit status to a decoding error.

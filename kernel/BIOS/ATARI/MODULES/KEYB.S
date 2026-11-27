@@ -553,6 +553,10 @@ coldb_busf:
 coldb_sclr:
 
 
+ IF KEYBOARD=UK
+ include "KEYB_UK.INC"
+ ELSE
+
 *
 * Tabelle der Default-Tastaturtabellen (GER)
 *
@@ -674,3 +678,5 @@ tab_shaltgr:
  DC.B  YYY,$00,YYY,YYY,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
  DC.B  $00,$00,$dc,$00,$00,$00,$f9,$e9,$ea,$eb,$ec,$ed,$00,$00,$00,$00  * $6
  DC.B  $00,$be,YYY,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00
+
+ ENDIF

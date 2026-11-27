@@ -611,8 +611,18 @@ $(BUILD_DIR)/console/RUNARG.PRG: scripts/testdata/RUNARG.C Makefile.apps
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
 	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
+locale-probe: $(BUILD_DIR)/locale/LOCALE.PRG
+
+$(BUILD_DIR)/locale/LOCALE.PRG: scripts/testdata/LOCALE.C Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -MMD -MP \
+	  -MF "$(@:.PRG=.d)" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS) -lgem
+
 KEYB_DIR := base/keyb-sys/SRC
+KEYB_DATA := base/keyb-sys/keymaps.json
+KEYB_GEN := base/keyb-sys/tools/gen_keymaps.py
 KEYB_NAMES := CZ DEI FRA SWG UK US
+KEYB_GEN_DIR := $(BUILD_DIR)/keyb-sys/gen
 KEYB_OUTPUTS := $(addprefix $(BUILD_DIR)/keyb-sys/KEYB_,$(addsuffix .PRG,$(KEYB_NAMES)))
 
 .PHONY: keyb-sys keyb-cz keyb-dei keyb-fra keyb-swg keyb-uk keyb-us
@@ -624,11 +634,14 @@ keyb-swg: $(BUILD_DIR)/keyb-sys/KEYB_SWG.PRG
 keyb-uk: $(BUILD_DIR)/keyb-sys/KEYB_UK.PRG
 keyb-us: $(BUILD_DIR)/keyb-sys/KEYB_US.PRG
 
-$(KEYB_OUTPUTS): $(BUILD_DIR)/keyb-sys/%.PRG: $(KEYB_DIR)/%.C Makefile.apps
+$(KEYB_GEN_DIR)/%.H: $(KEYB_DATA) $(KEYB_GEN) Makefile.apps
 	mkdir -p "$(@D)"
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -finput-charset=ISO-8859-1 \
-	  -fexec-charset=ISO-8859-1 -MMD -MP \
-	  -MF "$@.d" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
+	python3 "$(KEYB_GEN)" --data "$(KEYB_DATA)" emit-c --layout "$(patsubst KEYB_%,%,$*)" --output "$@"
+
+$(KEYB_OUTPUTS): $(BUILD_DIR)/keyb-sys/%.PRG: $(KEYB_DIR)/%.C $(KEYB_GEN_DIR)/%.H Makefile.apps
+	mkdir -p "$(@D)"
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(APP_FLAGS) -I"$(KEYB_GEN_DIR)" \
+	  -MMD -MP -MF "$@.d" -x c "$<" -x none $(LDFLAGS) -o "$@" $(LDLIBS)
 
 -include $(addsuffix .d,$(KEYB_OUTPUTS))
 

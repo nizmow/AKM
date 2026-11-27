@@ -23,6 +23,12 @@ BIOSDOS_VASM       ?= $(if $(VASM),$(VASM),vasmm68k_mot)
 BIOSDOS_ASFLAGS    := -m68000 -spaces -Felf -quiet
 BIOSDOS_CPPFLAGS   := -I$(abspath $(BIOSDOS_COMMON))
 
+# The UK default keyboard table is generated from the same canonical data as
+# the KEYB_* generators; the German table stays in KEYB.S unchanged.
+KEYB_DATA          := base/keyb-sys/keymaps.json
+KEYB_GEN           := base/keyb-sys/tools/gen_keymaps.py
+BIOSDOS_KEYB_UK    := $(BIOSDOS_BIOS_INC)/KEYB_UK.INC
+
 # Generated files are separate from the archived sources.
 define biosdos_stage
 $(1): $(2) $(BIOSDOS_TOOLS)
@@ -66,6 +72,12 @@ BIOSDOS_BIOS_FILES := $(addprefix $(BIOSDOS_BIOS_INC)/,DEBUG.INC AUTO.S PUNTAES.
                         READ_KTB.S HANDLKEY.S SCSI.S FDC.S DRIVE.S DSP.S SERIAL.S \
                         CLOCK.S VIDEO.S KEYB.S COOK.S IVID.S)
 
+$(BIOSDOS_KEYB_UK): $(KEYB_DATA) $(KEYB_GEN) $(BIOSDOS_MK)
+	@mkdir -p $(@D)
+	python3 $(KEYB_GEN) --data $(KEYB_DATA) emit-asm --layout UK --output $@
+
+$(BIOSDOS_BIOS_INC)/KEYB.S: $(BIOSDOS_KEYB_UK)
+
 # --- DOS slice (DEBUG.INC differs from the BIOS one: DEBLEVEL 0) ---------
 $(eval $(call biosdos_stage,$(BIOSDOS_DOS_INC)/DEBUG.INC,kernel/DOS/INC/DEBUG.INC))
 BIOSDOS_DOS_FILES := $(BIOSDOS_DOS_INC)/DEBUG.INC
@@ -89,7 +101,7 @@ $(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/dfs_fat.S,kernel/DOS/DFS_FAT.S))
 $(eval $(call biosdos_stage,$(BIOSDOS_ASM_DIR)/ende.S,kernel/ENDE.S))
 
 BIOSDOS_STAGED := $(BIOSDOS_COMMON_FILES) $(BIOSDOS_BIOS_FILES) $(BIOSDOS_DOS_FILES) \
-                  $(BIOSDOS_READ_FILES) \
+                  $(BIOSDOS_READ_FILES) $(BIOSDOS_KEYB_UK) \
                   $(addprefix $(BIOSDOS_ASM_DIR)/,magibios.S xfs95ini.S read_inf.S \
                     ser_my.S magidos.S malloc.S dev_bios.S dev_pipe.S dev_mem.S \
                     dfs_u.S dfs_fat.S ende.S)
@@ -116,18 +128,18 @@ BIOSDOS_BIOS_INCLUDES := -I$(abspath $(BIOSDOS_COMMON)) -I$(abspath $(BIOSDOS_BI
 BIOSDOS_DOS_INCLUDES  := -I$(abspath $(BIOSDOS_COMMON)) -I$(abspath $(BIOSDOS_DOS_INC))
 BIOSDOS_READ_INCLUDES := -I$(abspath $(BIOSDOS_COMMON)) -I$(abspath $(BIOSDOS_READ_INC))
 
-# KERNEL_COUNTRY is 1 (FRG) for KERNEL_LANG=de and 0 (USA) for en, as selected
-# by the top-level Makefile.  The BIOS gets FRG/USA/FRA/UK from BIOS.INC;
-# MAGIDOS has no such include, MALLOC defines them itself.  MAGIBIOS (with
-# COOK.S), MAGIDOS and MALLOC are the only modules with COUNTRY branches; the
-# others are country-independent.  COUNTRY=3 (UK) lacks MAGIDOS/MALLOC text,
-# so it is not a complete kernel build.
+# KERNEL_COUNTRY selects the regional branch (1 FRG, 3 UK, 0 USA) and
+# KERNEL_LANGUAGE the UI text branch (1 German, 0 English).  KERNEL_KEYBOARD_
+# COUNTRY (1 German, 3 UK) picks the default keyboard table in KEYB.S.  The
+# BIOS gets FRG/USA/FRA/UK from BIOS.INC; MAGIDOS has no such include, MALLOC
+# defines them itself.  MAGIBIOS (with COOK.S), MAGIDOS and MALLOC are the
+# only modules with country/language branches; the others are independent.
 $(BIOSDOS_DIR)/magibios.o: BIOSDOS_ASINCLUDES := $(BIOSDOS_BIOS_INCLUDES)
-$(BIOSDOS_DIR)/magibios.o: BIOSDOS_ASDEFS     := -DCOUNTRY=$(KERNEL_COUNTRY) -DDEADKEYS=0 -DMACOSX=0
+$(BIOSDOS_DIR)/magibios.o: BIOSDOS_ASDEFS     := -DCOUNTRY=$(KERNEL_COUNTRY) -DLANGUAGE=$(KERNEL_LANGUAGE) -DKEYBOARD=$(KERNEL_KEYBOARD_COUNTRY) -DDEADKEYS=0 -DMACOSX=0
 $(BIOSDOS_DIR)/magidos.o:  BIOSDOS_ASINCLUDES := $(BIOSDOS_DOS_INCLUDES)
-$(BIOSDOS_DIR)/magidos.o:  BIOSDOS_ASDEFS     := -DCOUNTRY=$(KERNEL_COUNTRY)
+$(BIOSDOS_DIR)/magidos.o:  BIOSDOS_ASDEFS     := -DLANGUAGE=$(KERNEL_LANGUAGE)
 $(BIOSDOS_DIR)/malloc.o:   BIOSDOS_ASINCLUDES := $(BIOSDOS_DOS_INCLUDES)
-$(BIOSDOS_DIR)/malloc.o:   BIOSDOS_ASDEFS     := -DCOUNTRY=$(KERNEL_COUNTRY)
+$(BIOSDOS_DIR)/malloc.o:   BIOSDOS_ASDEFS     := -DLANGUAGE=$(KERNEL_LANGUAGE)
 $(BIOSDOS_DIR)/dfs_u.o:    BIOSDOS_ASINCLUDES := $(BIOSDOS_DOS_INCLUDES)
 $(BIOSDOS_DIR)/dfs_fat.o:  BIOSDOS_ASINCLUDES := $(BIOSDOS_DOS_INCLUDES)
 $(BIOSDOS_DIR)/dev_bios.o: BIOSDOS_ASINCLUDES := $(BIOSDOS_DOS_INCLUDES)
